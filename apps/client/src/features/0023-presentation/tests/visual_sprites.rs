@@ -9,14 +9,14 @@ use std::time::Duration;
 #[test]
 fn t012_server_effects_and_missiles_reach_animated_scene_and_respect_options()
 -> Result<(), Box<dyn std::error::Error>> {
-    let mut view = PlayView::new(TileCoord::new(0, 0), 0, &[])?;
+    let mut view = PlayView::new(TileCoord::new(0, 0), -7, &[])?;
     let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     view.scene.prime_visual_assets(root);
     let (link, _commands, outbox) = play_channel();
     let at = ActorPosition {
         x: 0,
         y: 0,
-        floor: 0,
+        floor: 7,
     };
     let baseline = view.scene().sprites().len();
     let effect = PresentationEventKind::MagicEffect {
@@ -93,7 +93,7 @@ fn t012_server_effects_and_missiles_reach_animated_scene_and_respect_options()
 fn t012_spell_words_use_server_catalog_only_after_server_success()
 -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_session::spell_catalog::SpellCatalogEntry;
-    let mut view = PlayView::new(TileCoord::new(0, 0), 0, &[])?;
+    let mut view = PlayView::new(TileCoord::new(0, 0), -7, &[])?;
     let (link, _commands, outbox) = play_channel();
     outbox.spell_catalog_initialize(
         true,
@@ -135,7 +135,7 @@ fn t012_spell_words_use_server_catalog_only_after_server_success()
                 position: ActorPosition {
                     x: 0,
                     y: 0,
-                    floor: 0,
+                    floor: 7,
                 },
                 spell: 19,
             },

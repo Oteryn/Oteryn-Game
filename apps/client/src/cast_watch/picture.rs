@@ -147,7 +147,7 @@ impl Assets {
             {
                 // Presentation batches retain the playing protocol's positive depth.
                 // Crystal protocolgame.cpp:7846; map display planes use negative floors.
-                let shift = i32::from(-position.floor.saturating_abs() - camera);
+                let shift = i32::from(crate::floor::legacy_to_native(position.floor) - camera);
                 sprites
                     .push(
                         &view,

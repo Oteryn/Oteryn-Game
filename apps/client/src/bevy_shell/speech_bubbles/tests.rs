@@ -24,10 +24,10 @@ fn local(name: &str, text: &str, x: i32) -> ChatLine {
     }
 }
 
-const HERE: Position = (10, 20, 7);
+const HERE: Position = (10, 20, -7);
 
 fn first(texts: &Texts) -> Option<&StaticText> {
-    texts.on_floor(7).next()
+    texts.on_floor(-7).next()
 }
 
 #[test]
@@ -35,7 +35,7 @@ fn same_position_name_and_mode_join_one_text() {
     let mut texts = Texts::default();
     texts.add(&speech("Ann", ChatSpeechMode::Say, "one", HERE), 0);
     texts.add(&speech("Ann", ChatSpeechMode::Say, "two", HERE), 10);
-    assert_eq!(texts.on_floor(7).count(), 1);
+    assert_eq!(texts.on_floor(-7).count(), 1);
     assert_eq!(
         first(&texts).map(StaticText::compose).as_deref(),
         Some("Ann says:\none\ntwo")
@@ -48,8 +48,8 @@ fn another_name_mode_or_position_is_a_separate_text() {
     texts.add(&speech("Ann", ChatSpeechMode::Say, "a", HERE), 0);
     texts.add(&speech("Bob", ChatSpeechMode::Say, "b", HERE), 0);
     texts.add(&speech("Ann", ChatSpeechMode::Yell, "c", HERE), 0);
-    texts.add(&speech("Ann", ChatSpeechMode::Say, "d", (11, 20, 7)), 0);
-    assert_eq!(texts.on_floor(7).count(), 4);
+    texts.add(&speech("Ann", ChatSpeechMode::Say, "d", (11, 20, -7)), 0);
+    assert_eq!(texts.on_floor(-7).count(), 4);
 }
 
 #[test]
@@ -127,20 +127,26 @@ fn header_and_colour_follow_the_mode() {
 #[test]
 fn only_the_camera_floor_is_drawn() {
     let mut texts = Texts::default();
-    texts.add(&speech("Ann", ChatSpeechMode::Say, "up", (1, 1, 6)), 0);
-    texts.add(&speech("Bob", ChatSpeechMode::Say, "here", (1, 1, 7)), 0);
-    let names: Vec<_> = texts.on_floor(7).map(StaticText::compose).collect();
+    texts.add(&speech("Ann", ChatSpeechMode::Say, "up", (1, 1, -6)), 0);
+    texts.add(&speech("Bob", ChatSpeechMode::Say, "here", (1, 1, -7)), 0);
+    let names: Vec<_> = texts.on_floor(-7).map(StaticText::compose).collect();
     assert_eq!(names, ["Bob says:\nhere"]);
 }
 
 #[test]
-fn legacy_floor_speech_is_drawn_on_the_native_live_map_floor() {
-    // Chat carries the legacy floor (surface 7); a live map view is on its native floor (-7).
+fn legacy_floor_speech_is_drawn_on_the_native_live_map_floor()
+-> Result<(), Box<dyn std::error::Error>> {
     let mut texts = Texts::default();
-    texts.add(&speech("Ann", ChatSpeechMode::Say, "up", (1, 1, 6)), 0);
-    texts.add(&speech("Bob", ChatSpeechMode::Say, "here", (1, 1, 7)), 0);
+    let mut above = local("Ann", "up", 1);
+    if let ChatLine::Local { position, .. } = &mut above {
+        position.floor = 6;
+    }
+    for line in [above, local("Bob", "here", 1)] {
+        texts.add(&Speech::from_line(&line).ok_or("local speech")?, 0);
+    }
     let names: Vec<_> = texts.on_floor(-7).map(StaticText::compose).collect();
     assert_eq!(names, ["Bob says:\nhere"]);
+    Ok(())
 }
 
 #[test]
@@ -169,7 +175,7 @@ fn only_local_lines_become_speech_and_only_new_ones_are_taken() {
     assert_eq!(Speech::from_line(&ChatLine::Dropped), None);
     assert_eq!(
         Speech::from_line(&local("Ann", "hi", 5)),
-        Some(speech("Ann", ChatSpeechMode::Say, "hi", (5, 2, 7)))
+        Some(speech("Ann", ChatSpeechMode::Say, "hi", (5, 2, -7)))
     );
     let a = local("Ann", "a", 1);
     let b = local("Ann", "b", 2);
@@ -200,4 +206,15 @@ fn an_unmeasured_text_stays_visible_to_layout_and_transparent() {
         world.get::<TextColor>(entity).map(|c| c.0.alpha()),
         Some(0.)
     );
+}
+
+#[test]
+fn chat_line_enters_native_speech_frame_once() -> Result<(), Box<dyn std::error::Error>> {
+    let speech = Speech::from_line(&local("Ann", "hello", 5)).ok_or("local speech")?;
+    assert_eq!(speech.position, (5, 2, -7));
+    let mut texts = Texts::default();
+    texts.add(&speech, 0);
+    assert_eq!(texts.on_floor(-7).count(), 1);
+    assert_eq!(texts.on_floor(7).count(), 0);
+    Ok(())
 }

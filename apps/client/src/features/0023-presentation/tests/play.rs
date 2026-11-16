@@ -330,3 +330,18 @@ mod visual_sprites;
 
 #[path = "boss_area.rs"]
 mod boss_area;
+
+#[test]
+fn legacy_presentation_renders_on_native_ground() -> Result<(), Box<dyn std::error::Error>> {
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), -7, &[])?;
+    let now = std::time::Instant::now();
+    view.project_presentation(now)?;
+    let base = view.scene().sprites().len();
+    view.receive_presentation(&[value_event(8)], now);
+    view.project_presentation(now)?;
+    assert_eq!(view.scene().sprites().len(), base);
+    view.receive_presentation(&[value_event(7)], now);
+    view.project_presentation(now)?;
+    assert!(view.scene().sprites().len() > base);
+    Ok(())
+}

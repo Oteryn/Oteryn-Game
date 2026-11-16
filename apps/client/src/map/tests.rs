@@ -94,3 +94,25 @@ fn the_legacy_facade_keeps_the_composed_world_type_and_constants() -> Result<(),
     assert_eq!(draws[0].cell, MARKER_CELL);
     Ok(())
 }
+
+#[test]
+fn native_ground_center_loads_legacy_region_files() -> Result<(), String> {
+    let view =
+        crate::play::PlayView::new(oteryn_renderer::TileCoord::new(START.0, START.1), -7, &[])
+            .map_err(|error| error.to_string())?;
+    let center = view.map_center();
+    let world = World::load_around(&repo(), center)?;
+    assert_eq!(world.center(), center);
+    assert_eq!(world.first_visible_floor, -7);
+    assert!(world.tile_count() > 10_000);
+    assert!(
+        !world
+            .tile(START.0, START.1)
+            .ok_or("no ground tile")?
+            .under
+            .is_empty()
+    );
+    assert!(World::load_around(&repo(), (START.0, START.1, 7)).is_err());
+    assert!(World::load_around(&repo(), (START.0, START.1, i16::MIN)).is_err());
+    Ok(())
+}

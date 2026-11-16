@@ -5,14 +5,14 @@ fn the_map_is_drawn_only_on_the_join_floor() -> Result<(), String> {
     let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     let world = Arc::new(World::load(&root)?);
     let mut view = view().map_err(|e| e.to_string())?;
-    view.apply(&moved_to(crate::map::START.0, crate::map::START.1, 7))
+    view.apply(&moved_to(crate::map::START.0, crate::map::START.1, -7))
         .map_err(|e| e.to_string())?;
     view.set_world(world).map_err(|e| e.to_string())?;
     let on_floor = view.scene().sprites().len();
     view.apply(&moved_to(100, 200, -1))
         .map_err(|e| e.to_string())?;
     let off_floor = view.scene().sprites().len();
-    view.apply(&moved_to(crate::map::START.0, crate::map::START.1, 7))
+    view.apply(&moved_to(crate::map::START.0, crate::map::START.1, -7))
         .map_err(|e| e.to_string())?;
     assert!(off_floor < on_floor / 10, "{off_floor} of {on_floor}");
     assert_eq!(view.scene().sprites().len(), on_floor);
@@ -402,5 +402,17 @@ fn first_visible_floor_open_sky() -> Result<(), BatchError> {
     let map = live_snapshot(100);
     let world = crate::map::World::from_live_map(&map)?;
     assert_eq!(world.first_visible_floor, 0);
+    Ok(())
+}
+
+#[test]
+fn builtin_world_anchors_to_native_ground() -> Result<(), BatchError> {
+    let world = Arc::new(World::builtin()?);
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), -7, &[])?;
+    view.set_world(Arc::clone(&world))?;
+    assert_eq!(world.center().2, -7);
+    assert_eq!(world.first_visible_floor, -7);
+    assert_eq!(view.map_floor, Some(-7));
+    assert_eq!(view.floor(), -7);
     Ok(())
 }

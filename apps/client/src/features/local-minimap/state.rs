@@ -332,10 +332,11 @@ impl Minimap {
         if bytes.len() as u64 > MAX_BYTES {
             return Err(io::Error::other(tr!("Minimap file is too large")));
         }
-        let saved: Saved = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+        let mut saved: Saved = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+        let migrated = saved.migrate_legacy_floors();
         saved.validate()?;
         // Older caches recorded gray item-only cells. They are not persistent terrain.
-        self.dirty |= saved.cells.iter().any(|cell| cell[3] == 86);
+        self.dirty |= migrated || saved.cells.iter().any(|cell| cell[3] == 86);
         self.cells = saved
             .cells
             .into_iter()

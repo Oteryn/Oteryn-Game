@@ -154,3 +154,45 @@ fn t076_floor_and_zoom_controls_stop_following_and_recentre_on_the_player() {
     map.follow(x, y, floor);
     assert_eq!((map.x, map.y, map.floor), (101, 200, -7));
 }
+
+#[test]
+fn old_positive_floor_save_loads_and_imports_as_native() -> Result<(), Box<dyn std::error::Error>> {
+    let root = std::env::temp_dir().join(format!("floorcli-old-minimap-{}", std::process::id()));
+    let mut map = Minimap::default();
+    map.root = Some(root.clone());
+    map.bind_world("11111111-1111-4111-8111-111111111111");
+    map.binding = Some(([1; 32], [2; 32], 1));
+    let path = map.path().ok_or("active cache")?;
+    std::fs::create_dir_all(path.parent().ok_or("cache parent")?)?;
+    let old = serde_json::json!({
+        "version": 1,
+        "cells": [[7, 100, 200, 55], [-8, 101, 200, 55]],
+        "markers": [{"x":100,"y":200,"floor":7,"label":"Home","color":1}]
+    });
+    std::fs::write(&path, serde_json::to_vec(&old)?)?;
+    map.load()?;
+    assert_eq!(map.cells.get(&(-7, 100, 200)), Some(&55));
+    assert_eq!(map.cells.get(&(-8, 101, 200)), Some(&55));
+    assert_eq!(map.markers[0].floor, -7);
+    map.save()?;
+    let saved: Saved = serde_json::from_slice(&std::fs::read(&path)?)?;
+    assert!(saved.cells.iter().all(|cell| cell[0] <= 0));
+    assert_eq!(saved.markers[0].floor, -7);
+    let portable = root.join("old-portable.json");
+    std::fs::write(&portable, serde_json::to_vec(&serde_json::json!({
+        "world": map.world,
+        "binding": map.binding,
+        "saved": old
+    }))?)?;
+    map.cells.clear();
+    map.markers.clear();
+    map.import_from(&portable)?;
+    assert_eq!(map.cells.get(&(-7, 100, 200)), Some(&55));
+    assert_eq!(map.markers[0].floor, -7);
+    let imported: Saved = serde_json::from_slice(&std::fs::read(&path)?)?;
+    assert!(imported.cells.iter().all(|cell| cell[0] <= 0));
+    assert_eq!(imported.markers[0].floor, -7);
+    drop(map);
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}

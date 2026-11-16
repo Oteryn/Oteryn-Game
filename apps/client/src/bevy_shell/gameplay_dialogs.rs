@@ -440,9 +440,10 @@ mod tests {
         let mut host = HostOwner::new(None)?;
         let (link, mut commands, _events) = play_channel();
         host.play = Some(super::super::owner::ActivePlay {
-            view: PlayView::new(TileCoord::new(100, 100), 7, &[])?,
+            view: PlayView::new(TileCoord::new(100, 100), -7, &[])?,
             link,
         });
+        assert_eq!(host.play.as_ref().ok_or("play")?.view.floor(), -7);
         host.phase = Phase::Playing;
         host.request_logout_confirmation();
         let first = host.dialogs.pending.as_ref().ok_or("confirmation")?.id;
@@ -480,9 +481,10 @@ mod tests {
         let mut host = HostOwner::new(None)?;
         let (link, mut commands, _events) = play_channel();
         host.play = Some(super::super::owner::ActivePlay {
-            view: PlayView::new(TileCoord::new(100, 100), 7, &[])?,
+            view: PlayView::new(TileCoord::new(100, 100), -7, &[])?,
             link,
         });
+        assert_eq!(host.play.as_ref().ok_or("play")?.view.floor(), -7);
         host.phase = Phase::Playing;
         host.request_logout_confirmation();
         let request = host.dialogs.pending.as_mut().ok_or("confirmation")?;
@@ -496,7 +498,7 @@ mod tests {
                 oteryn_session::ActorPosition {
                     x: 100,
                     y: 100,
-                    floor: 7,
+                    floor: -7,
                 },
             ),
             entries: vec![(

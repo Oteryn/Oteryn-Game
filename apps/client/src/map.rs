@@ -57,8 +57,12 @@ impl World {
         let atlas = atlas_from_cells(builtin_rgba(), BUILTIN_CELLS)?;
         Ok(Self {
             effects: Default::default(),
-            center: (START.0, START.1, i16::from(START_FLOOR)),
-            first_visible_floor: i16::from(START_FLOOR),
+            center: (
+                START.0,
+                START.1,
+                crate::floor::legacy_to_native(i16::from(START_FLOOR)),
+            ),
+            first_visible_floor: crate::floor::legacy_to_native(i16::from(START_FLOOR)),
             atlas,
             layers: BTreeMap::new(),
             tiles: HashMap::new(),
@@ -84,21 +88,39 @@ impl World {
 
     /// Decodes the start area from an asset root laid out like the repository.
     pub fn load(root: &Path) -> Result<Self, String> {
-        Self::load_around(root, (START.0, START.1, i16::from(START_FLOOR)))
+        Self::load_around(
+            root,
+            (
+                START.0,
+                START.1,
+                crate::floor::legacy_to_native(i16::from(START_FLOOR)),
+            ),
+        )
     }
 
     pub const fn center(&self) -> (i32, i32, i16) {
         self.center
     }
 
-    /// Decode the real join position's bounded map window, including its floor.
+    /// Decode the real join position's bounded map window using a native view floor.
     pub fn load_around(root: &Path, center: (i32, i32, i16)) -> Result<Self, String> {
+        // Region file names retain legacy depths; the composed world's center stays native.
         let ResolvedWindow {
             effects,
             entries,
             player,
             mut sheets,
-        } = ResolvedWindow::load_around(root, center)?;
+        } = ResolvedWindow::load_around(
+            root,
+            (
+                center.0,
+                center.1,
+                center
+                    .2
+                    .checked_neg()
+                    .ok_or("map center floor outside the World")?,
+            ),
+        )?;
 
         let atlas = WorldAtlas::prepare(
             entries

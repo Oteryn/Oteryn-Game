@@ -173,7 +173,7 @@ fn scenario() -> TestResult {
                 let landed = outcome.moved_to.ok_or("citizen step")?.actor_position;
                 assert_eq!(
                     (landed.x, landed.y, landed.floor),
-                    (8, 11, 7),
+                    (8, 11, -7),
                     "unique {unique}"
                 );
                 assert_eq!(

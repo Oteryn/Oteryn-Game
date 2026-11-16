@@ -79,7 +79,7 @@ async fn next_step(client: &mut DuplexStream) -> TestResult<MovementLocalPositio
                 return Ok(MovementLocalPosition {
                     x: at.x,
                     y: at.y,
-                    floor: at.floor,
+                    floor: -at.floor,
                 });
             }
         }

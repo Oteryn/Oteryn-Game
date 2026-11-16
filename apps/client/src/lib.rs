@@ -17,6 +17,7 @@ pub mod combat_input;
 pub mod crash_report;
 pub mod cyclopedia;
 pub mod device_login;
+mod floor;
 pub mod hud_error;
 pub mod input;
 pub mod map;

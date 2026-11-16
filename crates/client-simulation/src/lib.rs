@@ -73,12 +73,20 @@ mod tests {
             position: Position {
                 x: 1,
                 y: 2,
-                floor: 7,
+                floor: -7,
             },
             display_name: "Synthetic Rat".to_owned(),
         }))?;
         assert_eq!(simulation.snapshot().revision, 1);
         assert_eq!(simulation.snapshot().entities.len(), 1);
+        assert_eq!(
+            simulation
+                .snapshot()
+                .entities
+                .get(&ClientEntityRef::new(9))
+                .map(|entity| entity.position.floor),
+            Some(-7)
+        );
         Ok(())
     }
 }

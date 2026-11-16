@@ -15,9 +15,12 @@ impl Scene {
         floor: i16,
     ) -> Result<(VisualFrames, bool), BatchError> {
         let visible = |kind| match kind {
-            PresentationEventKind::MagicEffect { position, .. } => position.floor == floor,
+            PresentationEventKind::MagicEffect { position, .. } => {
+                crate::floor::legacy_to_native(position.floor) == floor
+            }
             PresentationEventKind::Missile { from, to, .. } => {
-                from.floor == floor && to.floor == floor
+                crate::floor::legacy_to_native(from.floor) == floor
+                    && crate::floor::legacy_to_native(to.floor) == floor
             }
             _ => false,
         };
