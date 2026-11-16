@@ -198,6 +198,7 @@ impl DurabilityRoot {
             request,
             None,
             Some(HouseLoopContext::new(context.clone(), house_capacity_v2)),
+            None,
         )
         .await
     }

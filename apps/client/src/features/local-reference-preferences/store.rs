@@ -274,7 +274,7 @@ mod legacy_chords {
             let loaded = loaded?;
             assert!(!loaded.custom_hotkeys.contains_key(chord));
             assert_eq!(serde_json::to_value(&loaded)?[field], value);
-            assert_eq!(loaded.custom_hotkeys.len(), 10);
+            assert_eq!(loaded.custom_hotkeys.len(), 11);
         }
         Ok(())
     }

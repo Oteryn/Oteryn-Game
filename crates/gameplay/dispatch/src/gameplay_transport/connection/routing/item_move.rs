@@ -30,6 +30,9 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     container_tree: selected_capabilities.contains(CAPABILITY_CONTAINER_TREE_V1),
                     world_interaction: selected_capabilities
                         .contains(CAPABILITY_WORLD_INTERACTION_V1),
+                    manual_sort: selected_capabilities.contains(
+                        oteryn_protocol_oteryn::item_view::CAPABILITY_CONTAINER_MANUAL_SORT_V1,
+                    ),
                 };
                 // Foundation has already classified replay. Observe the reservation before
                 // legacy receipt reads can yield to the partner's observation cadence.

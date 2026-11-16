@@ -13,7 +13,7 @@ fn browse_field_moves_both_directions_and_up_receives_field_delta() -> Result<()
                 let wire=read_frame(&mut server).await?;
                 let envelope=decode_wire_envelope(&wire)?;
                 let command=envelope.client_command(1)?;
-                let intent=item_view::decode_item_move_intent_for(command.payload,item_view::ItemMoveSelection {equip_drop:true,container_tree:true,world_interaction:false}).map_err(|e|format!("{e:?}"))?;
+                let intent=item_view::decode_item_move_intent_for(command.payload,item_view::ItemMoveSelection {equip_drop:true,container_tree:true,world_interaction:false, manual_sort: false}).map_err(|e|format!("{e:?}"))?;
                 assert_eq!(intent.destination,destination);
                 write_frame(&mut server,&encode_command_result(1,sequence,command.command_id,CommandStatus::Accepted,&[8,1])?).await?;
             }

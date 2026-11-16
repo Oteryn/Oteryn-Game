@@ -339,7 +339,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let moved = client
         .move_item(&oteryn_dev_client::ItemMoveIntent {
             source: helmet_handle,
-            destination: oteryn_dev_client::ItemMoveDestination::Container(bag_handle),
+            destination: oteryn_dev_client::ItemMoveDestination::Container(bag_handle, None),
         })
         .await?;
     if moved.outcome != Out::Moved {

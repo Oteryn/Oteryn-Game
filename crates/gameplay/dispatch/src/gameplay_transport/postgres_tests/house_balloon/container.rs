@@ -101,7 +101,8 @@ pub(super) async fn scenario(
                 LoopMove {
                     item: bag,
                     count: None,
-                    target: LoopTarget::Container(foreign_box)
+                    target: LoopTarget::Container(foreign_box),
+                    slot: None,
                 }
             )
             .await,
@@ -133,6 +134,7 @@ pub(super) async fn scenario(
                 item,
                 count: None,
                 target,
+                slot: None,
             },
         )
     };
@@ -293,7 +295,8 @@ pub(super) async fn scenario(
                 LoopMove {
                     item: gold,
                     count: None,
-                    target: LoopTarget::Container(cupboard)
+                    target: LoopTarget::Container(cupboard),
+                    slot: None,
                 }
             )
             .await,
@@ -439,6 +442,7 @@ pub(super) async fn capacity_scenario(
         item,
         count: None,
         target,
+        slot: None,
     };
     assert_ne!(
         owner

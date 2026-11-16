@@ -397,7 +397,7 @@ async fn exchange_with_boss_fences(
                 }
             }
             let destination = match (to, nested) {
-                (true, true) => ItemMoveDestination::Container(bag.ok_or("carried bag")?),
+                (true, true) => ItemMoveDestination::Container(bag.ok_or("carried bag")?, None),
                 (true, false) => ItemMoveDestination::Ground(WorldTilePosition {
                     x: 6,
                     y: 0,

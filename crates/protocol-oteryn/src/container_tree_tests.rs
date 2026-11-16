@@ -427,10 +427,11 @@ fn command_9_takes_the_container_destination_only_under_capability_14() {
         equip_drop: true,
         container_tree: true,
         world_interaction: false,
+        manual_sort: false,
     };
     let worst = ItemMoveIntent {
         source: handle(u64::MAX),
-        destination: ItemMoveDestination::Container(handle(u64::MAX - 1)),
+        destination: ItemMoveDestination::Container(handle(u64::MAX - 1), None),
     };
     let bytes = encode_item_move_intent_for(&worst, tree).expect("container destination");
     // 11 for the source, 1 + 1 + 11 for the destination: within the capability 12 bound.
@@ -442,6 +443,7 @@ fn command_9_takes_the_container_destination_only_under_capability_14() {
         equip_drop: false,
         container_tree: true,
         world_interaction: false,
+        manual_sort: false,
     };
     assert_eq!(decode_item_move_intent_for(&bytes, only_tree), Ok(worst));
     assert!(bytes.len() > MAX_ITEM_MOVE_INTENT_BYTES);
@@ -452,6 +454,7 @@ fn command_9_takes_the_container_destination_only_under_capability_14() {
             equip_drop,
             container_tree: false,
             world_interaction: false,
+            manual_sort: false,
         };
         assert_eq!(
             encode_item_move_intent_for(&worst, selection),

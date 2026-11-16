@@ -143,6 +143,7 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
     // CLCAST adds native caster settings, chat and consent (290–292); Watch 289 is separate.
     // C17b adds 275 (empty-outfit-v1: invisible creatures project an empty outfit).
     // The native walking route also advertises diagonal movement (371).
+    // CONTAINER-MANUAL-SORT-1 adds 510 (the command-9 container slot), with its prerequisite 14.
     // The real-server client journeys (node boot) add 3 (npc_service) and 81 (npc_shop) for the
     // NPC shop phase, and 51 (staff) with 165 (hireling) for the hireling phase; staff negotiation
     // never grants the signed-envelope authority it requires.
@@ -156,7 +157,8 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
             207, 224, 230, 232, 233, 240, 258, 259, 272, 274, 275, 276, 277, 278, 279, 280, 285,
             286, 287, 288, 290, 291, 292, 330, 350, 370, 371, 381, 382, 383, 384, 445, 446, 447,
             448, 449, 450, 461, 462, 463, 470, 474, 479, 480, 483, 485, 486, 487, 488, 489, 490,
-            491, 492, 493, 494, 495, 496, 497, 498, 499, 500, 501, 502, 503, 504, 505, 506, 507
+            491, 492, 493, 494, 495, 496, 497, 498, 499, 500, 501, 502, 503, 504, 505, 506, 507,
+            510
         ]
     );
 }

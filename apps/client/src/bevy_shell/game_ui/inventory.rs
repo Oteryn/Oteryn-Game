@@ -11,6 +11,8 @@ mod bulk;
 #[cfg(test)]
 mod bulk_tests;
 mod dialogs;
+#[cfg(test)]
+mod manual_sort_tests;
 mod presentation;
 #[cfg(test)]
 mod tests;

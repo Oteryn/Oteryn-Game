@@ -181,6 +181,8 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_DEFAULTS_V1,
     cyclopedia_character::items::filtered::CAPABILITY,
     highscores_catalogue::CAPABILITY,
+    // Tibia Global's Manual Sort Mode: the slot of a command-9 container destination (requires 14).
+    oteryn_protocol_oteryn::item_view::CAPABILITY_CONTAINER_MANUAL_SORT_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in

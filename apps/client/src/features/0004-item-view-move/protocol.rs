@@ -12,6 +12,12 @@ impl Outbox {
         mailbox.inventory.apply(inventory);
     }
 
+    /// Manual Sort Mode starts off in every session; 510 makes it available.
+    pub(in crate::play) fn container_manual_sort_initialize(&self, selected: bool) {
+        lock(&self.0).container_manual_sort =
+            oteryn_client_ui::container_manual_sort::admitted(selected);
+    }
+
     pub(in crate::play) fn inventory_events(&self, events: &[SessionEvent]) {
         let mut mailbox = lock(&self.0);
         for event in events {
@@ -29,6 +35,7 @@ impl Outbox {
         mailbox.inventory = Default::default();
         mailbox.item_movement = Default::default();
         mailbox.item_count_selected = false;
+        mailbox.container_manual_sort = Default::default();
         mailbox.inventory_shutdown = true;
         // Public template references belong to this inventory session too.
         mailbox.discovery.inspection = Default::default();

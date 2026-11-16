@@ -685,6 +685,7 @@ async fn equip_quiver_via_wire(
             equip_drop: true,
             container_tree: false,
             world_interaction: false,
+            manual_sort: false,
         },
     )
     .map_err(debug)?;
@@ -724,7 +725,8 @@ async fn equip_quiver_via_wire(
                     ItemMoveSelection {
                         equip_drop: true,
                         container_tree: false,
-                        world_interaction: false
+                        world_interaction: false,
+                        manual_sort: false,
                     }
                 )
                 .map_err(debug)?,
@@ -762,6 +764,7 @@ async fn equip_quiver_via_wire(
         equip_drop: true,
         container_tree: true,
         world_interaction: false,
+        manual_sort: false,
     };
     // Fresh handles: main, newest ammo, meat, assigned bag, equipped quiver.
     let base = admitted.continuity.item_view.handle_counter;
@@ -772,7 +775,7 @@ async fn equip_quiver_via_wire(
             ItemMoveIntent {
                 source: std::num::NonZeroU64::new(base + 3).ok_or("meat handle")?,
                 destination: ItemMoveDestination::Container(
-                    std::num::NonZeroU64::new(base + 5).ok_or("quiver handle")?
+                    std::num::NonZeroU64::new(base + 5).ok_or("quiver handle")?, None
                 )
             },
             selection
@@ -788,7 +791,7 @@ async fn equip_quiver_via_wire(
             ItemMoveIntent {
                 source: std::num::NonZeroU64::new(base + 2).ok_or("ammo handle")?,
                 destination: ItemMoveDestination::Container(
-                    std::num::NonZeroU64::new(base + 5).ok_or("quiver handle")?
+                    std::num::NonZeroU64::new(base + 5).ok_or("quiver handle")?, None
                 )
             },
             selection

@@ -73,6 +73,7 @@ pub(super) async fn exercise(
         item: ItemKey::Instance(item),
         count: None,
         target: LoopTarget::Ground(WorldTilePosition { x, y: 0, floor: -7 }),
+        slot: None,
     };
     let to = |x| move_to(letter, x);
     let carried = (String::from("oteryn:item.tibia.i3505"), 0, 0);
@@ -158,6 +159,7 @@ pub(super) async fn exercise(
                     item: ItemKey::Instance(label),
                     count: None,
                     target: LoopTarget::Container(ItemKey::Instance(parcel)),
+                    slot: None,
                 },
             )
             .await,
@@ -170,7 +172,7 @@ pub(super) async fn exercise(
     );
     if let Some(item)=charge_item {
         assert_eq!(owner.move_loop_item(actor,command(508),LoopMove{item:ItemKey::Instance(item),count:None,
-            target:LoopTarget::Container(ItemKey::Instance(parcel))}).await,LoopMoveResult::Committed);
+            target:LoopTarget::Container(ItemKey::Instance(parcel)),slot:None}).await,LoopMoveResult::Committed);
     }
     // The mail owner admits one post per sender each second.
     tokio::time::sleep(std::time::Duration::from_millis(1100)).await;

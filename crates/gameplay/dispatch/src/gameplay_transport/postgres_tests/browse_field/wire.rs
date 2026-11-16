@@ -24,6 +24,7 @@ const SELECTION: ItemMoveSelection = ItemMoveSelection {
     equip_drop: true,
     container_tree: true,
     world_interaction: false,
+    manual_sort: false,
 };
 // The deadline bounds the scenario. Liveness is tested elsewhere and must not
 // disconnect a test client while it checks committed PostgreSQL rows.
@@ -96,7 +97,7 @@ async fn transfers(
     let source = field.entries.first().ok_or("advertised Ground coin")?.handle;
     assert_eq!(field.entries.len(), 1);
     let destination = if case == Case::Nested {
-        ItemMoveDestination::Container(bag)
+        ItemMoveDestination::Container(bag, None)
     } else {
         ItemMoveDestination::MainBackpack
     };
@@ -119,7 +120,7 @@ async fn transfers(
     // Crystal Container::queryAdd refuses its locked browse destination.
     let field = picked_up.views.first().ok_or("field after pickup")?;
     let command_id = if case == Case::Nested { 5 } else { 4 };
-    move_command(client, command_id, &move_payload(bag, ItemMoveDestination::Container(field.container_handle))?, ItemMoveOutcome::NotSupported).await?;
+    move_command(client, command_id, &move_payload(bag, ItemMoveDestination::Container(field.container_handle, None))?, ItemMoveOutcome::NotSupported).await?;
     assert_eq!(bag_custody(harness).await?, bag_before);
     assert_eq!(custody(harness).await?, before);
     assert_eq!(receipts(harness).await?, 2);

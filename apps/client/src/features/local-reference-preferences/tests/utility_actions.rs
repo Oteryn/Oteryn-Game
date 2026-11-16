@@ -556,3 +556,85 @@ fn global_default_chords_for_prey_vip_skills_and_hotkey_options()
     assert!(!lock(&link.mailbox).vip.open);
     Ok(())
 }
+
+/// Tibia Global's ToggleManualSortMode (docs/reference/tibia-manual/controls.md:79; Shift+S in
+/// every hotkey set of the installed Global client options): the hotkey toggles the session's
+/// mode, and while it is on a drop on a container slot sends that slot (capability 510).
+#[test]
+fn shift_s_toggles_manual_sort_mode_and_a_container_drop_sends_its_slot()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::UtilityAction::ToggleManualSortMode;
+    use oteryn_client_ui::inventory::movement::DragItem;
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    use oteryn_session::ItemMoveDestination;
+    assert_eq!(
+        crate::play::default_custom_hotkeys().get("SHIFT+S"),
+        Some(&CustomAction::Utility {
+            action: ToggleManualSortMode
+        })
+    );
+    for selected in [false, true] {
+        let (link, mut commands, outbox) = play_channel();
+        outbox.inventory_initialize(None, false);
+        outbox.container_manual_sort_initialize(selected);
+        let mut settings = bare();
+        let mut shift_s = || {
+            let mut event = NormalizedInputEvent::Key {
+                code: KeyCode::new(22).unwrap_or_else(|_| unreachable!("a fixed key code")),
+                state: ButtonState::Pressed,
+                modifiers: Modifiers::one(Modifier::Shift),
+                repeat: false,
+            };
+            let _ = settings.input(std::slice::from_ref(&event));
+            let actions = settings.take_custom_actions();
+            if let NormalizedInputEvent::Key { state, .. } = &mut event {
+                *state = ButtonState::Released;
+            }
+            let _ = settings.input(&[event]);
+            assert_eq!(
+                actions,
+                vec![CustomAction::Utility {
+                    action: ToggleManualSortMode
+                }]
+            );
+            settings.run_utility(&link, ToggleManualSortMode)
+        };
+        let drop = |commands: &mut tokio::sync::mpsc::UnboundedReceiver<PlayCommand>| {
+            assert!(link.item_drag_begin(DragItem {
+                equipped: false,
+                handle: 5.try_into().unwrap_or_else(|_| unreachable!("non-zero")),
+                count: 1,
+            }));
+            link.item_drag_drop(Some(ItemMoveDestination::Container(
+                9.try_into().unwrap_or_else(|_| unreachable!("non-zero")),
+                Some(2),
+            )));
+            match commands.try_recv() {
+                Ok(PlayCommand::MoveItem(request)) => Some(request.destination),
+                _ => None,
+            }
+        };
+        let container = 9.try_into()?;
+        assert!(!link.container_manual_sort_active());
+        assert_eq!(
+            drop(&mut commands),
+            Some(ItemMoveDestination::Container(container, None))
+        );
+        lock(&link.mailbox).item_movement.pending = false;
+        assert_eq!(shift_s(), selected, "510 negotiated: {selected}");
+        assert_eq!(link.container_manual_sort_active(), selected);
+        let slot = selected.then_some(2);
+        assert_eq!(
+            drop(&mut commands),
+            Some(ItemMoveDestination::Container(container, slot))
+        );
+        lock(&link.mailbox).item_movement.pending = false;
+        assert_eq!(shift_s(), selected);
+        assert!(!link.container_manual_sort_active());
+        assert_eq!(
+            drop(&mut commands),
+            Some(ItemMoveDestination::Container(container, None))
+        );
+    }
+    Ok(())
+}

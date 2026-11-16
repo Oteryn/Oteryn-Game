@@ -192,6 +192,8 @@ With no text field focused, the existing gameplay shortcuts open:
 - **Ctrl+Y:** Prey Creatures, with three server-confirmed slots and reroll confirmation.
 - **Ctrl+Shift+F:** Exaltation Forge: Fusion, Transfer, Conversion and History.
   Opens locally and requests current forge candidates; this protocol has no server-open event.
+- **Shift+S:** Manual Sort Mode for this session (capability 510): container titles turn orange
+  and an item dropped on a container slot is placed in that slot instead of the first one.
 - **Ctrl+S:** Supply Stash, with search/category/trader filters, name/stock sort,
   and a bounded withdrawal dialog. Stash rows show definition names because the
   protocol supplies no verified artwork binding.

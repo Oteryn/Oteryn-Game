@@ -148,6 +148,7 @@ pub(super) fn meaningful(
                 world_interaction: selected.contains(
                     &oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
                 ),
+                manual_sort: selected.contains(&CAPABILITY_CONTAINER_MANUAL_SORT_V1),
             };
             if selected.contains(&CAPABILITY_ITEM_STACK_COUNT_V1) {
                 decode_item_move_intent_with_count_for(command.payload, selection).is_ok()

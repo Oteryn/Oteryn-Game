@@ -254,7 +254,7 @@ pub(in crate::play) fn view_surfaces(
                         bounds.top + row.bottom + 1,
                     ],
                     rows: vec![],
-                    destination: ItemMoveDestination::Container(view.container_handle),
+                    destination: ItemMoveDestination::Container(view.container_handle, None),
                 });
             }
         }

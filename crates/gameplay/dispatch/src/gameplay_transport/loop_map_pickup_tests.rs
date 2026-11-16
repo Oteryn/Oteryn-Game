@@ -25,6 +25,7 @@ const SELECTION: ItemMoveSelection = ItemMoveSelection {
     equip_drop: true,
     container_tree: true,
     world_interaction: true,
+    manual_sort: false,
 };
 
 #[test]
@@ -373,6 +374,7 @@ fn scenario(crash: bool, full: bool, epoch: u64) -> TestResult {
                             .table()
                             .handle(&ItemKey::Instance(carried.ok_or("carried bag")?))
                             .ok_or("carried handle")?,
+                        None,
                     )
                 } else {
                     ItemMoveDestination::MainBackpack

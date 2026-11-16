@@ -33,6 +33,7 @@ const MOVE_SELECTION: ItemMoveSelection = ItemMoveSelection {
     equip_drop: false,
     container_tree: false,
     world_interaction: true,
+    manual_sort: false,
 };
 
 pub(super) fn pos(x: u16, y: u16) -> TilePos {

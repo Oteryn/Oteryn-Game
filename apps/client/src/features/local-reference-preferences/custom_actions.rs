@@ -93,14 +93,14 @@ impl ReferencePreferences {
     }
 }
 
-/// The chat, help and window chords of Tibia Global, bound on a fresh profile. The features that
-/// held Ctrl+E, Ctrl+O, Ctrl+T, Ctrl+H, Ctrl+M, Ctrl+P, Ctrl+V, Ctrl+K and Ctrl+Y before have no
-/// default key now; Global gives them none.
+/// The chat, help, window and container chords of Tibia Global, bound on a fresh profile. The
+/// features that held Ctrl+E, Ctrl+O, Ctrl+T, Ctrl+H, Ctrl+M, Ctrl+P, Ctrl+V, Ctrl+K and Ctrl+Y
+/// before have no default key now; Global gives them none.
 pub fn default_custom_hotkeys() -> std::collections::BTreeMap<String, CustomAction> {
     use super::UtilityAction::{
         CloseCurrentChannel, NextChannel, OpenChannelList, OpenHelpChannel, PreviousChannel,
-        ShowOptionsHotkeys, ShowPrey, ToggleLensHelp, ToggleServerMessages, ToggleSkillsWidget,
-        ToggleVipWidget,
+        ShowOptionsHotkeys, ShowPrey, ToggleLensHelp, ToggleManualSortMode, ToggleServerMessages,
+        ToggleSkillsWidget, ToggleVipWidget,
     };
     [
         ("CTRL+E", CloseCurrentChannel),
@@ -114,6 +114,7 @@ pub fn default_custom_hotkeys() -> std::collections::BTreeMap<String, CustomActi
         ("CTRL+P", ToggleVipWidget),
         ("ALT+S", ToggleSkillsWidget),
         ("CTRL+K", ShowOptionsHotkeys),
+        ("SHIFT+S", ToggleManualSortMode),
     ]
     .into_iter()
     .map(|(chord, action)| (chord.to_owned(), CustomAction::Utility { action }))
