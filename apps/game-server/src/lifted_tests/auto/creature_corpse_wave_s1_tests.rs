@@ -9,9 +9,7 @@ use crate::combat::LootDefinitionRef;
 use serde_json::Value;
 use std::collections::HashMap;
 
-const S1: [&str; 13] = [
-    "corrupted_ghost",
-    "corrupted_skeleton",
+const S1: [&str; 11] = [
     "dark_carnisylvan",
     "ghost",
     "hulking_carnisylvan",

@@ -16,7 +16,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[3]
 CREATURES = frozenset('oteryn:creature.' + name for name in (
-    'corrupted_ghost', 'corrupted_skeleton', 'dark_carnisylvan', 'ghost', 'hulking_carnisylvan',
+    'dark_carnisylvan', 'ghost', 'hulking_carnisylvan',
     'hunter', 'muglex_clan_assassin', 'muglex_clan_footman', 'mummy', 'poisonous_carnisylvan',
     'smuggler', 'stone_golem', 'wild_warrior'))
 

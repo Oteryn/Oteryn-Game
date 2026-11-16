@@ -15,16 +15,12 @@ non-pickupable Game corpse policy).
 
 ## A. Wave S1: spawned Newhaven creatures (`creature_corpse_items.py`)
 
-Creatures: corrupted ghost, corrupted skeleton, dark carnisylvan, ghost, hulking carnisylvan, hunter, Muglex clan
+Creatures: dark carnisylvan, ghost, hulking carnisylvan, hunter, Muglex clan
 assassin, Muglex clan footman, mummy, poisonous carnisylvan, smuggler, stone golem, wild warrior. Their missing loot
 Items are admitted in the same slice through the existing encounter loot importer.
 
 | Item | name | capacity | duration ms | decays to | weight | source (OTS) | status |
 |---|---|---|---|---|---|---|---|
-| i5972 | slain skeleton | 10 | 10000 | i4024 | 0 | items.xml:16186-16190 | FIXED |
-| i4024 | slain skeleton | 10 | 300000 | i4156 | 40000 | items.xml:12089-12094 | FIXED |
-| i4156 | slain skeleton | 10 | 300000 | i4157 | 10000 | items.xml:12765-12770 | FIXED |
-| i4157 | slain skeleton | — | 60000 | — | 10000 | items.xml:12771-12775 | FIXED |
 | i5993 | remains of a ghost | 10 | 10000 | i4094 | 0 | items.xml:16309-16313 | FIXED |
 | i4094 | remains of a ghost | 10 | 300000 | i4158 | 1000 | items.xml:12434-12439 | FIXED |
 | i4158 | remains of a ghost | 10 | 300000 | i4159 | 1000 | items.xml:12776-12781 | FIXED |
@@ -68,4 +64,6 @@ corpse.
 
 Corpses whose donor capacity is above 30 cannot settle until the runtime cap changes (a Server decision): i18046
 assassin (40), i18050 bandit (36), i18082 dark apprentice (36), i18086 dark magician (40), i18281 dark monk (50),
-i18254 witch (40). The full GAP list of unadmitted corpse Items follows in a later wave.
+i18254 witch (40). The corrupted ghost and corrupted skeleton wait for their loot Items i2643 (purple
+tapestry), i7618 (health potion) and i7620 (mana potion), which the encounter loot importer refuses as not portable
+(`ENCOUNTER_LOOT_NOT_PORTABLE`). The full GAP list of unadmitted corpse Items follows in a later wave.
