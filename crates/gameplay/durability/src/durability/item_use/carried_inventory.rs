@@ -163,6 +163,80 @@ impl DurabilityRoot {
             })
             .await?
     }
+
+    /// The stored text of one item in the carried tree or equipment, read in the same fenced
+    /// snapshot that proves its custody (the custody `read_item_use_inventory` gives the MAIL
+    /// text writer). `Ok(None)`: the item is not carried by this character. An item without a
+    /// text row reads as empty text. Read only: no revision, receipt or rate token is touched.
+    pub async fn read_carried_item_text(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        item: [u8; 16],
+    ) -> Result<Option<(TypedDefinitionRef, String)>> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| ItemUseError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    let root = match assert_item_only_fence(&mut tx, &fence, &node).await? {
+                        Ok(root) => root,
+                        Err(CharacterProgressionError::Unavailable(error)) => return Err(error),
+                        Err(_) => return Ok(Err(ItemUseError::AuthorityRejected)),
+                    };
+                    reconcile_carried_death_tree(&mut tx, &fence, &node, None).await?;
+                    let inventory = match read_use_inventory(
+                        &mut tx,
+                        &fence,
+                        root.content_revision,
+                        root.ruleset_revision,
+                    )
+                    .await
+                    {
+                        Ok(inventory) => inventory,
+                        Err(ItemUseError::Unavailable(error)) => return Err(error),
+                        Err(error) => return Ok(Err(error)),
+                    };
+                    let Some(definition) = carried_definition(&inventory, item) else {
+                        commit_semantic_transaction(tx, deadline).await?;
+                        return Ok(Ok(None));
+                    };
+                    let text: Option<String> = sqlx::query_scalar(
+                        "SELECT text FROM game_item_texts \
+                          WHERE item_instance_id=encode($1,'hex')::uuid",
+                    )
+                    .bind(item.as_slice())
+                    .fetch_optional(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(Some((definition, text.unwrap_or_default()))))
+                })
+            })
+            .await?
+    }
+}
+
+/// The definition of `item` when it is equipped, a main-backpack entry or nested below one:
+/// the same custody set the MAIL text writer searches.
+fn carried_definition(inventory: &ItemUseInventory, item: [u8; 16]) -> Option<TypedDefinitionRef> {
+    inventory
+        .equipment
+        .iter()
+        .chain(
+            inventory
+                .backpack
+                .iter()
+                .flat_map(|backpack| backpack.entries.iter().map(|entry| &entry.item)),
+        )
+        .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
+        .find(|entry| entry.item_instance_id == item)
+        .map(|entry| entry.definition.clone())
 }
 
 /// Only the current fenced inventory reader performs lazy representation repair.

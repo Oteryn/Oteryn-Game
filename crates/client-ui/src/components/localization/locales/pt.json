@@ -1,4 +1,7 @@
 {
+ "Reading the item's text": "Lendo o texto do objeto",
+ "The server refused to read the item's text": "O servidor recusou a leitura do texto do objeto",
+ "The item's current text is unknown; an empty text would erase it": "O texto atual do objeto é desconhecido; um texto vazio o apagaria",
  "Use Manual Sort Mode": "Usar o modo de ordenação manual",
  "Choose the depot slot for the item": "Escolha o espaço do depósito para o item",
  "You have returned to your temple. Press Enter to acknowledge and continue.": "Você retornou ao seu templo. Pressione Enter para confirmar e continuar.",

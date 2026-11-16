@@ -408,6 +408,9 @@ pub mod highscores_catalogue;
 #[path = "features/0510-container-manual-sort/input.rs"]
 pub mod container_manual_sort;
 
+#[path = "features/0511-item-inscription-read/mod.rs"]
+pub mod item_inscription;
+
 #[path = "features/0506-holdings-search/protocol.rs"]
 pub mod holdings_search;
 

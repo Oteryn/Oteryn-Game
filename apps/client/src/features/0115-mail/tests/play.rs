@@ -440,6 +440,13 @@ impl crate::play::Outbox {
         mailbox.properties.house_furniture_rotation.selected = true;
         mailbox.properties.house_furniture_wrap.selected = true;
     }
+    /// Admits capability 511, the writing window's item text read.
+    pub(crate) fn bevy_item_inscription_selected(&self) {
+        crate::play::mailbox::lock(&self.0)
+            .properties
+            .mail_inscription
+            .selected = true;
+    }
     /// Applies a server reply through the production property reducer.
     pub(crate) fn bevy_properties_result(
         &self,

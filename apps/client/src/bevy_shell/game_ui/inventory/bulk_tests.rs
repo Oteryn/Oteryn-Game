@@ -700,7 +700,6 @@ fn item_menu_timed_item_inspects_the_item_then_uses_the_shown_revision() -> Resu
 
 #[test]
 fn item_menu_write_while_waiting_targets_the_newly_chosen_item_after_the_reply() -> Result {
-    use oteryn_session::property_services::mail::{MailIntent, decode_intent};
     let (mut app, mut commands, outbox) = app()?;
     outbox.bevy_property_items_selected();
     app.update();
@@ -730,14 +729,117 @@ fn item_menu_write_while_waiting_targets_the_newly_chosen_item_after_the_reply()
         view.fields[2].is_empty(),
         "item 11's text must not carry over"
     );
+    // Item 12's text is unknown without capability 511: an empty Write would erase it.
     link.feature_form_submit(window, 0, view.fields);
+    assert!(commands.try_recv().is_err(), "no blank replacement is sent");
+    let text = link.feature_form_view(window).text;
+    assert!(text.contains("an empty text would erase it"), "{text}");
+    Ok(())
+}
+
+fn inscription_reply(text: &str, writable: bool) -> Result<Vec<u8>> {
+    use oteryn_client_ui::item_inscription::Reply;
+    Ok(Reply {
+        text: text.into(),
+        max_length: 1999,
+        writable,
+    }
+    .encode()
+    .ok_or("inscription reply")?)
+}
+
+#[test]
+fn item_menu_write_opens_the_writing_window_with_the_items_current_text() -> Result {
+    use oteryn_client_ui::item_inscription::{COMMAND_TYPE_ITEM_INSCRIPTION_READ, Request};
+    use oteryn_session::property_services::mail::{MailIntent, decode_intent};
+    let (mut app, mut commands, outbox) = app()?;
+    outbox.bevy_property_items_selected();
+    outbox.bevy_item_inscription_selected();
+    app.update();
+    item_menu(&mut app, 11, true)?;
+    let read = property_command(&mut commands)?;
+    assert_eq!(read.kind, COMMAND_TYPE_ITEM_INSCRIPTION_READ);
+    assert_eq!(
+        Request::decode(&read.payload),
+        Some(Request { item_handle: 11 })
+    );
+    let window = {
+        let owner = app.world().non_send::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        let window = property_form(link, "Writing and mail")?;
+        let view = link.feature_form_view(window);
+        assert!(view.open && view.pending, "the editor waits for the text");
+        link.feature_form_submit(window, 0, vec!["11".into(), String::new(), String::new()]);
+        assert!(
+            commands.try_recv().is_err(),
+            "no Write before the text arrives"
+        );
+        window
+    };
+    outbox.bevy_properties_result(
+        &read,
+        &property_reply(inscription_reply("Old inscription", true)?),
+    );
+    let owner = app.world().non_send::<HostOwner>();
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    let view = link.feature_form_view(window);
+    assert!(!view.pending);
+    assert_eq!(view.fields[2], "Old inscription");
+    let mut fields = view.fields;
+    fields[2].push_str(", and a new line");
+    link.feature_form_submit(window, 0, fields);
     let write = property_command(&mut commands)?;
     assert_eq!(
         decode_intent(&write.payload).map_err(|e| format!("{e:?}"))?,
         MailIntent::WriteText {
-            item_handle: 12,
-            text: String::new(),
+            item_handle: 11,
+            text: "Old inscription, and a new line".into(),
         }
+    );
+    Ok(())
+}
+
+#[test]
+fn item_menu_write_never_replaces_a_text_it_could_not_read_or_may_not_write() -> Result {
+    let (mut app, mut commands, outbox) = app()?;
+    outbox.bevy_property_items_selected();
+    outbox.bevy_item_inscription_selected();
+    app.update();
+    item_menu(&mut app, 11, true)?;
+    let read = property_command(&mut commands)?;
+    let rejected = oteryn_client_runtime::raw_feature::GatedCommandResult {
+        status: oteryn_client_runtime::raw_feature::CommandStatus::Rejected,
+        ..property_reply(Vec::new())
+    };
+    outbox.bevy_properties_result(&read, &rejected);
+    {
+        let owner = app.world().non_send::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        let window = property_form(link, "Writing and mail")?;
+        let view = link.feature_form_view(window);
+        assert!(view.text.contains("refused to read"), "{}", view.text);
+        link.feature_form_submit(window, 0, vec!["11".into(), String::new(), String::new()]);
+        assert!(
+            commands.try_recv().is_err(),
+            "a refused read blocks the Write"
+        );
+    }
+    item_menu(&mut app, 12, true)?;
+    let read = property_command(&mut commands)?;
+    outbox.bevy_properties_result(
+        &read,
+        &property_reply(inscription_reply("Sealed text", false)?),
+    );
+    let owner = app.world().non_send::<HostOwner>();
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    let window = property_form(link, "Writing and mail")?;
+    let view = link.feature_form_view(window);
+    assert_eq!(view.fields[2], "Sealed text", "a read-only text is shown");
+    assert!(view.text.contains("cannot be written on"), "{}", view.text);
+    link.feature_form_submit(window, 0, view.fields);
+    assert!(
+        commands.try_recv().is_err(),
+        "a read-only text is not rewritten"
     );
     Ok(())
 }

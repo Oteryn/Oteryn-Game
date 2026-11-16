@@ -23,6 +23,8 @@ pub(in crate::play) struct Panels {
     pub mail: Panel,
     /// The item chosen for the writing window while a request was pending; applied on its reply.
     pub mail_deferred: Option<oteryn_session::ItemHandle>,
+    /// The writing window item's current text as read from the server (capability 511).
+    pub mail_inscription: oteryn_client_ui::item_inscription::Inscription,
     pub house_furniture_rotation: oteryn_client_ui::house_furniture_rotation::Panel,
     pub house_furniture_wrap: oteryn_client_ui::house_furniture_wrap::Panel,
     pub house_podium: oteryn_client_ui::house_podium::Panel,
@@ -114,6 +116,12 @@ impl Outbox {
         );
         shared.properties.mail = Panel {
             selected: session.feature_selected(115),
+            ..Default::default()
+        };
+        shared.properties.mail_inscription = oteryn_client_ui::item_inscription::Inscription {
+            selected: session.feature_selected(
+                oteryn_client_ui::item_inscription::CAPABILITY_ITEM_INSCRIPTION_READ_V1,
+            ),
             ..Default::default()
         };
         shared.properties.house_furniture_rotation =
@@ -239,12 +247,17 @@ impl Outbox {
                 command,
                 result,
             ),
-            115 => {
+            115 | 511 => {
                 let properties = &mut shared.properties;
-                apply(&mut properties.mail, command, result);
+                if command.capability == 115 {
+                    apply(&mut properties.mail, command, result);
+                } else {
+                    super::input::inscription_result(properties, command, result);
+                }
                 if !properties.mail.pending
                     && let Some(handle) = properties.mail_deferred.take()
                 {
+                    // The writing window's next tick reads the newly chosen item's text.
                     super::input::edit(&mut properties.mail, 0, handle.get().to_string());
                 }
             }

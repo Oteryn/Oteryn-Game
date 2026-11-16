@@ -187,6 +187,8 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::guild_emblem::CAPABILITY_GUILD_EMBLEM_V1,
     // Tibia Global's Manual Sort Mode: the slot of a command-9 container destination (requires 14).
     oteryn_protocol_oteryn::item_view::CAPABILITY_CONTAINER_MANUAL_SORT_V1,
+    // The writing window's current item text (requires 4 and 115), command 6246.
+    oteryn_protocol_oteryn::item_inscription::CAPABILITY_ITEM_INSCRIPTION_READ_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
@@ -307,6 +309,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     highscores_catalogue::CAPABILITY,
     oteryn_protocol_oteryn::tutorial_vocation::CAPABILITY_TUTORIAL_VOCATION_V1,
     oteryn_protocol_oteryn::server_info::CAPABILITY_SERVER_INFO_V1,
+    oteryn_protocol_oteryn::item_inscription::CAPABILITY_ITEM_INSCRIPTION_READ_V1,
 ];
 
 pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {

@@ -1,0 +1,7 @@
+name=item_inscription
+commands=6246
+transport=item_inscription
+composed=item_inscription
+authority=item_inscription
+[route]
+routing::item_inscription::route(authority, &session.admitted, command, &session.item_view).await

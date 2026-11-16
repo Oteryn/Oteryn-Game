@@ -89,7 +89,10 @@ const FORMS: &[FeatureForm] = &[
     ),
     entry(crate::play::feature_0099_guildhall::view::form, None),
     entry(crate::play::feature_0103_guild_war::view::form, None),
-    entry(crate::play::feature_0115_mail::view::form_window, None),
+    entry(
+        crate::play::feature_0115_mail::view::form_window,
+        Some(crate::play::feature_0115_mail::input::tick),
+    ),
     entry(
         crate::play::feature_0117_boss_encounter::view::cooldown_form,
         None,

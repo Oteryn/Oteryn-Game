@@ -67,6 +67,7 @@ pub use oteryn_protocol_oteryn::highscores;
 pub use oteryn_protocol_oteryn::highscores_catalogue;
 /// The own character's capacity (capability 508).
 pub use oteryn_protocol_oteryn::inventory_capacity;
+pub use oteryn_protocol_oteryn::item_inscription;
 /// The own Platform sanction record (capability 497).
 pub use oteryn_protocol_oteryn::sanction_record;
 pub use oteryn_protocol_oteryn::server_info;

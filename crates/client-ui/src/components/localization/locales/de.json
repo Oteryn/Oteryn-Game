@@ -1,4 +1,7 @@
 {
+ "Reading the item's text": "Der Text des Gegenstands wird gelesen",
+ "The server refused to read the item's text": "Der Server hat das Lesen des Gegenstandstextes abgelehnt",
+ "The item's current text is unknown; an empty text would erase it": "Der aktuelle Text des Gegenstands ist unbekannt; ein leerer Text würde ihn löschen",
  "Use Manual Sort Mode": "Manuellen Sortiermodus verwenden",
  "Choose the depot slot for the item": "Wähle das Depotfach für den Gegenstand",
  "You have returned to your temple. Press Enter to acknowledge and continue.": "Du bist zu deinem Tempel zurückgekehrt. Drücke Enter, um zu bestätigen und fortzufahren.",

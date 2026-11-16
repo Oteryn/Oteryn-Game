@@ -1,4 +1,7 @@
 {
+ "Reading the item's text": "Reading the item's text",
+ "The server refused to read the item's text": "The server refused to read the item's text",
+ "The item's current text is unknown; an empty text would erase it": "The item's current text is unknown; an empty text would erase it",
  "Use Manual Sort Mode": "Use Manual Sort Mode",
  "Choose the depot slot for the item": "Choose the depot slot for the item",
  "You have returned to your temple. Press Enter to acknowledge and continue.": "You have returned to your temple. Press Enter to acknowledge and continue.",
