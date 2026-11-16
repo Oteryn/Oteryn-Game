@@ -140,17 +140,28 @@ impl Database {
 
 fn fence_parent(tag: &str) -> TestResult<std::path::PathBuf> {
     use std::os::unix::fs::PermissionsExt;
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static NEXT_RETAINED: AtomicU64 = AtomicU64::new(0);
     let parent = std::env::temp_dir().join(format!(
         "oteryn-bestiary-progress-parent-{}",
         std::process::id()
     ));
     std::fs::create_dir_all(&parent)?;
     std::fs::set_permissions(&parent, std::fs::Permissions::from_mode(0o700))?;
-    let retained = parent.join(tag);
-    let _ = std::fs::remove_dir_all(&retained);
-    std::fs::create_dir(&retained)?;
-    std::fs::set_permissions(&retained, std::fs::Permissions::from_mode(0o700))?;
-    Ok(retained)
+    loop {
+        let retained = parent.join(format!(
+            "{tag}-{}",
+            NEXT_RETAINED.fetch_add(1, Ordering::Relaxed)
+        ));
+        match std::fs::create_dir(&retained) {
+            Ok(()) => {
+                std::fs::set_permissions(&retained, std::fs::Permissions::from_mode(0o700))?;
+                return Ok(retained);
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(error) => return Err(error.into()),
+        }
+    }
 }
 
 pub(crate) async fn register(root: &DurabilityRoot, tag: u8) -> TestResult<NodeIncarnationProof> {

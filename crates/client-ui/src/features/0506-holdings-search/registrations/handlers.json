@@ -19,7 +19,7 @@
     "state": "The Cyclopedia item summary retains the server page and names.",
     "protocol": "The shared filtered holdings codec decodes the page and names.",
     "view": "The Bevy Cyclopedia renders names and server counts.",
-    "input": "The Cyclopedia builds selector 134 with the selected filter.",
+    "input": "The Cyclopedia builds selector 135 with the selected filter.",
     "settings": "Holdings filters are transient."
   }
 }

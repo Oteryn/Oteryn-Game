@@ -9,5 +9,5 @@
   "command_types": [],
   "state_domains": [],
   "offered": false,
-  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only; command 388 selector 134 is refused without selection. See holdings-search-v1.md."
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only; command 388 selector 135 is refused without selection. See holdings-search-v1.md."
 }

@@ -1,6 +1,6 @@
 # Holdings search V1
 
-Capability 506 requires 199 and extends command 388 with selector 134.
+Capability 506 requires 199 and extends command 388 with selector 135.
 Request: selector:u8, offset:u16le, location:u8 (0 all, 1 inventory,
 2 depot, 3 stash, 4 inbox), search_length:u8 and UTF-8 search (0..96 bytes,
 no NUL or line breaks). Search is trimmed and case insensitive, matching

@@ -2,7 +2,7 @@
 use super::{Location, Page as HoldingsPage};
 use crate::charm_wire::CyclopediaWireError as Error;
 pub const CAPABILITY: u32 = 506;
-pub const SELECTOR: u8 = 134;
+pub const SELECTOR: u8 = 135;
 pub const MAX_SEARCH_BYTES: usize = 96;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Query {
@@ -95,5 +95,16 @@ impl Page {
             return Err(Error::Malformed);
         }
         Ok(page)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn holdings_search_selector_does_not_shadow_blessings_dialog() {
+        assert_ne!(
+            super::SELECTOR,
+            crate::cyclopedia_character::blessings_dialog::SELECTOR
+        );
     }
 }
