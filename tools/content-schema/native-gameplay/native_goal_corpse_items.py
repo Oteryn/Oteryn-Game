@@ -24,8 +24,9 @@ def module(name, root):
     return result
 
 
-def policies(root=ROOT):
-    creatures = {o['creature'] for g in json.loads((root / GOALS).read_bytes())['goals'] for o in g['origins']}
+def policies(root=ROOT, creatures=None):
+    if creatures is None:
+        creatures = {o['creature'] for g in json.loads((root / GOALS).read_bytes())['goals'] for o in g['origins']}
     raw = (root / CREATURES).read_bytes()
     manifest = json.loads((root / 'content/spells.manifest.json').read_bytes())
     if hashlib.sha256(raw).hexdigest() != manifest['creature_profiles']['sha256']:
@@ -63,13 +64,13 @@ def compatible(accepted, observed):
     return accepted == observed
 
 
-def apply_admissions(definitions, root=ROOT):
+def apply_admissions(definitions, root=ROOT, creatures=None):
     portable = module('questpc2_portable_corpse_facts', root).profiles(root)
     definitions = list(definitions)
     indexed = {d['identity']['key']: d for d in definitions}
     if len(indexed) != len(definitions):
         raise ValueError('NATIVE_GOAL_CORPSE_DUPLICATE_ITEM')
-    values, weights = policies(root)
+    values, weights = policies(root, creatures)
     wanted = {f'oteryn:item.tibia.i{i}' for i in values}
     objects = {}
     for path in (root / 'content/world/objects').glob('objects-*.json'):
@@ -114,9 +115,9 @@ def apply_admissions(definitions, root=ROOT):
         definition.update(replacement)
 
 
-def admit_native(root, generated, profile_path, manifest_path, order, canonical):
+def admit_native(root, generated, profile_path, manifest_path, order, canonical, creatures=None):
     portable = module('questpc2_portable_corpse_facts', root).profiles(root)
-    values, _ = policies(root)
+    values, _ = policies(root, creatures)
     wanted = {f'oteryn:item.tibia.i{i}' for i in values}
     definitions = {}
     for path in (root / 'content/items/definitions').glob('items-*.json'):
@@ -127,7 +128,7 @@ def admit_native(root, generated, profile_path, manifest_path, order, canonical)
                     raise ValueError('NATIVE_GOAL_CORPSE_DUPLICATE_ITEM')
                 definitions[definition['identity']['key']] = definition
     expected = copy.deepcopy(list(definitions.values()))
-    apply_admissions(expected, root)
+    apply_admissions(expected, root, creatures)
     if {d['identity']['key']: d for d in expected} != definitions:
         raise ValueError('NATIVE_GOAL_CORPSE_CANONICAL_ADMISSION_REQUIRED')
     bindings = json.loads((root / 'imports/crystalserver/bindings/items.json').read_bytes())['bindings']

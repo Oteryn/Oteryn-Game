@@ -28,6 +28,7 @@ When the Crystal re-audit (`docs/architecture/reviews/OTERYN_GAME_CRYSTAL_REAUDI
 
 ## Areas
 
+- `corpses.md`: creature corpse Items (capacity, decay) admitted so kills settle; GAP list of the rest.
 - `healing.md`: healing spells, potions, monk mechanics, leech, regeneration. Machine rows: `healing.json`.
 ## Machine rows (`<area>.json`)
 

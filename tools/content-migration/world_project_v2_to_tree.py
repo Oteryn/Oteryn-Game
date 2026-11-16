@@ -253,6 +253,8 @@ def apply_encounter_corpse_admissions(definitions, root=ROOT):
     spec.loader.exec_module(module)
     module.apply_admissions(definitions, root)
     sys.path.insert(0, str(root / "tools/content-schema/native-gameplay"))
+    import creature_corpse_items
+    creature_corpse_items.apply_admissions(definitions, root)
     import questpc2_soul_loot_items
     questpc2_soul_loot_items.apply_admissions(definitions, root)
     import questpc2_rotten_loot_items
