@@ -13,6 +13,8 @@ use oteryn_client_ui_bevy as source;
 
 mod audio_feedback;
 mod commands;
+#[cfg(test)]
+mod frame_tests;
 mod metadata;
 #[cfg(test)]
 mod navigation_tests;

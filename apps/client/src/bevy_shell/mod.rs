@@ -5,6 +5,7 @@ mod audit;
 mod controls;
 mod creature_bars;
 mod exit;
+mod frame_pacing;
 mod game_ui;
 mod gameplay_dialogs;
 mod health_circle;
@@ -203,6 +204,7 @@ fn build_app(options: Options, owner: HostOwner) -> App {
     audio::install(&mut app);
     creature_bars::install(&mut app);
     exit::install(&mut app);
+    frame_pacing::install(&mut app);
     game_ui::install(&mut app);
     gameplay_dialogs::install(&mut app);
     health_circle::install(&mut app);

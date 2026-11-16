@@ -1,5 +1,17 @@
 use super::*;
-pub(super) const MAIN: [Row; 7] = [
+use crate::play::PerformanceSettings;
+
+/// Edits the frame settings the renderer reads and keeps every stored copy equal, as the
+/// FPS/lag utility hotkey does.
+fn pacing(p: &mut Preferences, edit: impl FnOnce(&mut PerformanceSettings)) {
+    let mut performance = p.render_performance();
+    edit(&mut performance);
+    p.foreground_fps = performance.foreground_fps;
+    p.background_fps = performance.background_fps;
+    p.frames = performance.into();
+    p.performance = performance;
+}
+pub(super) const MAIN: [Row; 11] = [
     check!(
         "graphics.fullscreen",
         "Show in Fullscreen",
@@ -47,6 +59,42 @@ pub(super) const MAIN: [Row; 7] = [
         u8,
         graphics.separator
     ),
+    Row {
+        id: "graphics.frame_limit",
+        label: "Frame Rate Limit (0 = unlimited)",
+        editor: Editor::Number {
+            min: 0,
+            max: 500,
+            read: |p| p.render_performance().foreground_fps,
+            write: |p, v| pacing(p, |f| f.foreground_fps = v),
+        },
+    },
+    Row {
+        id: "graphics.background_limit",
+        label: "Frame Rate Limit in Background",
+        editor: Editor::Number {
+            min: 1,
+            max: 500,
+            read: |p| p.render_performance().background_fps,
+            write: |p, v| pacing(p, |f| f.background_fps = v),
+        },
+    },
+    Row {
+        id: "graphics.show_fps",
+        label: "Show Frame Rate",
+        editor: Editor::Check {
+            read: |p| p.render_performance().show_fps,
+            write: |p, v| pacing(p, |f| f.show_fps = v),
+        },
+    },
+    Row {
+        id: "graphics.show_latency",
+        label: "Show Command Latency",
+        editor: Editor::Check {
+            read: |p| p.render_performance().show_latency,
+            write: |p, v| pacing(p, |f| f.show_latency = v),
+        },
+    },
 ];
 pub(super) const EFFECTS: [Row; 8] = [
     check!("effects.enabled", "Show Effects", show_effects),
@@ -111,6 +159,15 @@ impl Row {
             }
             "graphics.separator" => {
                 "Darken visible floors below your character to make floor boundaries easier to distinguish. Zero adds no lower-floor dimming. Show Lights on the Effects page must be enabled. Choose Apply or OK to change it."
+            }
+            "graphics.frame_limit" => {
+                "Limit how often the client draws while its window is focused. Zero draws as often as the display allows. Choose Apply or OK to change it."
+            }
+            "graphics.background_limit" => {
+                "Limit how often the client draws while its window is not focused, saving power in the background. Choose Apply or OK to change it."
+            }
+            "graphics.show_fps" | "graphics.show_latency" => {
+                "Show the measured frame rate and the round trip of the last server command in the top-left corner. The FPS/lag indicator hotkey toggles both. Choose Apply or OK to change it."
             }
             _ => return None,
         })
