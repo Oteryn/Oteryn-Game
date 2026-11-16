@@ -55,7 +55,7 @@ in the follow-up pass on the PC. Every test below is **written, not run**.
 | 0042-party | apps/client/src/features/0042-party/native.rs:71 | `apps/client/src/bevy_shell/game_ui/party.rs:59` |
 | 0043-vip | apps/client/src/features/0043-vip/native.rs:38 | `apps/client/src/bevy_shell/game_ui/hud/vip.rs:155` |
 | 0049-house | apps/client/src/features/0049-house/view.rs:11 | `apps/client/src/bevy_shell/game_ui/houses.rs:100` |
-| 0051-staff | apps/client/src/features/0051-staff/view.rs:8 | OUT (staff/GM tools; not a Tibia Global player UI) |
+| 0051-staff | apps/client/src/features/0051-staff/view.rs:8 | MISSING -> ported (form, b6305c1c41) |
 | 0053-world-event | apps/client/src/features/0053-world-event/native.rs:29 | MISSING -> ported (form) |
 | 0054-training | apps/client/src/features/0054-training/view.rs:8 | MISSING -> ported (form) |
 | 0055-guild-bank | apps/client/src/features/0055-guild-bank/view.rs:8 | MISSING -> ported (form) |
@@ -108,8 +108,8 @@ in the follow-up pass on the PC. Every test below is **written, not run**.
 | 0259-chat-public-channels | apps/client/src/features/0259-chat-public-channels/native.rs:56 | MISSING -> ported (form) |
 | 0274-loyalty-skills | apps/client/src/features/0274-loyalty-skills/native.rs:82 | `apps/client/src/bevy_shell/game_ui/hud.rs:338` |
 | 0287-actor-spell-catalog | apps/client/src/features/0287-actor-spell-catalog/book_native.rs:74, apps/client/src/features/0287-actor-spell-catalog/view.rs:78 | `apps/client/src/bevy_shell/game_ui/actions/editor/catalog.rs:51` |
-| 0290-cast-control | apps/client/src/features/0290-cast-control/view.rs:8 | OUT (cast is an OTClient/TFS extra) |
-| 0291-cast-chat | apps/client/src/features/0291-cast-chat/view.rs:8 | OUT (cast is an OTClient/TFS extra) |
+| 0290-cast-control | apps/client/src/features/0290-cast-control/view.rs:8 | MISSING -> ported (form, b6305c1c41) |
+| 0291-cast-chat | apps/client/src/features/0291-cast-chat/view.rs:8 | MISSING -> ported (form, b6305c1c41) |
 | 0445-house-furniture-rotation | apps/client/src/features/0445-house-furniture-rotation/view.rs:11 | MISSING -> ported (form) |
 | local-account-achievements | apps/client/src/features/local-account-achievements/native.rs:50 | MISSING -> ported (form) |
 | local-spell-action-bar | apps/client/src/features/local-spell-action-bar/view.rs:100 | `apps/client/src/bevy_shell/game_ui/actions/dragdrop.rs:36` |
@@ -145,7 +145,7 @@ in the follow-up pass on the PC. Every test below is **written, not run**.
 | Miniwindow docking and saved window bounds | apps/client/src/miniwindow.rs, miniwindow/*.rs, window_layout.rs | `apps/client/src/bevy_shell/game_ui/layout.rs`, `window_drag.rs` |
 | Game notifications popup | apps/client/src/features/local-game-notifications/state.rs | `apps/client/src/bevy_shell/game_ui/feature_dialogs/notices.rs` |
 | Minimap window | apps/client/src/features/local-minimap/native*.rs | `apps/client/src/bevy_shell/game_ui/minimap.rs`, `satellite_map.rs` |
-| Cast watch HUD (`--watch`) | apps/client/src/cast_watch/native_hud.rs | OUT (cast is an OTClient/TFS extra) |
+| Cast watch HUD (`--watch`) | apps/client/src/cast_watch/native_hud.rs | KEPT: `--watch` still runs the native winit/Win32 spectator (owner question) |
 
 ## Non-UI Windows platform pieces that stay
 
@@ -160,12 +160,126 @@ in the follow-up pass on the PC. Every test below is **written, not run**.
 | Windows 8+ / Common Controls 6 manifest | apps/client/resources/windows.manifest, embedded by apps/client/build.rs | unchanged (every bin, so `oteryn-client.exe` keeps it) |
 | Audio | rodio (Windows dependency), `AudioOutput` in features/0023-presentation/output.rs | Bevy path `apps/client/src/bevy_shell/audio.rs` over the same `AudioOutput`; the Win32-only `NativeAudio` host goes with the Win32 shell |
 
+## Cross-check against the independent inventory
+
+An independent inventory against `origin/main` 641a191c92 listed 173 player-visible rows:
+78 present in Bevy and 95 MISSING. `apps/client/src` is the same at that commit and at
+this branch's base. Status of the 95 MISSING rows on this branch:
+
+- P: ported on this branch (41)
+- S: Bevy already presented it; the row was stale (24)
+- B: pre-game account screens moved to a separate lane (4)
+- K: kept as a Windows-native path (2)
+- N: not ported (24)
+
+| row | status | where / why |
+|---|---|---|
+| 5 | P | 069a9f4959 picker Mark/Train marked |
+| 6 | B | lane (b) |
+| 7 | B | lane (b) |
+| 8 | B | lane (b) |
+| 9 | B | entry overview lane (b); in-game premium form ported 0593fe242b |
+| 11 | S | bevy_shell/login/bulletin.rs (News) |
+| 12 | N | toggles not in Bevy options; Sign out device turns all three off |
+| 13 | P | 2e80440985 login Sign out device |
+| 14 | N | support/cookie links need a Bevy caller of Reentry::open_web_link |
+| 16 | N | no pre-login offline world in Bevy (scene.rs:1, by design) |
+| 19 | S | bevy_shell/controls.rs:287 |
+| 22 | S | bevy_shell/controls.rs:310 (shortcut click -> modifier_click) |
+| 25 | P | f7eec7087c NPC Talk/Trade context entries |
+| 29 | S | game_ui/inventory.rs:272 |
+| 30 | S | game_ui/depot.rs |
+| 31 | S | game_ui/inventory.rs:270 |
+| 32 | S | game_ui/inventory.rs:268, context Browse Field |
+| 33 | P | form 0593fe242b |
+| 35 | N | battle-list editor (Bevy selects saved lists only) |
+| 38 | P | coin market form 0593fe242b |
+| 40 | S | gameplay_dialogs.rs Trade with |
+| 50 | N | Bevy uses its fixed console font |
+| 51 | S | chat message menu Save messages (appends chat.log; no path/overwrite choice) |
+| 52 | N | channel mirror |
+| 53 | P | f7eec7087c Communication lists form |
+| 58 | P | form |
+| 59 | P | form |
+| 60 | P | form |
+| 61 | P | form |
+| 62 | S | game_ui/hud/battle.rs (pvp_expert_edit) |
+| 63 | S | game_ui/unjustified_points.rs |
+| 65 | P | form |
+| 73 | N | multiaction editor |
+| 75 | P | form |
+| 80 | P | form |
+| 81 | P | form |
+| 83 | P | form |
+| 85 | P | form |
+| 89 | S | game_ui/wheel/atelier.rs |
+| 91 | S | game_ui/forge/widgets.rs (resource_dialog) |
+| 95 | P | form |
+| 96 | P | form |
+| 97 | P | form |
+| 100 | P | form |
+| 101 | S | game_ui/cyclopedia_map.rs |
+| 102 | S | game_ui/cyclopedia_map.rs |
+| 103 | S | game_ui/cyclopedia_items.rs |
+| 104 | S | game_ui/bestiary.rs |
+| 105 | S | game_ui/bestiary.rs |
+| 106 | S | game_ui/bosstiary.rs; cooldown form ported |
+| 107 | P | form |
+| 108 | P | form |
+| 109 | P | form |
+| 110 | P | form |
+| 111 | P | form |
+| 112 | P | form |
+| 113 | P | form |
+| 114 | P | form |
+| 115 | P | form |
+| 116 | P | form |
+| 117 | S | game_ui/houses.rs (ownership and access lists) |
+| 119 | N | house map window |
+| 120 | P | form |
+| 121 | P | form |
+| 122 | P | form |
+| 123 | P | form |
+| 124 | P | form |
+| 125 | P | form |
+| 126 | P | form b6305c1c41 |
+| 135 | P | form b6305c1c41 |
+| 136 | P | form b6305c1c41 |
+| 137 | K | --watch keeps cast_watch/native.rs (owner question) |
+| 138 | N | touch controls |
+| 140 | N | window geometry persistence |
+| 141 | N | editable HUD-pane layout |
+| 143 | S | game_ui/minimap/markers.rs |
+| 144 | N | minimap import/export (backend kept, no Bevy caller) |
+| 147 | N | options parity |
+| 149 | N | options parity |
+| 150 | N | options parity |
+| 152 | N | options parity (Bevy renderer is wgpu) |
+| 155 | N | options parity |
+| 158 | N | options parity |
+| 160 | S | bevy_shell/screenshots.rs |
+| 161 | S | bevy_shell/screenshots/automatic |
+| 162 | N | options parity |
+| 163 | N | options parity |
+| 164 | N | options parity |
+| 165 | N | options parity |
+| 166 | N | options parity |
+| 167 | P | a255b39a78 login About |
+| 168 | P | a255b39a78 login Survey (Windows) |
+| 169 | S | desktop_startup.rs:16 (Windows) |
+| 171 | K | Windows --updates maintenance dialog kept; bevy_shell/updater.rs in game |
+| 173 | N | combined status line |
+
 ## Counts
 
-- Feature windows: 75 Win32 openers (72 features), 43 already presented by Bevy,
-  29 MISSING ported, 3 OUT (0051 staff, 0290/0291 cast).
+- Feature windows: 75 Win32 openers (72 features), 43 already presented by Bevy, 32
+  MISSING ported through the generic Bevy form window (0051 staff and 0290/0291 cast
+  included after review).
 - Sub-windows and status panels: 13 listed, 3 already in Bevy, 10 MISSING ported.
-- Total ported: 39 windows through one generic Bevy form presenter.
+- Later ports outside the form window: character-picker batch training, NPC Talk/Trade
+  context entries, the communication-lists form, device sign-out, About and the survey.
+- Independent inventory, 95 MISSING rows: 41 ported, 24 stale, 4 other lane, 2 kept, 24 not
+  ported.
 
 ## Assumptions
 
@@ -173,10 +287,18 @@ in the follow-up pass on the PC. Every test below is **written, not run**.
   edit fields, buttons, a read-only summary; `features/0115-mail/native.rs`). The Bevy
   presenter shows the same title, labels, fields, buttons and summary, so a combo box
   of the Win32 window becomes a text field with the same accepted values.
-- Staff (0051) and cast (0290, 0291, `--watch`) are not Tibia Global player UI. Their
-  Win32 windows are removed without a Bevy port; their client-ui and `PlayLink` logic
-  stays.
+- The rows left as N are options-page parity (147-166), layout persistence (140-141),
+  touch (138), the house map window (119), the battle-list editor (35), the multiaction
+  editor (73), the chat font, mirror and log path (50-52), minimap import/export (144),
+  remembered-login toggles and web links (12, 14), and the combined status line (173).
+  Their client-ui and `PlayLink` back ends stay for a later port.
+- Workflows, installer and packaging, the exe manifest, `[[bin]]`/`[features]` wiring and
+  the build and shipping docs (`apps/client/BEVY.md` build section) moved to a separate
+  lane, as did the pre-game account screens (bazaar, transfer, coin packages, premium
+  overview, admission queue).
 
 ## Closeout
 
-Pending.
+Authoring on this branch is complete for its scope; it closes when the batch PR with the
+workflow and account-screen lanes merges. Not compiled in the authoring container (no
+`cargo build/check/test` there); the PC compile pass reports errors back.
