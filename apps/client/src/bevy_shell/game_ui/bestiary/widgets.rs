@@ -9,6 +9,7 @@ pub(super) fn build(
     skin: &Skins,
     control: Control,
     panel: &Panel,
+    confirm: Option<Pending>,
 ) -> Entity {
     let root = commands
         .spawn((
@@ -186,11 +187,18 @@ pub(super) fn build(
             text(commands, skin, body, detail.detail.as_str());
         }
     }
-    charms(commands, skin, body, control, panel);
+    charms(commands, skin, body, control, panel, confirm);
     root
 }
 /// Charm runes from the last progression reply, with the actions on the chosen charm.
-fn charms(commands: &mut Commands, skin: &Skins, parent: Entity, control: Control, panel: &Panel) {
+fn charms(
+    commands: &mut Commands,
+    skin: &Skins,
+    parent: Entity,
+    control: Control,
+    panel: &Panel,
+    confirm: Option<Pending>,
+) {
     let Some(reply) = &panel.reply else {
         return;
     };
@@ -253,6 +261,18 @@ fn charms(commands: &mut Commands, skin: &Skins, parent: Entity, control: Contro
             busy,
         );
     }
+    if let Some(card) = chosen
+        .and_then(|charm| u16::try_from(charm.charm.get()).ok())
+        .and_then(|id| panel.charm_browser.cards.get(&id))
+    {
+        text(
+            commands,
+            skin,
+            parent,
+            format!("{} — {}", card.name, card.category),
+        );
+        text(commands, skin, parent, card.detail.as_str());
+    }
     let creature = panel.catalogue.selected_card(&panel.fields[1]).is_some();
     let actions = commands
         .spawn(Node {
@@ -283,9 +303,8 @@ fn charms(commands: &mut Commands, skin: &Skins, parent: Entity, control: Contro
         (
             Intent::ResetAll,
             "Reset all charms",
-            view.charms
-                .iter()
-                .any(|charm| charm.assigned_race.is_some()),
+            // The reset refunds unlocked stages too, assigned or not.
+            view.charms.iter().any(|charm| charm.unlocked_stage > 0),
         ),
     ] {
         button(
@@ -300,6 +319,65 @@ fn charms(commands: &mut Commands, skin: &Skins, parent: Entity, control: Contro
             busy || !available,
         );
     }
+    let Some((intent, fee)) = confirm else {
+        return;
+    };
+    let action = if intent == Intent::ResetAll {
+        "Reset all charms".to_string()
+    } else {
+        chosen.map_or_else(
+            || "Remove the charm".into(),
+            |charm| {
+                let name = u16::try_from(charm.charm.get())
+                    .ok()
+                    .and_then(|id| panel.charm_browser.cards.get(&id))
+                    .map_or_else(
+                        || format!("Charm {}", charm.charm),
+                        |card| card.name.clone(),
+                    );
+                format!("Remove {name} from its creature")
+            },
+        )
+    };
+    text(
+        commands,
+        skin,
+        parent,
+        fee.map_or_else(
+            || format!("{action}? The gold fee depends on your level, which is not reported yet."),
+            |fee| format!("{action} for {fee} gold?"),
+        ),
+    );
+    let answer = commands
+        .spawn(Node {
+            column_gap: px(4.),
+            flex_shrink: 0.,
+            ..default()
+        })
+        .id();
+    commands.entity(parent).add_child(answer);
+    button(
+        commands,
+        skin,
+        answer,
+        Control {
+            kind: Kind::Confirm(intent),
+            ..control
+        },
+        &fee.map_or_else(|| "Confirm".into(), |fee| format!("Confirm ({fee} gold)")),
+        busy || fee.is_none(),
+    );
+    button(
+        commands,
+        skin,
+        answer,
+        Control {
+            kind: Kind::Cancel,
+            ..control
+        },
+        "Cancel",
+        false,
+    );
 }
 fn text(commands: &mut Commands, skin: &Skins, parent: Entity, value: impl Into<String>) {
     let entity = commands

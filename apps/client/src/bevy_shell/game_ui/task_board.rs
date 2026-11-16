@@ -38,8 +38,12 @@ enum Kind {
     Start(u8),
     Buy(u16),
     BuyTalisman,
+    ConfirmTalisman,
     UpgradeTalisman(u8),
 }
+/// The server's accepted talisman price (`task_board_full::TALISMAN_PURCHASE_GOLD`); the
+/// request never carries it, so the player confirms this amount before the purchase is sent.
+const TALISMAN_PURCHASE_GOLD: u64 = 5_000;
 struct Entry {
     text: String,
     action: Option<Kind>,
@@ -115,7 +119,6 @@ fn intent(panel: &TaskBoardPanel, confirm: &mut bool, kind: &Kind) -> Option<Ful
         {
             Some(FullIntent::BuyShop(*index))
         }
-        Kind::BuyTalisman if r.is_some() => Some(FullIntent::BuyTalisman),
         Kind::UpgradeTalisman(path)
             if r.is_some_and(|r| {
                 r.talisman
@@ -140,6 +143,7 @@ struct Action {
 struct State {
     tab: Tab,
     confirm: bool,
+    buy_talisman: bool,
     extra: Option<extras::Action>,
     seen: Option<TaskBoardPanel>,
     generation: u64,
@@ -173,6 +177,7 @@ fn project(
     }
     if state.seen != panel {
         state.extra = None;
+        state.buy_talisman = false;
     }
     state.generation = owner.generation();
     state.revision = state.revision.wrapping_add(1);
@@ -259,6 +264,32 @@ fn project(
             &state,
             "Confirm",
             Some(Kind::ConfirmExtra(extra.clone())),
+        );
+        widget(
+            &mut commands,
+            &skins,
+            frame,
+            &state,
+            "Cancel",
+            Some(Kind::Cancel),
+        );
+    }
+    if state.buy_talisman && state.tab == Tab::Talisman {
+        widget(
+            &mut commands,
+            &skins,
+            frame,
+            &state,
+            &format!("Buy a Bounty Talisman for {TALISMAN_PURCHASE_GOLD} gold?"),
+            None,
+        );
+        widget(
+            &mut commands,
+            &skins,
+            frame,
+            &state,
+            &format!("Confirm purchase ({TALISMAN_PURCHASE_GOLD} gold)"),
+            Some(Kind::ConfirmTalisman),
         );
         widget(
             &mut commands,
@@ -384,6 +415,7 @@ fn activate(
             state.extra = None;
             state.tab = tab;
             state.confirm = false;
+            state.buy_talisman = false;
             state.dirty = true;
         }
         Kind::Extra(ref extra) => {
@@ -396,8 +428,21 @@ fn activate(
             state.dirty = true;
         }
         Kind::Refresh if state.tab == Tab::Soulseals => play.link.soulseal_catalogue_request(0),
+        Kind::BuyTalisman if panel.selected && !panel.pending && panel.weekly.is_some() => {
+            state.extra = None;
+            state.buy_talisman = true;
+            state.dirty = true;
+        }
+        Kind::ConfirmTalisman => {
+            if state.buy_talisman && panel.selected && !panel.pending && panel.weekly.is_some() {
+                play.link.task_board_full_request(FullIntent::BuyTalisman);
+            }
+            state.buy_talisman = false;
+            state.dirty = true;
+        }
         _ => {
             state.extra = None;
+            state.buy_talisman = false;
             if let Some(intent) = intent(&panel, &mut state.confirm, &action.kind) {
                 play.link.task_board_full_request(intent);
             }

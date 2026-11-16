@@ -172,7 +172,11 @@ fn entries(panel: &TaskBoardPanel, tab: Tab, confirm: bool) -> Vec<Entry> {
                 format!("Bounty points: {}", r.bounty_points),
                 None,
             );
-            entry(&mut rows, "Buy Bounty Talisman", Some(Kind::BuyTalisman));
+            entry(
+                &mut rows,
+                format!("Buy Bounty Talisman ({TALISMAN_PURCHASE_GOLD} gold)"),
+                Some(Kind::BuyTalisman),
+            );
             for (path, (value, name)) in r
                 .talisman
                 .iter()
@@ -182,10 +186,12 @@ fn entries(panel: &TaskBoardPanel, tab: Tab, confirm: bool) -> Vec<Entry> {
                 entry(
                     &mut rows,
                     format!(
-                        "Talisman {} ({name}): level {}, bonus {}, next cost {}",
+                        "Talisman {} ({name}): level {}, bonus {}.{:02}%, next cost {}",
                         path + 1,
                         value.level,
-                        value.bonus,
+                        // The reply carries hundredths of one percent (300 is 3.00%).
+                        value.bonus / 100,
+                        value.bonus % 100,
                         value.next_cost
                     ),
                     None,
