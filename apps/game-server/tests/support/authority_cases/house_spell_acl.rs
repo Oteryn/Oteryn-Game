@@ -11,10 +11,9 @@ const HOUSE: &str = "oteryn:content.house.runtime_acl_test";
 
 #[test]
 fn house_spell_acl_runtime_role_edit_and_ownership_revision_fence_postgres() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
-    let admin = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
+    };
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
