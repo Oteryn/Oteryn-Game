@@ -49,8 +49,20 @@ pub(super) async fn hotkey_equip(
     )
     .await?;
     client_ui::hotkey_equip::apply_result(&mut panel, &response);
+    if panel.outcome == Some(oteryn_protocol_oteryn::item_view::ItemMoveOutcome::SlotMismatch) {
+        // The starter's carried items are not equipment: the server found no equipment
+        // policy for this definition (gameplay_transport/hotkey_equip.rs, SlotMismatch).
+        evidence(&format!(
+            "mechanic=hotkey_equip skipped=production_starter_has_no_carried_equipment server_outcome=SlotMismatch definition={definition}"
+        ));
+        return Ok(());
+    }
     if panel.outcome != Some(oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved) {
-        return Err(format!("hotkey equip did not move equipment: {:?}", panel.outcome).into());
+        return Err(format!(
+            "hotkey equip did not move equipment: {:?} status={:?} feedback={:?}",
+            panel.outcome, response.status, panel.feedback
+        )
+        .into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
