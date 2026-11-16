@@ -6,6 +6,7 @@ pub(super) enum Page {
     #[default]
     Basic,
     Controls,
+    GeneralHotkeys,
     Interface,
     Hud,
     Console,
@@ -22,8 +23,9 @@ pub(super) enum Page {
 }
 impl Page {
     pub const BASIC_NAV: [Self; 1] = [Self::Basic];
-    pub const ADVANCED: [Self; 14] = [
+    pub const ADVANCED: [Self; 15] = [
         Self::Controls,
+        Self::GeneralHotkeys,
         Self::Interface,
         Self::Hud,
         Self::Console,
@@ -42,6 +44,7 @@ impl Page {
         match self {
             Self::Basic => "Basic Options",
             Self::Controls => "Controls",
+            Self::GeneralHotkeys => "General Hotkeys",
             Self::Interface => "Interface",
             Self::Hud => "HUD",
             Self::Console => "Console",
@@ -60,7 +63,8 @@ impl Page {
     pub const fn child(self) -> bool {
         matches!(
             self,
-            Self::Hud
+            Self::GeneralHotkeys
+                | Self::Hud
                 | Self::Console
                 | Self::GameWindow
                 | Self::ActionBars
@@ -155,6 +159,8 @@ pub(super) fn rows(page: Page) -> &'static [Row] {
     match page {
         Page::Basic => &BASIC,
         Page::Controls => &controls::ROWS,
+        // Hotkey sets and key bindings are list editors (`profiles.rs`, `keys.rs`).
+        Page::GeneralHotkeys => &[],
         Page::Interface => &interface::MAIN,
         Page::Hud => &interface::HUD,
         Page::Console => &interface::CONSOLE,

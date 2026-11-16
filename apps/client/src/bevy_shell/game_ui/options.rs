@@ -11,15 +11,23 @@ use bevy::{
 use metadata::{Editor, Page, Row, Value};
 use oteryn_client_ui_bevy as source;
 
+mod audio_device;
 mod audio_feedback;
 mod commands;
+mod conditions;
+#[cfg(test)]
+mod frame_tests;
+mod keys;
 mod metadata;
 #[cfg(test)]
 mod navigation_tests;
+mod profiles;
 mod projection;
 mod screenshots;
+mod section;
 #[cfg(test)]
 mod tests;
+mod transfer;
 mod widgets;
 
 #[derive(Resource)]
@@ -31,6 +39,10 @@ struct OptionsState {
     advanced: bool,
     choice: Option<&'static str>,
     generation: Option<u64>,
+    /// Bumped by a page section's edit so the page is rebuilt from the edited draft.
+    revision: u64,
+    /// The key binding selected on the General Hotkeys page.
+    binding: Option<&'static str>,
 }
 #[derive(Resource)]
 struct CheckSkins {

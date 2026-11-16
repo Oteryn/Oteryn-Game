@@ -274,20 +274,36 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
     super::super::super::modal::install(&mut app);
     super::super::houses::install(&mut app);
     app.update();
+    let press_h = |app: &mut App| {
+        app.world_mut().write_message(KeyboardInput {
+            key_code: KeyCode::KeyH,
+            logical_key: LogicalKey::Character("H".into()),
+            state: bevy::input::ButtonState::Pressed,
+            text: None,
+            repeat: false,
+            window: Entity::PLACEHOLDER,
+        });
+        app.update();
+    };
     {
         let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
         keys.press(KeyCode::ControlLeft);
         keys.press(KeyCode::ShiftLeft);
+        keys.press(KeyCode::AltLeft);
     }
-    app.world_mut().write_message(KeyboardInput {
-        key_code: KeyCode::KeyH,
-        logical_key: LogicalKey::Character("H".into()),
-        state: bevy::input::ButtonState::Pressed,
-        text: None,
-        repeat: false,
-        window: Entity::PLACEHOLDER,
-    });
-    app.update();
+    // Ctrl+Alt+Shift+H belongs to the cast chat binding; the house window stays closed.
+    press_h(&mut app);
+    assert!(
+        !app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "Enter one member UUID per line."),
+        "Ctrl+Alt+Shift+H opened the house window"
+    );
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .release(KeyCode::AltLeft);
+    press_h(&mut app);
     for expected in [
         "Edit House List — oteryn:house.test",
         "Enter one member UUID per line.",

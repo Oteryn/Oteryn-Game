@@ -35,7 +35,7 @@ pub(super) fn project(
     mut thumbs: Query<(&Thumb, &mut Node), ThumbRole>,
     mut indicators: Query<(&Indicator, &mut ImageNode)>,
     mut captions: Captions<'_, '_>,
-    mut held: Local<Option<(u64, Page, bool)>>,
+    mut held: Local<Option<(u64, Page, bool, u64)>>,
     mut hotkey_options: Local<u64>,
 ) {
     if *hotkey_options != owner.hotkey_options {
@@ -65,7 +65,7 @@ pub(super) fn project(
         return;
     };
     let generation = owner.generation();
-    let target = (generation, state.page, state.advanced);
+    let target = (generation, state.page, state.advanced, state.revision);
     let rebuild = held.as_ref() != Some(&target);
     if rebuild {
         if focus
@@ -105,7 +105,14 @@ pub(super) fn project(
         }
         for parent in &bodies {
             commands.entity(parent).despawn_children();
-            widgets::page(&mut commands, parent, state.page, &skins, &checks, draft);
+            widgets::page(
+                &mut commands,
+                parent,
+                (state.page, state.binding),
+                &skins,
+                &checks,
+                draft,
+            );
         }
         *held = Some(target);
     }
