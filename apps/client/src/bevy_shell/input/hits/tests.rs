@@ -29,6 +29,15 @@ struct Fixture {
     window: Entity,
 }
 fn fixture(dpi: f32, cover: bool) -> Result<Fixture, Box<dyn std::error::Error>> {
+    fixture_with(dpi, cover, true, |_, _, _| Ok(()))
+}
+type Prepare = fn(&crate::play::Outbox, &crate::play::PlayLink, &mut PlayView) -> TestResult;
+fn fixture_with(
+    dpi: f32,
+    cover: bool,
+    loot: bool,
+    prepare: Prepare,
+) -> Result<Fixture, Box<dyn std::error::Error>> {
     let mut owner = HostOwner::new(None)?;
     let (link, commands, outbox) = play_channel();
     link.use_shared_frontend();
@@ -36,8 +45,9 @@ fn fixture(dpi: f32, cover: bool) -> Result<Fixture, Box<dyn std::error::Error>>
     let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
     view.use_shared_frontend();
     let mut preferences = crate::play::ReferencePreferences::default();
-    preferences.gameplay.secondary_click_loots_nearby = true;
+    preferences.gameplay.secondary_click_loots_nearby = loot;
     view.set_preferences(preferences)?;
+    prepare(&outbox, &link, &mut view)?;
     let (w, h) = view.scene().view().viewport_px();
     owner.play = Some(ActivePlay { view, link });
     owner.phase = Phase::Playing;
@@ -250,5 +260,74 @@ fn upstream_world_descendants_pass_but_mixed_or_nonprimary_hits_fail_closed() ->
             .map_err(|error| format!("{error:?}"))?,
         (false, false)
     );
+    Ok(())
+}
+
+fn arm_use_with(
+    outbox: &crate::play::Outbox,
+    link: &crate::play::PlayLink,
+    _: &mut PlayView,
+) -> TestResult {
+    let item = |handle: u64, count: u32| -> Result<_, Box<dyn std::error::Error>> {
+        Ok(oteryn_session::ItemEntry {
+            appearance_id: 0,
+            handle: handle.try_into()?,
+            item_definition_ref: 42.try_into()?,
+            count: count.try_into()?,
+            sub_type: 0,
+        })
+    };
+    crate::play::PlayLink::bevy_items_fixture(
+        outbox,
+        Some(oteryn_session::CharacterInventory {
+            main_backpack: Some(item(9, 1)?),
+            entries: vec![item(8, 9)?],
+            equipment: vec![],
+        }),
+        Some(Default::default()),
+        false,
+        true,
+    );
+    if !(link.inventory_select(8.try_into()?) && link.inventory_use_with()) {
+        return Err("use with did not arm".into());
+    }
+    Ok(())
+}
+fn arm_cursor_spell(
+    _: &crate::play::Outbox,
+    _: &crate::play::PlayLink,
+    view: &mut PlayView,
+) -> TestResult {
+    view.cursor_spell_input(&[oteryn_input_actions::NormalizedInputEvent::Key {
+        code: oteryn_input_actions::KeyCode::new(30)?,
+        state: oteryn_input_actions::ButtonState::Pressed,
+        modifiers: oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Shift),
+        repeat: false,
+    }]);
+    Ok(())
+}
+fn armed(owner: &HostOwner) -> Result<bool, Box<dyn std::error::Error>> {
+    let play = owner.play.as_ref().ok_or("play")?;
+    Ok(play.link.use_with_armed() || play.view.combat_status().contains("Click a tile"))
+}
+/// Tibia Global: a world right-click while Use with or a cursor spell is armed cancels the
+/// crosshair; it neither loots nearby, opens the context menu nor leaves the crosshair armed.
+#[test]
+fn world_right_click_cancels_armed_use_with_and_cursor_spell_before_loot_or_menu() -> TestResult {
+    for loot in [true, false] {
+        for prepare in [arm_use_with as Prepare, arm_cursor_spell] {
+            let mut f = fixture_with(1., false, loot, prepare)?;
+            assert!(armed(f.app.world().non_send::<HostOwner>())?);
+            mouse(&mut f.app, Vec2::splat(64.));
+            f.app.update();
+            let owner = f.app.world().non_send::<HostOwner>();
+            assert!(
+                !armed(owner)?,
+                "right-click left the crosshair armed (loot {loot})"
+            );
+            assert!(!owner.modal_active(), "right-click opened the context menu");
+            assert!(f.commands.try_recv().is_err(), "right-click looted nearby");
+        }
+    }
     Ok(())
 }

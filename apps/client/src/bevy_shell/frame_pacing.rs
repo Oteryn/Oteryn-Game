@@ -19,7 +19,6 @@ fn setup(mut commands: Commands, skins: Res<Skins>) {
         Indicator,
         Name::new("performance.indicator"),
         source::text("", source::font(skins.font.clone(), true)),
-        Pickable::IGNORE,
         Node {
             position_type: PositionType::Absolute,
             left: px(4.),
@@ -67,5 +66,36 @@ pub(super) fn pace(
         if text.0 != next {
             text.0 = next.into();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn startup_spawns_one_hidden_unpickable_indicator_with_the_skin_font() {
+        let mut app = App::new();
+        app.insert_resource(Skins {
+            buttons: source::ButtonImages {
+                up: default(),
+                down: default(),
+            },
+            checked: default(),
+            unchecked: default(),
+            frame: default(),
+            inset: default(),
+            font: default(),
+        });
+        app.add_systems(Startup, setup);
+        app.update();
+        let mut indicators = app
+            .world_mut()
+            .query_filtered::<(&Node, &Pickable), With<Indicator>>();
+        let found: Vec<_> = indicators
+            .iter(app.world())
+            .map(|(node, pickable)| (node.display, *pickable == Pickable::IGNORE))
+            .collect();
+        assert_eq!(found, vec![(Display::None, true)]);
     }
 }

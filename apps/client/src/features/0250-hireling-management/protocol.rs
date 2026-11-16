@@ -39,4 +39,8 @@ impl Outbox {
     ) {
         self.hireling_result(response);
     }
+    /// Applies a hireling management (250) reply through the production reducer.
+    pub(crate) fn bevy_hireling_management_result(&self, result: &GatedCommandResult) {
+        self.hireling_management_result(result);
+    }
 }

@@ -419,6 +419,22 @@ fn hireling_management_banker_button_opens_the_banker_service() -> TestResult {
         Modifiers::one(Modifier::Control).with(Modifier::Shift),
     )?;
     assert!(form_open(&app, "Hireling management")?);
+    // Opening lists the hirelings; the window's buttons wait for that reply.
+    let PlayCommand::Feature(list) = commands.try_recv()? else {
+        return Err("hireling list request missing".into());
+    };
+    assert_eq!(list.capability, 250);
+    outbox.bevy_hireling_management_result(
+        &oteryn_client_runtime::raw_feature::GatedCommandResult {
+            command_id: 1,
+            status: oteryn_client_runtime::raw_feature::CommandStatus::Accepted,
+            server_sequence: 1,
+            payload: oteryn_client_ui::hireling_management::wire::Reply::State(vec![])
+                .encode()
+                .ok_or("hireling state reply")?,
+        },
+    );
+    app.update();
     // The window opens with a List query; its buttons wait for the server's answer.
     let PlayCommand::Feature(list) = commands.try_recv()? else {
         return Err("hireling management list query missing".into());
@@ -473,22 +489,146 @@ fn hireling_management_banker_button_opens_the_banker_service() -> TestResult {
     Ok(())
 }
 
-fn primary_click(app: &mut App, x: i32, y: i32) -> TestResult {
-    let mut owner = app.world_mut().non_send_mut::<HostOwner>();
-    let play = owner.play.as_mut().ok_or("play")?;
-    play.view
-        .primary_click(oteryn_renderer::TileCoord::new(x, y), &play.link)?;
+/// Adds the shell's real world input route (`bevy_shell::input::route`) over a world region
+/// the mouse pointer hovers, as the production schedule does under the form window.
+fn with_world_route(app: &mut App) -> Result<Entity, Box<dyn std::error::Error>> {
+    use crate::bevy_shell::game_ui::{GameRegions, WorldRegion, viewport::WorldViewport};
+    use bevy::picking::{
+        backend::HitData,
+        hover::HoverMap,
+        pointer::{Location, PointerId, PointerLocation, PointerMap},
+    };
+    let (w, h) = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .view
+        .scene()
+        .view()
+        .viewport_px();
+    app.init_resource::<HoverMap>()
+        .init_resource::<PointerMap>()
+        .add_message::<bevy::winit::RawWinitWindowEvent>()
+        .insert_non_send(crate::bevy_shell::input::NativeInput::default())
+        .add_systems(Update, crate::bevy_shell::input::route);
+    crate::bevy_shell::game_ui::initialize_item_pointer_test_state(app);
+    let world = app.world_mut().spawn((WorldRegion, Node::default())).id();
+    let mut window = Window::default();
+    window.resolution.set_physical_resolution(w, h);
+    window.resolution.set_scale_factor_override(Some(1.));
+    let window = app
+        .world_mut()
+        .spawn((window, bevy::window::PrimaryWindow))
+        .id();
+    let target = bevy::camera::NormalizedRenderTarget::Window(
+        bevy::window::WindowRef::Entity(window)
+            .normalize(None)
+            .ok_or("window")?,
+    );
+    let pointer = app
+        .world_mut()
+        .spawn((
+            PointerId::Mouse,
+            PointerLocation::new(Location {
+                target,
+                position: Vec2::ZERO,
+            }),
+        ))
+        .id();
+    app.world_mut()
+        .resource_mut::<HoverMap>()
+        .entry(PointerId::Mouse)
+        .or_default()
+        .insert(world, HitData::new(window, 0., None, None));
+    app.insert_resource(WorldViewport {
+        origin: UVec2::ZERO,
+        size: UVec2::new(w, h),
+    })
+    .insert_resource(GameRegions {
+        vitals: world,
+        minimap: world,
+        equipment: world,
+        containers: world,
+        battle: world,
+        skills: world,
+        vip: world,
+        analyzers: world,
+        chat: world,
+        bars: world,
+        world,
+    });
+    // The first routed frame admits the session generation.
+    app.update();
+    Ok(pointer)
+}
+
+/// One mouse press and release on a map tile through the real window-event route.
+fn world_click(
+    app: &mut App,
+    pointer: Entity,
+    tile: (i32, i32),
+    button: winit::event::MouseButton,
+) -> TestResult {
+    use winit::{
+        dpi::PhysicalPosition,
+        event::{DeviceId, ElementState, WindowEvent},
+        window::WindowId,
+    };
+    let point = {
+        let owner = app.world().non_send::<HostOwner>();
+        let view = &owner.play.as_ref().ok_or("play")?.view;
+        let (w, h) = view.scene().view().viewport_px();
+        let target = oteryn_renderer::TileCoord::new(tile.0, tile.1);
+        (0..h)
+            .step_by(4)
+            .flat_map(|y| (0..w).step_by(4).map(move |x| (x, y)))
+            .find(|(x, y)| view.click_tile(f64::from(*x), f64::from(*y)) == Some(target))
+            .map(|(x, y)| Vec2::new(x as f32 + 1., y as f32 + 1.))
+            .ok_or("tile not on screen")?
+    };
+    app.world_mut()
+        .get_mut::<bevy::picking::pointer::PointerLocation>(pointer)
+        .ok_or("pointer")?
+        .location
+        .as_mut()
+        .ok_or("location")?
+        .position = point;
+    let event = |event| bevy::winit::RawWinitWindowEvent {
+        window_id: WindowId::dummy(),
+        event,
+    };
+    app.world_mut()
+        .write_message(event(WindowEvent::CursorMoved {
+            device_id: DeviceId::dummy(),
+            position: PhysicalPosition::new(f64::from(point.x), f64::from(point.y)),
+        }));
+    for state in [ElementState::Pressed, ElementState::Released] {
+        app.world_mut()
+            .write_message(event(WindowEvent::MouseInput {
+                device_id: DeviceId::dummy(),
+                state,
+                button,
+            }));
+    }
+    app.update();
+    app.update();
     Ok(())
 }
 
 /// Summon needs a picked location: the banker form's Map location button arms a crosshair
-/// pick, a map click next to the player sets the target and Summon sends it.
+/// pick and hides the window, so the next map click through the real window-event route
+/// reaches the map; a click next to the player sets the target, the form returns and
+/// Summon sends it. Escape and a right-click leave the pick and bring the form back.
 #[test]
 fn banker_summon_uses_the_adjacent_tile_the_player_picked() -> TestResult {
     use oteryn_client_runtime::hireling::{
         CommandStatus, HirelingCommand, HirelingResponse, hireling::Request,
     };
+    use winit::event::MouseButton;
     let (mut app, mut commands, outbox) = fixture()?;
+    let pointer = with_world_route(&mut app)?;
     outbox.bevy_hireling_selected();
     press(
         &mut app,
@@ -508,6 +648,8 @@ fn banker_summon_uses_the_adjacent_tile_the_player_picked() -> TestResult {
 
     click(&mut app, Some(0))?;
     assert!(commands.try_recv().is_err());
+    // The press is submitted after the editors settle; its feedback shows on the next frame.
+    app.update();
     // The press is submitted in PostUpdate, after this frame's projection; the refusal
     // text appears on the next frame.
     let refused = |app: &mut App| {
@@ -519,13 +661,35 @@ fn banker_summon_uses_the_adjacent_tile_the_player_picked() -> TestResult {
     };
     assert!(refused(&mut app));
 
+    // Escape and a right-click leave the pick; the form comes back each time.
     click(&mut app, Some(3))?;
-    primary_click(&mut app, 103, 100)?;
-    click(&mut app, Some(0))?;
+    app.update();
+    assert!(!has_text(&mut app, "Banker Hireling"));
+    press(
+        &mut app,
+        oteryn_input_actions::KeyCode::ESCAPE.get(),
+        Modifiers::NONE,
+    )?;
+    app.update();
+    assert!(has_text(&mut app, "Banker Hireling"));
+    click(&mut app, Some(3))?;
+    app.update();
+    assert!(!has_text(&mut app, "Banker Hireling"));
+    world_click(&mut app, pointer, (101, 100), MouseButton::Right)?;
+    assert!(has_text(&mut app, "Banker Hireling"));
     assert!(commands.try_recv().is_err());
-    assert!(refused(&mut app));
 
-    primary_click(&mut app, 101, 100)?;
+    // A tile that is not next to the player keeps the pick armed and the form hidden.
+    click(&mut app, Some(3))?;
+    app.update();
+    assert!(!has_text(&mut app, "Banker Hireling"));
+    world_click(&mut app, pointer, (103, 100), MouseButton::Left)?;
+    assert!(!has_text(&mut app, "Banker Hireling"));
+    assert!(commands.try_recv().is_err());
+
+    world_click(&mut app, pointer, (101, 100), MouseButton::Left)?;
+    assert!(has_text(&mut app, "Banker Hireling"));
+    assert!(!refused(&mut app));
     click(&mut app, Some(0))?;
     assert_eq!(
         commands.try_recv()?,
@@ -536,4 +700,151 @@ fn banker_summon_uses_the_adjacent_tile_the_player_picked() -> TestResult {
         }))
     );
     Ok(())
+}
+
+/// Opens Character titles through its key and applies a self query reply that earns
+/// `earned`; `None` is a refused query that leaves the titles unloaded.
+fn titles_window(
+    earned: Option<&[oteryn_client_runtime::character_info_panel::CharacterTitle]>,
+) -> Result<Fixture, Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::raw_feature::{CommandStatus, GatedCommandResult};
+    let (mut app, mut commands, outbox) = fixture()?;
+    outbox.bevy_character_info_selected();
+    press(
+        &mut app,
+        28,
+        Modifiers::one(Modifier::Control)
+            .with(Modifier::Alt)
+            .with(Modifier::Shift),
+    )?;
+    assert!(form_open(&app, "Character titles — Ctrl+Alt+Shift+Y")?);
+    let PlayCommand::Feature(query) = commands.try_recv()? else {
+        return Err("title query missing".into());
+    };
+    let (status, payload) = match earned {
+        Some(earned) => {
+            // CHARACTER-INFO-1 self reply: tag, eight counters, padding, earned ids, selected.
+            let mut payload = vec![0];
+            for value in [37i64, 120_500, 4, 6, 12, 3, 1, 0] {
+                payload.extend(value.to_le_bytes());
+            }
+            payload.extend([0, 0, 0, 0, u8::try_from(earned.len())?]);
+            payload.extend(earned.iter().map(|title| title.id()));
+            payload.push(0);
+            (CommandStatus::Accepted, payload)
+        }
+        None => (CommandStatus::Rejected, Vec::new()),
+    };
+    outbox.bevy_properties_result(
+        &query,
+        &GatedCommandResult {
+            command_id: 1,
+            status,
+            server_sequence: 1,
+            payload,
+        },
+    );
+    app.update();
+    Ok((app, commands, outbox))
+}
+
+/// A row number typed next to an unapplied Search draft names the displayed row: Use
+/// selected and Unlock selected act on that title, not on row 1 of the draft-filtered list.
+#[test]
+fn title_row_actions_resolve_the_displayed_row_not_the_unapplied_search() -> TestResult {
+    use oteryn_client_runtime::character_info_panel::{
+        CharacterInfoOperation, CharacterTitle, encode_operation,
+    };
+    let mut titles = CharacterTitle::ALL.to_vec();
+    titles.sort_by_key(|title| title.name());
+    let (first, last) = (
+        *titles.first().ok_or("no titles")?,
+        *titles.last().ok_or("no titles")?,
+    );
+    assert!(
+        !first
+            .name()
+            .to_lowercase()
+            .contains(&last.name().to_lowercase())
+    );
+    // Use selected (3) on an earned row, Unlock selected (2) on a locked row.
+    for (action, earned, expected) in [
+        (
+            3,
+            vec![first, last],
+            CharacterInfoOperation::Select(Some(first)),
+        ),
+        (2, vec![], CharacterInfoOperation::Unlock(first)),
+    ] {
+        let (mut app, mut commands, _outbox) = titles_window(Some(&earned))?;
+        assert!(
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|text| text.0.contains(&format!("\n1. {} — ", first.name())))
+        );
+        for (field, mut text) in app
+            .world_mut()
+            .query::<(&Field, &mut EditableText)>()
+            .iter_mut(app.world_mut())
+        {
+            match field.0 {
+                0 => *text = EditableText::new(last.name()),
+                2 => *text = EditableText::new("1"),
+                _ => {}
+            }
+        }
+        click(&mut app, Some(action))?;
+        let PlayCommand::Feature(command) = commands.try_recv()? else {
+            return Err("title action missing".into());
+        };
+        assert_eq!(command.payload, encode_operation(expected));
+    }
+    Ok(())
+}
+
+/// Row actions the state refuses say why: Unlock on an earned title, Use on a locked one and
+/// Clear selection before the titles loaded each show feedback and send nothing.
+#[test]
+fn refused_title_actions_show_why_instead_of_doing_nothing() -> TestResult {
+    use oteryn_client_runtime::character_info_panel::CharacterTitle;
+    let first = *CharacterTitle::ALL
+        .iter()
+        .min_by_key(|title| title.name())
+        .ok_or("no titles")?;
+    for (earned, action, row, expected) in [
+        (Some(vec![first]), 2, "1", "Already owned"),
+        (Some(vec![]), 3, "1", "Locked or ineligible"),
+        (None, 4, "", "Refresh first and settle any pending request"),
+    ] {
+        let (mut app, mut commands, _outbox) = titles_window(earned.as_deref())?;
+        for (field, mut text) in app
+            .world_mut()
+            .query::<(&Field, &mut EditableText)>()
+            .iter_mut(app.world_mut())
+        {
+            if field.0 == 2 {
+                *text = EditableText::new(row);
+            }
+        }
+        assert!(!has_summary(&mut app, expected));
+        click(&mut app, Some(action))?;
+        app.update();
+        assert!(
+            commands.try_recv().is_err(),
+            "{expected}: a command was sent"
+        );
+        assert!(
+            has_summary(&mut app, expected),
+            "{expected}: no feedback shown"
+        );
+    }
+    Ok(())
+}
+
+fn has_summary(app: &mut App, value: &str) -> bool {
+    app.world_mut()
+        .query_filtered::<&Text, With<Summary>>()
+        .iter(app.world())
+        .any(|text| text.0.contains(value))
 }

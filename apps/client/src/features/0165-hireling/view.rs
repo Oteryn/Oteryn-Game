@@ -17,8 +17,10 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
         buttons: &["Summon banker", "Dismiss", "Refresh", "Map location"],
         snapshot: |mailbox| {
             let panel = &mailbox.hireling;
+            // The crosshair pick hides the window so the map takes the next click; the pick,
+            // Escape or a secondary click shows it again.
             (
-                panel.open && !mailbox.hireling_shutdown,
+                panel.open && !mailbox.hireling_shutdown && !mailbox.hireling_picking,
                 panel.pending.is_some(),
                 Vec::new(),
                 panel_text(panel),

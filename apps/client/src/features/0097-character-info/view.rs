@@ -87,11 +87,17 @@ pub(in crate::play) fn titles_form(
                 .and_then(|own| own.selected)
                 .map_or(tr!("None"), |title| title.name());
             let message = if !p.selected {
-                tr!("Feature unavailable in this session")
+                tr!("Feature unavailable in this session").to_owned()
             } else if p.own_titles.is_none() {
-                tr!("Refresh to load your earned titles")
+                // The load hint stays; a refused action's feedback shows under it.
+                let hint = tr!("Refresh to load your earned titles");
+                if p.feedback.is_empty() {
+                    hint.to_owned()
+                } else {
+                    format!("{hint}\n{}", p.feedback)
+                }
             } else {
-                &p.feedback
+                p.feedback.clone()
             };
             let mut text = format!("{current}\n{message}");
             for (row, choice) in title_rows(p).iter().enumerate() {
@@ -121,6 +127,12 @@ pub(in crate::play) fn titles_form(
         set_open: |mailbox, value| mailbox.properties.character_info.titles_open = value,
         submit: |mailbox, commands, action, values| {
             let p = &mut mailbox.properties.character_info;
+            // The row number names a row of the displayed list, before the draft filters apply.
+            let chosen = field(&values, 2)
+                .parse::<usize>()
+                .ok()
+                .and_then(|row| row.checked_sub(1))
+                .and_then(|row| title_rows(p).get(row).cloned());
             p.title_search = field(&values, 0).to_owned();
             if let Some(filter) = field(&values, 1)
                 .parse::<usize>()
@@ -130,11 +142,6 @@ pub(in crate::play) fn titles_form(
             {
                 p.title_filter = *filter;
             }
-            let chosen = field(&values, 2)
-                .parse::<usize>()
-                .ok()
-                .and_then(|row| row.checked_sub(1))
-                .and_then(|row| title_rows(p).get(row).cloned());
             let intent = match action {
                 1 => {
                     p.fields[0] = "0".into();
@@ -148,6 +155,12 @@ pub(in crate::play) fn titles_form(
                         return;
                     };
                     if (action == 2) == row.earned {
+                        p.feedback = if row.earned {
+                            tr!("Already owned")
+                        } else {
+                            tr!("Locked or ineligible")
+                        }
+                        .into();
                         return;
                     }
                     p.fields[3] = row.title.id().to_string();
@@ -157,7 +170,11 @@ pub(in crate::play) fn titles_form(
                         Intent::Select
                     }
                 }
-                4 if p.own_titles.is_some() => {
+                4 => {
+                    if p.own_titles.is_none() {
+                        p.feedback = tr!("Refresh first and settle any pending request").into();
+                        return;
+                    }
                     p.fields[3] = "0".into();
                     Intent::Select
                 }
