@@ -1,5 +1,6 @@
 //! Shared desktop character picker over server-owned rows and the existing selector callback.
 mod bridge;
+mod training;
 use super::{
     game_ui::{GameModal, modal::ModalGuard},
     owner::HostOwner,
@@ -199,11 +200,7 @@ pub(super) fn project(
                 row.character.name,
                 row.world_name,
                 if row.available { "" } else { " (unavailable)" },
-                if state.marked.iter().any(|(marked, _)| *marked == index) {
-                    " (training)"
-                } else {
-                    ""
-                }
+                training::suffix(&state, index)
             );
             let button = add_button(
                 &mut commands,
@@ -259,32 +256,8 @@ pub(super) fn project(
                 source::font(skin.font.clone(), false),
             ))
             .id();
-        let selected_row = state.selected.and_then(|index| request.rows.get(index));
-        let marked = state
-            .selected
-            .is_some_and(|index| state.marked.iter().any(|(row, _)| *row == index));
-        let mark = add_button(
-            &mut commands,
-            &skin,
-            request.id,
-            Choice::Mark,
-            if marked {
-                "Unmark training"
-            } else {
-                "Mark for training"
-            },
-            130.,
-            selected_row.is_none_or(|row| !row.available),
-        );
-        let train_marked = add_button(
-            &mut commands,
-            &skin,
-            request.id,
-            Choice::TrainMarked,
-            &format!("Train marked ({})", state.marked.len()),
-            140.,
-            state.marked.is_empty(),
-        );
+        let [mark, train_marked] =
+            training::buttons(&mut commands, &skin, request.id, &state, &request.rows);
         commands
             .entity(navigation)
             .add_children(&[previous, page, next, mark, train_marked]);
@@ -474,35 +447,10 @@ fn activate(
                 }
             }),
         Choice::Mark => {
-            if let Some(index) = state
-                .selected
-                .filter(|index| request.rows.get(*index).is_some_and(|row| row.available))
-            {
-                if let Some(at) = state.marked.iter().position(|(row, _)| *row == index) {
-                    state.marked.remove(at);
-                } else {
-                    let channel = state.channel;
-                    state.marked.push((index, channel));
-                }
-            }
+            training::toggle(&mut state, &request.rows);
             None
         }
-        Choice::TrainMarked => {
-            let characters: Vec<_> = state
-                .marked
-                .iter()
-                .filter_map(|(index, channel)| {
-                    let row = request.rows.get(*index).filter(|row| row.available)?;
-                    Some(crate::character_selection::TrainingSelection {
-                        character_id: row.character.character_id.clone(),
-                        channel_id: channel
-                            .and_then(|channel| row.channels.get(channel))
-                            .map(|channel| channel.0.clone()),
-                    })
-                })
-                .collect();
-            (!characters.is_empty()).then_some(SelectionAction::TrainMany { characters })
-        }
+        Choice::TrainMarked => training::batch(&state, &request.rows),
         Choice::Account => Some(SelectionAction::AccountServices),
         Choice::Create => Some(SelectionAction::Create),
         Choice::Refresh => Some(SelectionAction::Refresh),

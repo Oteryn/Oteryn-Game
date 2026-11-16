@@ -119,8 +119,8 @@ fn daily_reward_query_and_claim_drive_the_panel() -> Result<(), Error> {
                 let task = tokio::spawn(run_session(peer, incoming, outbox));
                 ready(&link, false).await?;
                 assert!(
-                    include_str!("../../../windows_shell/input.rs")
-                        .contains("play.link.daily_reward_input(events)")
+                    include_str!("../../../bevy_shell/controls.rs")
+                        .contains("play.link.daily_reward_input(&routed)")
                 );
                 assert!(link.daily_reward_input(&[NormalizedInputEvent::Key {
                     code: KeyCode::new(7)?,
