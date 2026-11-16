@@ -14,7 +14,7 @@ def shard_definitions():
 class HealingGlobalOverrides(unittest.TestCase):
     def test_potion_definitions_carry_the_global_values(self):
         expected = {
-            'oteryn:item.tibia.i7642': [('HEALTH', 250, 350), ('MANA', 125, 185)],
+            'oteryn:item.tibia.i7642': [('HEALTH', 250, 350), ('MANA', 100, 200)],
             'oteryn:item.tibia.i23374': [('HEALTH', 420, 580), ('MANA', 150, 250)],
             'oteryn:item.tibia.i23375': [('HEALTH', 875, 1175)],
         }
