@@ -72,6 +72,9 @@ pub struct Console {
     pub communication: CommunicationLists,
     pub tab: ConsoleTab,
     pub mirror: Option<ConsoleTab>,
+    /// The channel tab the mirror shows, when it mirrors a channel rather than a fixed tab;
+    /// it closes with that channel.
+    pub mirror_channel: Option<ChannelTab>,
     pub mode: ComposerMode,
     pub show_messages: bool,
     /// Server notices have a separate utility switch from the player transcript filter.
@@ -109,6 +112,7 @@ impl Default for Console {
             communication: Default::default(),
             tab: ConsoleTab::All,
             mirror: None,
+            mirror_channel: None,
             mode: ComposerMode::On,
             show_messages: true,
             show_server_messages: true,
@@ -160,6 +164,7 @@ impl Console {
             Some(left) => self.current = self.channels.get(left).cloned(),
             None => self.select(self.tab),
         }
+        self.close_mirror_of(&closed);
         Some(closed)
     }
     /// Drop a channel tab that the server no longer offers, keeping the selection valid.
@@ -168,7 +173,19 @@ impl Console {
             self.close_current();
         } else {
             self.channels.retain(|tab| tab != channel);
+            self.close_mirror_of(channel);
         }
+    }
+    /// A mirror of a closed channel closes with it.
+    fn close_mirror_of(&mut self, channel: &ChannelTab) {
+        if self.mirror_channel.as_ref() == Some(channel) {
+            self.close();
+        }
+    }
+    /// Mirror the selected tab, fixed or channel, read-only beside the console.
+    pub fn mirror_current(&mut self) {
+        self.mirror = Some(self.tab);
+        self.mirror_channel = self.current.clone();
     }
     /// Tab positions: the fixed tabs, then the opened channels.
     pub fn tab_count(&self) -> usize {
@@ -287,6 +304,7 @@ impl Console {
             return false;
         }
         self.mirror = Some(tab);
+        self.mirror_channel = None;
         true
     }
     pub fn shows_messages(&self, tab: ConsoleTab) -> bool {
@@ -298,6 +316,7 @@ impl Console {
     }
     pub fn close(&mut self) {
         self.mirror = None;
+        self.mirror_channel = None;
     }
     pub fn temporary_on(&mut self) {
         self.mode = ComposerMode::Temporary;

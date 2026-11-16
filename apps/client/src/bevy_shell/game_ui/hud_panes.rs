@@ -10,9 +10,10 @@ use super::{
 };
 use crate::play::{HudAction, HudDock, HudPanel};
 use bevy::{
+    ecs::system::SystemParam,
     picking::{
-        events::{PointerDrag, PointerDragEnd, PointerDragStart},
-        pointer::PointerButton,
+        events::{PointerCancel, PointerDrag, PointerDragEnd, PointerDragStart},
+        pointer::{PointerButton, PointerId},
     },
     prelude::*,
     ui::Checked,
@@ -25,12 +26,75 @@ use oteryn_client_ui_bevy as source;
 struct Pane(HudPanel);
 #[derive(Component, Clone, Copy)]
 struct PaneText(HudPanel);
-/// The drag handle of a pane; `origin` holds the pane position while a drag runs.
+/// The drag handle of a pane; `gesture` holds the running drag.
 #[derive(Component, Clone, Copy)]
 struct TitleBar {
     panel: HudPanel,
-    origin: Option<Vec2>,
+    gesture: Option<Gesture>,
 }
+/// A title-bar drag: the pointer, the pane position it started from and the coordinate
+/// space it started in. Any change of that space ends the drag without saving it.
+#[derive(Clone, Copy, PartialEq, Debug)]
+struct Gesture {
+    pointer: PointerId,
+    origin: Vec2,
+    context: Context,
+}
+#[derive(Clone, Copy, PartialEq, Debug)]
+struct Context {
+    window: Vec2,
+    dpi: f32,
+    scale: f32,
+    header: f32,
+}
+
+/// The one coordinate space of the panes. The layout works in window pixels below the
+/// header (vitals and pane-toggle strip) with the interface scale applied; pane nodes are
+/// in UI units, which Bevy multiplies by `UiScale` (the same interface scale) when it
+/// renders them, and start below the header.
+#[derive(SystemParam)]
+struct Space<'w, 's> {
+    windows: Query<'w, 's, &'static Window, With<PrimaryWindow>>,
+    scale: Res<'w, UiScale>,
+    regions: Res<'w, super::GameRegions>,
+    computed: Query<'w, 's, &'static ComputedNode>,
+}
+impl Space<'_, '_> {
+    fn scale(&self) -> f32 {
+        if self.scale.0.is_finite() && self.scale.0 > 0. {
+            self.scale.0
+        } else {
+            1.
+        }
+    }
+    /// The bottom of the header in UI units; the panes never cover it.
+    fn header(&self) -> f32 {
+        self.computed
+            .get(self.regions.vitals)
+            .map(|node| node.size.y * node.inverse_scale_factor)
+            .ok()
+            .filter(|height| height.is_finite())
+            .map_or(0., |height| height.max(0.))
+    }
+    /// The area the layout positions panes in: the window below the header, in window pixels.
+    fn root(&self) -> [u16; 2] {
+        let header = self.header() * self.scale();
+        self.windows.single().map_or([1024, 720], |window| {
+            [window.width(), window.height() - header].map(|size| size.clamp(1., 4096.) as u16)
+        })
+    }
+    /// The space a drag runs in; `None` without a focused window.
+    fn context(&self) -> Option<Context> {
+        let window = self.windows.single().ok().filter(|window| window.focused)?;
+        Some(Context {
+            window: window.size(),
+            dpi: window.scale_factor(),
+            scale: self.scale(),
+            header: self.header(),
+        })
+    }
+}
+
 #[derive(Component, Clone, Copy, PartialEq, Eq, Debug)]
 enum PaneCommand {
     Toggle(HudPanel),
@@ -46,8 +110,9 @@ pub(super) fn install(app: &mut App) {
         Startup,
         setup.after(super::setup).after(super::super::ui::setup),
     )
-    .add_systems(Update, project)
-    .add_observer(activate);
+    .add_systems(Update, (cancel_stale, project).chain())
+    .add_observer(activate)
+    .add_observer(cancel);
 }
 
 fn button(commands: &mut Commands, skins: &Skins, command: PaneCommand, label: &str) -> Entity {
@@ -108,7 +173,7 @@ fn setup(mut commands: Commands, regions: Res<super::GameRegions>, skins: Res<Sk
             .spawn((
                 TitleBar {
                     panel,
-                    origin: None,
+                    gesture: None,
                 },
                 Node {
                     width: percent(100.),
@@ -151,13 +216,6 @@ fn setup(mut commands: Commands, regions: Res<super::GameRegions>, skins: Res<Sk
     }
 }
 
-/// The window's logical size, the root the layout positions panes in.
-fn root(windows: &Query<&Window, With<PrimaryWindow>>) -> [u16; 2] {
-    windows.single().map_or([1024, 720], |window| {
-        [window.width(), window.height()].map(|size| size.clamp(1., 4096.) as u16)
-    })
-}
-
 /// Applies one layout edit to the play view and saves it with the preferences.
 fn apply(owner: &mut HostOwner, action: HudAction, root: [u16; 2]) {
     let HostOwner { play, settings, .. } = owner;
@@ -178,7 +236,7 @@ fn activate(
     commands: Query<&PaneCommand>,
     guard: ModalGuard,
     mut owner: NonSendMut<HostOwner>,
-    windows: Query<&Window, With<PrimaryWindow>>,
+    space: Space,
 ) {
     let Ok(command) = commands.get(event.entity) else {
         return;
@@ -205,7 +263,7 @@ fn activate(
         PaneCommand::Hide(panel) => HudAction::Visible(panel, false),
         PaneCommand::Reset => HudAction::Reset,
     };
-    apply(&mut owner, action, root(&windows));
+    apply(&mut owner, action, space.root());
 }
 
 fn drag_start(
@@ -213,6 +271,7 @@ fn drag_start(
     mut bars: Query<&mut TitleBar>,
     panes: Query<(&Pane, &Node)>,
     guard: ModalGuard,
+    space: Space,
 ) {
     if event.button != PointerButton::Primary || !guard.allows(event.entity) {
         return;
@@ -220,34 +279,62 @@ fn drag_start(
     let Ok(mut bar) = bars.get_mut(event.entity) else {
         return;
     };
+    if bar.gesture.is_some() {
+        return;
+    }
+    let Some(context) = space.context() else {
+        return;
+    };
     let panel = bar.panel;
-    bar.origin = panes
+    bar.gesture = panes
         .iter()
         .find(|(pane, _)| pane.0 == panel)
         .and_then(|(_, node)| match (node.left, node.top) {
             (Val::Px(x), Val::Px(y)) => Some(Vec2::new(x, y)),
             _ => None,
+        })
+        .map(|origin| Gesture {
+            pointer: event.pointer.id,
+            origin,
+            context,
         });
     event.propagate(false);
 }
 
+/// Whether a running drag may still move or drop its pane: same pointer, same coordinate
+/// space, a focused window and no modal above the bar.
+fn live(
+    gesture: &Gesture,
+    pointer: PointerId,
+    space: &Space,
+    guard: &ModalGuard,
+    bar: Entity,
+) -> bool {
+    gesture.pointer == pointer && space.context() == Some(gesture.context) && guard.allows(bar)
+}
+
 fn drag(
     mut event: On<PointerDrag>,
-    bars: Query<&TitleBar>,
-    mut panes: Query<(&Pane, &mut Node)>,
-    scale: Res<UiScale>,
+    mut bars: Query<&mut TitleBar>,
+    mut ui: ParamSet<(ModalGuard, Query<(&Pane, &mut Node)>)>,
+    space: Space,
 ) {
-    let Ok(bar) = bars.get(event.entity) else {
+    let Ok(mut bar) = bars.get_mut(event.entity) else {
         return;
     };
-    let Some(origin) = bar.origin else {
+    let Some(gesture) = bar.gesture else {
         return;
     };
+    if !live(&gesture, event.pointer.id, &space, &ui.p0(), event.entity) {
+        bar.gesture = None;
+        return;
+    }
     if event.button != PointerButton::Primary || !event.distance.is_finite() {
         return;
     }
-    let at = (origin + event.distance / scale.0.max(0.01)).max(Vec2::ZERO);
-    for (pane, mut node) in &mut panes {
+    let at = (gesture.origin + event.distance / gesture.context.scale)
+        .max(Vec2::new(0., gesture.context.header));
+    for (pane, mut node) in &mut ui.p1() {
         if pane.0 == bar.panel {
             node.left = px(at.x);
             node.top = px(at.y);
@@ -262,12 +349,21 @@ fn drag_end(
     mut bars: Query<&mut TitleBar>,
     panes: Query<(&Pane, &Node)>,
     mut owner: NonSendMut<HostOwner>,
-    windows: Query<&Window, With<PrimaryWindow>>,
+    (guard, space): (ModalGuard, Space),
 ) {
     let Ok(mut bar) = bars.get_mut(event.entity) else {
         return;
     };
-    if bar.origin.take().is_none() || event.button != PointerButton::Primary {
+    let Some(gesture) = bar.gesture else {
+        return;
+    };
+    if gesture.pointer != event.pointer.id {
+        return;
+    }
+    bar.gesture = None;
+    if event.button != PointerButton::Primary
+        || !live(&gesture, event.pointer.id, &space, &guard, event.entity)
+    {
         return;
     }
     let panel = bar.panel;
@@ -279,12 +375,36 @@ fn drag_end(
     else {
         return;
     };
-    let bounds = [x, y, width, height].map(|value| value.clamp(0., 4096.) as u16);
-    apply(
-        &mut owner,
-        HudAction::Dragged(panel, bounds),
-        root(&windows),
-    );
+    let Context { scale, header, .. } = gesture.context;
+    let bounds =
+        [x, y - header, width, height].map(|value| (value * scale).round().clamp(0., 4096.) as u16);
+    apply(&mut owner, HudAction::Dragged(panel, bounds), space.root());
+}
+
+/// A cancelled pointer (a lifted touch, a lost capture) ends its drag without saving it.
+fn cancel(event: On<PointerCancel>, mut bars: Query<&mut TitleBar>) {
+    for mut bar in &mut bars {
+        if bar
+            .gesture
+            .is_some_and(|gesture| gesture.pointer == event.pointer.id)
+        {
+            bar.gesture = None;
+        }
+    }
+}
+
+/// Ends a drag whose window, scale, header or modal state changed since it started; the
+/// projection then puts the pane back where the layout keeps it.
+fn cancel_stale(mut bars: Query<(Entity, &mut TitleBar)>, guard: ModalGuard, space: Space) {
+    let context = space.context();
+    for (entity, mut bar) in &mut bars {
+        if bar
+            .gesture
+            .is_some_and(|gesture| context != Some(gesture.context) || !guard.allows(entity))
+        {
+            bar.gesture = None;
+        }
+    }
 }
 
 fn project(
@@ -293,7 +413,7 @@ fn project(
         NonSend<HostOwner>,
         Option<NonSend<crate::bevy_shell::audio::Playback>>,
     ),
-    (windows, bars): (Query<&Window, With<PrimaryWindow>>, Query<&TitleBar>),
+    (space, bars): (Space, Query<&TitleBar>),
     mut panes: Query<(&Pane, &mut Node)>,
     mut texts: Query<(&PaneText, &mut Text)>,
     toggles: Query<(Entity, &PaneCommand, Has<Checked>)>,
@@ -308,11 +428,11 @@ fn project(
     };
     let preferences = play.view.preferences();
     let layout = preferences.effective_hud_layout();
-    let root = root(&windows);
+    let (root, scale, header) = (space.root(), space.scale(), space.header());
     for (pane, mut node) in &mut panes {
         if bars
             .iter()
-            .any(|bar| bar.panel == pane.0 && bar.origin.is_some())
+            .any(|bar| bar.panel == pane.0 && bar.gesture.is_some())
         {
             continue;
         }
@@ -324,10 +444,10 @@ fn project(
             continue;
         };
         let (left, top, width, height) = (
-            px(f32::from(x)),
-            px(f32::from(y)),
-            px(f32::from(width)),
-            px(f32::from(height)),
+            px(f32::from(x) / scale),
+            px(header + f32::from(y) / scale),
+            px(f32::from(width) / scale),
+            px(f32::from(height) / scale),
         );
         if node.display != Display::Flex
             || node.left != left

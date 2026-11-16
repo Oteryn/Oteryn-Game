@@ -115,7 +115,8 @@ pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Re
     commands
         .entity(compose)
         .add_children(&[mode, frame, send, channels, close, chat_mode]);
-    // The read-only mirror covers the right third of the transcript, as the drop target did.
+    // The read-only mirror takes the right third of the console, as the drop target did; the
+    // transcript shrinks to the rest while it is open.
     let mirror = commands
         .spawn((
             MirrorPane,

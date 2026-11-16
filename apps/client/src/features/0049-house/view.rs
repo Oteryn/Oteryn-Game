@@ -4,18 +4,22 @@ impl PlayLink {
         lock(&self.mailbox).properties.house.clone()
     }
     /// Selects the catalogue row the house-row field names and returns the north-up entrance
-    /// map of its floor; with no entrance there it leaves the feedback that says why.
+    /// map of its floor; with no entrance there it leaves the feedback that says why. A row
+    /// that names no catalogue entry shows no map and keeps the previous selection.
     pub fn house_map(&self, row: &str) -> Vec<oteryn_client_ui::house::MapHouse> {
         let mut mailbox = lock(&self.mailbox);
         let panel = &mut mailbox.properties.house;
-        if let Some(index) = row
+        let Some(index) = row
             .trim()
             .parse::<usize>()
             .ok()
             .and_then(|n| n.checked_sub(1))
-        {
-            panel.model.index = index;
-        }
+            .filter(|index| *index < panel.model.page.rows.len())
+        else {
+            panel.model.feedback = tr!("Select a house row (starting at 1)").into();
+            return Vec::new();
+        };
+        panel.model.index = index;
         let houses = oteryn_client_ui::house::map_houses(&panel.model);
         if houses.is_empty() {
             panel.model.feedback = "Query houses and select a row to view its floor".into();

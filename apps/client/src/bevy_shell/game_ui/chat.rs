@@ -14,6 +14,8 @@ use oteryn_client_ui_bevy as source;
 
 mod channels;
 mod commands;
+#[cfg(test)]
+mod mirror_tests;
 mod submission;
 #[cfg(test)]
 mod tests;
@@ -305,9 +307,12 @@ fn keyboard(
 }
 
 /// Shows the mirrored tab's live transcript, or hides the pane when nothing is mirrored.
+/// The mirror takes the right third of the console and the original transcript keeps the
+/// rest, so neither covers the other and each scrolls within its own width.
 fn mirror(
     owner: NonSend<HostOwner>,
-    mut panes: Query<&mut Node, With<MirrorPane>>,
+    mut panes: Query<&mut Node, (With<MirrorPane>, Without<HistoryScroll>)>,
+    mut histories: Query<&mut Node, (With<HistoryScroll>, Without<MirrorPane>)>,
     mut texts: Query<&mut Text, With<MirrorText>>,
 ) {
     let value = owner
@@ -322,6 +327,16 @@ fn mirror(
     for mut node in &mut panes {
         if node.display != display {
             node.display = display;
+        }
+    }
+    let width = if value.is_some() {
+        percent(100. - 100. / 3.)
+    } else {
+        percent(100.)
+    };
+    for mut node in &mut histories {
+        if node.width != width {
+            node.width = width;
         }
     }
     let value = value.unwrap_or_default();

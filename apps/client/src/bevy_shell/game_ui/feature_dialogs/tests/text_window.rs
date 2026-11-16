@@ -476,7 +476,8 @@ fn house_browser_shows_and_closes_the_entrance_map_of_the_selected_row() -> Test
         );
     }
     assert!(
-        !shown.iter().any(|text| text.contains("Cellar Flat")),
+        // The catalogue text names every row; the map labels its markers "<row>: <name>".
+        !shown.iter().any(|text| text.contains("3: Cellar Flat")),
         "an entrance on another floor stays off the map"
     );
     assert!(receiver.try_recv().is_err(), "the map sends no request");
@@ -495,6 +496,87 @@ fn house_browser_shows_and_closes_the_entrance_map_of_the_selected_row() -> Test
             .any(|text| text == "Edit House List — Harbour Home"),
         "closing the map keeps the house window"
     );
+    Ok(())
+}
+
+#[test]
+fn house_browser_rejects_an_invalid_row_instead_of_reusing_the_previous_map() -> TestResult {
+    use crate::play::{PlayView, play_channel};
+    use bevy::input::keyboard::{Key as LogicalKey, KeyboardInput};
+    let (link, _, _) = play_channel();
+    link.use_shared_frontend();
+    link.bevy_house_map_fixture();
+    let mut owner = HostOwner::new(None)?;
+    let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    view.use_shared_frontend();
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .init_resource::<InputFocus>()
+        .init_resource::<ButtonInput<KeyCode>>()
+        .add_message::<KeyboardInput>()
+        .insert_non_send(owner)
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    super::super::super::modal::install(&mut app);
+    super::super::houses::install(&mut app);
+    app.update();
+    {
+        let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
+        keys.press(KeyCode::ControlLeft);
+        keys.press(KeyCode::ShiftLeft);
+    }
+    app.world_mut().write_message(KeyboardInput {
+        key_code: KeyCode::KeyH,
+        logical_key: LogicalKey::Character("H".into()),
+        state: bevy::input::ButtonState::Pressed,
+        text: None,
+        repeat: false,
+        window: Entity::PLACEHOLDER,
+    });
+    app.update();
+    let show_map = |app: &mut App, row: &str| -> Result<Vec<String>, String> {
+        for (field, mut text) in app
+            .world_mut()
+            .query::<(&super::super::houses::Field, &mut EditableText)>()
+            .iter_mut(app.world_mut())
+        {
+            if field.0 == 2 {
+                text.editor_mut().set_text(row);
+            }
+        }
+        let show = app
+            .world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(app.world())
+            .find_map(|(text, parent)| (text.0 == "Show entrance map").then_some(parent.parent()))
+            .ok_or("missing button Show entrance map")?;
+        app.world_mut().trigger(Activate { entity: show });
+        app.update();
+        app.update();
+        Ok(app
+            .world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .map(|text| text.0.clone())
+            .collect())
+    };
+    let shown = show_map(&mut app, "1")?;
+    assert!(shown.iter().any(|text| text == "◆ 1: Home\n100,110,7"));
+    for row in ["0", "first", "9"] {
+        let shown = show_map(&mut app, row)?;
+        assert!(
+            !shown
+                .iter()
+                .any(|text| text == "House entrances — north up"),
+            "row {row:?} must not show the previous house's map"
+        );
+        let owner = app.world().non_send::<HostOwner>();
+        let model = owner.play.as_ref().ok_or("play")?.link.house_panel().model;
+        assert_eq!(model.index, 0, "row {row:?} keeps the previous selection");
+        assert_eq!(model.feedback, "Select a house row (starting at 1)");
+    }
     Ok(())
 }
 
