@@ -545,10 +545,15 @@ fn market_reply_mirrored_into_domain_28_is_applied_not_rejected() -> Result<(), 
                         wares
                     );
                 }
+                let mirrored = market::encode_reply(&wares)
+                    .map_err(|e| format!("market mirror: {e:?}"))?;
                 assert!(session.take_events().iter().any(|event| matches!(
                     event,
-                    SessionEvent::Market(delta)
-                        if delta.base_revision == 1 && delta.new_revision == 2 && delta.value == wares
+                    SessionEvent::GatedSnapshotReplaced(delta)
+                        if delta.base_revision == 1
+                            && delta.new_revision == 2
+                            && delta.value.domain_id == market::STATE_DOMAIN_MARKET
+                            && delta.value.payload == mirrored
                 )));
                 peer.await??;
                 Ok(())
@@ -627,10 +632,15 @@ fn stash_reply_mirrored_into_domain_27_is_applied_not_rejected() -> Result<(), B
                         expected
                     );
                 }
+                let mirrored = stash::encode_stash_reply(&opened)
+                    .map_err(|e| format!("stash mirror: {e:?}"))?;
                 assert!(matches!(
                     session.take_events().as_slice(),
-                    [SessionEvent::Stash(delta)]
-                        if delta.base_revision == 0 && delta.new_revision == 1 && delta.value == opened
+                    [SessionEvent::GatedSnapshotReplaced(delta)]
+                        if delta.base_revision == 0
+                            && delta.new_revision == 1
+                            && delta.value.domain_id == stash::DOMAIN_STASH
+                            && delta.value.payload == mirrored
                 ));
                 peer.await??;
                 Ok(())

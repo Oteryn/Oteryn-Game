@@ -24,10 +24,6 @@ pub enum SessionEvent {
     PlayerTrade(AppliedDelta<player_trade::State>),
     NpcConversation(AppliedDelta<npc_service::NpcConversation>),
     NpcTradeWindow(AppliedDelta<npc_service::NpcTradeWindow>),
-    /// Domain 27: the stash reply the server mirrors after each stash command.
-    Stash(AppliedDelta<stash::StashReply>),
-    /// Domain 28: the market reply the server mirrors after each market command.
-    Market(AppliedDelta<market::MarketReply>),
     /// Domain 16: the requested view and tracked lines, replaced whole.
     QuestLog(AppliedDelta<quest_log::QuestLog>),
     Appearance(AppliedDelta<AppearanceUpdate>),
@@ -92,8 +88,6 @@ impl SessionEvent {
             Self::ChatSnapshot(_) => STATE_DOMAIN_CHAT,
             Self::NpcConversation(_) => npc_service::STATE_DOMAIN_NPC_CONVERSATION,
             Self::NpcTradeWindow(_) => npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW,
-            Self::Stash(_) => stash::DOMAIN_STASH,
-            Self::Market(_) => market::STATE_DOMAIN_MARKET,
             Self::QuestLog(_) => quest_log::STATE_DOMAIN_QUEST_LOG,
             Self::ExpertFightModes(_) => oteryn_protocol_oteryn::pvp_expert::STATE_DOMAIN_EXPERT_FIGHT_MODES,
             Self::Appearance(_) => oteryn_protocol_oteryn::appearance::STATE_DOMAIN_APPEARANCE,
