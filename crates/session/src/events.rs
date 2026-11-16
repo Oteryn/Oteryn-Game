@@ -41,6 +41,10 @@ pub enum SessionEvent {
     WorldSpatialEntities(AppliedDelta<WorldSpatialEntitiesDelta>),
     /// Domain 1 icons-only replacement for the currently visible players.
     PartyIcons(AppliedDelta<Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>>),
+    /// Domain 1 capacity-only delta under capability 508: the own character's capacity.
+    InventoryCapacity(AppliedDelta<oteryn_protocol_oteryn::inventory_capacity::InventoryCapacity>),
+    /// Domain 1 emblems-only replacement under capability 509, for the currently visible players.
+    GuildEmblems(AppliedDelta<Vec<oteryn_protocol_oteryn::guild_emblem::GuildEmblem>>),
     /// Domain 2 `WORLD_OBJECT_OVERLAY`.
     WorldObjectOverlay(AppliedDelta<WorldObjectOverlayEntry>),
     /// Domain 17: validated bundle map changes, bound to the admitted content and reset epoch.
@@ -104,7 +108,11 @@ impl SessionEvent {
             Self::ServerMessage(_) => {
                 oteryn_protocol_oteryn::zones_nologout::STATE_DOMAIN_SERVER_MESSAGES
             }
-            Self::WorldSpatial(_) | Self::WorldSpatialEntities(_) | Self::PartyIcons(_) => {
+            Self::WorldSpatial(_)
+            | Self::WorldSpatialEntities(_)
+            | Self::PartyIcons(_)
+            | Self::InventoryCapacity(_)
+            | Self::GuildEmblems(_) => {
                 world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY
             }
             Self::WorldObjectOverlay(_) => world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,

@@ -263,6 +263,60 @@ fn live_inventory_delta_updates_visible_cells_without_inventing_items() -> TestR
     Ok(())
 }
 #[test]
+fn inventory_panel_shows_server_capacity_as_tibia_cap() -> TestResult {
+    use bevy::asset::AssetPlugin;
+    use oteryn_session::inventory_capacity::InventoryCapacity;
+    let (link, _commands, outbox) = play_channel();
+    inventory(&outbox, vec![entry(11, 1)?]);
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        AssetPlugin::default(),
+        oteryn_client_ui_bevy::GlobalUiPlugin,
+    ))
+    .init_asset::<Font>()
+    .init_asset::<Image>()
+    .init_resource::<ButtonInput<KeyCode>>()
+    .init_resource::<ButtonInput<MouseButton>>()
+    .insert_non_send(host(link)?)
+    .add_systems(
+        Startup,
+        (super::super::super::ui::setup, super::super::setup).chain(),
+    );
+    app.add_systems(Update, super::super::project);
+    install(&mut app);
+    app.update();
+    let texts = |app: &mut App| -> Vec<String> {
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .map(|text| text.0.clone())
+            .collect()
+    };
+    // A session without capability 508 never receives a capacity: no Cap is shown.
+    assert!(!texts(&mut app).iter().any(|text| text.starts_with("Cap")));
+    let capacity = |free| {
+        vec![SessionEvent::InventoryCapacity(AppliedDelta {
+            server_sequence: 2,
+            base_revision: 1,
+            new_revision: 2,
+            value: InventoryCapacity {
+                capacity: 60_000,
+                free,
+            },
+        })]
+    };
+    outbox.push(capacity(58_750));
+    app.update();
+    assert!(texts(&mut app).contains(&"Cap: 587".to_owned()));
+    outbox.push(capacity(41_299));
+    app.update();
+    let shown = texts(&mut app);
+    assert!(shown.contains(&"Cap: 412".to_owned()));
+    assert!(!shown.contains(&"Cap: 587".to_owned()));
+    Ok(())
+}
+#[test]
 fn split_buttons_dispatch_selected_count_once_and_reject_an_old_prompt() -> TestResult {
     let (link, mut commands, outbox) = play_channel();
     let item = entry(13, 9)?;

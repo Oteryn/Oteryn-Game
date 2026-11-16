@@ -2,7 +2,7 @@
 //! original artwork: an indexed 2-bit outlined font page, a zlib-compressed font description
 //! and RGBA flag strips, in a format-3 Qt resource bundle.
 
-use super::{GRAPHICS_FILE, GraphicsPins, ICON_PX, SHIELD_ICONS, SKULL_ICONS};
+use super::{GRAPHICS_FILE, GUILD_ICONS, GraphicsPins, ICON_PX, SHIELD_ICONS, SKULL_ICONS};
 use sha2::{Digest, Sha256};
 use std::io::Write;
 use std::path::Path;
@@ -31,6 +31,17 @@ pub fn icon_color(skull: bool, index: usize) -> [u8; 4] {
     ]
 }
 
+/// The RGBA colour of generated guild emblem `index` (zero-based).
+#[must_use]
+pub fn guild_color(index: usize) -> [u8; 4] {
+    [
+        60 + index as u8 * 11,
+        30 + index as u8 * 13,
+        210 - index as u8 * 5,
+        255,
+    ]
+}
+
 /// Writes the generated bundle into `dir` and returns its entry pins.
 pub fn write(dir: &Path) -> std::io::Result<GraphicsPins> {
     let (bytes, pins) = bundle()?;
@@ -42,27 +53,36 @@ pub fn write(dir: &Path) -> std::io::Result<GraphicsPins> {
 pub fn bundle() -> std::io::Result<(Vec<u8>, GraphicsPins)> {
     let metrics = font_metrics();
     let page = font_page()?;
-    let skulls = strip(true, SKULL_ICONS)?;
-    let shields = strip(false, SHIELD_ICONS)?;
+    let skulls = strip(|index| icon_color(true, index), SKULL_ICONS)?;
+    let shields = strip(|index| icon_color(false, index), SHIELD_ICONS)?;
+    let guilds = strip(guild_color, GUILD_ICONS)?;
     let pins = GraphicsPins {
         font_metrics: sha256(metrics.as_bytes()),
         font_page: sha256(&page),
         skulls: sha256(&skulls),
         shields: sha256(&shields),
+        guilds: sha256(&guilds),
     };
     let mut compressed = (metrics.len() as u32).to_be_bytes().to_vec();
     let mut encoder = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
     encoder.write_all(metrics.as_bytes())?;
     compressed.extend(encoder.finish()?);
-    let files: [(&'static str, u16, Vec<u8>); 4] = [
+    let files: [(&'static str, u16, Vec<u8>); 5] = [
         ("Verdana10px.fnt", 1, compressed),
         ("Verdana10px.png", 0, page),
         ("playerkiller.png", 0, skulls),
         ("party.png", 0, shields),
+        ("guild.png", 0, guilds),
     ];
-    let [font_metrics, font_page, skull_strip, shield_strip] = files;
+    let [
+        font_metrics,
+        font_page,
+        skull_strip,
+        shield_strip,
+        guild_strip,
+    ] = files;
     // Breadth-first nodes: 0 root, 1 fonts, 2 images, 3-4 font files, 5 creatures, 6 hud,
-    // 7 flags, 8-9 flag strips. A directory names its first child and child count.
+    // 7 flags, 8-10 flag strips. A directory names its first child and child count.
     let nodes = [
         Node::Directory("", 1, 2),
         Node::Directory("fonts", 3, 2),
@@ -71,9 +91,10 @@ pub fn bundle() -> std::io::Result<(Vec<u8>, GraphicsPins)> {
         Node::File(font_page),
         Node::Directory("creatures", 6, 1),
         Node::Directory("hud", 7, 1),
-        Node::Directory("flags", 8, 2),
+        Node::Directory("flags", 8, 3),
         Node::File(skull_strip),
         Node::File(shield_strip),
+        Node::File(guild_strip),
     ];
     let (mut tree, mut data, mut names) = (Vec::new(), Vec::new(), Vec::new());
     for node in nodes {
@@ -194,7 +215,7 @@ fn font_page() -> std::io::Result<Vec<u8>> {
     Ok(out)
 }
 
-fn strip(skull: bool, count: usize) -> std::io::Result<Vec<u8>> {
+fn strip(color: fn(usize) -> [u8; 4], count: usize) -> std::io::Result<Vec<u8>> {
     let width = ICON_PX * count;
     let mut rgba = vec![0_u8; width * ICON_PX * 4];
     for y in 0..ICON_PX {
@@ -205,7 +226,7 @@ fn strip(skull: bool, count: usize) -> std::io::Result<Vec<u8>> {
                 continue;
             }
             let at = (y * width + x) * 4;
-            rgba[at..at + 4].copy_from_slice(&icon_color(skull, x / ICON_PX));
+            rgba[at..at + 4].copy_from_slice(&color(x / ICON_PX));
         }
     }
     let mut out = Vec::new();

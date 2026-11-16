@@ -168,6 +168,7 @@ impl PlayView {
             self.prewalk = None;
             self.party_icons.clear();
             self.party_icons_refresh = None;
+            self.guild_emblems.clear();
             self.inputs.clear();
             self.cursor_spell = None;
             self.in_flight = false;
@@ -183,6 +184,9 @@ impl PlayView {
         }
         if let Some(channel) = pushed.served_channel {
             oteryn_client_ui::channel_list::protocol::apply(&mut self.served_channel, channel);
+        }
+        if let Some(emblems) = &pushed.guild_emblems {
+            self.guild_emblems.clone_from(emblems);
         }
         self.world_clock = pushed.world_clock.or(self.world_clock);
         self.world_weather = pushed.world_weather.or(self.world_weather);

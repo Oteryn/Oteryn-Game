@@ -1,6 +1,7 @@
 //! Server-owned health, party/PvP marks and NPC identity badges.
 use super::*;
 use oteryn_client_runtime::party_skull::PartyIcon;
+use oteryn_session::guild_emblem::GuildEmblem;
 use oteryn_session::{EntityDetail, EntityKind, EntityRef, WorldSpatialEntity};
 
 /// OTClient Creature::setHealthPercent uses strict thresholds, including >3%.
@@ -53,6 +54,8 @@ impl Options {
     }
 }
 
+// The guild emblems are a second server mark list beside the party icons.
+#[allow(clippy::too_many_arguments)]
 pub(super) fn draw(
     batch: &mut SpriteBatch,
     view: &TileView,
@@ -60,6 +63,7 @@ pub(super) fn draw(
     own: TileCoord,
     entities: &[WorldSpatialEntity],
     icons: &[PartyIcon],
+    emblems: &[GuildEmblem],
     options: Options,
 ) -> Result<Vec<std::ops::Range<usize>>, BatchError> {
     let mut fixed = Vec::new();
@@ -120,6 +124,25 @@ pub(super) fn draw(
                 icon.skull,
                 true,
                 options.age,
+                scale,
+            )?;
+        }
+        // Tibia's guild emblem follows the shield and skull in the same row.
+        let marks = if Some(entity.entity) == options.own {
+            options.own_marks
+        } else {
+            options.other_marks
+        };
+        if marks
+            && let Some(emblem) = oteryn_client_ui::guild_emblem::emblem_of(emblems, entity.entity)
+        {
+            icons::draw_emblem(
+                batch,
+                view,
+                atlas,
+                icon_cells,
+                [x + 32.0 * scale, y],
+                emblem as u8,
                 scale,
             )?;
         }
@@ -186,7 +209,7 @@ mod health_tests {
                 detail: EntityDetail::Actor { direction: oteryn_session::StepDirection::South, appearance_ref: 1, health_percent: health },
             };
             let mut batch = SpriteBatch::new();
-            draw(&mut batch, &view, world.atlas(), TileCoord::new(0,0), &[entity], &[], Options::new(&preferences, 0, None, std::time::Duration::ZERO, false, None))?;
+            draw(&mut batch, &view, world.atlas(), TileCoord::new(0,0), &[entity], &[], &[], Options::new(&preferences, 0, None, std::time::Duration::ZERO, false, None))?;
             let mut expected = SpriteBatch::new();
             super::super::pixel_rgb(&mut expected, &view, world.atlas(), [0.0;2], [1.0;2], [0;3])?;
             assert_eq!(batch.instances().first().map(|q| q.uv), expected.instances().first().map(|q| q.uv));

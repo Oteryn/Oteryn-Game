@@ -58,11 +58,15 @@ mod events;
 mod framing;
 mod pvp_expert;
 pub use events::SessionEvent;
+/// Observer-relative guild emblems (capability 509).
+pub use oteryn_protocol_oteryn::guild_emblem;
 mod gated_command;
 pub use gated_command::world_context;
 /// Server-owned highscores query and result codecs.
 pub use oteryn_protocol_oteryn::highscores;
 pub use oteryn_protocol_oteryn::highscores_catalogue;
+/// The own character's capacity (capability 508).
+pub use oteryn_protocol_oteryn::inventory_capacity;
 /// The own Platform sanction record (capability 497).
 pub use oteryn_protocol_oteryn::sanction_record;
 pub use oteryn_protocol_oteryn::server_info;

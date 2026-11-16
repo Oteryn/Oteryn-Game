@@ -58,11 +58,14 @@ pub struct EntityLight {
 pub type EntityLights = BTreeMap<[u8; ENTITY_IDENTITY_BYTES], EntityLight>;
 
 /// The optional entry fields a session's negotiation selected: field 10 under capability 4 and
-/// fields 11-12 under capability 19.
+/// fields 11-12 under capability 19. `inventory_capacity` admits the capacity-only delta (field
+/// 7) of capability 508 and `guild_emblems` the emblems-only delta (field 8) of capability 509.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct EntityFields {
     pub actor_motion: bool,
     pub display_names: bool,
+    pub guild_emblems: bool,
+    pub inventory_capacity: bool,
     pub item_handles: bool,
     pub light: bool,
     pub party_icons: bool,
@@ -75,6 +78,10 @@ impl EntityFields {
                 .contains(&crate::actor_motion::CAPABILITY_ACTOR_MOTION_V1),
             display_names: selected_capabilities
                 .contains(&crate::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2),
+            guild_emblems: selected_capabilities
+                .contains(&crate::guild_emblem::CAPABILITY_GUILD_EMBLEM_V1),
+            inventory_capacity: selected_capabilities
+                .contains(&crate::inventory_capacity::CAPABILITY_INVENTORY_CAPACITY_V1),
             item_handles: selected_capabilities.contains(&CAPABILITY_ITEM_VIEW_MOVE_V1),
             light: selected_capabilities.contains(&CAPABILITY_WORLD_LIGHT_V1),
             party_icons: selected_capabilities
@@ -86,6 +93,8 @@ impl EntityFields {
         Self {
             actor_motion: false,
             display_names: false,
+            guild_emblems: false,
+            inventory_capacity: false,
             item_handles,
             light: false,
             party_icons: false,
@@ -792,27 +801,106 @@ pub fn decode_world_spatial_entities_delta_with_icons(
     ),
     WorldSpatialError,
 > {
+    let fields = EntityFields {
+        guild_emblems: false,
+        inventory_capacity: false,
+        ..fields
+    };
+    let (delta, lights, sidecar) =
+        decode_world_spatial_entities_delta_with_sidecar(payload, fields)?;
+    let icons = match sidecar {
+        Some(DeltaSidecar::PartyIcons(icons)) => Some(icons),
+        Some(_) => return Err(WorldSpatialError::Malformed),
+        None => None,
+    };
+    Ok((delta, lights, icons))
+}
+
+/// The one optional bundle a header-only type-2 delta carries instead of entity changes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DeltaSidecar {
+    /// Field 6 under capability 134: every visible player's party icons.
+    PartyIcons(Vec<crate::party_skull::PartyIcon>),
+    /// Field 7 under capability 508: the own character's capacity.
+    InventoryCapacity(crate::inventory_capacity::InventoryCapacity),
+    /// Field 8 under capability 509: every visible player's guild emblem.
+    GuildEmblems(Vec<crate::guild_emblem::GuildEmblem>),
+}
+
+/// A header-only delta that carries `sidecar` (fields 6-8); the session must have selected it.
+pub fn encode_world_spatial_entities_sidecar_delta(
+    content_generation: [u8; CONTENT_GENERATION_BYTES],
+    actor_position: ActorPosition,
+    sidecar: &DeltaSidecar,
+) -> Result<Vec<u8>, WorldSpatialError> {
+    let mut payload = encode_world_spatial_entities_delta(&WorldSpatialEntitiesDelta {
+        content_generation,
+        actor_position,
+        enter: Vec::new(),
+        update: Vec::new(),
+        leave: Vec::new(),
+    })?;
+    let (field, body) = match sidecar {
+        DeltaSidecar::PartyIcons(icons) => (
+            6,
+            crate::party_skull::encode_party_icons(icons)
+                .map_err(|_| WorldSpatialError::Malformed)?,
+        ),
+        DeltaSidecar::InventoryCapacity(capacity) => (7, capacity.encode()?),
+        DeltaSidecar::GuildEmblems(emblems) => {
+            (8, crate::guild_emblem::encode_guild_emblems(emblems)?)
+        }
+    };
+    push_message(&mut payload, field, &body);
+    Ok(payload)
+}
+
+/// Decode negotiated spatial fields and the optional sidecar a header-only delta carries.
+pub fn decode_world_spatial_entities_delta_with_sidecar(
+    payload: &[u8],
+    fields: EntityFields,
+) -> Result<
+    (
+        WorldSpatialEntitiesDelta,
+        EntityLights,
+        Option<DeltaSidecar>,
+    ),
+    WorldSpatialError,
+> {
     if payload.len() > payload_limit(fields) {
         return Err(WorldSpatialError::LimitExceeded);
     }
     let (mut cursor, mut header) = (0, (None, None));
     let (mut enter, mut update, mut leave) = (Vec::new(), Vec::new(), Vec::new());
     let (mut entries, mut lights) = (0_usize, EntityLights::new());
-    let mut party_icons = None;
+    let mut sidecar = None;
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         if decode_header_field(key, payload, &mut cursor, &mut header)? {
             continue;
         }
-        if key == 0x32 && fields.party_icons {
+        let selected = match key {
+            0x32 => fields.party_icons,
+            0x3a => fields.inventory_capacity,
+            0x42 => fields.guild_emblems,
+            _ => false,
+        };
+        if selected {
             if entries != 0 || cursor == payload.len() {
                 return Err(WorldSpatialError::Malformed);
             }
-            party_icons = Some(
-                crate::party_skull::decode_party_icons(read_bytes(payload, &mut cursor)?)
-                    .map_err(|_| WorldSpatialError::Malformed)?,
-            );
-            // An icons-only delta cannot mix spatial changes or repeated icon bundles.
+            let body = read_bytes(payload, &mut cursor)?;
+            sidecar = Some(match key {
+                0x32 => DeltaSidecar::PartyIcons(
+                    crate::party_skull::decode_party_icons(body)
+                        .map_err(|_| WorldSpatialError::Malformed)?,
+                ),
+                0x3a => DeltaSidecar::InventoryCapacity(
+                    crate::inventory_capacity::InventoryCapacity::decode(body)?,
+                ),
+                _ => DeltaSidecar::GuildEmblems(crate::guild_emblem::decode_guild_emblems(body)?),
+            });
+            // A sidecar-only delta cannot mix spatial changes or repeated sidecars.
             if cursor != payload.len() {
                 return Err(WorldSpatialError::Malformed);
             }
@@ -848,7 +936,7 @@ pub fn decode_world_spatial_entities_delta_with_icons(
         leave,
     };
     validate_delta(&delta)?;
-    Ok((delta, lights, party_icons))
+    Ok((delta, lights, sidecar))
 }
 
 /// What a client decoded from a domain-1 snapshot, by the revision its negotiation selected.
@@ -1163,6 +1251,8 @@ mod tests {
         let fields = EntityFields {
             actor_motion: false,
             display_names: false,
+            guild_emblems: false,
+            inventory_capacity: false,
             item_handles: true,
             light: true,
             party_icons: false,
@@ -1594,6 +1684,8 @@ mod tests {
     const LIT: EntityFields = EntityFields {
         actor_motion: false,
         display_names: false,
+        guild_emblems: false,
+        inventory_capacity: false,
         item_handles: false,
         light: true,
         party_icons: false,

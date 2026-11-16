@@ -36,6 +36,7 @@ impl PlayView {
             party_icon_epoch: std::time::Instant::now(),
             party_icons_refresh: None,
             party_icons: Vec::new(),
+            guild_emblems: Vec::new(),
             vitals: None,
             battle_instinct: None,
             battle_instinct_refresh: None,

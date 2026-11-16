@@ -1,4 +1,5 @@
 //! Live inventory projection; handles retain their session identity.
+pub use oteryn_session::inventory_capacity::InventoryCapacity;
 pub use oteryn_session::{CharacterInventory, ItemEntry, ItemHandle};
 
 #[must_use]

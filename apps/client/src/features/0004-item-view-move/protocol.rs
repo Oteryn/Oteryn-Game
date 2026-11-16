@@ -18,6 +18,9 @@ impl Outbox {
             if let SessionEvent::Inventory(delta) = event {
                 mailbox.inventory.apply(Some(delta.value.clone()));
             }
+            if let SessionEvent::InventoryCapacity(delta) = event {
+                oteryn_client_ui::inventory_capacity::apply(&mut mailbox.inventory, delta.value);
+            }
         }
     }
 

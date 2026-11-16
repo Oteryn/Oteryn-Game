@@ -63,6 +63,8 @@ pub struct Pushed {
     pub vip_presence: Option<oteryn_session::VipPresenceBatch>,
     /// N006: the own character took a hit from an attacker while attacking a target.
     pub own_hit_flash: bool,
+    /// The latest guild emblem list under capability 509.
+    pub guild_emblems: Option<Vec<oteryn_session::guild_emblem::GuildEmblem>>,
 }
 
 impl Pushed {
@@ -99,6 +101,7 @@ impl Pushed {
         self.chat_rooms = newer.chat_rooms.or(self.chat_rooms);
         self.vip_presence = newer.vip_presence.or(self.vip_presence.take());
         self.own_hit_flash |= newer.own_hit_flash;
+        self.guild_emblems = newer.guild_emblems.or(self.guild_emblems.take());
         if newer.markers_reset {
             self.markers.clear();
             self.markers_reset = true;

@@ -1,5 +1,5 @@
-//! Tibia's flag artwork for the observer-relative party and skull wire values; original compact
-//! glyphs when the graphics bundle is absent.
+//! Tibia's flag artwork for the observer-relative party, skull and guild emblem wire values;
+//! original compact glyphs when the graphics bundle is absent.
 use super::{HudIconCells, party_icon_rgb, pixel_rgb};
 use oteryn_renderer::{AtlasImage, BatchError, QuadInstance, SpriteBatch, TileView};
 use std::time::Duration;
@@ -71,6 +71,49 @@ pub(super) fn draw(
                         [5; 3],
                     )?;
                 }
+                pixel_rgb(batch, view, atlas, point, [1.5, 1.5], color)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Guild emblem `1..=5` (ally, enemy, neutral, member, other) from Tibia's `guild.png`, or a
+/// filled shield in the emblem's colour without the bundle.
+pub(super) fn draw_emblem(
+    batch: &mut SpriteBatch,
+    view: &TileView,
+    atlas: &AtlasImage,
+    cells: Option<&HudIconCells>,
+    at: [f32; 2],
+    emblem: u8,
+    scale: f32,
+) -> Result<(), BatchError> {
+    let Some(index) = usize::from(emblem).checked_sub(1) else {
+        return Ok(());
+    };
+    let cell = cells.and_then(|cells| cells.guilds.get(index));
+    if let Some(&cell) = cell.filter(|cell| u32::from(**cell) < atlas.cell_count()) {
+        if batch.len() < oteryn_renderer::MAX_BATCH_QUADS {
+            batch.push_quad(QuadInstance {
+                position: at,
+                size: [32.0 * scale; 2],
+                uv: atlas.uv_rect(cell)?,
+            })?;
+        }
+        return Ok(());
+    }
+    let color = match emblem {
+        1 => [0, 5, 0],
+        2 => [5, 0, 0],
+        3 => [0, 2, 5],
+        4 => [5, 5, 2],
+        _ => [5, 5, 5],
+    };
+    for (row, bits) in MEMBER.into_iter().enumerate() {
+        for column in 0..8 {
+            if bits & (128 >> column) != 0 {
+                let point = [at[0] + column as f32 * 1.5, at[1] + row as f32 * 1.5];
                 pixel_rgb(batch, view, atlas, point, [1.5, 1.5], color)?;
             }
         }

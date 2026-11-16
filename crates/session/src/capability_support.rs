@@ -181,6 +181,8 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_DEFAULTS_V1,
     cyclopedia_character::items::filtered::CAPABILITY,
     highscores_catalogue::CAPABILITY,
+    oteryn_protocol_oteryn::inventory_capacity::CAPABILITY_INVENTORY_CAPACITY_V1,
+    oteryn_protocol_oteryn::guild_emblem::CAPABILITY_GUILD_EMBLEM_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in

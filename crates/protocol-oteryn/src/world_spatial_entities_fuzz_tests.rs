@@ -109,6 +109,8 @@ fn fuzz_entity_snapshot_and_delta_decoders() {
             let fields = EntityFields {
                 actor_motion: false,
                 display_names: false,
+                guild_emblems: false,
+                inventory_capacity: false,
                 item_handles,
                 light,
                 party_icons: false,

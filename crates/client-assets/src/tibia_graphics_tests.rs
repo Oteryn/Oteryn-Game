@@ -62,6 +62,12 @@ fn bundle_font_and_flags_decode_from_their_pinned_entries() -> Result<(), Box<dy
             fixture::icon_color(false, usize::from(value) - 1)
         );
     }
+    for value in 1..=GUILD_ICONS as u8 {
+        let icon = graphics.guild(value).ok_or("guild emblem")?;
+        assert_eq!(icon.len(), ICON_PX * ICON_PX * 4);
+        assert_eq!(icon[4..8], fixture::guild_color(usize::from(value) - 1));
+    }
+    assert!(graphics.guild(0).is_none() && graphics.guild(6).is_none());
     assert!(graphics.skull(0).is_none() && graphics.skull(7).is_none());
     assert!(graphics.shield(0).is_none() && graphics.shield(12).is_none());
     std::fs::remove_dir_all(dir)?;

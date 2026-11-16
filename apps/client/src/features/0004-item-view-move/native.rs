@@ -210,7 +210,10 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                             .world_context
                             .feedback(std::time::Instant::now())
                             .unwrap_or_default();
-                        let text = format!("{}\n{}", panel.text(), feedback);
+                        let capacity =
+                            oteryn_client_ui::inventory_capacity::cap_text(panel)
+                                .map_or_else(String::new, |cap| format!("{cap}\n"));
+                        let text = format!("{capacity}{}\n{}", panel.text(), feedback);
                         if status_text != text {
                             SetWindowTextW(status, wide(&text).as_ptr());
                             status_text = text;

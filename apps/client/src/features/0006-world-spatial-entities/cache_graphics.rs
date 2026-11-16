@@ -1,7 +1,7 @@
 // Tibia's game font and creature HUD flags from the official graphics bundle in the asset
 // root; the builtin glyphs remain where the bundle or one of its characters is missing.
 use oteryn_client_assets::tibia_graphics::{
-    Glyph, ICON_PX, SHIELD_ICONS, SKULL_ICONS, TibiaGraphics,
+    GUILD_ICONS, Glyph, ICON_PX, SHIELD_ICONS, SKULL_ICONS, TibiaGraphics,
 };
 
 /// One name glyph: its atlas cell, offset and size in label pixels at 100 %.
@@ -36,11 +36,13 @@ impl NameLabel {
     }
 }
 
-/// Atlas cells of the official skull and party shield icons, by wire value minus one.
+/// Atlas cells of the official skull, party shield and guild emblem icons, by wire value
+/// minus one.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct HudIconCells {
     pub(crate) skulls: [u16; SKULL_ICONS],
     pub(crate) shields: [u16; SHIELD_ICONS],
+    pub(crate) guilds: [u16; GUILD_ICONS],
 }
 
 /// A glyph painted `colour` at the top left of an otherwise clear cell.
@@ -75,7 +77,15 @@ impl PresentationCache {
         for (index, slot) in shields.iter_mut().enumerate() {
             *slot = cell(graphics.shield(index as u8 + 1))?;
         }
-        Some(HudIconCells { skulls, shields })
+        let mut guilds = [0; GUILD_ICONS];
+        for (index, slot) in guilds.iter_mut().enumerate() {
+            *slot = cell(graphics.guild(index as u8 + 1))?;
+        }
+        Some(HudIconCells {
+            skulls,
+            shields,
+            guilds,
+        })
     }
 
     /// The bundle font and the icon cells of the current atlas, when the bundle loaded.

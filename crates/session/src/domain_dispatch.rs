@@ -158,11 +158,23 @@ impl<S: SessionStream> Session<S> {
                 )?;
                 let fields =
                     world_spatial_entities::EntityFields::selected(self.selected_capabilities());
-                let (entities_delta, lights, icons) =
-                    world_spatial_entities::decode_world_spatial_entities_delta_with_icons(
+                let (entities_delta, lights, sidecar) =
+                    world_spatial_entities::decode_world_spatial_entities_delta_with_sidecar(
                         delta.payload,
                         fields,
                     )?;
+                let (icons, capacity, emblems) = match sidecar {
+                    Some(world_spatial_entities::DeltaSidecar::PartyIcons(icons)) => {
+                        (Some(icons), None, None)
+                    }
+                    Some(world_spatial_entities::DeltaSidecar::InventoryCapacity(capacity)) => {
+                        (None, Some(capacity), None)
+                    }
+                    Some(world_spatial_entities::DeltaSidecar::GuildEmblems(emblems)) => {
+                        (None, None, Some(emblems))
+                    }
+                    None => (None, None, None),
+                };
                 if entities_delta.content_generation != self.world_spatial.content_generation {
                     return Err(SessionError::ContentGenerationMismatch { domain_id });
                 }
@@ -173,9 +185,15 @@ impl<S: SessionStream> Session<S> {
                     }
                 };
                 appearance_state::validate_entities(self.appearance.as_ref(), Some(&next))?;
-                if icons.as_ref().is_some_and(|icons| icons.iter().any(|icon| {
-                    !next.get(&icon.entity).is_some_and(|entity| entity.kind == EntityKind::Player)
-                })) {
+                let player = |entity: &world_spatial_entities::EntityRef| {
+                    next.get(entity)
+                        .is_some_and(|entity| entity.kind == EntityKind::Player)
+                };
+                if icons.as_ref().is_some_and(|icons| icons.iter().any(|icon| !player(&icon.entity)))
+                    || emblems
+                        .as_ref()
+                        .is_some_and(|emblems| emblems.iter().any(|emblem| !player(&emblem.entity)))
+                {
                     return Err(SessionError::Protocol(FoundationProtocolError::MalformedFrame));
                 }
                 self.entities = Some(next);
@@ -183,6 +201,22 @@ impl<S: SessionStream> Session<S> {
                 self.spatial_revision = new_revision;
                 if let Some(icons) = icons {
                     return Ok(SessionEvent::PartyIcons(applied(server_sequence, base_revision, new_revision, icons)));
+                }
+                if let Some(emblems) = emblems {
+                    return Ok(SessionEvent::GuildEmblems(applied(
+                        server_sequence,
+                        base_revision,
+                        new_revision,
+                        emblems,
+                    )));
+                }
+                if let Some(capacity) = capacity {
+                    return Ok(SessionEvent::InventoryCapacity(applied(
+                        server_sequence,
+                        base_revision,
+                        new_revision,
+                        capacity,
+                    )));
                 }
                 Ok(SessionEvent::WorldSpatialEntities(applied(
                     server_sequence,

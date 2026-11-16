@@ -56,6 +56,8 @@ pub use oteryn_session::cast;
 pub use oteryn_session::cast_chat::decode_line as decode_cast_caster_line;
 pub use oteryn_session::cast_chat::{CasterLine as CastCasterLine, Roster as CastRoster};
 pub use oteryn_session::cast_viewer::CastViewerSession;
+/// Observer-relative guild emblems (capability 509).
+pub use oteryn_session::guild_emblem;
 
 #[path = "features/0289-cast-view/protocol.rs"]
 pub mod cast_view;
