@@ -407,6 +407,81 @@ fn boss_rewards_key_browses_the_typed_death_and_shows_the_server_rows() -> TestR
     Ok(())
 }
 
+/// An accepted collection that moved the browsed items leaves no stale rows on the form.
+#[test]
+fn boss_rewards_collect_removes_the_collected_rows_from_the_form() -> TestResult {
+    use oteryn_client_runtime::boss_rewards::{
+        BossRewardsCommand, BossRewardsReply, BossRewardsResponse, CommandStatus, boss_rewards,
+    };
+    let summary = |app: &mut App| -> String {
+        app.world_mut()
+            .query_filtered::<&Text, With<Summary>>()
+            .iter(app.world())
+            .map(|text| text.0.clone())
+            .collect()
+    };
+    let (mut app, mut commands, outbox) = fixture()?;
+    press(
+        &mut app,
+        30,
+        Modifiers::one(Modifier::Control).with(Modifier::Shift),
+    )?;
+    assert!(form_open(&app, "Boss rewards")?);
+    for (field, mut text) in app
+        .world_mut()
+        .query::<(&Field, &mut EditableText)>()
+        .iter_mut(app.world_mut())
+    {
+        if field.0 == 0 {
+            *text = EditableText::new("09".repeat(16));
+        } else if field.0 == 1 {
+            *text = EditableText::new("4");
+        }
+    }
+    while commands.try_recv().is_ok() {}
+    click(&mut app, Some(0))?;
+    let PlayCommand::BossRewards(BossRewardsCommand::Browse(_)) = commands.try_recv()? else {
+        return Err("boss reward browse missing".into());
+    };
+    outbox.bevy_boss_rewards_result(&BossRewardsResponse {
+        status: CommandStatus::Accepted,
+        reply: Some(BossRewardsReply::Browse(boss_rewards::BrowseReply {
+            status: boss_rewards::BossRewardStatus::Ok,
+            death: [9; 16],
+            expires_at_unix_ms: 99,
+            rows: vec![boss_rewards::RewardRow {
+                ordinal: 4,
+                definition_reference: 700,
+                quantity: 3,
+            }],
+            more: false,
+        })),
+    });
+    app.update();
+    assert!(summary(&mut app).contains("#4: item 700 x3"));
+    click(&mut app, Some(1))?;
+    let PlayCommand::BossRewards(BossRewardsCommand::Take(take)) = commands.try_recv()? else {
+        return Err("boss reward take missing".into());
+    };
+    assert_eq!((take.death, take.ordinal), ([9; 16], 4));
+    outbox.bevy_boss_rewards_result(&BossRewardsResponse {
+        status: CommandStatus::Accepted,
+        reply: Some(BossRewardsReply::Collect(boss_rewards::CollectReply {
+            status: boss_rewards::BossRewardStatus::Ok,
+            moved: 1,
+            remaining: 0,
+        })),
+    });
+    app.update();
+    let shown = summary(&mut app);
+    assert!(
+        !shown.contains("#4: item 700 x3"),
+        "the collected reward is still listed: {shown}"
+    );
+    assert!(shown.contains("Enter the server death id, then browse"));
+    Ok(())
+}
+
 /// With hireling management (250) negotiated the hireling key opens the management window;
 /// its Banker button keeps the banker service (165, command 220) reachable.
 #[test]

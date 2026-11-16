@@ -58,6 +58,13 @@ impl PlayLink {
     pub fn cyclopedia_map_request(&self, intent: Intent) {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }
+    /// Shows the previous or next floor of the confirmed exploration result and region atlas.
+    pub fn cyclopedia_map_floor(&self, previous: bool) {
+        lock(&self.mailbox)
+            .properties
+            .cyclopedia_map
+            .select_floor(previous);
+    }
     pub fn cyclopedia_map_open(&self) {
         lock(&self.mailbox).properties.cyclopedia_map.open = true;
     }
