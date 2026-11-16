@@ -6,8 +6,27 @@ use bevy::{
     ui_widgets::{ScrollArea, TextInput},
 };
 use oteryn_client_ui::team_finder::{MemberStatus, TeamFinderResult};
+use oteryn_client_ui::team_finder_leader::{LeaderListing, TeamTarget};
 use oteryn_client_ui_bevy as source;
-pub(super) fn build(commands: &mut Commands, skins: &Skins, key: Key, panel: &Panel) -> Entity {
+/// The leader listing editors, in the field order the session parses.
+pub(super) const LISTING_FIELDS: [&str; 9] = [
+    "Minimum level",
+    "Maximum level",
+    "Vocation mask (0 = any)",
+    "Team size",
+    "Free slots",
+    "Party members join (0 or 1)",
+    "Activity (1 boss, 2 hunt, 3 quest)",
+    "Boss, hunt or quest id",
+    "Hunting area (hunts only)",
+];
+pub(super) fn build(
+    commands: &mut Commands,
+    skins: &Skins,
+    key: Key,
+    panel: &Panel,
+    leader: &Leader,
+) -> Entity {
     let root = commands
         .spawn((
             GameModal,
@@ -43,7 +62,23 @@ pub(super) fn build(commands: &mut Commands, skins: &Skins, key: Key, panel: &Pa
         ))
         .id();
     commands.entity(root).add_child(dialog);
+    let enabled = panel.selected && panel.pending.is_none();
+    if panel.applicants {
+        source::dialog_caption(commands, dialog, "Social — Manage Team", skins.font.clone());
+        manage(commands, skins, key, dialog, panel, leader, enabled);
+        return root;
+    }
     source::dialog_caption(commands, dialog, "Social — Join Team", skins.font.clone());
+    let tabs = row(commands, dialog);
+    button(
+        commands,
+        skins,
+        tabs,
+        key,
+        Kind::Applicants(false),
+        "Manage Team",
+        enabled,
+    );
     label(
         commands,
         skins,
@@ -61,30 +96,8 @@ pub(super) fn build(commands: &mut Commands, skins: &Skins, key: Key, panel: &Pa
                 .unwrap_or_default(),
         ),
     ] {
-        let mut text = EditableText::new(value);
-        text.max_characters = Some(64);
-        let input = commands
-            .spawn((
-                field,
-                TextInput,
-                text,
-                source::font(skins.font.clone(), false),
-                TextColor(source::TEXT_COLOR),
-                TextLayout::no_wrap(),
-                TextCursorStyle::default(),
-                TabIndex(0),
-                source::frame(skins.inset.clone(), [1.; 4]),
-                Node {
-                    width: percent(100.),
-                    height: px(25.),
-                    padding: UiRect::all(px(4.)),
-                    ..default()
-                },
-            ))
-            .id();
-        commands.entity(dialog).add_child(input);
+        input(commands, skins, dialog, field, value);
     }
-    let enabled = panel.selected && panel.pending.is_none() && !panel.applicants;
     let filters = row(commands, dialog);
     button(
         commands,
@@ -229,6 +242,190 @@ pub(super) fn build(commands: &mut Commands, skins: &Skins, key: Key, panel: &Pa
     );
     button(commands, skins, footer, key, Kind::Close, "Close", true);
     root
+}
+/// The leader's applicants page and advertisement editor.
+fn manage(
+    commands: &mut Commands,
+    skins: &Skins,
+    key: Key,
+    dialog: Entity,
+    panel: &Panel,
+    leader: &Leader,
+    ready: bool,
+) {
+    let tabs = row(commands, dialog);
+    button(
+        commands,
+        skins,
+        tabs,
+        key,
+        Kind::Browse(false),
+        "Join Team",
+        ready,
+    );
+    label(
+        commands,
+        skins,
+        dialog,
+        "Players who applied to or were invited to your team. Select one to decide.",
+    );
+    let list = commands
+        .spawn((
+            ScrollArea,
+            Node {
+                height: px(180.),
+                min_height: px(0.),
+                overflow: Overflow::scroll_y(),
+                flex_direction: FlexDirection::Column,
+                row_gap: px(4.),
+                ..default()
+            },
+        ))
+        .id();
+    commands.entity(dialog).add_child(list);
+    if !panel.selected {
+        label(
+            commands,
+            skins,
+            list,
+            "Team discovery is unavailable in this session",
+        );
+    } else if panel.result.is_none() && panel.pending.is_none() {
+        label(commands, skins, list, "Refresh to see your applicants.");
+    } else if panel.result.is_some() && panel.visible_indices().is_empty() {
+        label(commands, skins, list, "No applicants on this page.");
+    }
+    for (index, name) in panel.visible_names().iter().enumerate() {
+        let caption = format!(
+            "{}{}",
+            if index == panel.selected_row {
+                "> "
+            } else {
+                ""
+            },
+            name
+        );
+        button(
+            commands,
+            skins,
+            list,
+            key,
+            Kind::Select(index),
+            &caption,
+            ready,
+        );
+    }
+    label(commands, skins, dialog, &panel.feedback);
+    let decisions = row(commands, dialog);
+    button(
+        commands,
+        skins,
+        decisions,
+        key,
+        Kind::Applicants(false),
+        "Refresh",
+        ready,
+    );
+    button(
+        commands,
+        skins,
+        decisions,
+        key,
+        Kind::Applicants(true),
+        "Next page",
+        ready && panel.next().is_some(),
+    );
+    let chosen = ready && panel.handle().is_some();
+    for (action, caption) in [(2, "Invite"), (3, "Accept"), (4, "Decline")] {
+        button(
+            commands,
+            skins,
+            decisions,
+            key,
+            Kind::Decide(action),
+            caption,
+            chosen,
+        );
+    }
+    let current = match &panel.result {
+        Some(TeamFinderResult::Applicants { listing, .. }) => (*listing).or(leader.confirmed),
+        _ => leader.confirmed,
+    };
+    label(commands, skins, dialog, "Your team listing");
+    let values = listing_values(current);
+    for (index, (caption, value)) in LISTING_FIELDS.iter().zip(values).enumerate() {
+        let line = row(commands, dialog);
+        label(commands, skins, line, caption);
+        input(commands, skins, line, Field::Listing(index), value);
+    }
+    label(commands, skins, dialog, &leader.feedback);
+    let editable = leader.selected && !leader.pending;
+    let footer = row(commands, dialog);
+    button(
+        commands,
+        skins,
+        footer,
+        key,
+        Kind::Publish(Vec::new()),
+        "Publish listing",
+        editable,
+    );
+    button(
+        commands,
+        skins,
+        footer,
+        key,
+        Kind::Withdraw,
+        "Remove listing",
+        editable && current.is_some(),
+    );
+    button(commands, skins, footer, key, Kind::Close, "Close", true);
+}
+/// The editor values for a listing, empty without one.
+fn listing_values(listing: Option<LeaderListing>) -> [String; 9] {
+    let Some(listing) = listing else {
+        return Default::default();
+    };
+    let (activity, id, area) = match listing.target {
+        TeamTarget::Boss(id) => (1, id, String::new()),
+        TeamTarget::Hunt { kind, area } => (2, kind, area.to_string()),
+        TeamTarget::Quest(id) => (3, id, String::new()),
+    };
+    [
+        listing.min_level.to_string(),
+        listing.max_level.to_string(),
+        listing.vocation_mask.to_string(),
+        listing.slots.to_string(),
+        listing.free_slots.to_string(),
+        u8::from(listing.party_members_join).to_string(),
+        activity.to_string(),
+        id.to_string(),
+        area,
+    ]
+}
+fn input(commands: &mut Commands, skins: &Skins, parent: Entity, field: Field, value: String) {
+    let mut text = EditableText::new(value);
+    text.max_characters = Some(64);
+    let input = commands
+        .spawn((
+            field,
+            TextInput,
+            text,
+            source::font(skins.font.clone(), false),
+            TextColor(source::TEXT_COLOR),
+            TextLayout::no_wrap(),
+            TextCursorStyle::default(),
+            TabIndex(0),
+            source::frame(skins.inset.clone(), [1.; 4]),
+            Node {
+                width: percent(100.),
+                height: px(25.),
+                padding: UiRect::all(px(4.)),
+                ..default()
+            },
+        ))
+        .id();
+    commands.entity(parent).add_child(input);
 }
 fn label(commands: &mut Commands, skins: &Skins, parent: Entity, value: &str) {
     let child = commands
