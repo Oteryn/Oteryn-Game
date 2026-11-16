@@ -419,22 +419,6 @@ fn hireling_management_banker_button_opens_the_banker_service() -> TestResult {
         Modifiers::one(Modifier::Control).with(Modifier::Shift),
     )?;
     assert!(form_open(&app, "Hireling management")?);
-    // Opening lists the hirelings; the window's buttons wait for that reply.
-    let PlayCommand::Feature(list) = commands.try_recv()? else {
-        return Err("hireling list request missing".into());
-    };
-    assert_eq!(list.capability, 250);
-    outbox.bevy_hireling_management_result(
-        &oteryn_client_runtime::raw_feature::GatedCommandResult {
-            command_id: 1,
-            status: oteryn_client_runtime::raw_feature::CommandStatus::Accepted,
-            server_sequence: 1,
-            payload: oteryn_client_ui::hireling_management::wire::Reply::State(vec![])
-                .encode()
-                .ok_or("hireling state reply")?,
-        },
-    );
-    app.update();
     // The window opens with a List query; its buttons wait for the server's answer.
     let PlayCommand::Feature(list) = commands.try_recv()? else {
         return Err("hireling management list query missing".into());

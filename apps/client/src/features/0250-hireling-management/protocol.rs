@@ -30,9 +30,6 @@ impl Outbox {
         self.hireling_initialize(true);
         self.hireling_management_initialize(true);
     }
-    pub(crate) fn bevy_hireling_management_result(&self, result: &GatedCommandResult) {
-        self.hireling_management_result(result);
-    }
     pub(crate) fn bevy_hireling_result(
         &self,
         response: &oteryn_client_runtime::hireling::HirelingResponse,
