@@ -9598,13 +9598,17 @@
     "vocation": "exalted_monk",
     "level": 757
    },
-   "status": "Evidence",
+   "status": "KnownGap",
    "expected": {
-    "mana_min": 125,
-    "mana_max": 185
+    "mana_min": 124,
+    "mana_max": 160
    },
-   "source": "Global test server 2026-11-15, OCR sample; also the I14G owner-selected Global range (TibiaWiki rev 1183259)",
-   "notes": "Coordinator brief said 'heal 125-185 (OCR uncertain)'. In content 125-185 is the MANA restore of this potion (health restore is 250-350), so the row asserts the mana range; resource attribution of the OCR reading needs Content confirmation."
+   "current": {
+    "mana_min": 100,
+    "mana_max": 200
+   },
+   "source": "Global test server 2026-11-15, measured mana restore n=12 (docs/reference/parity/evidence/2026-11-15-global-client/ct-potions-summary.txt)",
+   "notes": "Global samples 124-160 contradict the TibiaWiki 125-185 minimum, so Content keeps the imported 100-200 (healing.md section B, healing_global_overrides.py). The sample extremes are not the true range; flip to Evidence once a larger Global sample fixes min and max."
   },
   {
    "id": "potion.23374.global.ultimate-spirit-restore",

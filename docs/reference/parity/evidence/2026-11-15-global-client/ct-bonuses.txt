@@ -1,0 +1,28 @@
+Healing-related bonuses: Invalid Monk, L757, read from client windows 2026-11-15 17:45-17:55 (screenshots in /tmp/ct-static/)
+source | bonus | value
+Skills tooltip (Magic) | ML | "54 = 50 +2 (+2 Loyalty)" (armor+legs on; 52 without them)
+Cyclopedia Offence Stats | Flat Damage and Healing | 158 = 142 from Character Level + 16 from Wheel of Destiny
+Wheel: Revelation Perks | Damage and Healing | +13 (stage bonus: Stage1 +4, Stage2 +9, Stage3 +20 per domain; tooltip verbatim in /tmp/ct-wheel.md)
+Wheel: Vessels | Damage and Healing | +3 (each gem vessel node +1 Damage/Healing)
+Wheel: Revelation | Ascetic | Stage 2: "Increases the Harmony base bonus by 1%/2%/3% and your autoattacks deal additional damage equal to 100%/200%/300% of your mantra."
+Wheel: Revelation | Gift of Life | Locked
+Wheel: Revelation | Avatar of Balance | Locked
+Wheel: Dedication | Hit Points / Mana / Capacity / Mitigation mult. | +550 / +500 / +1,125 / 11.25%
+Gems | mods | +100 HP, +1% energy res (lesser); +150 mana, +1.5% fire res; +4.5% life drain res; RM +225 Spiritual Outburst. No healing mod.
+Bounty Talisman (Task Board) | Life Leech | 5.5% (not a spell-heal bonus)
+Cyclopedia Misc | Blessings | 7/7
+Cyclopedia Misc | Equipment spell augments | Avatar of Balance -900s cooldown; Chained Penance +8% crit extra dmg
+Cyclopedia Misc | Wheel spell augments | Chained Penance +1 target; Thousand Fist Blows -4s cd, +40% crit extra dmg
+Cyclopedia Misc | Consumable cooldowns | strike enhancement, stamina extension, wealth duplex, ice resilience, holy resilience (+1 more icon), ~5h28-5h30 left; none is a healing boost
+Cyclopedia Offence | Critical hit | chance +5%, extra damage +10%
+Conditions bar | | Protection zone; Serene ("You are serene if no more than 7 monsters or characters are directly beside you / if no party members are in sight"). Harmony bar 0-5. No food (Food 00:00), no healing buff.
+Prey | | Ghoul: Bonus XP +13% (not healing)
+Equipment | | no healing/ML stats besides +2 ML from armor/legs
+Imbuements | | not checked (would need the item windows)
+
+WHY SUSTAIN GAVE ~+54% (explanation that fits the data):
+Sustain multiplies only the formula part (level/ML based), not the flat 158 (level 142 + wheel 16). Serene was active during all measurements, so Sustain was at its serene value of +70%.
+  ML52: no virtue avg (Harmony 757.7 + Justice 728.3)/2 = 743.0; Sustain 1152.9 -> (1152.9-158)/(743.0-158) = 1.701
+  ML54: no virtue avg (777.0 + 748.8)/2 = 762.9;            Sustain 1189.7 -> (1189.7-158)/(762.9-158) = 1.706
+=> Sustain = x1.70 on (heal - 158), i.e. +70% (serene), the flat Damage&Healing added afterwards. On the total heal this looks like +53-55%.
+(Harmony is ~29 higher than Justice on average at both ML: about 1 sd/sqrt(n) apart, so it is possibly real and worth a check.)

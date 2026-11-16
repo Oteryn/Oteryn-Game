@@ -1,0 +1,18 @@
+Spirit Mend heal measurement, Invalid Monk L757, wheel +16 D&H, 2026-11-15 (Server Log copied as text, dedup by (time,value)).
+
+ML52 Justice  n=30 min= 658 max= 829 mean=  728.3 sd= 58.3
+ML52 Harmony  n=30 min= 654 max= 829 mean=  757.7 sd= 58.6
+ML52 Sustain  n=35 min=1059 max=1241 mean= 1152.9 sd= 55.4
+ML54 Justice  n=31 min= 678 max= 849 mean=  748.8 sd= 50.4
+ML54 Harmony  n=31 min= 676 max= 856 mean=  777.0 sd= 51.0
+ML54 Sustain  n=30 min=1093 max=1278 mean= 1189.7 sd= 53.3
+
+Anomalies / notes:
+- Saying the SAME virtue twice turns it off: the earlier "ML52 Sustain" batch at 16:18:34-16:19:59 (after a second "utura tio") read 656-829 = no-virtue level. Those 9 old samples are invalid; this summary uses only fresh samples with a verified state.
+- Old ct-heal5 OCR missed most heals and misread one (10694 = OCR error for 1094). The full log text is saved in /tmp/ct-serverlog-1637.txt.
+- At takeover (16:29) armor and legs were EQUIPPED (ML 54), so the ML of the old ct-heal5 samples is uncertain. All ML52 data here was taken after unequipping, with the Skills tooltip showing 52; ML54 was verified after re-equipping.
+- Harmony and Justice do not change Spirit Mend healing (both ~equal to no virtue, ~650-840). Sustain gives about +55%.
+- Two heals (ML54 Harmony 16:44:56 = 784, ML54 Justice 16:51:36 = 712) were flagged "CAPPED?" only because HP OCR read 69211 and 62711 (really 6921 and 6271). HP diff matches, so they are valid and included.
+- ML52 Sustain: 28 samples from 16:33-16:37 (trial runs, ML52 and Sustain verified) + 7 from the run.
+- The client saves a LowHealth screenshot every time HP drops to 1 (king reset), in ~/.local/share/CipSoft GmbH/Tibia/packages/TibiaExternal/screenshots.
+- Raw data: /tmp/ct-heal7.txt; runner: /tmp/ct-heal7.py.

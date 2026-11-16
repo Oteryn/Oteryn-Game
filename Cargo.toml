@@ -160,3 +160,53 @@ debug = "line-tables-only"
 opt-level = 3
 debug-assertions = true
 overflow-checks = true
+
+# Every test qualifies the native content fixture in its own nextest process; unoptimized
+# parsing and decompression made that take 30-50 s per test. Optimize the dependencies of
+# the content qualification crates and those crates only (not every dependency: that
+# rebuilt the whole client stack cold in the unit-test shards). Workspace test code stays
+# at opt-level 0, and debug assertions and overflow checks stay on for every package.
+[profile.dev.package.serde]
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev.package.serde_json]
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev.package.zstd]
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev.package.zstd-safe]
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev.package.zstd-sys]
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev.package.lzma-rs]
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev.package.oteryn-gameplay-content]
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev.package.oteryn-world-bundle]
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev.package.oteryn-world-bundle-compiler]
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
