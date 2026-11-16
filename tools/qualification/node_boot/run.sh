@@ -11,6 +11,32 @@
 set -Eeuo pipefail
 umask 077
 
+readonly NODE_BOOT_WORLD_REGIONS='126,125;126,126;127,127'
+
+node_boot_check_prebuilt() {
+  if ! python3 - "$NODE_BOOT_PREBUILT_DIR/manifest.json" "$NODE_BOOT_SOURCE_SHA" "$NODE_BOOT_WORLD_REGIONS" <<'PY_MANIFEST'
+import json, sys
+try:
+    manifest = json.load(open(sys.argv[1]))
+    valid = manifest['source_sha'] == sys.argv[2] and manifest['regions'] == sys.argv[3]
+except (OSError, ValueError, KeyError, TypeError):
+    valid = False
+sys.exit(0 if valid else 1)
+PY_MANIFEST
+  then
+    echo 'NODE_BOOT_RESULT=BLOCKED reason=prebuilt_mismatch'
+    exit 2
+  fi
+}
+
+node_boot_prebuilt_variant() {
+  if (( ${#NODE_CLOCK_FEATURES[@]} )); then
+    echo qualification-clock
+  else
+    echo default
+  fi
+}
+
 readonly PLATFORM_SHA=3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
 readonly TOPOLOGY_REVISION=wp5-node-boot-v1
 readonly ACCOUNT_ID=01934f10-7c00-7000-8000-000000000001
@@ -62,6 +88,11 @@ case "$NODE_BOOT_KEEP_STACK/$NODE_BOOT_REUSE_STACK" in
 esac
 
 GAME_SOURCE="$(git rev-parse --show-toplevel)"
+if [[ -n "${NODE_BOOT_PREBUILT_DIR:-}" ]]; then
+  export NODE_BOOT_PREBUILT_DIR="$(realpath -m -- "$NODE_BOOT_PREBUILT_DIR")"
+  NODE_BOOT_SOURCE_SHA="$(git -C "$GAME_SOURCE" rev-parse HEAD)"
+  node_boot_check_prebuilt
+fi
 # The separately pinned portal-rs lane owns only Platform lifecycle and its stages.
 # A fixed repository path prevents an environment variable from sourcing arbitrary code.
 case "${NODE_BOOT_LIFECYCLE:-}" in
@@ -389,9 +420,22 @@ if [[ "$NODE_BOOT_WORLD" == 1 && "$OTERYN_NODE_BOOT_REAL_CLOCK" == 0 ]]; then
   NODE_CLOCK_FEATURES=(--features qualification-clock)
 fi
 # Shipped binaries and the SEAM client harness.
-cargo +1.100.0 build --locked -p oteryn-game-server --bins "${NODE_CLOCK_FEATURES[@]}"
-cargo +1.100.0 test --locked -p oteryn-game-server --lib --no-run "${NODE_CLOCK_FEATURES[@]}"
-TARGET="$GAME_SOURCE/target/debug"
+if [[ -n "${NODE_BOOT_PREBUILT_DIR:-}" ]]; then
+  TARGET="$NODE_BOOT_PREBUILT_DIR/$(node_boot_prebuilt_variant)"
+  evidence "build_mode=prebuilt source_sha=$NODE_BOOT_SOURCE_SHA"
+else
+  cargo +1.100.0 build --locked -p oteryn-game-server --bins "${NODE_CLOCK_FEATURES[@]}"
+  cargo +1.100.0 test --locked -p oteryn-game-server --lib --no-run "${NODE_CLOCK_FEATURES[@]}"
+  TARGET="$GAME_SOURCE/target/debug"
+  evidence "build_mode=cargo"
+fi
+
+NODE_LIB_TEST=(cargo +1.100.0 test --locked -p oteryn-game-server --lib "${NODE_CLOCK_FEATURES[@]}")
+NODE_LIB_TEST_SEPARATOR=(--)
+if [[ -n "${NODE_BOOT_PREBUILT_DIR:-}" ]]; then
+  NODE_LIB_TEST=(bash -c 'cd "$1/apps/game-server" || exit; export CARGO_MANIFEST_DIR="$1/apps/game-server"; shift; exec "$@"' bash "$GAME_SOURCE" "$TARGET/oteryn-game-server-lib-test")
+  NODE_LIB_TEST_SEPARATOR=()
+fi
 
 # Deployment administration: service user, directories, roles, migration.
 sudo useradd --system --no-create-home --shell /usr/sbin/nologin "$SERVICE_USER" 2>/dev/null || true
@@ -456,7 +500,12 @@ fi
 MAP_REVISION=map-s3b-1
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   # Real Thais/town outskirts and the default-start region for ordinary home respawns.
-  cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler -- compile-regions "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" '126,125;126,126;127,127' > "$WORK/world-compile.json"
+  if [[ -n "${NODE_BOOT_PREBUILT_DIR:-}" ]]; then
+    cp "$NODE_BOOT_PREBUILT_DIR/world/world.otwb" "$WORK/world.otwb"
+    cp "$NODE_BOOT_PREBUILT_DIR/world/world-compile.json" "$WORK/world-compile.json"
+  else
+    cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler -- compile-regions "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" "$NODE_BOOT_WORLD_REGIONS" > "$WORK/world-compile.json"
+  fi
   PIN="$WORK/world.json"
   python3 - "$GAME_SOURCE/content/world/pins/oteryn.json" "$WORK/world-compile.json" "$PIN" <<'PY_REGION_PIN'
 import json, sys
@@ -1140,8 +1189,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   WP5_S3A_ACCOUNT_ID="$ACCOUNT_ID" WP5_S3B_SECOND_ACCOUNT_ID="$SECOND_ACCOUNT_ID" \
   WP5_S3B_FRESH_KEY_ID="$FRESH_KEY_ID" WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
   WP5_S3B_RECOVERY_KEY_ID="$RECOVERY_KEY_ID" WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
-    cargo +1.100.0 test --locked -p oteryn-game-server --lib "${NODE_CLOCK_FEATURES[@]}" \
-    "qualification::$qualification" -- --ignored --exact --nocapture
+    "${NODE_LIB_TEST[@]}" "qualification::$qualification" "${NODE_LIB_TEST_SEPARATOR[@]}" --ignored --exact --nocapture
 }
 
 graceful_shutdown() { # ready=false first, socket removed

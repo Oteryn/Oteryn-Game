@@ -116,3 +116,12 @@ All query text is normalized and redacted. On failure the files are copied to
 prints the failed seam rows grouped by `root=` before the stage table (and to
 `$GITHUB_STEP_SUMMARY`). `timeline.py --node-log node.log --pg-activity
 .../activity.log --out trace.json` builds a Perfetto/chrome://tracing trace.
+
+Prebuilt mode lets CI shards reuse one build from the same source commit.
+Run `tools/qualification/node_boot/prebuild.sh /tmp/nbpre` from a clean tree.
+It builds `default` and `qualification-clock` binaries and lib test harnesses.
+It also compiles the shared region selection once into `world/`.
+Set `NODE_BOOT_PREBUILT_DIR=/tmp/nbpre` when invoking `run.sh` on each shard.
+The harness checks the manifest source SHA and regions before using artifacts.
+World accelerated runs select `qualification-clock`; basic and real-clock runs select `default`.
+Prebuilt runs invoke no Cargo and report `build_mode=prebuilt source_sha=...` evidence.

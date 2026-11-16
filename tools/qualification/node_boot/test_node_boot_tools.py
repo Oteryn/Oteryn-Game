@@ -44,6 +44,51 @@ def bash(script, env=None, cwd=None):
                           cwd=cwd, timeout=60, check=False)
 
 
+class PrebuiltTests(unittest.TestCase):
+    def test_manifest_mismatch_is_blocked(self):
+        for manifest in ({'source_sha': 'wrong', 'regions': 'regions'},
+                         {'source_sha': 'head', 'regions': 'wrong'}):
+            with tempfile.TemporaryDirectory() as tmp:
+                Path(tmp, 'manifest.json').write_text(json.dumps(manifest))
+                result = bash(function('node_boot_check_prebuilt') +
+                              '\nnode_boot_check_prebuilt',
+                              {'NODE_BOOT_PREBUILT_DIR': tmp, 'NODE_BOOT_SOURCE_SHA': 'head',
+                               'NODE_BOOT_WORLD_REGIONS': 'regions'})
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertIn('NODE_BOOT_RESULT=BLOCKED reason=prebuilt_mismatch', result.stdout)
+
+    def test_variant_selection(self):
+        for world, real, variant in [('0', '0', 'default'), ('1', '0', 'qualification-clock'),
+                                     ('1', '1', 'default')]:
+            result = bash(section('NODE_CLOCK_FEATURES=()', '# Shipped binaries') +
+                          function('node_boot_prebuilt_variant') + '\nnode_boot_prebuilt_variant',
+                          {'NODE_BOOT_WORLD': world, 'OTERYN_NODE_BOOT_REAL_CLOCK': real})
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.strip(), variant)
+
+    def test_prebuilt_lib_command_preserves_cargo_context(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / 'apps/game-server').mkdir(parents=True)
+            binary = root / 'oteryn-game-server-lib-test'
+            binary.write_text('#!/bin/bash\npwd\nprintf "%s\\n" "$CARGO_MANIFEST_DIR" "$@"\n')
+            binary.chmod(0o755)
+            result = bash('NODE_CLOCK_FEATURES=()\n' +
+                          section('NODE_LIB_TEST=', '# Deployment administration:') +
+                          '\n"${NODE_LIB_TEST[@]}" qualification::sample "${NODE_LIB_TEST_SEPARATOR[@]}" --ignored --exact --nocapture',
+                          {'NODE_BOOT_PREBUILT_DIR': tmp, 'GAME_SOURCE': tmp, 'TARGET': tmp})
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.splitlines(), [str(root / 'apps/game-server')] * 2 +
+                             ['qualification::sample', '--ignored', '--exact', '--nocapture'])
+
+    def test_regions_are_shared(self):
+        prebuild = (HERE / 'prebuild.sh').read_text()
+        self.assertEqual(RUN_TEXT.count('126,125;126,126;127,127'), 1)
+        self.assertNotIn('126,125;126,126;127,127', prebuild)
+        self.assertIn('NODE_BOOT_WORLD_REGIONS', prebuild)
+        self.assertIn('"$NODE_BOOT_WORLD_REGIONS" > "$WORK/world-compile.json"', RUN_TEXT)
+
+
 KNOBS = section('# Local parallel stacks', 'GAME_SOURCE=')
 
 
@@ -183,7 +228,7 @@ class SeamPassThroughTests(unittest.TestCase):
                 ACCOUNT_ID=a; SECOND_ACCOUNT_ID=b; FRESH_KEY_ID=f; FRESH_SEED_HEX=s
                 RECOVERY_KEY_ID=r; RECOVERY_SEED_HEX=t
                 NODE_BOOT_E2E_ONLY=f6,core; NODE_BOOT_NO_PROGRESS_S=75
-                ''') + function('seam_stages') + '\nseam_stages\n'
+                ''') + section('NODE_LIB_TEST=', '# Deployment administration:') + function('seam_stages') + '\nseam_stages\n'
             result = bash(script)
             self.assertEqual(result.stdout, 'NODE_BOOT_E2E_ONLY=f6,core\nNODE_BOOT_NO_PROGRESS_S=75\n',
                              result.stderr)
