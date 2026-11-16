@@ -527,32 +527,36 @@ fn transcript_rows_are_selectable_and_offer_sender_actions()
                 .then_some(entity)
         })
         .ok_or("selectable message row missing")?;
-    app.world_mut().trigger(PointerClick {
-        entity: row,
-        pointer: Pointer::new(
-            PointerId::Mouse,
-            Location {
-                target: bevy::camera::NormalizedRenderTarget::None {
-                    width: 100,
-                    height: 100,
+    let action = |app: &mut App, label: &str| -> Result<(), Box<dyn std::error::Error>> {
+        app.world_mut().trigger(PointerClick {
+            entity: row,
+            pointer: Pointer::new(
+                PointerId::Mouse,
+                Location {
+                    target: bevy::camera::NormalizedRenderTarget::None {
+                        width: 100,
+                        height: 100,
+                    },
+                    position: Vec2::ZERO,
                 },
-                position: Vec2::ZERO,
-            },
-        ),
-        button: PointerButton::Secondary,
-        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
-        duration: std::time::Duration::ZERO,
-        count: 1,
-    });
-    app.update();
-    let message = app
-        .world_mut()
-        .query::<(&Text, &ChildOf)>()
-        .iter(app.world())
-        .find_map(|(text, parent)| (text.0 == "Message Sender").then_some(parent.parent()))
-        .ok_or("speaker conversation action missing")?;
-    app.world_mut().trigger(Activate { entity: message });
-    app.update();
+            ),
+            button: PointerButton::Secondary,
+            hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+            duration: std::time::Duration::ZERO,
+            count: 1,
+        });
+        app.update();
+        let entity = app
+            .world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(app.world())
+            .find_map(|(text, parent)| (text.0 == label).then_some(parent.parent()))
+            .ok_or("message menu action missing")?;
+        app.world_mut().trigger(Activate { entity });
+        app.update();
+        Ok(())
+    };
+    action(&mut app, "Message Sender")?;
     assert_eq!(
         app.world()
             .non_send::<HostOwner>()
@@ -567,6 +571,16 @@ fn transcript_rows_are_selectable_and_offer_sender_actions()
             "Sender".into()
         ))
     );
+    action(&mut app, "Communication lists")?;
+    let owner = app.world().non_send::<HostOwner>();
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    let lists = crate::play::FeatureForm::all()
+        .iter()
+        .map(|form| link.feature_form_view(*form))
+        .find(|view| view.title == "Communication lists")
+        .ok_or("communication lists form missing")?;
+    assert!(lists.open);
+    assert_eq!(lists.fields, vec!["Sender".to_owned()]);
     Ok(())
 }
 
