@@ -2937,7 +2937,7 @@ async fn leave_islet(
 }
 
 /// The Newhaven leg: vocationless character 1 enters on the tutorial islet, leaves it, hunts a
-/// Muglex clan footman, dies to one, respawns on the islet (the tutorial death rule) and relogs.
+/// Muglex clan footman, dies to an assassin, respawns on the islet and relogs.
 async fn newhaven_leg(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
@@ -2968,7 +2968,17 @@ async fn newhaven_leg(
             "NEWHAVEN_GAP case=footman-hunt state=failed cause=\"corpse i6002 not materializable (CorpseItemInadmissible)\" error=\"{error}\""
         ));
     }
-    travel_to_spawn(&mut client, world, spawns, FOOTMAN).await?;
+    // Stop the hunt before approaching a fresh, stronger melee attacker. Both Muglex
+    // types are hostile and never flee; the assassin has attack 15 versus the footman's 10
+    // at the same 2 s interval (content/abilities/formulas/formulas-03500-03999.json).
+    client.session_mut().attack_target(None).await?;
+    travel_to_spawn(
+        &mut client,
+        world,
+        spawns,
+        "oteryn:creature.muglex_clan_assassin",
+    )
+    .await?;
     client_death::death(&mut client, clients).await?;
     let respawn = client.world_spatial().actor_position;
     if tile(respawn)? != NEWHAVEN_ISLET_TEMPLE {
