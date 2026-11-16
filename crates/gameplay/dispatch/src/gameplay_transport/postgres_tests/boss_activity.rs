@@ -246,6 +246,12 @@ fn boss_difficulty_postgres_unlock_start_native_victory_and_phosphorus_record() 
     run_scenario(Case::Difficulty)
 }
 
+const ENDGAME_PROGRESSION_WITHOUT_PERSONAL_LOOT: &[&str] = &[
+    "oteryn:creature.goshnar_s_spite",
+    "oteryn:creature.goshnar_s_megalomania_green",
+    "oteryn:creature.bakragore",
+];
+
 #[test]
 fn endgame_progression_fixture_keeps_corpse_without_personal_loot() -> TestResult {
     // Pure content activation: this regression test never opens PostgreSQL.
@@ -256,12 +262,13 @@ fn endgame_progression_fixture_keeps_corpse_without_personal_loot() -> TestResul
             .active()
             .and_then(|active| active.native_gameplay())
             .ok_or("native fixture")?;
-        let creature = "oteryn:creature.goshnar_s_spite";
-        assert!(matches!(
-            native.reward_table().row(creature),
-            Err(crate::content::creature_reward::NoSettlementReason::LootTableMissing)
-        ));
-        assert!(native.reward_table().reward_boss_corpse(creature).is_some());
+        for creature in ENDGAME_PROGRESSION_WITHOUT_PERSONAL_LOOT {
+            assert!(matches!(
+                native.reward_table().row(creature),
+                Err(crate::content::creature_reward::NoSettlementReason::LootTableMissing)
+            ));
+            assert!(native.reward_table().reward_boss_corpse(creature).is_some());
+        }
         assert!(
             native
                 .reward_table()
@@ -273,8 +280,10 @@ fn endgame_progression_fixture_keeps_corpse_without_personal_loot() -> TestResul
 }
 
 // Keep this negative progression fixture without personal-loot admission even
-// after the production source independently admits Goshnar's Spite. Retain the
-// exact native policy, XP and corpse; only its private-loot table is absent.
+// after production independently admits these reward bosses. Crystal 201189f8
+// goshnar's_megalomania_green.lua:51,75 and bakragore.lua:51,82 declare rewardBoss
+// and loot, so their admitted personal rewards are independent of quest XP.
+// Retain every native policy, XP and corpse; omit only these private-loot tables.
 fn endgame_progression_generation(
     world: crate::foundation::WorldId,
 ) -> TestResult<super::quest_catalogue_chests::CatalogueActivation> {
@@ -286,27 +295,30 @@ fn endgame_progression_generation(
         .ok_or("production loot section")?;
     let mut loot: serde_json::Value = serde_json::from_slice(&section.bytes)?;
     let bindings = loot["creature_loot"].as_array().ok_or("creature loot")?;
-    let excluded = bindings
-        .iter()
-        .find(|row| row["creature"]["key"] == "oteryn:creature.goshnar_s_spite")
-        .ok_or("Spite source binding")?["loot"]
-        .clone();
-    assert!(
-        excluded.is_object(),
-        "production personal loot is independently admitted"
-    );
-    assert_eq!(
-        bindings
+    let mut excluded = Vec::new();
+    for creature in ENDGAME_PROGRESSION_WITHOUT_PERSONAL_LOOT {
+        let identity = bindings
             .iter()
-            .filter(|row| row["loot"] == excluded)
-            .count(),
-        1,
-        "exclude only Spite's private loot"
-    );
+            .find(|row| row["creature"]["key"] == *creature)
+            .ok_or("endgame source binding")?["loot"]
+            .clone();
+        assert!(
+            identity.is_object(),
+            "production personal loot is independently admitted"
+        );
+        assert_eq!(
+            bindings.iter().filter(|row| row["loot"] == identity).count(),
+            1,
+            "exclude only this boss's private loot"
+        );
+        excluded.push(identity);
+    }
     let tables = loot["tables"].as_array_mut().ok_or("loot tables")?;
-    let before = tables.len();
-    tables.retain(|table| table["identity"] != excluded);
-    assert_eq!(tables.len() + 1, before, "one exact private table removed");
+    for identity in excluded {
+        let before = tables.len();
+        tables.retain(|table| table["identity"] != identity);
+        assert_eq!(tables.len() + 1, before, "one exact private table removed");
+    }
     section.bytes = serde_json::to_vec(&loot)?;
     section.sha256 = Sha256::digest(&section.bytes)
         .iter()
