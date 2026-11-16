@@ -472,3 +472,67 @@ fn t14_user_input_ends_the_click_walk_and_its_retries() -> Result<(), Box<dyn st
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+/// Using or moving an object walks to it on the server; that walk replaces the click walk, so
+/// its "There is no way." must not re-request the old destination.
+#[test]
+fn t14_an_action_that_walks_to_its_object_ends_the_click_walk()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::world_interaction::{Action, Command, Target};
+    for (index, command) in [
+        PlayCommand::WorldContext(Command {
+            target: Target::Item(oteryn_session::ItemHandle::MIN),
+            action: Action::Use,
+            selection: None,
+        }),
+        PlayCommand::MoveItem(oteryn_client_runtime::inventory::MoveRequest {
+            source: oteryn_session::ItemHandle::MIN,
+            destination: oteryn_client_runtime::inventory::ItemMoveDestination::MainBackpack,
+            count: None,
+        }),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (link, commands, outbox) = play_channel();
+        // The session start re-initializes the walk state; the marker shows it has run.
+        super::super::mailbox::lock(&outbox.0).target_walk.retries = u8::MAX;
+        let walk_outbox = outbox.clone();
+        let fake = super::Fake {
+            serves: std::sync::Arc::default(),
+            fail_step: false,
+            fail_serve_after: usize::MAX,
+            queued: Vec::new(),
+            drained: std::sync::Arc::default(),
+            combats: std::sync::Arc::default(),
+            logouts: std::sync::Arc::default(),
+        };
+        let runtime = oteryn_client_runtime::ClientRuntime::new()?;
+        runtime.spawn(super::run_session(fake, commands, outbox))?;
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        while link.target_walk_state().retries == u8::MAX && std::time::Instant::now() < deadline {
+            std::thread::sleep(std::time::Duration::from_millis(1));
+        }
+        {
+            let mut mailbox = super::super::mailbox::lock(&link.mailbox);
+            mailbox.target_walk.selected = true;
+            assert_eq!(
+                oteryn_client_ui::target_move::request(&mut mailbox.target_walk, GOAL),
+                Some(GOAL)
+            );
+        }
+        walk_reply(
+            &walk_outbox,
+            oteryn_client_runtime::target_move::WalkDisposition::Accepted,
+        );
+        assert_eq!(link.target_walk_state().goal, Some(GOAL));
+        link.commands.send(command)?;
+        while link.target_walk_state().goal.is_some() && std::time::Instant::now() < deadline {
+            std::thread::sleep(std::time::Duration::from_millis(1));
+        }
+        assert_eq!(link.target_walk_state().goal, None, "command {index}");
+        runtime.shutdown(std::time::Duration::from_millis(250));
+    }
+    Ok(())
+}

@@ -19,6 +19,12 @@ impl Outbox {
             command.action,
             oteryn_client_runtime::world_interaction::Action::UseOn(_)
         );
+        if !matches!(
+            command.action,
+            oteryn_client_runtime::world_interaction::Action::Look
+        ) {
+            self.target_walk_replaced();
+        }
         let result = session.world_context(command).await;
         let mut mailbox = lock(&self.0);
         mailbox.world_context.pending = false;
