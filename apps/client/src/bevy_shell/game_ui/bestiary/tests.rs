@@ -221,3 +221,223 @@ fn bestiary_catalogue_selection_details_and_close_use_retained_owner() -> Result
     );
     Ok(())
 }
+fn charm_reply(
+    outcome: progression::CharmProgressionOutcome,
+    fee_gold: u64,
+    first: (u8, Option<u32>, u32),
+    second_race: Option<u32>,
+) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error>> {
+    use progression::charm::{CharmKind, CharmState, CharmView};
+    let id = |value: u32| std::num::NonZeroU32::new(value).ok_or("nonzero");
+    let (stage, race, cost) = first;
+    Ok(
+        progression::encode_charm_progression_reply(&progression::CharmProgressionReply {
+            outcome,
+            fee_gold,
+            bestiary: vec![progression::bestiary::BestiaryRaceProgress {
+                race: id(9)?,
+                kill_count: 30,
+                kill_thresholds: [10, 20, 30],
+            }],
+            charms: CharmView {
+                charms: vec![
+                    CharmState {
+                        charm: id(1)?,
+                        kind: CharmKind::Major,
+                        unlocked_stage: stage,
+                        assigned_race: race.map(id).transpose()?,
+                        next_stage_cost: cost,
+                        effect_active: true,
+                    },
+                    CharmState {
+                        charm: id(2)?,
+                        kind: CharmKind::Minor,
+                        unlocked_stage: 1,
+                        assigned_race: second_race.map(id).transpose()?,
+                        next_stage_cost: 50,
+                        effect_active: false,
+                    },
+                ],
+                charm_points_available: 500,
+                minor_charm_echoes_available: 60,
+                assignment_slot_limit: Some(id(2)?),
+            },
+        })
+        .map_err(|e| format!("{e:?}"))?,
+    )
+}
+#[test]
+fn bestiary_charms_unlock_assign_remove_and_reset_through_the_progression_owner() -> Result {
+    use progression::{
+        CharmProgressionAction as Action, CharmProgressionOutcome as Outcome,
+        CharmRemoveDisposition as Removed,
+        charm::{CharmAssignDisposition, CharmUnlockDisposition},
+    };
+    let mut owner = HostOwner::new(None)?;
+    let (link, mut receiver, outbox) = play_channel();
+    link.use_shared_frontend();
+    outbox.bevy_bestiary_initialize();
+    let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    view.use_shared_frontend();
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+    owner.phase = Phase::Playing;
+    owner
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .charm_progression_open();
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        bevy::asset::AssetPlugin::default(),
+        oteryn_client_ui_bevy::GlobalUiPlugin,
+    ))
+    .init_asset::<Image>()
+    .init_asset::<Font>()
+    .init_resource::<bevy::input_focus::InputFocus>()
+    .insert_non_send(owner)
+    .add_systems(Startup, crate::bevy_shell::ui::setup);
+    super::super::modal::install(&mut app);
+    install(&mut app);
+    app.update();
+    let mut sequence = 0;
+    let mut publish = |command: &FeatureCommand, payload: Vec<u8>| {
+        sequence += 1;
+        outbox.bevy_bestiary_result(
+            command,
+            &GatedCommandResult {
+                command_id: sequence,
+                server_sequence: sequence,
+                status: oteryn_session::CommandStatus::Accepted,
+                payload,
+            },
+        );
+    };
+    let query = command(&mut receiver).map_err(|error| format!("query: {error}"))?;
+    publish(
+        &query,
+        charm_reply(Outcome::Query, 0, (0, None, 100), Some(7))?,
+    );
+    app.update();
+    let catalogue = command(&mut receiver).map_err(|error| format!("catalogue: {error}"))?;
+    let page = wire::Page {
+        next: None,
+        categories: vec!["Amphibic".into()],
+        cards: vec![wire::Card {
+            race: 9,
+            name: "Frog".into(),
+            category: "Amphibic".into(),
+            outfit_look_type: 226,
+            object_look_type: None,
+            detail: String::new(),
+            echo_warden_completed: None,
+        }],
+    };
+    publish(
+        &catalogue,
+        wire::encode_page(&page).map_err(|e| format!("{e:?}"))?,
+    );
+    app.update();
+    assert!(labels(&mut app).contains("Charms — points: 500 | minor echoes: 60"));
+    assert!(labels(&mut app).contains("Charm 1 (Major) — stage 0/3, next cost 100, unassigned"));
+    click(&mut app, Kind::Charm(1))?;
+    assert!(receiver.try_recv().is_err(), "choosing a charm is local");
+    app.update();
+    assert!(labels(&mut app).contains("> Charm 1 (Major)"));
+    click(&mut app, Kind::CharmAction(Intent::Unlock))?;
+    let unlock = command(&mut receiver).map_err(|error| format!("unlock: {error}"))?;
+    assert_eq!((unlock.capability, unlock.kind), (67, 84));
+    assert_eq!(
+        progression::decode_charm_progression_request(&unlock.payload)
+            .map_err(|e| format!("{e:?}"))?,
+        Action::Unlock {
+            charm: std::num::NonZeroU32::new(1).ok_or("charm")?,
+            expected_stage: 0,
+        }
+    );
+    publish(
+        &unlock,
+        charm_reply(
+            Outcome::Unlock(CharmUnlockDisposition::Unlocked),
+            0,
+            (1, None, 200),
+            Some(7),
+        )?,
+    );
+    app.update();
+    assert!(labels(&mut app).contains("Completed: Unlock(Unlocked)"));
+    assert!(labels(&mut app).contains("> Charm 1 (Major) — stage 1/3, next cost 200"));
+    click(&mut app, Kind::Select(9))?;
+    let detail = command(&mut receiver).map_err(|error| format!("detail: {error}"))?;
+    publish(
+        &detail,
+        wire::encode_page(&page).map_err(|e| format!("{e:?}"))?,
+    );
+    app.update();
+    click(&mut app, Kind::CharmAction(Intent::Assign))?;
+    let assign = command(&mut receiver).map_err(|error| format!("assign: {error}"))?;
+    assert_eq!(
+        progression::decode_charm_progression_request(&assign.payload)
+            .map_err(|e| format!("{e:?}"))?,
+        Action::Assign {
+            charm: std::num::NonZeroU32::new(1).ok_or("charm")?,
+            race: std::num::NonZeroU32::new(9).ok_or("race")?,
+        }
+    );
+    publish(
+        &assign,
+        charm_reply(
+            Outcome::Assign(CharmAssignDisposition::Assigned),
+            0,
+            (1, Some(9), 200),
+            Some(7),
+        )?,
+    );
+    app.update();
+    assert!(labels(&mut app).contains("Completed: Assign(Assigned)"));
+    assert!(labels(&mut app).contains("stage 1/3, next cost 200, Frog"));
+    click(&mut app, Kind::CharmAction(Intent::Remove))?;
+    let remove = command(&mut receiver).map_err(|error| format!("remove: {error}"))?;
+    assert_eq!(
+        progression::decode_charm_progression_request(&remove.payload)
+            .map_err(|e| format!("{e:?}"))?,
+        Action::Remove {
+            charm: std::num::NonZeroU32::new(1).ok_or("charm")?,
+        }
+    );
+    publish(
+        &remove,
+        charm_reply(
+            Outcome::Remove(Removed::Removed),
+            1000,
+            (1, None, 200),
+            Some(7),
+        )?,
+    );
+    app.update();
+    assert!(labels(&mut app).contains("Completed: Remove(Removed); fee: 1000 gold"));
+    click(&mut app, Kind::CharmAction(Intent::ResetAll))?;
+    let reset = command(&mut receiver).map_err(|error| format!("reset: {error}"))?;
+    assert_eq!(
+        progression::decode_charm_progression_request(&reset.payload)
+            .map_err(|e| format!("{e:?}"))?,
+        Action::ResetAll
+    );
+    publish(
+        &reset,
+        charm_reply(
+            Outcome::ResetAll(Removed::Removed),
+            500,
+            (1, None, 200),
+            None,
+        )?,
+    );
+    app.update();
+    assert!(labels(&mut app).contains("Completed: ResetAll(Removed); fee: 500 gold"));
+    assert!(
+        labels(&mut app)
+            .contains("Charm 2 (Minor) — stage 1/3, next cost 50, unassigned, not yet active")
+    );
+    Ok(())
+}

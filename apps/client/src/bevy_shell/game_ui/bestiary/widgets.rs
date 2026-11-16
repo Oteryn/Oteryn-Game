@@ -186,7 +186,120 @@ pub(super) fn build(
             text(commands, skin, body, detail.detail.as_str());
         }
     }
+    charms(commands, skin, body, control, panel);
     root
+}
+/// Charm runes from the last progression reply, with the actions on the chosen charm.
+fn charms(commands: &mut Commands, skin: &Skins, parent: Entity, control: Control, panel: &Panel) {
+    let Some(reply) = &panel.reply else {
+        return;
+    };
+    let view = &reply.charms;
+    text(
+        commands,
+        skin,
+        parent,
+        format!(
+            "Charms — points: {} | minor echoes: {} | assignment slots: {}",
+            view.charm_points_available,
+            view.minor_charm_echoes_available,
+            view.assignment_slot_limit
+                .map_or_else(|| "unlimited".into(), |limit| limit.to_string())
+        ),
+    );
+    let busy = panel.pending || !panel.selected;
+    let chosen = view
+        .charms
+        .iter()
+        .find(|charm| panel.fields[0] == charm.charm.get().to_string());
+    for charm in &view.charms {
+        let name = u16::try_from(charm.charm.get())
+            .ok()
+            .and_then(|id| panel.charm_browser.cards.get(&id))
+            .map_or_else(
+                || format!("Charm {}", charm.charm),
+                |card| card.name.clone(),
+            );
+        let race = charm.assigned_race.map_or_else(
+            || "unassigned".into(),
+            |race| {
+                u16::try_from(race.get())
+                    .ok()
+                    .and_then(|race| panel.catalogue.names.get(&race))
+                    .map_or_else(|| format!("race {race}"), Clone::clone)
+            },
+        );
+        let label = format!(
+            "{}{name} ({:?}) — stage {}/3, next cost {}, {race}{}",
+            if chosen == Some(charm) { "> " } else { "" },
+            charm.kind,
+            charm.unlocked_stage,
+            charm.next_stage_cost,
+            if charm.effect_active {
+                ""
+            } else {
+                ", not yet active"
+            }
+        );
+        button(
+            commands,
+            skin,
+            parent,
+            Control {
+                kind: Kind::Charm(charm.charm.get()),
+                ..control
+            },
+            &label,
+            busy,
+        );
+    }
+    let creature = panel.catalogue.selected_card(&panel.fields[1]).is_some();
+    let actions = commands
+        .spawn(Node {
+            flex_wrap: FlexWrap::Wrap,
+            column_gap: px(4.),
+            row_gap: px(4.),
+            flex_shrink: 0.,
+            ..default()
+        })
+        .id();
+    commands.entity(parent).add_child(actions);
+    for (intent, label, available) in [
+        (
+            Intent::Unlock,
+            "Unlock next stage",
+            chosen.is_some_and(|charm| charm.next_stage_cost != 0),
+        ),
+        (
+            Intent::Assign,
+            "Assign to selected creature",
+            creature && chosen.is_some_and(|charm| charm.assigned_race.is_none()),
+        ),
+        (
+            Intent::Remove,
+            "Remove from creature",
+            chosen.is_some_and(|charm| charm.assigned_race.is_some()),
+        ),
+        (
+            Intent::ResetAll,
+            "Reset all charms",
+            view.charms
+                .iter()
+                .any(|charm| charm.assigned_race.is_some()),
+        ),
+    ] {
+        button(
+            commands,
+            skin,
+            actions,
+            Control {
+                kind: Kind::CharmAction(intent),
+                ..control
+            },
+            label,
+            busy || !available,
+        );
+    }
 }
 fn text(commands: &mut Commands, skin: &Skins, parent: Entity, value: impl Into<String>) {
     let entity = commands
