@@ -24,6 +24,10 @@ enum Kind {
     Catalogue(usize),
     Select(u16),
     Progress,
+    /// Choose the charm (by its 1-based index) the charm actions apply to.
+    Charm(u32),
+    /// Unlock, assign to the selected creature, remove, or reset all charms.
+    CharmAction(Intent),
     Close,
 }
 #[derive(Resource, Default)]
@@ -133,7 +137,17 @@ fn perform(owner: &HostOwner, state: &State, control: Control) {
             play.link.charm_progression_edit(1, race.to_string());
             play.link.bestiary_catalogue_request(2);
         }
-        Kind::Select(_) | Kind::Close => {}
+        Kind::Charm(charm)
+            if panel.reply.as_ref().is_some_and(|reply| {
+                reply.charms.charms.iter().any(|c| c.charm.get() == charm)
+            }) =>
+        {
+            play.link.charm_progression_edit(0, charm.to_string());
+        }
+        Kind::CharmAction(intent) if intent != Intent::Query => {
+            play.link.charm_progression_request(intent);
+        }
+        Kind::Select(_) | Kind::Charm(_) | Kind::CharmAction(_) | Kind::Close => {}
     }
 }
 fn activate(

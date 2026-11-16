@@ -16,6 +16,7 @@ enum Tab {
     Bounty,
     Weekly,
     Shop,
+    Talisman,
     Preferences,
     Soulseals,
 }
@@ -36,6 +37,8 @@ enum Kind {
     Deliver(u8),
     Start(u8),
     Buy(u16),
+    BuyTalisman,
+    UpgradeTalisman(u8),
 }
 struct Entry {
     text: String,
@@ -111,6 +114,16 @@ fn intent(panel: &TaskBoardPanel, confirm: &mut bool, kind: &Kind) -> Option<Ful
             if r.is_some_and(|r| r.shop.iter().any(|o| o.index == *index && !o.bought)) =>
         {
             Some(FullIntent::BuyShop(*index))
+        }
+        Kind::BuyTalisman if r.is_some() => Some(FullIntent::BuyTalisman),
+        Kind::UpgradeTalisman(path)
+            if r.is_some_and(|r| {
+                r.talisman
+                    .get(usize::from(*path))
+                    .is_some_and(|t| t.level < model::talisman::MAX_LEVEL)
+            }) =>
+        {
+            Some(FullIntent::UpgradeTalisman(*path))
         }
         _ => None,
     }
@@ -217,6 +230,7 @@ fn project(
         ("Bounty Tasks", Tab::Bounty),
         ("Weekly", Tab::Weekly),
         ("Shop", Tab::Shop),
+        ("Bounty Talisman", Tab::Talisman),
         ("Preferred / unwanted", Tab::Preferences),
         ("Soulseals", Tab::Soulseals),
     ] {

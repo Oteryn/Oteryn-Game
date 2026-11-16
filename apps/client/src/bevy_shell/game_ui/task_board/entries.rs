@@ -166,6 +166,39 @@ fn entries(panel: &TaskBoardPanel, tab: Tab, confirm: bool) -> Vec<Entry> {
             }
         }
         Tab::Preferences | Tab::Soulseals => {}
+        Tab::Talisman => {
+            entry(
+                &mut rows,
+                format!("Bounty points: {}", r.bounty_points),
+                None,
+            );
+            entry(&mut rows, "Buy Bounty Talisman", Some(Kind::BuyTalisman));
+            for (path, (value, name)) in r
+                .talisman
+                .iter()
+                .zip(["Damage", "Life leech", "Loot", "Bestiary"])
+                .enumerate()
+            {
+                entry(
+                    &mut rows,
+                    format!(
+                        "Talisman {} ({name}): level {}, bonus {}, next cost {}",
+                        path + 1,
+                        value.level,
+                        value.bonus,
+                        value.next_cost
+                    ),
+                    None,
+                );
+                if value.level < model::talisman::MAX_LEVEL {
+                    entry(
+                        &mut rows,
+                        format!("Upgrade {name} ({} bounty points)", value.next_cost),
+                        u8::try_from(path).ok().map(Kind::UpgradeTalisman),
+                    );
+                }
+            }
+        }
         Tab::Shop => {
             entry(
                 &mut rows,

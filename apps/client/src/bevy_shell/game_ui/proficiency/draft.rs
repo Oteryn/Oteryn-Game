@@ -101,6 +101,23 @@ pub(super) fn perform(
             *d = Draft::default();
             link.weapon_proficiency_action_bound(panel, ModelAction::Close);
         }
+        Kind::Slot(_) | Kind::Offer(_) | Kind::Modify(_) | Kind::Shape(_)
+            if !d.choices.is_empty() =>
+        {
+            d.feedback = "Apply or Reset the draft before shaping a slot.".into()
+        }
+        Kind::Slot(slot) => {
+            link.weapon_proficiency_action_bound(panel, ModelAction::Slot(slot));
+        }
+        Kind::Offer(choice) => {
+            link.weapon_proficiency_action_bound(panel, ModelAction::Offer(choice));
+        }
+        Kind::Modify(level) => {
+            link.weapon_proficiency_action_bound(panel, ModelAction::Modify(level));
+        }
+        Kind::Shape(intent) => {
+            link.weapon_proficiency_action_bound(panel, ModelAction::Shape(intent));
+        }
         Kind::Refresh | Kind::Weapon(_) if !d.choices.is_empty() => {
             d.feedback = "Apply or Reset the draft before changing weapons or refreshing.".into()
         }

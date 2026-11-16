@@ -4,14 +4,22 @@ use super::super::{
     ui::Skins,
 };
 use bevy::{prelude::*, ui_widgets::Activate};
-use oteryn_client_ui::boss_encounter::{BossCategory, Intent, catalogue_cards};
+use oteryn_client_ui::boss_encounter::{BossCategory, Intent, catalogue_cards, slot_text};
 
 #[derive(Component)]
 struct Window;
 #[derive(Component, Clone, Copy)]
 struct Action {
     generation: u64,
-    intent: Intent,
+    kind: Kind,
+}
+/// One Bosstiary control: a server request, or a retained selection the next request uses.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Kind {
+    Request(Intent),
+    Boss(bool),
+    Slot,
+    SlotBoss(bool),
 }
 
 #[derive(Resource, Default)]
@@ -82,6 +90,18 @@ fn project(
             ));
         }
     }
+    if !panel.fields[0].is_empty() {
+        let name = panel
+            .boss_names
+            .get(&panel.fields[0])
+            .map_or(panel.fields[0].as_str(), String::as_str);
+        text.push_str(&format!("Selected boss: {name}\n"));
+    }
+    text.push_str(&slot_text(&panel));
+    if !panel.summary.is_empty() {
+        text.push_str(&panel.summary);
+        text.push('\n');
+    }
     if let Some(feedback) = &panel.feedback {
         text.push_str(feedback);
     }
@@ -96,16 +116,35 @@ fn project(
         ))
         .id();
 
-    for (label, intent) in [
-        ("Refresh", Intent::CatalogueRefresh),
-        ("Next page", Intent::CatalogueNext),
+    let row = commands
+        .spawn(Node {
+            flex_wrap: FlexWrap::Wrap,
+            column_gap: px(6.),
+            row_gap: px(4.),
+            ..default()
+        })
+        .id();
+    for (label, kind) in [
+        ("Refresh", Kind::Request(Intent::CatalogueRefresh)),
+        ("Next page", Kind::Request(Intent::CatalogueNext)),
+        ("Previous boss", Kind::Boss(true)),
+        ("Next boss", Kind::Boss(false)),
+        ("Enter boss room", Kind::Request(Intent::Enter)),
+        ("Leave: defeated", Kind::Request(Intent::Defeated)),
+        ("Leave: time out", Kind::Request(Intent::Timeout)),
+        ("Boss slots", Kind::Request(Intent::SlotsDetailed)),
+        ("Next slot", Kind::Slot),
+        ("Previous slot boss", Kind::SlotBoss(true)),
+        ("Next slot boss", Kind::SlotBoss(false)),
+        ("Equip slot", Kind::Request(Intent::SlotEquipSelected)),
+        ("Remove slot", Kind::Request(Intent::SlotRemoveSelected)),
     ] {
         let button = commands
             .spawn((
-                oteryn_client_ui_bevy::button(skins.buttons.clone(), 100.),
+                oteryn_client_ui_bevy::button(skins.buttons.clone(), 120.),
                 Action {
                     generation: owner.generation(),
-                    intent,
+                    kind,
                 },
             ))
             .observe(activate)
@@ -121,8 +160,9 @@ fn project(
             ))
             .id();
         commands.entity(button).add_child(caption);
-        commands.entity(root).add_child(button);
+        commands.entity(row).add_child(button);
     }
+    commands.entity(root).add_child(row);
     commands.entity(root).add_child(label);
 }
 fn activate(
@@ -140,9 +180,22 @@ fn activate(
         && !owner.modal_active()
         && let Some(play) = &owner.play
     {
-        play.link
-            .boss_encounter_browse("", BossCategory::All, false);
-        play.link.boss_encounter_request(action.intent);
+        match action.kind {
+            Kind::Request(
+                intent @ (Intent::Catalogue | Intent::CatalogueNext | Intent::CatalogueRefresh),
+            ) => {
+                play.link
+                    .boss_encounter_browse("", BossCategory::All, false);
+                play.link.boss_encounter_request(intent);
+            }
+            Kind::Request(intent) => play.link.boss_encounter_request(intent),
+            Kind::Boss(previous) => {
+                play.link
+                    .boss_encounter_browse("", BossCategory::All, previous)
+            }
+            Kind::Slot => play.link.boss_slot_select_slot(),
+            Kind::SlotBoss(previous) => play.link.boss_slot_select_boss(previous),
+        }
     }
 }
 
@@ -168,7 +221,7 @@ mod tests {
             .spawn((
                 Action {
                     generation,
-                    intent: Intent::Catalogue,
+                    kind: Kind::Request(Intent::Catalogue),
                 },
                 Node::default(),
             ))
@@ -250,6 +303,159 @@ mod tests {
         assert!(texts.iter().any(|text| text.contains("Confirmed boss")
             && text.contains("Prowess: 5/5")
             && text.contains("Mastery: 5/20")));
+        Ok(())
+    }
+    fn click(app: &mut App, kind: Kind) -> Result<(), Box<dyn std::error::Error>> {
+        app.update();
+        let entity = app
+            .world_mut()
+            .query::<(Entity, &Action)>()
+            .iter(app.world())
+            .find(|(_, action)| action.kind == kind)
+            .map(|(entity, _)| entity)
+            .ok_or("bosstiary control")?;
+        app.world_mut().trigger(Activate { entity });
+        Ok(())
+    }
+    fn window_text(app: &mut App) -> String {
+        app.update();
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .map(|text| text.0.clone())
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+    fn accepted(payload: Vec<u8>) -> oteryn_client_runtime::raw_feature::GatedCommandResult {
+        oteryn_client_runtime::raw_feature::GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload,
+        }
+    }
+    #[test]
+    fn bosstiary_window_pulls_boss_lever_and_equips_boss_slot()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::combat_input::PlayCommand;
+        use oteryn_client_runtime::boss_encounter::{
+            BossActivityReply,
+            bosstiary_slots::{BossSlotReply, BossSlotRequest, SlotDetails},
+            encode_boss_activity_reply, encode_boss_key,
+        };
+        let mut owner = HostOwner::new(None)?;
+        let (link, mut commands, outbox) = crate::play::play_channel();
+        link.use_shared_frontend();
+        outbox.bevy_bosstiary_initialize();
+        let view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+        owner.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+        owner.phase = Phase::Playing;
+        crate::bevy_shell::ui::toolbar::open_toolbar(
+            &mut owner,
+            crate::bevy_shell::ui::Control::Panel("bosstiary"),
+        );
+        assert!(matches!(commands.try_recv()?, PlayCommand::Feature(c) if c.kind == 133));
+        let page = oteryn_client_runtime::boss_encounter::catalogue::Page {
+            next: None,
+            points: 10,
+            entries: vec![oteryn_client_runtime::boss_encounter::catalogue::Entry {
+                key: "test:boss".into(),
+                name: "Confirmed boss".into(),
+                category: 1,
+                kills: 5,
+                thresholds: [5, 10, 20],
+                points: [10, 30, 60],
+                look: 1,
+                object: false,
+            }],
+        };
+        outbox.bevy_bosstiary_result(&accepted(page.encode().ok_or("catalogue")?));
+        let mut app = App::new();
+        app.add_plugins((
+            MinimalPlugins,
+            bevy::asset::AssetPlugin::default(),
+            oteryn_client_ui_bevy::GlobalUiPlugin,
+        ))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .insert_non_send(owner)
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+        install(&mut app);
+        assert!(window_text(&mut app).contains("Selected boss: Confirmed boss"));
+
+        click(&mut app, Kind::Request(Intent::Enter))?;
+        let PlayCommand::Feature(lever) = commands.try_recv()? else {
+            return Err("boss lever command".into());
+        };
+        assert_eq!(
+            (lever.capability, lever.kind, lever.payload),
+            (
+                117,
+                178,
+                encode_boss_key("test:boss").map_err(|e| format!("{e:?}"))?
+            )
+        );
+        outbox.bevy_bosstiary_result(&accepted(
+            encode_boss_activity_reply(&BossActivityReply::Accepted {
+                handoff: [7; 16],
+                deadline_unix_ms: Some(90_000),
+            })
+            .map_err(|e| format!("{e:?}"))?,
+        ));
+        assert!(window_text(&mut app).contains("Boss entry accepted. Deadline: 90000"));
+        for (kind, intent) in [(179, Intent::Defeated), (180, Intent::Timeout)] {
+            click(&mut app, Kind::Request(intent))?;
+            assert!(
+                matches!(commands.try_recv()?, PlayCommand::Feature(c) if c.kind == kind && c.payload == encode_boss_key("test:boss").map_err(|e| format!("{e:?}"))?)
+            );
+            outbox.bevy_bosstiary_result(&accepted(
+                encode_boss_activity_reply(&BossActivityReply::Accepted {
+                    handoff: [7; 16],
+                    deadline_unix_ms: None,
+                })
+                .map_err(|e| format!("{e:?}"))?,
+            ));
+            assert!(window_text(&mut app).contains("Boss return accepted"));
+        }
+
+        let slots = |bosses: [&str; 2]| BossSlotReply {
+            details: Some(SlotDetails {
+                base_bonus: 4,
+                bonuses: [4, 0],
+                boosted: String::new(),
+                now: 10,
+            }),
+            status: 0,
+            unlocked: 1,
+            bonus: 4,
+            points: 10,
+            remove_fee: 0,
+            ready_at_ms: 0,
+            bosses: bosses.map(str::to_owned),
+        };
+        click(&mut app, Kind::Request(Intent::SlotsDetailed))?;
+        assert!(
+            matches!(commands.try_recv()?, PlayCommand::Feature(c) if c.kind == 491 && Some(c.payload.clone()) == BossSlotRequest::Detailed(Box::new(BossSlotRequest::Query)).encode())
+        );
+        outbox.bevy_bosstiary_result(&accepted(slots(["", ""]).encode().ok_or("slots")?));
+        assert!(window_text(&mut app).contains("Slot 1: Empty"));
+        click(&mut app, Kind::Slot)?;
+        click(&mut app, Kind::SlotBoss(false))?;
+        click(&mut app, Kind::Request(Intent::SlotEquipSelected))?;
+        let PlayCommand::Feature(equip) = commands.try_recv()? else {
+            return Err("boss slot command".into());
+        };
+        assert_eq!(equip.kind, 491);
+        assert_eq!(
+            Some(equip.payload),
+            BossSlotRequest::Detailed(Box::new(BossSlotRequest::Equip {
+                slot: 1,
+                boss: "test:boss".into(),
+            }))
+            .encode()
+        );
+        outbox.bevy_bosstiary_result(&accepted(slots(["test:boss", ""]).encode().ok_or("slots")?));
+        assert!(window_text(&mut app).contains("> Slot 1: Confirmed boss | +4% equipment loot"));
         Ok(())
     }
 }

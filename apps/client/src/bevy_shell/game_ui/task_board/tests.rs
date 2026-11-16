@@ -416,3 +416,99 @@ fn taskboard_soulseal_panel_reviews_cost_then_enters_exact_authorized_fight()
     );
     Ok(())
 }
+#[test]
+fn taskboard_talisman_tab_buys_and_upgrades_through_owner_and_shows_reply()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    let (mut app, mut commands, outbox) = extra_fixture(panel())?;
+    extra_click(&mut app, |kind| matches!(kind, Kind::Tab(Tab::Talisman)))?;
+    extra_click(&mut app, |kind| matches!(kind, Kind::BuyTalisman))?;
+    let PlayCommand::Feature(buy) = commands.try_recv()? else {
+        return Err("talisman purchase".into());
+    };
+    let request = decode_request(&buy.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!((request.action, request.selection), (17, 0));
+    let mut reply = Reply {
+        refusal: 0,
+        period: 42,
+        points: 20,
+        bounty_points: 25,
+        soulseals: 3,
+        weekly: Weekly {
+            started: false,
+            difficulty: 1,
+            expanded: false,
+            multiplier: 1,
+            kill_experience: 0,
+            delivery_experience: 0,
+            pending_points: 0,
+            pending_soulseals: 0,
+            kills: vec![],
+            deliveries: vec![],
+        },
+        weekly_results: None,
+        bounty: Bounty {
+            elite: false,
+            state: 0,
+            difficulty: 1,
+            selected: 0,
+            current: 0,
+            rerolls: 0,
+            daily_reroll_at: 0,
+            offers: vec![],
+            active: None,
+            lists: vec![],
+        },
+        talisman: Default::default(),
+        shop: vec![],
+    };
+    reply.talisman[0] = TalismanPath {
+        level: 1,
+        bonus: 1,
+        next_cost: 10,
+    };
+    let result = |reply: &Reply| -> Result<_, Box<dyn std::error::Error>> {
+        Ok(oteryn_client_runtime::raw_feature::GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: encode_reply(reply).map_err(|e| format!("{e:?}"))?,
+        })
+    };
+    outbox.bevy_task_board_full_result(&result(&reply)?);
+    app.update();
+    let shown = |app: &mut App| -> Vec<String> {
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .map(|text| text.0.clone())
+            .collect()
+    };
+    let texts = shown(&mut app);
+    assert!(
+        texts
+            .iter()
+            .any(|t| t == "Talisman 1 (Damage): level 1, bonus 1, next cost 10")
+    );
+    assert!(texts.iter().any(|t| t == "Bounty points: 25"));
+    extra_click(&mut app, |kind| matches!(kind, Kind::UpgradeTalisman(0)))?;
+    let PlayCommand::Feature(upgrade) = commands.try_recv()? else {
+        return Err("talisman upgrade".into());
+    };
+    let request = decode_request(&upgrade.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!((request.action, request.selection), (18, 0));
+    reply.bounty_points = 15;
+    reply.talisman[0] = TalismanPath {
+        level: 2,
+        bonus: 2,
+        next_cost: 20,
+    };
+    outbox.bevy_task_board_full_result(&result(&reply)?);
+    app.update();
+    assert!(
+        shown(&mut app)
+            .iter()
+            .any(|t| t == "Talisman 1 (Damage): level 2, bonus 2, next cost 20")
+    );
+    Ok(())
+}

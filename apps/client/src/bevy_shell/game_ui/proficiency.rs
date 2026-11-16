@@ -23,6 +23,10 @@ enum Kind {
     SaveClose,
     DiscardClose,
     CancelClose,
+    Slot(u8),
+    Offer(u8),
+    Modify(usize),
+    Shape(oteryn_client_ui::weapon_proficiency::Intent),
 }
 use bevy::{prelude::*, ui_widgets::Activate};
 use oteryn_client_ui::weapon_proficiency::WeaponProficiencyPanel;
