@@ -429,3 +429,23 @@ fn writing_drafts_follow_item_and_session_identity() -> Result<(), Error> {
     assert!(link.mail_panel().fields.iter().all(String::is_empty));
     Ok(())
 }
+
+#[cfg(bevy_shell)]
+impl crate::play::Outbox {
+    /// Admits the property capabilities the Bevy item and furniture menus drive.
+    pub(crate) fn bevy_property_items_selected(&self) {
+        let mut mailbox = crate::play::mailbox::lock(&self.0);
+        mailbox.properties.mail.selected = true;
+        mailbox.properties.timed_item.selected = true;
+        mailbox.properties.house_furniture_rotation.selected = true;
+        mailbox.properties.house_furniture_wrap.selected = true;
+    }
+    /// Applies a server reply through the production property reducer.
+    pub(crate) fn bevy_properties_result(
+        &self,
+        command: &FeatureCommand,
+        result: &GatedCommandResult,
+    ) {
+        self.properties_result(command, result);
+    }
+}

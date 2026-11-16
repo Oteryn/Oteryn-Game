@@ -42,6 +42,22 @@ impl PlayLink {
     pub fn timed_item_open(&self) {
         lock(&self.mailbox).properties.timed_item.open = true;
     }
+    /// Opens the timed item window for one item and asks the server for its current revision;
+    /// the reply fills the revision that Use and Repair then send.
+    pub fn timed_item_inspect(&self, handle: oteryn_session::ItemHandle) {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.properties.timed_item;
+        panel.open = true;
+        if panel.pending {
+            return;
+        }
+        let value = handle.get().to_string();
+        if panel.fields[0] != value {
+            edit(panel, 0, value);
+            edit(panel, 1, "0".into());
+        }
+        submit(&mut mailbox, &self.commands, Intent::Inspect);
+    }
     pub fn timed_item_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if !oteryn_client_ui::timed_item::open_key(events) {
             return false;

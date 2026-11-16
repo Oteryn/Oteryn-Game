@@ -181,6 +181,18 @@ pub(super) fn choose(control: Control, owner: &HostOwner, ui: &mut InventoryUi) 
                 ui.menu = None;
             }
         }
+        Control::Write(slot) | Control::Timed(slot) => {
+            if let Some(item) = slot.current_item(owner)
+                && let Some(play) = &owner.play
+            {
+                if matches!(control, Control::Write(_)) {
+                    play.link.mail_write_item(item.handle);
+                } else {
+                    play.link.timed_item_inspect(item.handle);
+                }
+                ui.menu = None;
+            }
+        }
         Control::Up {
             generation,
             view,
@@ -197,6 +209,15 @@ pub(super) fn choose(control: Control, owner: &HostOwner, ui: &mut InventoryUi) 
                 } else {
                     play.link.container_close_bound(view, handle);
                 }
+            }
+        }
+        Control::GroundUp {
+            generation,
+            view,
+            handle,
+        } if generation == owner.generation() && !owner.modal_active() => {
+            if let Some(play) = &owner.play {
+                play.link.browse_field_up_bound(view, handle);
             }
         }
         Control::Count(prompt, delta) if prompt_current(prompt, owner, ui) => {
