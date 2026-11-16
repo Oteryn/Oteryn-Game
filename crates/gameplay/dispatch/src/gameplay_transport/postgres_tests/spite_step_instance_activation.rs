@@ -174,23 +174,30 @@ fn spite_step_instance_survives_channel_activation_advance() -> TestResult {
             // One real private Global fire in the Instance, through the real
             // fenced native/SQL producer on the Instance's own Item lane.
             h.root.set_test_quest_clock(1_800_000_000).map_err(debug)?;
-            let native = scene
-                .controller
-                .active()
-                .and_then(|active| active.native_gameplay())
-                .ok_or("actual source generation")?;
-            let registration = native
-                .qualify_spite_global_event(&scene.room)
-                .ok_or("real registered Spite source")?;
+            // Production fires the Instance Spite Global from the Instance's
+            // own monster-AI room and generation (`spite_global_room`), whose
+            // frame/map digests the 2731 Instance arm binds; the Channel scene
+            // room is not that room.
             let permit = view
                 .spell_lane_permit()
                 .await
                 .ok_or("physical Instance Item lane")?;
             let (callback, prepared) = {
+                let native = view
+                    .active_generation
+                    .and_then(|active| active.native_gameplay())
+                    .ok_or("actual Instance source generation")?;
+                let room = view
+                    .effective_rooms()
+                    .gate_monster_ai()
+                    .ok_or("actual Instance Spite room")?;
+                let registration = native
+                    .qualify_spite_global_event(room)
+                    .ok_or("real registered Spite source")?;
                 let mut runtime = view.runtime.lock().await;
                 let callback = SpiteGlobalFireCallback::from_current_registration(
                     &mut runtime,
-                    &scene.room,
+                    room,
                     native,
                     &registration,
                     1,
@@ -261,7 +268,6 @@ fn spite_step_instance_survives_channel_activation_advance() -> TestResult {
                 "the accepted Instance retains its own original entry pins"
             );
 
-
             // The actual paced STEP onto the field retains the Source STEP.
             assert!(view.quest_catalogue.is_none());
             view.clock_origin = view
@@ -293,7 +299,7 @@ fn spite_step_instance_survives_channel_activation_advance() -> TestResult {
                 oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                     .map_err(debug)?;
             view.quest_catalogue = Some(std::sync::Arc::new(lowered.catalogue().clone()));
-            let _permit = view
+            let permit = view
                 .spell_lane_permit()
                 .await
                 .ok_or("retained Instance Source STEP resolves")?;
@@ -308,7 +314,13 @@ fn spite_step_instance_survives_channel_activation_advance() -> TestResult {
             let retired:(i16,i64,bool)=sqlx::query_as("SELECT lifecycle,quantity,EXISTS(SELECT 1 FROM game_item_ground_locations g WHERE g.item_instance_id=i.item_instance_id) FROM game_item_instances i WHERE item_instance_id=$1::uuid")
                 .bind(&first).fetch_one(&h.pool).await?;
             assert_eq!(retired, (2, 0, false));
-            Ok(())
+            drop(permit);
+            drop(view);
+            drop(registered);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await
         })
     })
 }
