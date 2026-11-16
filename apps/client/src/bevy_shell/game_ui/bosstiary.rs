@@ -418,6 +418,8 @@ mod tests {
             payload,
         }
     }
+    /// A UUIDv7-shaped handoff, as the boss activity reply requires.
+    const HANDOFF: [u8; 16] = [7, 7, 7, 7, 7, 7, 0x77, 7, 0x87, 7, 7, 7, 7, 7, 7, 7];
     #[test]
     fn bosstiary_window_pulls_boss_lever_and_equips_boss_slot()
     -> Result<(), Box<dyn std::error::Error>> {
@@ -481,7 +483,7 @@ mod tests {
         );
         outbox.bevy_bosstiary_result(&accepted(
             encode_boss_activity_reply(&BossActivityReply::Accepted {
-                handoff: [7; 16],
+                handoff: HANDOFF,
                 deadline_unix_ms: Some(90_000),
             })
             .map_err(|e| format!("{e:?}"))?,
@@ -494,7 +496,7 @@ mod tests {
             );
             outbox.bevy_bosstiary_result(&accepted(
                 encode_boss_activity_reply(&BossActivityReply::Accepted {
-                    handoff: [7; 16],
+                    handoff: HANDOFF,
                     deadline_unix_ms: None,
                 })
                 .map_err(|e| format!("{e:?}"))?,

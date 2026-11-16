@@ -140,6 +140,8 @@ fn derived_gated_routes_match_previous_table() -> Result<(), &'static str> {
         (225, &[431], &[]),
         (230, &[440], &[]),
         (233, &[447], &[]),
+        // Hireling management (command 470), next to its prerequisite banker hireling 165.
+        (250, &[470], &[]),
         // P-C01: native Bestiary/Charms (command 84) and PvP expert (command 103,
         // confirmed-mode domain 52) panels use their existing gated routes.
         (67, &[84], &[]),

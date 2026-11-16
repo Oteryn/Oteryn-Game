@@ -101,6 +101,7 @@ mod tests {
         let root =
             std::env::temp_dir().join(format!("bevy-minimap-transfer-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root)?;
         let export = root.join("portable.json");
         let mut app = super::super::tests::app(Page::Misc, None)?;
         let (link, _, _) = play_channel();
