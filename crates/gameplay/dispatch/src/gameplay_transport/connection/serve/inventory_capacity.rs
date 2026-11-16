@@ -19,6 +19,16 @@ where
     {
         return Ok(());
     }
+    // Visibility ticks every 250 ms; capacity is advisory and also sees out-of-connection
+    // changes through this bounded refresh. Failed reads share the same bound.
+    let now = tokio::time::Instant::now();
+    if session
+        .inventory_capacity_refresh_at
+        .is_some_and(|next| now < next)
+    {
+        return Ok(());
+    }
+    session.inventory_capacity_refresh_at = Some(now + std::time::Duration::from_secs(5));
     let Some(capacity) = authority.observe_inventory_capacity(session.admitted).await else {
         return Ok(());
     };

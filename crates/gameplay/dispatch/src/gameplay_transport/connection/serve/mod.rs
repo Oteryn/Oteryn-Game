@@ -124,6 +124,7 @@ struct ServeState {
     guild_emblems: Vec<oteryn_protocol_oteryn::guild_emblem::GuildEmblem>,
     /// INVCAP-1: the capacity last sent on this connection under capability 508.
     inventory_capacity: Option<oteryn_protocol_oteryn::inventory_capacity::InventoryCapacity>,
+    inventory_capacity_refresh_at: Option<tokio::time::Instant>,
     party_view: crate::gameplay_transport::party_command::SessionPartyView,
     team_finder_view: crate::gameplay_transport::team_finder_members::SessionTeamFinderView,
     market_revision: u64,

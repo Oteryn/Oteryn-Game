@@ -1,10 +1,10 @@
 //! INVCAP-1: the own character's capacity and carried weight for the inventory panel's `Cap`,
 //! read with the same derivation item pickups and moves into the character check against.
-use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
-use super::character_progression::assert_session_fence;
-use super::item_loop_move::{LoopError, carried_weight};
+use super::character_authority::{ReconciledCharacterAuthority, observe_recovery_fence};
+use super::character_progression::observe_session_fence;
+use super::item_loop_move::{LoopError, observe_carried_weight};
 use super::item_transfer::{
-    CurrentCharacterItemFence, ItemWeightLookup, read_derived_transfer_capacity_centi_oz,
+    CurrentCharacterItemFence, ItemWeightLookup, observe_transfer_capacity_centi_oz,
 };
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
@@ -28,22 +28,23 @@ impl DurabilityRoot {
             .run_with_context(&mut context, move |holder, deadline, weights| {
                 Box::pin(async move {
                     let weights: &dyn ItemWeightLookup = *weights;
-                    let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &record).await?;
-                    if assert_session_fence(&mut tx, &fence, &node).await?.is_err() {
+                    let mut tx = super::db::begin_observation_transaction(holder, deadline).await?;
+                    observe_recovery_fence(&mut tx, &record).await?;
+                    if observe_session_fence(&mut tx, &fence, &node)
+                        .await?
+                        .is_err()
+                    {
                         tx.rollback().await?;
                         return Ok(None);
                     }
-                    // The root lock first, in the per-Character order item moves take.
-                    let capacity = read_derived_transfer_capacity_centi_oz(
-                        &mut tx,
-                        fence.character_id,
-                        weights,
-                    )
-                    .await?;
+                    let capacity =
+                        observe_transfer_capacity_centi_oz(&mut tx, fence.character_id, weights)
+                            .await?;
                     let world = *fence.runtime_scope.world_id().as_bytes();
                     let carried =
-                        match carried_weight(&mut tx, fence.character_id, world, weights).await {
+                        match observe_carried_weight(&mut tx, fence.character_id, world, weights)
+                            .await
+                        {
                             Ok(carried) => carried,
                             Err(LoopError::Durability(error)) => return Err(error),
                             Err(LoopError::Database(error)) => return Err(error.into()),

@@ -501,6 +501,7 @@ async fn live<A: FreshAdmissionAuthority>(
         party_icons: Vec::new(),
         guild_emblems: Vec::new(),
         inventory_capacity: None,
+        inventory_capacity_refresh_at: None,
         team_finder_view: Default::default(),
         market_revision: 1,
         cyclopedia_tracker_revision: 1,

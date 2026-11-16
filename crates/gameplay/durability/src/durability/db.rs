@@ -2040,6 +2040,22 @@ pub async fn begin_semantic_transaction<'a>(
     holder: &'a mut PoolConnection<Postgres>,
     deadline: Instant,
 ) -> Result<Transaction<'a, Postgres>, DurabilityError> {
+    begin_transaction(holder, deadline, false).await
+}
+
+/// Advisory observations use one consistent snapshot and cannot acquire mutation locks.
+pub(super) async fn begin_observation_transaction<'a>(
+    holder: &'a mut PoolConnection<Postgres>,
+    deadline: Instant,
+) -> Result<Transaction<'a, Postgres>, DurabilityError> {
+    begin_transaction(holder, deadline, true).await
+}
+
+async fn begin_transaction<'a>(
+    holder: &'a mut PoolConnection<Postgres>,
+    deadline: Instant,
+    observation: bool,
+) -> Result<Transaction<'a, Postgres>, DurabilityError> {
     let mut span = oteryn_error_codes::Span::start(
         oteryn_error_codes::Level::Debug,
         "durability",
@@ -2056,7 +2072,16 @@ pub async fn begin_semantic_transaction<'a>(
             return Err(DurabilityError::RootPassDeadlineExceeded);
         }
 
-        let mut transaction = tokio::time::timeout(remaining, holder.begin())
+        let mut transaction = tokio::time::timeout(remaining, async {
+            if observation {
+                sqlx::Connection::begin_with(
+                    &mut **holder,
+                    "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY",
+                ).await
+            } else {
+                holder.begin().await
+            }
+        })
             .await
             .map_err(|_| DurabilityError::RootPassDeadlineExceeded)??;
 

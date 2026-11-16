@@ -565,8 +565,26 @@ pub(super) async fn carried_weight(
     world: [u8; 16],
     weights: &dyn ItemWeightLookup,
 ) -> LoopResult<u64> {
-    let rows = sqlx::query(
-        "WITH RECURSIVE roots AS ( \
+    read_carried_weight(tx, character, world, weights, true).await
+}
+
+pub(super) async fn observe_carried_weight(
+    tx: &mut Transaction<'_, Postgres>,
+    character: CharacterId,
+    world: [u8; 16],
+    weights: &dyn ItemWeightLookup,
+) -> LoopResult<u64> {
+    read_carried_weight(tx, character, world, weights, false).await
+}
+
+async fn read_carried_weight(
+    tx: &mut Transaction<'_, Postgres>,
+    character: CharacterId,
+    world: [u8; 16],
+    weights: &dyn ItemWeightLookup,
+    lock: bool,
+) -> LoopResult<u64> {
+    let sql = "WITH RECURSIVE roots AS ( \
            SELECT item_instance_id FROM game_item_container_slots \
             WHERE character_id = encode($1,'hex')::uuid \
            UNION ALL \
@@ -587,8 +605,9 @@ pub(super) async fn carried_weight(
                 i.definition_revision_ref, i.quantity, i.lifecycle, i.world_id::text AS world, \
                 c.cycle \
            FROM carried c JOIN game_item_instances i USING (item_instance_id) \
-          ORDER BY i.item_instance_id FOR UPDATE OF i",
-    )
+          ORDER BY i.item_instance_id FOR UPDATE OF i";
+    let sql = if lock { sql } else { sql.trim_end_matches(" FOR UPDATE OF i") };
+    let rows = sqlx::query(sql)
     .bind(character.as_bytes().as_slice())
     .fetch_all(&mut **tx)
     .await?;

@@ -412,6 +412,24 @@ pub(super) async fn assert_session_fence(
     fence: &CurrentCharacterItemFence,
     node: &NodeIncarnationProof,
 ) -> std::result::Result<std::result::Result<String, CharacterProgressionError>, DurabilityError> {
+    check_session_fence(tx, fence, node, true).await
+}
+
+/// The same session proofs as of an observation snapshot, without authorizing any write.
+pub(super) async fn observe_session_fence(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: &CurrentCharacterItemFence,
+    node: &NodeIncarnationProof,
+) -> std::result::Result<std::result::Result<String, CharacterProgressionError>, DurabilityError> {
+    check_session_fence(tx, fence, node, false).await
+}
+
+async fn check_session_fence(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: &CurrentCharacterItemFence,
+    node: &NodeIncarnationProof,
+    lock: bool,
+) -> std::result::Result<std::result::Result<String, CharacterProgressionError>, DurabilityError> {
     let world_id = fence.runtime_scope.world_id();
     // Runtime guard kind 2 means Instance; assignment kind 2 means House.
     // An activity must resolve through kind 3, never through its origin Channel
@@ -423,8 +441,7 @@ pub(super) async fn assert_session_fence(
         }
         RuntimeScopeRefV1::Instance { instance_id, .. } => (2, None, Some(instance_id)),
     };
-    let session = sqlx::query(
-        "SELECT account_id::text FROM game_durability_reconnect_sessions \
+    let sql = "SELECT account_id::text FROM game_durability_reconnect_sessions \
          WHERE game_session_id = encode($1,'hex')::uuid \
            AND character_id = encode($2,'hex')::uuid \
            AND world_id = encode($3,'hex')::uuid \
@@ -436,8 +453,9 @@ pub(super) async fn assert_session_fence(
            AND current_generation = $5::text::numeric(20,0) \
            AND character_lease_generation = $6::text::numeric(20,0) \
            AND scope_ownership_generation = $7::text::numeric(20,0) \
-           AND session_state IN (1,2) FOR SHARE",
-    )
+           AND session_state IN (1,2) FOR SHARE";
+    let sql = if lock { sql } else { sql.trim_end_matches(" FOR SHARE") };
+    let session = sqlx::query(sql)
     .bind(fence.game_session_id.as_bytes().as_slice())
     .bind(fence.character_id.as_bytes().as_slice())
     .bind(world_id.as_bytes().as_slice())
@@ -465,11 +483,12 @@ pub(super) async fn assert_session_fence(
         }
     }
 
-    if !assert_runtime_scope_fence(
+    if !check_runtime_scope_fence(
         tx,
         fence.runtime_scope,
         fence.scope_ownership_generation,
         node,
+        lock,
     )
     .await?
     {
@@ -514,13 +533,27 @@ pub(super) async fn assert_runtime_scope_fence(
     generation: ScopeOwnershipGeneration,
     node: &NodeIncarnationProof,
 ) -> std::result::Result<bool, DurabilityError> {
+    check_runtime_scope_fence(tx, scope, generation, node, true).await
+}
+
+async fn check_runtime_scope_fence(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    scope: RuntimeScopeRefV1,
+    generation: ScopeOwnershipGeneration,
+    node: &NodeIncarnationProof,
+    lock: bool,
+) -> std::result::Result<bool, DurabilityError> {
     // Readiness attests history at publication time. A partial restore can leave
     // that ready projection and an assignment row intact while losing receipts;
     // neither projection is then current authority. The native validator holds
     // the writer's share lock until this semantic transaction ends, serializing
     // its history proof with assignment successors before we lock their rows.
     let history_valid: bool =
-        sqlx::query_scalar("SELECT game_runtime_scope_assignment_history_valid()")
+        sqlx::query_scalar(if lock {
+            "SELECT game_runtime_scope_assignment_history_valid()"
+        } else {
+            "SELECT game_runtime_scope_assignment_observation_valid()"
+        })
             .fetch_one(&mut **tx)
             .await?;
     if !history_valid {
@@ -536,8 +569,7 @@ pub(super) async fn assert_runtime_scope_fence(
     let mut runtime_key = assignment_key;
     runtime_key[0] = runtime_kind;
     let fact = node.fact();
-    let assignment = sqlx::query(
-        "SELECT 1 FROM game_runtime_scope_assignments a \
+    let sql = "SELECT 1 FROM game_runtime_scope_assignments a \
          JOIN game_durability_admission_runtime_guards g ON g.scope_key = $9 \
          WHERE a.scope_key = $1 AND a.world_id = encode($2,'hex')::uuid \
            AND a.channel_id IS NOT DISTINCT FROM encode($3,'hex')::uuid \
@@ -547,8 +579,9 @@ pub(super) async fn assert_runtime_scope_fence(
            AND a.holder_node_id = encode($5,'hex')::uuid \
            AND a.holder_registration_revision = $6::text::numeric(20,0) \
            AND g.ready AND g.ownership_generation = a.ownership_generation \
-         FOR SHARE OF a, g",
-    )
+         FOR SHARE OF a, g";
+    let sql = if lock { sql } else { sql.trim_end_matches(" FOR SHARE OF a, g") };
+    let assignment = sqlx::query(sql)
     .bind(assignment_key.as_slice())
     .bind(scope.world_id().as_bytes().as_slice())
     .bind(channel_id.as_ref().map(|id| id.as_slice()))
@@ -560,7 +593,14 @@ pub(super) async fn assert_runtime_scope_fence(
     .bind(runtime_key.as_slice())
     .fetch_optional(&mut **tx)
     .await?;
-    Ok(assignment.is_some() && prove_current_incarnation(tx, node).await?)
+    if assignment.is_none() {
+        return Ok(false);
+    }
+    if lock {
+        prove_current_incarnation(tx, node).await
+    } else {
+        super::runtime_scope_assignment::observe_current_incarnation(tx, node).await
+    }
 }
 
 /// The complete current gameplay fence shared by every Character progression

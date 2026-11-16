@@ -556,13 +556,32 @@ pub(super) async fn assert_recovery_fence(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     record: &CharacterRecoveryFenceV1,
 ) -> std::result::Result<(), DurabilityError> {
+    check_recovery_fence(tx, record, true).await
+}
+
+/// Snapshot comparison for advisory reads only; this never authorizes a mutation.
+pub(super) async fn observe_recovery_fence(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    record: &CharacterRecoveryFenceV1,
+) -> std::result::Result<(), DurabilityError> {
+    check_recovery_fence(tx, record, false).await
+}
+
+async fn check_recovery_fence(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    record: &CharacterRecoveryFenceV1,
+    lock: bool,
+) -> std::result::Result<(), DurabilityError> {
     // A row lock alone cannot fence an append-only successor: a SELECT queued
     // behind reconciliation can retain a snapshot containing only its predecessor.
     // The shared transaction gate precedes the SELECT and stays held through commit.
-    sqlx::query("SELECT pg_advisory_xact_lock_shared(hashtextextended('oteryn:character-recovery-admission', 0))")
-        .execute(&mut **tx)
-        .await?;
+    if lock {
+        sqlx::query("SELECT pg_advisory_xact_lock_shared(hashtextextended('oteryn:character-recovery-admission', 0))")
+            .execute(&mut **tx)
+            .await?;
+    }
     let sql = "SELECT authority_scope_id, recovery_generation::text, recovery_event_id::text, predecessor_generation::text, predecessor_digest, issued_at::text, issuer_identity FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1 FOR SHARE";
+    let sql = if lock { sql } else { sql.trim_end_matches(" FOR SHARE") };
     let row = sqlx::query(sql)
         .fetch_optional(&mut **tx)
         .await?

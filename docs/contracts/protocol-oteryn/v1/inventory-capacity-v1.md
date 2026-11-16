@@ -18,7 +18,11 @@ carried weight covers every equipped item and the main backpack tree. The
 server reads both through the session's current character item fence and
 sends a new value only when either changed since the last one it sent on this
 connection; a new connection sends the current value again. An unavailable
-read (busy holder, unknown weight, stale fence) sends nothing.
+read (busy holder, unknown weight, stale fence) sends nothing. Observations
+use a single read-only repeatable-read snapshot, including the recovery,
+session, scope and node checks, without mutation locks. Each connection
+observes at most once per five seconds, including unavailable reads; visibility
+ticks do not issue additional capacity reads during that interval.
 
 The client shows `Cap: <free / 100>` (whole ounces). Without the capability
 the field is refused and nothing is sent; unselected payloads are unchanged.

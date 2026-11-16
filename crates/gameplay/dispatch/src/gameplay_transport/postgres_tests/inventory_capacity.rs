@@ -20,12 +20,16 @@ fn select(capabilities: &[u32]) -> TestResult<SelectedCapabilities> {
     Ok(SelectedCapabilities::select(
         &[
             OfferedCapability {
+                id: 4,
+                requires: &[6],
+            },
+            OfferedCapability {
                 id: 6,
                 requires: &[],
             },
             OfferedCapability {
                 id: 508,
-                requires: &[6],
+                requires: &[4, 6],
             },
         ],
         capabilities,
@@ -44,16 +48,22 @@ fn inventory_capacity_real_connection_postgres() -> TestResult {
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        let deps = Dependencies::new()?;
+        let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+        let (controller, pin) = super::death_ml_loss_composed::production_generation_with_pin(
+            world,
+            "content-1",
+        )?;
+        let room = pin.qualified_room().clone();
+        let deps = Dependencies::with_content(
+            pin.into_channel_pin(),
+            room,
+            crate::spell::cast::v1_spell_book().map_err(debug)?,
+        )?;
         deps.runtime
             .lock()
             .await
             .initialize_first_entry_position(deps.actor)
             .map_err(debug)?;
-        let (controller, _) = super::death_ml_loss_composed::production_generation_with_pin(
-            deps.admitted.world_id,
-            "content-1",
-        )?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = controller.active();
         deps.initialize(&owner).await;
@@ -76,10 +86,11 @@ fn inventory_capacity_real_connection_postgres() -> TestResult {
         admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
         admitted.controller.as_mut().ok_or("controller")?.transport =
             current.current_transport().ok_or("transport")?;
+        super::item_look::seed_main_backpack(&h, &[("oteryn:item.tibia.i3031", 3)]).await?;
         // Without capability 508 the owner reads nothing.
         admitted.continuity.selected_capabilities = select(&[6])?;
         assert_eq!(owner.observe_inventory_capacity(admitted).await, None);
-        admitted.continuity.selected_capabilities = select(&[6, 508])?;
+        admitted.continuity.selected_capabilities = select(&[4, 6, 508])?;
         let expected = owner
             .observe_inventory_capacity(admitted)
             .await
@@ -90,22 +101,46 @@ fn inventory_capacity_real_connection_postgres() -> TestResult {
             .active_generation
             .and_then(|generation| generation.native_gameplay())
             .ok_or("native gameplay")?;
+        let weights = crate::gameplay_transport::item_ref_admission::NativeItemWeights(native)
+            .with_wheel(owner.premium_coordinator);
+        let probe = ObservationLockProbe {
+            weights: &weights,
+            options: h.pool.connect_options().as_ref().clone(),
+            root: Default::default(),
+            carried: Default::default(),
+        };
         let (capacity, carried) = h
             .root
             .read_inventory_capacity(
                 &authority,
                 &h.node,
                 fence,
-                &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native)
-                    .with_wheel(owner.premium_coordinator),
+                &probe,
             )
             .await
             .map_err(debug)?
             .ok_or("durable capacity")?;
+        assert_eq!(probe.root.get(), Some(&Ok(())), "observation locked the root");
+        assert_eq!(
+            probe.carried.get(),
+            Some(&Ok(())),
+            "observation locked carried items"
+        );
+        assert!(carried > 0, "the lock probe must read actual carried items");
         assert!(capacity > 0);
         assert_eq!(
             Some(expected),
             InventoryCapacity::from_carried(capacity, carried)
+        );
+        // Exercise the snapshot's database fence, beyond the connection's early check.
+        let mut outdated = fence;
+        outdated.connection_generation = crate::foundation::ConnectionGeneration::new(
+            fence.connection_generation.get() + 1,
+        ).map_err(debug)?;
+        assert_eq!(
+            h.root.read_inventory_capacity(&authority, &h.node, outdated, &weights)
+                .await.map_err(debug)?,
+            None
         );
         // A stale item fence (another connection generation) reads nothing.
         let mut stale = admitted;
@@ -117,6 +152,72 @@ fn inventory_capacity_real_connection_postgres() -> TestResult {
         drop(seal);
         h.cleanup().await
     })
+}
+
+// A second connection probes while the production observer's transaction is active. The
+// lookup still delegates to the admitted content; no production test hook or guessed sleep.
+struct ObservationLockProbe<'a> {
+    weights: &'a dyn crate::durability::item_transfer::ItemWeightLookup,
+    options: sqlx::postgres::PgConnectOptions,
+    root: std::sync::OnceLock<Result<(), String>>,
+    carried: std::sync::OnceLock<Result<(), String>>,
+}
+
+impl ObservationLockProbe<'_> {
+    fn probe(&self) -> Result<(), String> {
+        let options = self.options.clone();
+        std::thread::spawn(move || {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .map_err(|error| error.to_string())?;
+            runtime.block_on(async {
+                use sqlx::Connection;
+                let mut connection = sqlx::PgConnection::connect_with(&options).await?;
+                let mut tx = connection.begin().await?;
+                for (sql, required) in [
+                    ("SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE NOWAIT", true),
+                    ("SELECT 1 FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE NOWAIT", true),
+                    ("SELECT 1 FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE NOWAIT", false),
+                ] {
+                    let rows = sqlx::query(sql)
+                        .bind(id(41).as_slice())
+                        .fetch_all(&mut *tx)
+                        .await?;
+                    // An unassigned vocation legitimately has no build row.
+                    if required {
+                        assert!(!rows.is_empty(), "lock probe needs the fixture row");
+                    }
+                }
+                sqlx::query("SELECT 1 FROM game_item_instances WHERE world_id=encode($1,'hex')::uuid FOR UPDATE NOWAIT")
+                    .bind(id(42).as_slice()).fetch_all(&mut *tx).await?;
+                tx.rollback().await?;
+                Ok::<_, Box<dyn std::error::Error>>(())
+            })
+            .map_err(|error| error.to_string())
+        })
+        .join()
+        .map_err(|_| "capacity lock probe thread panicked".to_owned())?
+    }
+}
+
+impl crate::durability::item_transfer::ItemWeightLookup for ObservationLockProbe<'_> {
+    fn generation_digest(&self) -> [u8; 32] {
+        self.weights.generation_digest()
+    }
+
+    fn wheel_premium_current(&self, account: [u8; 16]) -> bool {
+        self.root.get_or_init(|| self.probe());
+        self.weights.wheel_premium_current(account)
+    }
+
+    fn weight_of(
+        &self,
+        definition: &crate::durability::item_mint::TypedDefinitionRef,
+    ) -> Result<u32, crate::durability::item_transfer::ItemWeightRefused> {
+        self.carried.get_or_init(|| self.probe());
+        self.weights.weight_of(definition)
+    }
 }
 
 // The admission and lease are the fixture's committed facts; the serve loop, the sidecar
