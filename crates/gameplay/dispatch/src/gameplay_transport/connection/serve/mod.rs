@@ -33,6 +33,7 @@ use command::CommandOutcome;
 mod effects;
 mod native_cues;
 mod outbound;
+use outbound::write_frame;
 mod result;
 mod route;
 mod use_effects;

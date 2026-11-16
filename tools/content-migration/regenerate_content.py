@@ -893,6 +893,7 @@ def main() -> int:
     run(["python3", "tools/content-schema/quest-authoring/quest_state_lowering.py"])
     run(["python3", "tools/content-schema/quest-authoring/qmech_m24_kill_bindings.py"])
     run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py", "content"])
+    run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py"])
     for script in (
         "quest_binding_authoring", "quest_completion_matrix", "quest_rollout_authoring",
         "quest_v2_export", "source_lowered_binding_plan", "quest_completion_import",
