@@ -82,6 +82,7 @@ pub(super) async fn exercise(
     admitted: &mut AdmittedSession,
     h: &Harness,
 ) -> TestResult {
+    use crate::gameplay_transport::connection::FreshAdmissionAuthority;
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
     assert!(
         owner.premium_coordinator.is_some(),
@@ -95,6 +96,32 @@ pub(super) async fn exercise(
             .next_encounter_due_us()
             .is_none()
     );
+    // The source approach is a diagonal STEP; the wire route refuses it unless
+    // the session negotiated the real diagonal (and paced) movement capability.
+    let offered = owner.offered_capabilities();
+    let mut pending = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    pending.extend([
+        oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1,
+        oteryn_protocol_oteryn::world_spatial::CAPABILITY_PACED_MOVEMENT_V1,
+    ]);
+    let mut supported = std::collections::BTreeSet::new();
+    while let Some(id) = pending.pop() {
+        if supported.insert(id)
+            && let Some(capability) = offered.iter().find(|capability| capability.id == id)
+        {
+            pending.extend_from_slice(capability.requires);
+        }
+    }
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            offered,
+            &supported.into_iter().collect::<Vec<_>>(),
+        )
+        .ok_or("Stampede diagonal approach capabilities must be offered")?;
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))

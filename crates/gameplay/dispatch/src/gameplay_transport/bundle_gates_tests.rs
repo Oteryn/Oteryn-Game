@@ -218,6 +218,10 @@ const INVENTORY: &[Entry] = &[
             ),
             ("gameplay_transport/native_activity.rs", 1),
             (
+                "gameplay_transport/postgres_tests/spite_step_instance_activation.rs",
+                1,
+            ),
+            (
                 "gameplay_transport/postgres_tests/srx3_greed_retention.rs",
                 1,
             ),
@@ -404,6 +408,10 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/creature_push.rs", 1),
             ("gameplay_transport/paced_movement.rs", 1),
             ("gameplay_transport/paced_movement/autowalk.rs", 1),
+            (
+                "gameplay_transport/postgres_tests/spite_step_instance_activation.rs",
+                1,
+            ),
         ],
     },
 ];
