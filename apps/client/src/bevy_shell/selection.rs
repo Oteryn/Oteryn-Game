@@ -31,6 +31,10 @@ enum Choice {
     Next,
     Play,
     Train,
+    /// Adds or removes the selected row in the offline-training batch.
+    Mark,
+    /// Trains every marked character, one after another.
+    TrainMarked,
     Refresh,
     Create,
     Account,
@@ -51,6 +55,8 @@ pub(super) struct PickerState {
     revision: u64,
     rendered: Option<(u64, u64)>,
     last_click: Option<(u64, usize, std::time::Instant)>,
+    /// Rows marked for offline training with the channel chosen when marked, in marking order.
+    marked: Vec<(usize, Option<usize>)>,
 }
 #[derive(Resource)]
 pub(super) struct Skin {
@@ -122,6 +128,7 @@ pub(super) fn project(
             .position(|row| row.available && row.character.character_id == request.preselect)
             .or_else(|| request.rows.iter().position(|row| row.available));
         state.channel = None;
+        state.marked.clear();
         state.page = state.selected.unwrap_or(0) / PAGE_ROWS;
         state.revision = 0;
         state.rendered = None;
@@ -188,10 +195,15 @@ pub(super) fn project(
             .take(page_rows)
         {
             let label = format!(
-                "{} — {}{}",
+                "{} — {}{}{}",
                 row.character.name,
                 row.world_name,
-                if row.available { "" } else { " (unavailable)" }
+                if row.available { "" } else { " (unavailable)" },
+                if state.marked.iter().any(|(marked, _)| *marked == index) {
+                    " (training)"
+                } else {
+                    ""
+                }
             );
             let button = add_button(
                 &mut commands,
@@ -247,9 +259,35 @@ pub(super) fn project(
                 source::font(skin.font.clone(), false),
             ))
             .id();
+        let selected_row = state.selected.and_then(|index| request.rows.get(index));
+        let marked = state
+            .selected
+            .is_some_and(|index| state.marked.iter().any(|(row, _)| *row == index));
+        let mark = add_button(
+            &mut commands,
+            &skin,
+            request.id,
+            Choice::Mark,
+            if marked {
+                "Unmark training"
+            } else {
+                "Mark for training"
+            },
+            130.,
+            selected_row.is_none_or(|row| !row.available),
+        );
+        let train_marked = add_button(
+            &mut commands,
+            &skin,
+            request.id,
+            Choice::TrainMarked,
+            &format!("Train marked ({})", state.marked.len()),
+            140.,
+            state.marked.is_empty(),
+        );
         commands
             .entity(navigation)
-            .add_children(&[previous, page, next]);
+            .add_children(&[previous, page, next, mark, train_marked]);
         commands.entity(panel).add_child(navigation);
         let row = state.selected.and_then(|index| request.rows.get(index));
         let channel = row
@@ -334,6 +372,8 @@ fn add_button(
         Choice::Next => "selection.next".into(),
         Choice::Play => "selection.play".into(),
         Choice::Train => "selection.training".into(),
+        Choice::Mark => "selection.training.mark".into(),
+        Choice::TrainMarked => "selection.training.batch".into(),
         Choice::Refresh => "selection.refresh".into(),
         Choice::Account => "selection.account".into(),
         Choice::Create => "selection.create".into(),
@@ -433,6 +473,36 @@ fn activate(
                     channel_id,
                 }
             }),
+        Choice::Mark => {
+            if let Some(index) = state
+                .selected
+                .filter(|index| request.rows.get(*index).is_some_and(|row| row.available))
+            {
+                if let Some(at) = state.marked.iter().position(|(row, _)| *row == index) {
+                    state.marked.remove(at);
+                } else {
+                    let channel = state.channel;
+                    state.marked.push((index, channel));
+                }
+            }
+            None
+        }
+        Choice::TrainMarked => {
+            let characters: Vec<_> = state
+                .marked
+                .iter()
+                .filter_map(|(index, channel)| {
+                    let row = request.rows.get(*index).filter(|row| row.available)?;
+                    Some(crate::character_selection::TrainingSelection {
+                        character_id: row.character.character_id.clone(),
+                        channel_id: channel
+                            .and_then(|channel| row.channels.get(channel))
+                            .map(|channel| channel.0.clone()),
+                    })
+                })
+                .collect();
+            (!characters.is_empty()).then_some(SelectionAction::TrainMany { characters })
+        }
         Choice::Account => Some(SelectionAction::AccountServices),
         Choice::Create => Some(SelectionAction::Create),
         Choice::Refresh => Some(SelectionAction::Refresh),
