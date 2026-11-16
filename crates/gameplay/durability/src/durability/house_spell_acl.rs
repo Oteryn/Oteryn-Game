@@ -40,7 +40,17 @@ pub async fn house_access_for_character(
     house: &str,
     character: [u8; 16],
 ) -> Result<(u64, HouseAccess), SpellItemError> {
-    let row=sqlx::query("SELECT uuid_send(owner_character_id) AS owner,ownership_revision::text FROM game_house_ownership WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 FOR SHARE")
+    // The runtime cannot UPDATE the ownership anchor, even for a row lock.
+    // Lock the canonical property through its existing bounded definer port.
+    // Ownership's deferred anchor check requires this property to agree, so
+    // this fences ownership changes and serializes even absent ACL lists.
+    sqlx::query("SELECT house_key FROM game_house_property_lock(encode($1,'hex')::uuid,$2)")
+        .bind(world.as_bytes().as_slice())
+        .bind(house)
+        .fetch_optional(&mut **tx)
+        .await?
+        .ok_or(SpellItemError::Rejected("House ownership unavailable"))?;
+    let row=sqlx::query("SELECT uuid_send(owner_character_id) AS owner,ownership_revision::text FROM game_house_ownership WHERE world_id=encode($1,'hex')::uuid AND house_key=$2")
         .bind(world.as_bytes().as_slice()).bind(house).fetch_optional(&mut **tx).await?.ok_or(SpellItemError::Rejected("House ownership unavailable"))?;
     let ownership = number(&row, "ownership_revision")?;
     if row.try_get::<Vec<u8>, _>("owner")? == character {
@@ -256,10 +266,8 @@ pub async fn save_editor_in_transaction(
         ));
     }
     let world = authority.runtime_scope().world_id();
-    // Serialize absent and existing lists on the one actual property row before
-    // reading/replacing a list. This also fences concurrent Guest/Subowner saves.
-    sqlx::query("SELECT house_key FROM game_house_ownership WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 FOR UPDATE")
-        .bind(world.as_bytes().as_slice()).bind(&house).fetch_one(&mut **tx).await?;
+    // owner_access already holds the canonical property lock, including when
+    // this list is absent and there is no ACL row to lock yet.
     let current:Option<String>=sqlx::query_scalar("SELECT revision::text FROM game_house_acl WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 AND list_id=$3 FOR UPDATE")
         .bind(world.as_bytes().as_slice()).bind(&house).bind(id).fetch_optional(&mut **tx).await?;
     let revision = current
@@ -281,7 +289,7 @@ pub async fn save_editor_in_transaction(
         .map(|id| id.iter().map(|b| format!("{b:02x}")).collect())
         .collect();
     let command = authority.command();
-    let receipt:Vec<u8>=sqlx::query_scalar("INSERT INTO game_house_acl_receipts(receipt_id,world_id,house_key,list_id,character_id,game_session_id,command_id,ownership_revision,revision_before,revision_after,allow_everyone,members) VALUES(CASE WHEN $11::bytea IS NULL THEN game_character_uuid_v7() ELSE encode($11,'hex')::uuid END,encode($1,'hex')::uuid,$2,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6::text::numeric(20,0),$7::text::numeric(20,0),$8::text::numeric(20,0),$9::text::numeric(20,0),$10,ARRAY(SELECT x::uuid FROM unnest($11::text[]) x)) RETURNING uuid_send(receipt_id)")
+    let receipt:Vec<u8>=sqlx::query_scalar("INSERT INTO game_house_acl_receipts(receipt_id,world_id,house_key,list_id,character_id,game_session_id,command_id,ownership_revision,revision_before,revision_after,allow_everyone,members) VALUES(game_character_uuid_v7(),encode($1,'hex')::uuid,$2,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6::text::numeric(20,0),$7::text::numeric(20,0),$8::text::numeric(20,0),$9::text::numeric(20,0),$10,ARRAY(SELECT x::uuid FROM unnest($11::text[]) x)) RETURNING uuid_send(receipt_id)")
         .bind(world.as_bytes().as_slice()).bind(&house).bind(id).bind(authority.character_id_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(ownership.to_string()).bind(revision.to_string()).bind(next.to_string()).bind(allow).bind(&members).fetch_one(&mut **tx).await?;
     sqlx::query("INSERT INTO game_house_acl(world_id,house_key,list_id,revision,allow_everyone,members,last_receipt) VALUES(encode($1,'hex')::uuid,$2,$3,$4::text::numeric(20,0),$5,ARRAY(SELECT x::uuid FROM unnest($6::text[]) x),encode($7,'hex')::uuid) ON CONFLICT(world_id,house_key,list_id) DO UPDATE SET revision=EXCLUDED.revision,allow_everyone=EXCLUDED.allow_everyone,members=EXCLUDED.members,last_receipt=EXCLUDED.last_receipt")
         .bind(world.as_bytes().as_slice()).bind(&house).bind(id).bind(next.to_string()).bind(allow).bind(&members).bind(receipt).execute(&mut **tx).await?;
