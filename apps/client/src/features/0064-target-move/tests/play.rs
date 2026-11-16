@@ -430,6 +430,69 @@ fn t14_a_silent_server_cancel_re_requests_the_route_after_the_walk_stalls()
 }
 
 #[test]
+fn t14_a_slow_step_inside_the_server_step_time_is_not_a_stall()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::target_move::WalkDisposition;
+    use oteryn_protocol_oteryn::{actor_motion::ActorMotion, world_spatial_entities as wire};
+    // A paralyzed character at speed 40: a diagonal step on default ground takes 4,650 ms.
+    const SLOW_STEP_MS: u32 = 4_650;
+    let mut view = PlayView::new(TileCoord::new(100, 200), 0, &[])?;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.target_walk_initialize(true);
+    view.click(TileCoord::new(104, 200))?;
+    assert_eq!(view.tick(&link), Ok(()));
+    assert_eq!(commands.try_recv()?, PlayCommand::TargetWalk(GOAL));
+    walk_reply(&outbox, WalkDisposition::Accepted);
+    let own = |x| wire::WorldSpatialEntity {
+        motion: Some(ActorMotion {
+            translation_revision: 1,
+            step_duration_ms: SLOW_STEP_MS,
+            prewalk_ms: [1_100, 1_100, 1_100, 1_100, SLOW_STEP_MS, SLOW_STEP_MS, SLOW_STEP_MS, SLOW_STEP_MS],
+            ..ActorMotion::default()
+        }),
+        display_name: None,
+        kind: wire::EntityKind::Player,
+        entity: wire::EntityRef {
+            identity: [1; 16],
+            generation: 1,
+        },
+        position: ActorPosition { x, y: 200, floor: 0 },
+        detail: wire::EntityDetail::Actor {
+            direction: oteryn_session::StepDirection::East,
+            appearance_ref: 1,
+            health_percent: 100,
+        },
+    };
+    outbox.hotkey_own_actor(Some(own(101)));
+    own_at(&outbox, 1, 101);
+    assert_eq!(view.tick(&link), Ok(()));
+    assert!(commands.try_recv().is_err());
+    let since = |elapsed: std::time::Duration| {
+        std::time::Instant::now()
+            .checked_sub(elapsed)
+            .ok_or("clock")
+    };
+    // Past the fixed stall window but inside the server's own step time: still walking.
+    super::super::mailbox::lock(&outbox.0)
+        .target_walk
+        .last_progress = Some(since(std::time::Duration::from_millis(4_000))?);
+    assert_eq!(view.tick(&link), Ok(()));
+    assert!(commands.try_recv().is_err(), "a slow step is not re-requested");
+    assert_eq!(link.target_walk_state().retries, 0);
+    // No step for the stall window beyond that step time: the walk was dropped.
+    super::super::mailbox::lock(&outbox.0)
+        .target_walk
+        .last_progress = Some(since(
+        oteryn_client_ui::target_move::WALK_STALL
+            + std::time::Duration::from_millis(u64::from(SLOW_STEP_MS)),
+    )?);
+    assert_eq!(view.tick(&link), Ok(()));
+    assert_eq!(commands.try_recv()?, PlayCommand::TargetWalk(GOAL));
+    Ok(())
+}
+
+#[test]
 fn t14_user_input_ends_the_click_walk_and_its_retries() -> Result<(), Box<dyn std::error::Error>> {
     use crate::combat_input::PlayCommand;
     use oteryn_client_runtime::target_move::WalkDisposition;

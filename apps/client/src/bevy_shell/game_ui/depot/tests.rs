@@ -247,3 +247,54 @@ fn manual_sort_mode_deposits_at_the_clicked_depot_row_slot() -> TestResult {
     );
     Ok(())
 }
+
+/// Turning Manual Sort Mode off (Shift+S, the same toggle as the sort menu's checkbox) drops a
+/// held deposit: the rows offer withdrawal again and no row still says "place here".
+#[test]
+fn turning_manual_sort_off_drops_the_held_depot_deposit() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture()?;
+    while commands.try_recv().is_ok() {}
+    crate::play::PlayLink::bevy_manual_sort_fixture(&outbox, true);
+    let handle = std::num::NonZeroU64::MIN;
+    let mut items = oteryn_client_runtime::depot::Items::default();
+    items.inventory.main_backpack = Some(oteryn_client_runtime::depot::ItemEntry {
+        appearance_id: 0,
+        handle,
+        item_definition_ref: std::num::NonZeroU32::MIN,
+        count: std::num::NonZeroU32::MIN,
+        sub_type: 0,
+    });
+    outbox.bevy_depot_items(items);
+    outbox.bevy_depot_result(Some(reply()));
+    app.update();
+    let toggle = |app: &App| -> Result<bool, Box<dyn std::error::Error>> {
+        Ok(app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .utility_action(crate::play::UtilityAction::ToggleManualSortMode))
+    };
+    let rows = |app: &mut App, caption: &str| {
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|t| t.0.contains(caption))
+    };
+    assert!(toggle(&app)?);
+    app.update();
+    click(&mut app, Kind::Request(Intent::Deposit(handle)))?;
+    assert!(commands.try_recv().is_err());
+    app.update();
+    assert!(rows(&mut app, "Item 9 ×3 — place here"));
+    assert!(toggle(&app)?);
+    app.update();
+    assert!(
+        !rows(&mut app, "place here"),
+        "no held deposit after the mode is off"
+    );
+    assert!(rows(&mut app, "Item 9 ×3 — withdraw stack"));
+    Ok(())
+}

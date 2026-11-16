@@ -19,6 +19,8 @@ use windows_sys::Win32::{
 };
 
 type Snapshot = (bool, bool, Vec<String>, String);
+/// Tibia Global's "Use Manual Sort Mode" checkbox of the container sorting window.
+const MANUAL_SORT_CHECK: usize = 900;
 pub(in crate::play) struct Form {
     pub title: &'static str,
     pub labels: &'static [&'static str],
@@ -208,6 +210,21 @@ pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayComm
                 ));
             }
             y += form.buttons.len().div_ceil(columns) as i32 * 34 + 8;
+            // The same session mode as the ToggleManualSortMode hotkey (Shift+S).
+            let manual_sort = (form.title == "Container sorting").then(|| {
+                control(
+                    hwnd,
+                    "BUTTON",
+                    tr!("Use Manual Sort Mode"),
+                    MANUAL_SORT_CHECK,
+                    [12, y, 640, 24],
+                    BS_AUTOCHECKBOX as u32 | WS_TABSTOP,
+                )
+            });
+            if manual_sort.is_some() {
+                y += 32;
+            }
+            let mut last_manual_sort = None;
             let summary = control(
                 hwnd,
                 "EDIT",
@@ -245,6 +262,14 @@ pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayComm
                 let pending = (form.snapshot)(&lock(&shared)).1;
                 let mut submitted = Vec::new();
                 for action in std::mem::take(&mut actions.0) {
+                    if action == MANUAL_SORT_CHECK && manual_sort.is_some() {
+                        crate::play::feature_0004_item_view_move::input::toggle_manual_sort(
+                            &mut lock(&shared),
+                        );
+                        // Resynchronise the box with the session mode below.
+                        last_manual_sort = None;
+                        continue;
+                    }
                     if pending {
                         continue;
                     }
@@ -311,6 +336,14 @@ pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayComm
                 last_fields = fields;
                 for button in &buttons {
                     EnableWindow(*button, i32::from(!pending));
+                }
+                if let Some(check) = manual_sort {
+                    let mode = lock(&shared).container_manual_sort;
+                    if last_manual_sort != Some(mode) {
+                        SendMessageW(check, BM_SETCHECK, usize::from(mode.active()), 0);
+                        EnableWindow(check, i32::from(mode.selected));
+                        last_manual_sort = Some(mode);
+                    }
                 }
                 if body != last_summary {
                     SetWindowTextW(summary, wide(&body).as_ptr());

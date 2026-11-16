@@ -130,7 +130,9 @@ impl PlayLink {
     pub(in crate::play) fn target_walk_follow_up(&self, own: ActorPosition) {
         let now = std::time::Instant::now();
         let mut mailbox = lock(&self.mailbox);
-        oteryn_client_ui::target_move::progress(&mut mailbox.target_walk, own, now);
+        let slowest_step =
+            oteryn_client_ui::target_move::slowest_step(mailbox.bar_actions.own_actor.as_ref());
+        oteryn_client_ui::target_move::progress(&mut mailbox.target_walk, own, slowest_step, now);
         if mailbox.world_input_blocked() {
             return;
         }

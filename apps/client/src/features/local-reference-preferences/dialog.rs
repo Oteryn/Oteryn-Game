@@ -99,6 +99,12 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             if state.shutdown {
                 break;
             }
+            if let Some(index) = state
+                .take_page_request()
+                .and_then(|page| SettingsPage::ALL.iter().position(|entry| *entry == page))
+            {
+                SendMessageW(pages, CB_SETCURSEL, index, 0);
+            }
             let page_index = SendMessageW(pages, CB_GETCURSEL, 0, 0);
             if let Ok(index) = usize::try_from(page_index) {
                 state.select_page(index);

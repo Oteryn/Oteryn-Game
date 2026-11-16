@@ -182,8 +182,10 @@ fn scenario() -> TestResult {
             };
 
             // Within the same container: the moved entry takes slot 2.
-            let first = slotted(meat, backpack, 2)?;
-            assert_eq!(moved(&mut client, 1, &first).await?, ItemMoveOutcome::Moved);
+            assert_eq!(
+                moved(&mut client, 1, &slotted(meat, backpack, 2)?).await?,
+                ItemMoveOutcome::Moved
+            );
             assert_eq!(
                 order(&harness.pool, "game_item_container_entries", 70).await?,
                 vec![id(72), id(71), id(73)]
@@ -198,10 +200,8 @@ fn scenario() -> TestResult {
                 vec![id(71), id(73), id(72)]
             );
             // Into a nested container at slot 1.
-            assert_eq!(
-                moved(&mut client, 3, &slotted(meat, bag, 1)?).await?,
-                ItemMoveOutcome::Moved
-            );
+            let third = slotted(meat, bag, 1)?;
+            assert_eq!(moved(&mut client, 3, &third).await?, ItemMoveOutcome::Moved);
             assert_eq!(
                 order(&harness.pool, "game_item_nested_entries", 72).await?,
                 vec![id(75), id(73), id(74)]
@@ -209,6 +209,15 @@ fn scenario() -> TestResult {
             assert_eq!(
                 order(&harness.pool, "game_item_container_entries", 70).await?,
                 vec![id(71), id(72)]
+            );
+            // The session retains the latest outcome: replaying it moves nothing again.
+            assert_eq!(
+                send(&mut client, 3, &third).await?.0,
+                protocol::CommandStatus::DuplicateReplay
+            );
+            assert_eq!(
+                order(&harness.pool, "game_item_nested_entries", 72).await?,
+                vec![id(75), id(73), id(74)]
             );
             // Gold merges into the bag's gold stack as before; no entry moves.
             assert_eq!(
@@ -226,15 +235,6 @@ fn scenario() -> TestResult {
             .fetch_one(&harness.pool)
             .await?;
             assert_eq!(gold_left, 5);
-            // A replayed command returns its result and moves nothing again.
-            assert_eq!(
-                send(&mut client, 1, &first).await?.0,
-                protocol::CommandStatus::DuplicateReplay
-            );
-            assert_eq!(
-                order(&harness.pool, "game_item_container_entries", 70).await?,
-                vec![id(71), id(72)]
-            );
             let receipts: i64 =
                 sqlx::query_scalar("SELECT count(*) FROM game_item_container_sort_receipts")
                     .fetch_one(&harness.pool)

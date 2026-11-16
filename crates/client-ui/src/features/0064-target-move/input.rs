@@ -17,8 +17,28 @@ pub fn request(state: &mut WalkState, position: ActorPosition) -> Option<ActorPo
     Some(position)
 }
 
+/// The slowest step the server reports for the own actor: its last step time and the step
+/// forecasts from its position. Zero when no motion is known.
+pub fn slowest_step(
+    own: Option<&oteryn_client_runtime::WorldSpatialEntity>,
+) -> std::time::Duration {
+    let slowest = own.and_then(|own| own.motion).map_or(0, |motion| {
+        motion
+            .prewalk_ms
+            .into_iter()
+            .fold(motion.step_duration_ms, u32::max)
+    });
+    std::time::Duration::from_millis(u64::from(slowest))
+}
+
 /// Arrival ends the walk; a new own position restarts the stall window.
-pub fn progress(state: &mut WalkState, own: ActorPosition, now: std::time::Instant) {
+pub fn progress(
+    state: &mut WalkState,
+    own: ActorPosition,
+    slowest_step: std::time::Duration,
+    now: std::time::Instant,
+) {
+    state.slowest_step = slowest_step;
     if state.goal == Some(own) {
         cancel(state);
     } else if state.last_position != Some(own) || state.last_progress.is_none() {
@@ -50,9 +70,9 @@ pub fn retry(state: &mut WalkState, now: std::time::Instant) -> Option<ActorPosi
     let stalled = state
         .response
         .is_some_and(|response| response.disposition == Some(super::WalkDisposition::Accepted))
-        && state
-            .last_progress
-            .is_some_and(|last| now.saturating_duration_since(last) >= WALK_STALL);
+        && state.last_progress.is_some_and(|last| {
+            now.saturating_duration_since(last) >= WALK_STALL + state.slowest_step
+        });
     if !state.blocked && !stalled {
         return None;
     }

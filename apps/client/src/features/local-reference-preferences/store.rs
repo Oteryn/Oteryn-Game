@@ -307,7 +307,11 @@ mod legacy_chords {
             "keybindings".into(),
             serde_json::json!({"0009-highscores-open": "CTRL+K"}),
         );
-        fields.insert("hotkey_profiles".into(), serde_json::json!({"Knight": {}}));
+        // Paladin was saved without a custom map; its own bindings hold Ctrl+K.
+        fields.insert(
+            "hotkey_profiles".into(),
+            serde_json::json!({"Knight": {}, "Paladin": {"0009-highscores-open": "CTRL+K"}}),
+        );
         fields.insert(
             "custom_hotkey_profiles".into(),
             serde_json::json!({"Knight": {"CTRL+P": {"kind": "text", "text": "exura", "send": true}}}),
@@ -352,6 +356,22 @@ mod legacy_chords {
         ] {
             assert_eq!(knight.get(chord), Some(&utility(action)), "Knight {chord}");
         }
+        let mut paladin = upgraded.clone();
+        paladin.load_hotkey_profile("Paladin")?;
+        for (chord, action) in [
+            ("CTRL+M", UtilityAction::ToggleServerMessages),
+            ("CTRL+Y", UtilityAction::ShowPrey),
+            ("CTRL+P", UtilityAction::ToggleVipWidget),
+            ("ALT+S", UtilityAction::ToggleSkillsWidget),
+            ("SHIFT+S", UtilityAction::ToggleManualSortMode),
+        ] {
+            assert_eq!(
+                paladin.custom_hotkeys.get(chord),
+                Some(&utility(action)),
+                "Paladin {chord}"
+            );
+        }
+        assert_eq!(paladin.custom_hotkeys.len(), 5, "Ctrl+K stays the profile's");
         // The upgrade runs once: a chord the player removes afterwards stays removed.
         let mut edited = upgraded;
         edited.custom_hotkeys.remove("CTRL+P");

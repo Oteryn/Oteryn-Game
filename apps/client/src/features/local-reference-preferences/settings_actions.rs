@@ -19,6 +19,15 @@ impl SettingsState {
         std::mem::take(&mut self.magical_archive_requested)
     }
 
+    /// Global's ShowOptionsHotkeys: the options window shows `page`, open or not yet open.
+    pub fn request_page(&mut self, page: SettingsPage) {
+        self.page = page;
+        self.page_request = Some(page);
+    }
+    pub fn take_page_request(&mut self) -> Option<SettingsPage> {
+        self.page_request.take()
+    }
+
     pub fn select_page(&mut self, index: usize) -> bool {
         let Some(page) = SettingsPage::ALL.get(index) else {
             return false;
@@ -204,6 +213,7 @@ impl SettingsState {
             page: SettingsPage::default(),
             hud_toggle: None,
             magical_archive_requested: false,
+            page_request: None,
             last_key: Default::default(),
         }
     }
