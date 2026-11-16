@@ -853,9 +853,15 @@ def main() -> int:
     for tool in AUTHORING_TOOLS:
         if tool.endswith("/reward_claim_authoring.py"):
             run(["python3", "tools/content-migration/refresh_reward_stack_weight_proof.py"])
-            run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py"])
         if (ROOT / tool).is_file():
             run(["python3", tool, "content"])
+    # Lower the final Quest tree before its kill bindings and container closure
+    # are consumed by native qualification. Completion evidence must see the
+    # branch-owned chest transitions in the resulting Claim bodies.
+    run(["python3", "tools/content-schema/quest-authoring/quest_tree_authoring.py", "content",
+         "--source-packet", "tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json"])
+    run(["python3", "tools/content-schema/quest-authoring/quest_state_lowering.py"])
+    run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py", "content"])
     # These standalone compilers consume the final Quest and placement inputs;
     # native qualification and its censuses must see their registered bindings.
     run(["python3", "tools/content-schema/quest-authoring/qengine_access.py"])
@@ -881,23 +887,11 @@ def main() -> int:
     refresh_world_metadata()
     # Variant evidence pins the final Claim, Item and Achievement inventories.
     run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py"])
-    for name in ("quest_rollout_authoring.py", "quest_binding_authoring.py",
-                 "collect_claim_candidates.py", "use_trigger_candidates.py",
-                 "quest_explore_area_candidates.py", "quest_talk_npc_candidates.py",
-                 "quest_reward_only_binding_candidates.py"):
-        run(["python3", "tools/content-schema/quest-authoring/" + name])
-    run(["python3", "tools/content-schema/quest-authoring/quest_tree_authoring.py", "content",
-         "--source-packet", "tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json"])
-    # Restore branch-owned completion transitions before lowering their claims
-    # or checking evidence which binds those exact claim bodies.
-    run(["python3", "tools/content-schema/quest-authoring/quest_state_lowering.py"])
-    run(["python3", "tools/content-schema/quest-authoring/qmech_m24_kill_bindings.py"])
-    run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py", "content"])
-    run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py"])
     for script in (
-        "quest_binding_authoring", "quest_completion_matrix", "quest_rollout_authoring",
+        "quest_rollout_authoring", "quest_binding_authoring", "quest_completion_matrix",
         "quest_v2_export", "source_lowered_binding_plan", "quest_completion_import",
-        "collect_claim_candidates", "use_trigger_candidates", "quest_native_binding_preflight",
+        "collect_claim_candidates", "use_trigger_candidates",
+        "quest_explore_area_candidates", "quest_talk_npc_candidates", "quest_native_binding_preflight",
         "quest_reward_only_binding_candidates",
     ):
         run(["python3", f"tools/content-schema/quest-authoring/{script}.py"])

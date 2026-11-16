@@ -2,6 +2,7 @@
 """Exercise the shared Item writer without native, Prey, or World generation."""
 import importlib.util
 import json
+import shutil
 from contextlib import ExitStack, contextmanager
 from pathlib import Path
 import sys
@@ -40,6 +41,12 @@ def identity(number, family="Item"):
 
 
 def fixture(root):
+    # The shared writer now verifies Global weights in both entry points.
+    # Supply its actual sealed capture without mocking that admission owner.
+    capture = Path("docs/reference/content-prep/item-cyclopedia-capture-1")
+    (root / capture).mkdir(parents=True)
+    for name in ("items.jsonl", "manifest.json", "weight-corrections.json"):
+        shutil.copyfile(TOOL.parents[2] / capture / name, root / capture / name)
     records = [{"kind": "Item", "identity": identity(number), "materializable": False}
                for number in (1, 2, 3)]
     reference = {"schema": "fixture-reference", "world_id": "fixture-world",
