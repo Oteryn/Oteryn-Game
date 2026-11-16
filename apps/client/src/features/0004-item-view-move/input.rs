@@ -66,16 +66,8 @@ impl PlayLink {
         outbox.container_manual_sort_initialize(selected);
     }
     /// Tibia Global's `ToggleManualSortMode`; `false` when the session lacks capability 510.
-    /// Turning the mode off drops a depot deposit held for its slot.
     pub fn toggle_container_manual_sort(&self) -> bool {
-        let mut mailbox = lock(&self.mailbox);
-        if mailbox.inventory_shutdown || !mailbox.container_manual_sort.toggle() {
-            return false;
-        }
-        if !mailbox.container_manual_sort.active() && mailbox.depot.held.take().is_some() {
-            mailbox.depot.feedback = "";
-        }
-        true
+        toggle_manual_sort(&mut lock(&self.mailbox))
     }
     #[must_use]
     pub fn container_manual_sort_active(&self) -> bool {
@@ -89,6 +81,17 @@ impl PlayLink {
     pub fn item_movement(&self) -> oteryn_client_ui::inventory::movement::Movement {
         lock(&self.mailbox).item_movement.clone()
     }
+}
+/// The session's Manual Sort Mode, shared by the hotkey, the sort menu and the native sort
+/// window. Turning the mode off drops a depot deposit held for its slot.
+pub(in crate::play) fn toggle_manual_sort(mailbox: &mut crate::play::mailbox::Mailbox) -> bool {
+    if mailbox.inventory_shutdown || !mailbox.container_manual_sort.toggle() {
+        return false;
+    }
+    if !mailbox.container_manual_sort.active() && mailbox.depot.held.take().is_some() {
+        mailbox.depot.feedback = "";
+    }
+    true
 }
 pub(in crate::play) fn send_move(
     mailbox: &mut crate::play::mailbox::Mailbox,
