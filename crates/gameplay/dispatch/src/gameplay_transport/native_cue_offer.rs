@@ -87,11 +87,15 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         session: crate::foundation::GameSessionId,
     ) -> Option<bool> {
         let runtime = self.runtime.lock().await;
+        let room = self.effective_rooms().gate_wire_position();
         let native_source = self
             .active_generation
-            .zip(self.effective_rooms().gate_wire_position())
+            .zip(room)
             .is_some_and(|(active, room)| source_available(active, room, runtime.content_pin()));
-        current_actor_frame(&runtime, actor, session, native_source)
+        // The cue basis must match the WORLD_SPATIAL frame (`WirePositionFrame`), which is
+        // native only in a pinned activity source room; ordinary Bundle rooms stay legacy.
+        let pinned = room.is_some_and(|room| room.pinned_activity_source_room().is_some());
+        current_actor_frame(&runtime, actor, session, native_source).map(|native| native && pinned)
     }
 
     pub(super) async fn native_map_cue_source_frame(&self) -> Option<bool> {
@@ -99,7 +103,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let room = self.effective_rooms().gate_wire_position()?;
         let runtime = self.runtime.lock().await;
         (runtime.owner_fence().is_ok() && source_available(active, room, runtime.content_pin()))
-            .then_some(true)
+            .then_some(room.pinned_activity_source_room().is_some())
     }
 }
 
