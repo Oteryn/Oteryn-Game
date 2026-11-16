@@ -217,3 +217,115 @@ fn skull_and_party_shield_marks_draw_the_tibia_flag_artwork() -> TestResult {
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
+
+fn guild_member() -> oteryn_session::WorldSpatialEntity {
+    oteryn_session::WorldSpatialEntity {
+        motion: None,
+        entity: EntityRef {
+            identity: [6; 16],
+            generation: 2,
+        },
+        kind: oteryn_session::EntityKind::Player,
+        position: ActorPosition { x: 3, y: 3, floor: 0 },
+        display_name: None,
+        detail: oteryn_session::EntityDetail::Actor {
+            direction: oteryn_session::StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 100,
+        },
+    }
+}
+
+#[test]
+fn server_guild_emblems_draw_the_tibia_flag_artwork_beside_the_party_marks() -> TestResult {
+    use oteryn_session::guild_emblem::{Emblem, GuildEmblem};
+    let (root, pins) = bundle_root("emblems")?;
+    let (link, _commands, outbox) = play_channel();
+    let mut view = PlayView::new(TileCoord::new(0, 0), 0, &[])?;
+    view.scene.prime_tibia_graphics(root.clone(), pins);
+    let entity = guild_member();
+    view.entities = vec![entity];
+    outbox.push(vec![SessionEvent::GuildEmblems(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 0,
+        new_revision: 1,
+        value: vec![GuildEmblem {
+            entity: entity.entity,
+            emblem: Emblem::Enemy,
+        }],
+    })]);
+    view.tick(&link).map_err(|error| format!("{error:?}"))?;
+    view.party_icons = vec![oteryn_client_runtime::party_skull::PartyIcon {
+        entity: entity.entity,
+        shield: 3,
+        skull: 0,
+    }];
+    view.set_presentations(vec![oteryn_session::VisibleAppearance {
+        entity,
+        look: None,
+        light: None,
+        forge_stacks: None,
+    }])?;
+    view.project_presentation(Instant::now())?;
+    let atlas = view.scene().atlas();
+    let width = atlas.width() as usize;
+    let icon_quads: Vec<_> = view
+        .scene()
+        .sprites()
+        .instances()
+        .iter()
+        .filter(|quad| quad.size == [32.0, 32.0])
+        .filter_map(|quad| {
+            let left = (quad.uv[0] * atlas.width() as f32).round() as usize;
+            let top = (quad.uv[1] * atlas.height() as f32).round() as usize;
+            let at = ((top + 1) * width + left + 1) * 4;
+            Some((quad.position, atlas.rgba().get(at..at + 4)?.to_vec()))
+        })
+        .collect();
+    let at = |colour: Vec<u8>| {
+        icon_quads
+            .iter()
+            .find(|(_, pixel)| *pixel == colour)
+            .map(|(position, _)| *position)
+    };
+    let shield_at = at(fixture::icon_color(false, 2).to_vec()).ok_or("shield icon")?;
+    // Emblem 2 is the red enemy icon, the second of guild.png.
+    let emblem_at = at(fixture::guild_color(1).to_vec()).ok_or("guild emblem icon")?;
+    assert_eq!(emblem_at[1], shield_at[1]);
+    assert!(emblem_at[0] - shield_at[0] >= ICON_PX as f32, "beside the marks");
+    for other in [0, 2, 3, 4] {
+        assert!(at(fixture::guild_color(other).to_vec()).is_none());
+    }
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
+
+#[test]
+fn guild_emblems_fall_back_to_builtin_glyphs_without_the_bundle() -> TestResult {
+    use oteryn_session::guild_emblem::{Emblem, GuildEmblem};
+    let entity = guild_member();
+    let quads = |emblems: Vec<GuildEmblem>| -> Result<usize, Box<dyn std::error::Error>> {
+        let mut view = PlayView::new(TileCoord::new(0, 0), 0, &[])?;
+        view.entities = vec![entity];
+        view.guild_emblems = emblems;
+        view.set_presentations(vec![oteryn_session::VisibleAppearance {
+            entity,
+            look: None,
+            light: None,
+            forge_stacks: None,
+        }])?;
+        view.project_presentation(Instant::now())?;
+        Ok(view.scene().sprites().len())
+    };
+    let none = quads(Vec::new())?;
+    for emblem in [Emblem::Ally, Emblem::Enemy, Emblem::Neutral, Emblem::Member, Emblem::Other] {
+        assert!(
+            quads(vec![GuildEmblem {
+                entity: entity.entity,
+                emblem,
+            }])? > none,
+            "{emblem:?} glyph"
+        );
+    }
+    Ok(())
+}

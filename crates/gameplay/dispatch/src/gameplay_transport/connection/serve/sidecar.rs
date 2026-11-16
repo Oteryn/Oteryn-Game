@@ -1,4 +1,4 @@
-//! One header-only domain-1 type-2 delta carrying a negotiated sidecar (fields 6-7).
+//! One header-only domain-1 type-2 delta carrying a negotiated sidecar (fields 6-8).
 use super::*;
 use oteryn_protocol_oteryn::world_spatial_entities::{
     DeltaSidecar, encode_world_spatial_entities_sidecar_delta,

@@ -214,6 +214,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.observe_party_skull(admitted).await
     }
 
+    async fn observe_guild_emblems(
+        &self,
+        admitted: connection::AdmittedSession,
+    ) -> Option<Vec<oteryn_protocol_oteryn::guild_emblem::GuildEmblem>> {
+        self.observe_own_guild_emblems(admitted).await
+    }
+
     async fn observe_inventory_capacity(
         &self,
         admitted: connection::AdmittedSession,

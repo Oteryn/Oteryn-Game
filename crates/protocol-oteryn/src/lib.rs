@@ -78,6 +78,7 @@ pub mod forge_preview;
 pub mod gem_presentation;
 pub mod guild;
 pub mod guild_bank;
+pub mod guild_emblem;
 pub mod guild_war;
 pub mod hazard;
 pub mod highscores;

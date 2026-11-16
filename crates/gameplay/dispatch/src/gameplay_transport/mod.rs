@@ -86,6 +86,7 @@ mod grizzly_kills;
 mod grizzly_rewards;
 mod guild_bank;
 mod guild_chat;
+mod guild_emblem;
 mod guild_war;
 mod highscores;
 mod hive_shared_kills;

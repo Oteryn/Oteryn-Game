@@ -21,11 +21,14 @@ pub const ICON_PX: usize = 11;
 pub const SKULL_ICONS: usize = 6;
 /// Party shield icons, wire values `1..=11`.
 pub const SHIELD_ICONS: usize = 11;
+/// Guild emblem icons, wire values `1..=5` (ally, enemy, neutral, member, other).
+pub const GUILD_ICONS: usize = 5;
 
 const FONT_METRICS: &str = "/fonts/Verdana10px.fnt";
 const FONT_PAGE: &str = "/fonts/Verdana10px.png";
 const SKULLS: &str = "/images/creatures/hud/flags/playerkiller.png";
 const SHIELDS: &str = "/images/creatures/hud/flags/party.png";
+const GUILDS: &str = "/images/creatures/hud/flags/guild.png";
 const MAX_ENTRY_BYTES: usize = 1024 * 1024;
 const MAX_GLYPH_PX: u32 = 32;
 
@@ -36,6 +39,7 @@ pub struct GraphicsPins {
     pub font_page: String,
     pub skulls: String,
     pub shields: String,
+    pub guilds: String,
 }
 
 impl Default for GraphicsPins {
@@ -46,6 +50,7 @@ impl Default for GraphicsPins {
             font_page: "4a9f6c1db76b4403428a08c03ee81440f42a780e0126b3086b47890e9bc2d2d7".into(),
             skulls: "9815b59a8203eeafb13a1dce0bd746adabca9c490f0ff3d32ee1bb50e10be4ce".into(),
             shields: "62a936b1bbebf64a1f3cb20afa97a5a5f658fbc3cfd6d623d6ad830ae2788de7".into(),
+            guilds: "22641dcab91cb8cff5e33cf370c944ee24e5d04a93b7db7a1d72c7f46983fc70".into(),
         }
     }
 }
@@ -110,6 +115,7 @@ pub struct TibiaGraphics {
     font: GameFont,
     skulls: Vec<Vec<u8>>,
     shields: Vec<Vec<u8>>,
+    guilds: Vec<Vec<u8>>,
 }
 
 impl TibiaGraphics {
@@ -150,6 +156,7 @@ impl TibiaGraphics {
                 &bundle.entry(SHIELDS, &pins.shields)?,
                 SHIELD_ICONS,
             )?,
+            guilds: icons(GUILDS, &bundle.entry(GUILDS, &pins.guilds)?, GUILD_ICONS)?,
         })
     }
 
@@ -170,6 +177,14 @@ impl TibiaGraphics {
     #[must_use]
     pub fn shield(&self, value: u8) -> Option<&[u8]> {
         self.shields
+            .get(usize::from(value).checked_sub(1)?)
+            .map(Vec::as_slice)
+    }
+
+    /// The [`ICON_PX`] square RGBA guild emblem for wire value `1..=5`.
+    #[must_use]
+    pub fn guild(&self, value: u8) -> Option<&[u8]> {
+        self.guilds
             .get(usize::from(value).checked_sub(1)?)
             .map(Vec::as_slice)
     }

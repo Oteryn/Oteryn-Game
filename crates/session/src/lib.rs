@@ -58,6 +58,8 @@ mod events;
 mod framing;
 mod pvp_expert;
 pub use events::SessionEvent;
+/// Observer-relative guild emblems (capability 509).
+pub use oteryn_protocol_oteryn::guild_emblem;
 mod gated_command;
 pub use gated_command::world_context;
 /// Server-owned highscores query and result codecs.

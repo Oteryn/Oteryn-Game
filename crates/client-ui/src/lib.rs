@@ -411,5 +411,8 @@ pub mod holdings_search;
 #[path = "features/0508-inventory-capacity/protocol.rs"]
 pub mod inventory_capacity;
 
+#[path = "features/0509-guild-emblem/protocol.rs"]
+pub mod guild_emblem;
+
 #[path = "features/0500-server-info/mod.rs"]
 pub mod server_info;

@@ -13,6 +13,7 @@ mod command;
 mod creature_push;
 mod cyclopedia_tracker;
 mod forge;
+mod guild_emblem;
 mod hotkey_equip;
 mod house_hireling;
 mod house_transfer;
@@ -119,6 +120,8 @@ struct ServeState {
     stash_rows: Option<Vec<[u8; 16]>>,
     stash_revision: u64,
     party_icons: Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>,
+    /// GUILD-EMBLEM-1: the emblems last sent on this connection under capability 509.
+    guild_emblems: Vec<oteryn_protocol_oteryn::guild_emblem::GuildEmblem>,
     /// INVCAP-1: the capacity last sent on this connection under capability 508.
     inventory_capacity: Option<oteryn_protocol_oteryn::inventory_capacity::InventoryCapacity>,
     party_view: crate::gameplay_transport::party_command::SessionPartyView,

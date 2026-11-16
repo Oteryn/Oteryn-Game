@@ -50,6 +50,7 @@ pub struct PlayView {
     party_icon_epoch: std::time::Instant,
     party_icons_refresh: Option<std::time::Instant>,
     party_icons: Vec<oteryn_client_runtime::party_skull::PartyIcon>,
+    guild_emblems: Vec<oteryn_session::guild_emblem::GuildEmblem>,
     vitals: Option<oteryn_session::ActorVitals>,
     battle_instinct: Option<oteryn_client_ui::battle_instinct_status::BattleInstinctStatus>,
     battle_instinct_refresh: Option<std::time::Instant>,

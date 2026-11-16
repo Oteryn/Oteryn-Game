@@ -9,6 +9,7 @@ fn delta_lights_cover_entered_and_updated_entries_and_views_gate_on_capability_1
     let both = EntityFields {
         actor_motion: false,
         display_names: false,
+        guild_emblems: false,
         inventory_capacity: false,
         item_handles: true,
         light: true,
@@ -57,6 +58,7 @@ fn delta_lights_cover_entered_and_updated_entries_and_views_gate_on_capability_1
         EntityFields {
             actor_motion: false,
             display_names: false,
+            guild_emblems: false,
             inventory_capacity: false,
             item_handles: true,
             light: true,
@@ -110,5 +112,52 @@ fn capacity_sidecar_is_refused_unless_capability_508_was_selected() -> Result<()
     let mut mixed = encode_world_spatial_entities_delta(&changed)?;
     mixed.extend_from_slice(&bytes[plain.len()..]);
     assert!(decode_world_spatial_entities_delta_with_sidecar(&mixed, selected).is_err());
+    Ok(())
+}
+
+#[test]
+fn guild_emblem_sidecar_is_refused_unless_capability_509_was_selected()
+-> Result<(), WorldSpatialError> {
+    use crate::guild_emblem::{CAPABILITY_GUILD_EMBLEM_V1, Emblem, GuildEmblem};
+    let header = delta(0, 0, 0);
+    let emblems = vec![GuildEmblem {
+        entity: EntityRef {
+            generation: 3,
+            ..id(4)
+        },
+        emblem: Emblem::Enemy,
+    }];
+    let bytes = encode_world_spatial_entities_sidecar_delta(
+        header.content_generation,
+        header.actor_position,
+        &DeltaSidecar::GuildEmblems(emblems.clone()),
+    )?;
+    let selected = EntityFields::selected(&[
+        CAPABILITY_WORLD_SPATIAL_ENTITIES,
+        CAPABILITY_GUILD_EMBLEM_V1,
+    ]);
+    assert!(selected.guild_emblems && !selected.inventory_capacity);
+    assert_eq!(
+        decode_world_spatial_entities_delta_with_sidecar(&bytes, selected)?,
+        (
+            header.clone(),
+            EntityLights::new(),
+            Some(DeltaSidecar::GuildEmblems(emblems))
+        )
+    );
+    // An empty replacement clears every emblem.
+    let empty = encode_world_spatial_entities_sidecar_delta(
+        header.content_generation,
+        header.actor_position,
+        &DeltaSidecar::GuildEmblems(Vec::new()),
+    )?;
+    assert_eq!(
+        decode_world_spatial_entities_delta_with_sidecar(&empty, selected)?.2,
+        Some(DeltaSidecar::GuildEmblems(Vec::new()))
+    );
+    // Without 509 (and through the party-icons decoder) field 8 fails closed as before.
+    let legacy = EntityFields::selected(&[CAPABILITY_WORLD_SPATIAL_ENTITIES]);
+    assert!(decode_world_spatial_entities_delta_with_sidecar(&bytes, legacy).is_err());
+    assert!(decode_world_spatial_entities_delta_with_icons(&bytes, selected).is_err());
     Ok(())
 }

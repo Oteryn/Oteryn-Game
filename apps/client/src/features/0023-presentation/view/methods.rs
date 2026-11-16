@@ -116,6 +116,7 @@ impl PlayView {
             self.own,
             &self.entities,
             &self.party_icons,
+            &self.guild_emblems,
             actor_options,
         )?;
         fixed.push(resource_quads);
