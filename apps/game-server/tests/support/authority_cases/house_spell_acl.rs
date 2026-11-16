@@ -285,32 +285,33 @@ async fn editor_order(h: &Harness) -> TestResult {
         property_wait(&h.pool, &mut completion).await?;
         let mut tx = h.pool.begin().await?;
         let free = sqlx::query("SELECT editor_id FROM game_house_editors WHERE editor_id=encode($1,'hex')::uuid FOR UPDATE NOWAIT").bind(editor.editor_id.as_slice()).fetch_one(&mut *tx).await;
-        let unlocked = free.is_ok();
-        if unlocked {
-            // Model release deleting the token while it holds the property.
-            sqlx::query("DELETE FROM game_house_editors WHERE editor_id=encode($1,'hex')::uuid")
-                .bind(editor.editor_id.as_slice())
-                .execute(&mut *tx)
-                .await?;
-            tx.commit().await?;
-        } else {
-            tx.rollback().await?;
-        }
+        tx.rollback().await?;
         blocker.rollback().await?;
-        Ok::<_, Box<dyn std::error::Error>>(unlocked)
+        Ok::<_, Box<dyn std::error::Error>>(free.is_ok())
     };
     let (save, probe) = tokio::join!(save, probe);
-    let save = save?;
+    save?.map_err(debug)?;
     assert!(
         probe?,
         "save locked the editor before waiting for its property"
     );
+    // Deletion's Bazaar guard takes a Character writer lock, so perform the
+    // actual release deletion after the save relinquishes its Character lock.
+    // Use a fresh, unconsumed editor to isolate missing-token revalidation.
+    let fresh = edit(h, &recovery, 3, None).await?.map_err(debug)?;
+    let deleted =
+        sqlx::query("DELETE FROM game_house_editors WHERE editor_id=encode($1,'hex')::uuid")
+            .bind(fresh.editor_id.as_slice())
+            .execute(&h.pool)
+            .await?;
+    assert_eq!(deleted.rows_affected(), 1);
+    let refused = edit(h, &recovery, 4, Some((&fresh, "*"))).await?;
     assert!(
         matches!(
-            save,
+            refused,
             Err(SpellItemError::Rejected("House editor/session expired"))
         ),
-        "deleted editor was not revalidated: {save:?}"
+        "deleted editor was accepted: {refused:?}"
     );
     eprintln!("HOUSE_ACL_PG_EXECUTED property_before_editor_lock PASS");
     Ok(())
