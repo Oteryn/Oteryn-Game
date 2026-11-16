@@ -67,7 +67,8 @@ pub fn atlas_pois(panel: &Panel, width: u32, height: u32) -> Vec<super::MapPoint
         })
         .collect()
 }
-pub(super) fn text(panel: &Panel) -> String {
+/// The loaded region atlas as region > subarea lines for the selected floor.
+pub fn text(panel: &Panel) -> String {
     use std::fmt::Write;
     let Some(atlas) = &panel.region_atlas else {
         return "Load region atlas to browse admitted regions".into();

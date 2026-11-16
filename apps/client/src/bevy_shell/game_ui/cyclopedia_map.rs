@@ -4,8 +4,12 @@ use crate::bevy_shell::{
     owner::{HostOwner, Phase},
     ui::Skins,
 };
-use bevy::{prelude::*, ui_widgets::Activate};
-use oteryn_client_ui::cyclopedia_map::{Intent, Panel, atlas_view};
+use bevy::{
+    prelude::*,
+    text::{EditableText, TextCursorStyle},
+    ui_widgets::{Activate, TextInput},
+};
+use oteryn_client_ui::cyclopedia_map::{Intent, Panel, atlas_view, region_atlas_text};
 use oteryn_client_ui_bevy as source;
 
 #[derive(Resource, Default)]
@@ -21,6 +25,9 @@ struct Action {
     serial: u64,
     kind: Kind,
 }
+/// The donation gold the Donate button sends; the session keeps the last submitted amount.
+#[derive(Component)]
+struct Donation;
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Kind {
     Atlas(usize),
@@ -37,6 +44,7 @@ fn activate(
     owner: NonSend<HostOwner>,
     state: Res<State>,
     guard: ModalGuard,
+    donation: Query<&EditableText, With<Donation>>,
 ) {
     if !guard.allows(event.entity) || owner.modal_active() {
         return;
@@ -58,7 +66,15 @@ fn activate(
     match action.kind {
         Kind::Close => play.link.cyclopedia_atlas_close(),
         Kind::Atlas(index) => play.link.cyclopedia_atlas_action(index),
-        Kind::Explore(intent) => play.link.cyclopedia_map_request(intent),
+        Kind::Explore(intent) => {
+            if intent == Intent::Donate
+                && let Ok(gold) = donation.single()
+            {
+                play.link
+                    .cyclopedia_map_edit(0, gold.value().to_string().trim().to_owned());
+            }
+            play.link.cyclopedia_map_request(intent);
+        }
     }
 }
 fn label(commands: &mut Commands, skins: &Skins, parent: Entity, text: impl Into<String>) {
@@ -159,6 +175,10 @@ fn project(
         ("Exploration status", Kind::Explore(Intent::Query)),
         ("Start exploration", Kind::Explore(Intent::Start)),
         ("Find POI", Kind::Explore(Intent::Find)),
+        ("Reset POIs", Kind::Explore(Intent::Shuffle)),
+        ("Donate", Kind::Explore(Intent::Donate)),
+        ("Region atlas", Kind::Explore(Intent::RegionAtlas)),
+        ("Next atlas page", Kind::Explore(Intent::AtlasNext)),
         ("Close", Kind::Close),
     ] {
         let button = commands
@@ -180,6 +200,29 @@ fn project(
         label(&mut commands, &skins, button, caption);
         commands.entity(bar).add_child(button);
     }
+    label(&mut commands, &skins, root, "Donation gold (1-10000000)");
+    let mut gold = EditableText::new(&panel.fields[0]);
+    gold.max_characters = Some(64);
+    gold.visible_lines = Some(1.);
+    let field = commands
+        .spawn((
+            Donation,
+            TextInput,
+            gold,
+            source::font(skins.font.clone(), false),
+            TextColor(source::TEXT_COLOR),
+            TextLayout::default(),
+            TextCursorStyle::default(),
+            Node {
+                width: px(200.),
+                min_height: px(26.),
+                padding: px(4.).all(),
+                ..default()
+            },
+            BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
+        ))
+        .id();
+    commands.entity(root).add_child(field);
     label(
         &mut commands,
         &skins,
@@ -187,7 +230,12 @@ fn project(
         if !panel.selected {
             "Unavailable in this session".into()
         } else {
-            format!("{}\n{}", atlas_view::text(&panel), panel.feedback)
+            format!(
+                "{}\n{}\n{}",
+                atlas_view::text(&panel),
+                region_atlas_text(&panel),
+                panel.feedback
+            )
         },
     );
     let drawing = atlas_view::project(&panel);
