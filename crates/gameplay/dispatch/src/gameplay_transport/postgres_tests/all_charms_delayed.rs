@@ -1181,19 +1181,22 @@ async fn cast_ready(
     command: u64,
     intent: actor_spell::SpellCastIntent,
 ) -> TestResult<crate::gameplay_transport::actor_spell::SpellCastOutcome> {
-    Ok(
-        tokio::time::timeout(std::time::Duration::from_secs(30), async {
-            loop {
-                if let Some(outcome) = owner
-                    .cast_spell_dispatch(actor, session, command, intent)
-                    .await
-                {
-                    return outcome;
-                }
-                tokio::task::yield_now().await;
+    tokio::time::timeout(std::time::Duration::from_secs(30), async {
+        loop {
+            if let Some(outcome) = owner
+                .cast_spell_dispatch(actor, session, command, intent)
+                .await
+            {
+                return TestResult::Ok(outcome);
             }
-        })
-        .await
-        .map_err(|_| "source cast remained pending across bounded same-command retries")?,
-    )
+            // A pending cast may mean the durability holder retired; wait for the
+            // recovered holder instead of spinning against a retired one.
+            if !owner.root.is_ready() {
+                owner.root.await_ready().await?;
+            }
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .map_err(|_| "source cast remained pending across bounded same-command retries")?
 }
