@@ -207,3 +207,126 @@ fn team_unavailable_session_and_stale_snapshot_send_nothing() -> Result {
     );
     Ok(())
 }
+fn listing_texts(app: &mut App, values: [&str; 9]) {
+    for (field, mut text) in app
+        .world_mut()
+        .query::<(&Field, &mut EditableText)>()
+        .iter_mut(app.world_mut())
+    {
+        if let Field::Listing(index) = field
+            && let Some(value) = values.get(*index)
+        {
+            *text = EditableText::new(*value);
+        }
+    }
+}
+fn shown(app: &mut App, value: &str) -> bool {
+    app.world_mut()
+        .query::<&Text>()
+        .iter(app.world())
+        .any(|text| text.0.contains(value))
+}
+#[test]
+fn manage_team_decides_applicants_and_publishes_and_removes_the_listing() -> Result {
+    use oteryn_client_ui::team_finder_leader::{decode_upsert, encode_upsert};
+    let (mut app, mut rx, outbox) = fixture(true)?;
+    outbox.bevy_team_leader_selected(true);
+    app.update();
+    click(&mut app, Kind::Applicants(false))?;
+    let sent = command(&mut rx)?;
+    assert_eq!((sent.capability, sent.command_type), (232, 444));
+    assert_eq!(
+        decode_query(&sent.payload).map_err(|error| format!("{error:?}"))?,
+        TeamFinderQuery::Applicants { after: None }
+    );
+    let applicants = TeamFinderResult::Applicants {
+        listing: None,
+        occupied_slots: 1,
+        members: vec![Applicant {
+            handle: 5,
+            name: "Ally".into(),
+            level: 50,
+            vocation: 1,
+            status: MemberStatus::Pending,
+        }],
+        next: None,
+    };
+    reply(
+        &outbox,
+        encode_result(&applicants).map_err(|error| format!("{error:?}"))?,
+    );
+    app.update();
+    assert!(shown(&mut app, "Social — Manage Team"));
+    assert!(shown(&mut app, "Ally — level 50"));
+    click(&mut app, Kind::Decide(3))?;
+    let sent = command(&mut rx)?;
+    assert_eq!((sent.capability, sent.command_type), (232, 446));
+    assert_eq!(
+        decode_leader_action(&sent.payload).map_err(|error| format!("{error:?}"))?,
+        LeaderAction::Accept { member: 5 }
+    );
+    reply(&outbox, vec![]);
+    app.update();
+    // An incomplete listing stays local and says why.
+    click(&mut app, Kind::Publish(Vec::new()))?;
+    assert!(rx.try_recv().is_err());
+    app.update();
+    assert!(shown(&mut app, &tr!("Enter a valid team listing")));
+    listing_texts(&mut app, ["10", "100", "0", "4", "3", "1", "2", "7", "12"]);
+    click(&mut app, Kind::Publish(Vec::new()))?;
+    let sent = command(&mut rx)?;
+    assert_eq!((sent.capability, sent.command_type), (200, 390));
+    let listing = LeaderListing {
+        min_level: 10,
+        max_level: 100,
+        vocation_mask: 0,
+        slots: 4,
+        free_slots: 3,
+        party_members_join: true,
+        timestamp: 0,
+        target: TeamTarget::Hunt { kind: 7, area: 12 },
+    };
+    assert_eq!(
+        decode_upsert(&sent.payload).map_err(|error| format!("{error:?}"))?,
+        listing
+    );
+    assert_eq!(
+        sent.payload,
+        encode_upsert(listing).map_err(|error| format!("{error:?}"))?
+    );
+    outbox.bevy_team_leader_response(&ServerMechanicResponse {
+        command_id: 2,
+        status: oteryn_session::CommandStatus::Accepted,
+        server_sequence: 2,
+        payload: vec![],
+    });
+    app.update();
+    assert!(shown(&mut app, &tr!("Advertisement confirmed")));
+    assert!(
+        app.world_mut()
+            .query::<(&Field, &EditableText)>()
+            .iter(app.world())
+            .any(|(field, text)| matches!(field, Field::Listing(8))
+                && text.value().to_string() == "12")
+    );
+    click(&mut app, Kind::Withdraw)?;
+    let sent = command(&mut rx)?;
+    assert_eq!((sent.capability, sent.command_type), (200, 391));
+    assert!(sent.payload.is_empty());
+    outbox.bevy_team_leader_response(&ServerMechanicResponse {
+        command_id: 3,
+        status: oteryn_session::CommandStatus::Accepted,
+        server_sequence: 3,
+        payload: vec![],
+    });
+    app.update();
+    let owner = app.world().non_send::<HostOwner>();
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    assert_eq!(link.discovery_panel().leader.confirmed, None);
+    click(&mut app, Kind::Browse(false))?;
+    assert_eq!(
+        decode_query(&command(&mut rx)?.payload).map_err(|error| format!("{error:?}"))?,
+        TeamFinderQuery::Browse { after: None }
+    );
+    Ok(())
+}
