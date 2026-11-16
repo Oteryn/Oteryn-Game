@@ -2564,6 +2564,56 @@ fn complete_reconnect_key(phase: &[u8], identity: &ReconnectIdentityV1, epoch: u
     key
 }
 
+// Read only the ordering evidence from our unchanged complete-reconnect receipt encoding.
+// The owning loss is compared byte-for-byte; this historical prefix grants no authority.
+fn complete_prepare_original_budget(
+    encoded: &str,
+    loss: &[u8],
+) -> Result<RetainedRecoveryBudgetV1> {
+    let bytes = decode_envelope(encoded, super::MAX_FRESH_OPERATION_BYTES)?;
+    let mut r = Reader::new(&bytes);
+    if r.tag()? != 1 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    r.take(16 + 8)?; // session, attempt
+    r.text()?;
+    r.take(16 + 16)?; // Character, World
+    read_scope(&mut r)?;
+    r.i64()?;
+    // Only same-session receipts are supported by write_complete_reconnect.
+    if r.tag()? != 0 || r.take(loss.len())? != loss {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    r.i64()?;
+    read_scope(&mut r)?;
+    r.take(8 * 3)?; // source revisions, observation time
+    r.take(16 * 4 + 8 * 3 + 16 + 16)?; // initial commit, current session
+    r.tag()?; // session state
+    r.u64()?;
+    if r.boolean()? {
+        r.take(16)?;
+    }
+    r.take(16 + 8)?; // lease
+    if r.boolean()? {
+        r.take(16 + 16)?;
+    }
+    read_scope(&mut r)?;
+    r.u64()?;
+    if r.boolean()? {
+        r.u64()?;
+    }
+    if r.boolean()? {
+        r.i64()?;
+    }
+    r.text()?;
+    r.take(16)?; // Account presence Character
+    r.boolean()?;
+    r.boolean()?;
+    r.take(16 + 8)?; // placement
+    control_loss_codec::read_protection(&mut r)?;
+    control_loss_codec::read_budget(&mut r)
+}
+
 impl FreshAdmissionStore {
     /// The complete retained recovery budget of one loss epoch, reconstructed from the
     /// immutable prepare/commit receipts and candidate transport reservations under the
@@ -2580,13 +2630,20 @@ impl FreshAdmissionStore {
         let prepared: Option<Vec<u8>> = sqlx::query_scalar("SELECT prepared_attempt_ref FROM game_durability_reconnect_sessions WHERE game_session_id = encode($1,'hex')::uuid")
             .bind(session.as_bytes().as_slice()).fetch_optional(&mut **tx).await?
             .ok_or(DurabilityError::InvalidStoredState)?;
-        let rows = sqlx::query("SELECT substring(r.operation_key from $2) AS attempt, t.transport_ref, EXISTS (SELECT 1 FROM game_durability_admission_lifecycle_receipts c WHERE c.operation_key = $3 || substring(r.operation_key from $2)) AS committed FROM game_durability_admission_lifecycle_receipts r JOIN game_durability_transport_ref_reservations t ON t.game_session_id = encode($4,'hex')::uuid AND t.reservation_owner = 1 AND t.reconnect_attempt_ref = substring(r.operation_key from $2) WHERE r.operation_key > $1 AND r.operation_key < $1 || '\\xffffffffffffffffff'::bytea AND octet_length(r.operation_key) = $5 + 8 ORDER BY r.decided_at, r.operation_key")
+        let rows = sqlx::query("SELECT CASE WHEN octet_length(r.operation_json) <= 65536 THEN r.operation_json END AS operation_json, substring(r.operation_key from $2) AS attempt, t.transport_ref, EXISTS (SELECT 1 FROM game_durability_admission_lifecycle_receipts c WHERE c.operation_key = $3 || substring(r.operation_key from $2)) AS committed FROM game_durability_admission_lifecycle_receipts r JOIN game_durability_transport_ref_reservations t ON t.game_session_id = encode($4,'hex')::uuid AND t.reservation_owner = 1 AND t.reconnect_attempt_ref = substring(r.operation_key from $2) WHERE r.operation_key > $1 AND r.operation_key < $1 || '\\xffffffffffffffffff'::bytea AND octet_length(r.operation_key) = $5 + 8 ORDER BY r.decided_at, r.operation_key")
             .bind(&prefix)
             .bind(i32::try_from(prefix.len() + 1).map_err(|_| DurabilityError::InvalidStoredState)?)
             .bind(complete_reconnect_prefix(COMPLETE_COMMIT_KEY, session, epoch.get()))
             .bind(session.as_bytes().as_slice())
             .bind(i32::try_from(prefix.len()).map_err(|_| DurabilityError::InvalidStoredState)?)
             .fetch_all(&mut **tx).await?;
+        let mut loss = Writer::new(super::MAX_FRESH_OPERATION_BYTES);
+        if !rows.is_empty() {
+            let (operation, _) = self.owning_loss_locked(tx, session, epoch).await?
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            write_fresh_loss(&mut loss, &operation)?;
+        }
+        let mut order = Vec::new();
         let mut entries = Vec::with_capacity(rows.len());
         let mut restored = false;
         for row in rows {
@@ -2598,7 +2655,7 @@ impl FreshAdmissionStore {
                 .try_into()
                 .map_err(|_| DurabilityError::InvalidStoredState)?;
             restored |= committed;
-            entries.push(RetainedRecoveryAttemptV1 {
+            let entry = RetainedRecoveryAttemptV1 {
                 attempt: checked(ReconnectAttemptRef::new(u64::from_be_bytes(attempt_bytes)))?,
                 transport: checked(AuthenticatedTransportRefV1::decode(&transport))?,
                 disposition: if committed {
@@ -2608,8 +2665,28 @@ impl FreshAdmissionStore {
                 } else {
                     RetainedRecoveryAttemptDispositionV1::Terminal
                 },
-            });
+            };
+            let encoded: Option<String> = row.try_get("operation_json")?;
+            let prior = complete_prepare_original_budget(
+                &encoded.ok_or(DurabilityError::InvalidStoredState)?, &loss.bytes,
+            )?;
+            if prior.epoch() != epoch || prior.state() != RecoveryEpochStateV1::Open {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            // Every PREPARE retains all earlier attempts. The largest prefix fixes append
+            // order even when timestamps tie or references decrease between attempts.
+            if prior.entries().len() >= order.len() {
+                order = prior.entries().to_vec();
+                order.push(entry);
+            }
+            entries.push(entry);
         }
+        if order.len() != entries.len() || entries.iter().any(|entry| {
+            order.iter().filter(|old| entry.attempt == old.attempt && entry.transport == old.transport).count() != 1
+        }) {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        entries.sort_by_key(|entry| order.iter().position(|old| old.attempt == entry.attempt));
         let state = if restored {
             RecoveryEpochStateV1::Restored
         } else {

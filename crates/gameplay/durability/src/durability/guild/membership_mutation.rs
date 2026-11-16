@@ -68,7 +68,10 @@ impl LockedGuild<'_> {
         let mut removes = Vec::new();
         let result = match request.operation {
             GuildCommand::Invite(_) => {
+                let war_restricted: bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_guild_wars WHERE world_id=encode($1,'hex')::uuid AND state<3 AND (declaring_guild=encode($2,'hex')::uuid OR (opposing_guild=encode($2,'hex')::uuid AND state=2)))")
+                    .bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(request.guild_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
                 if !can_invite
+                    || war_restricted
                     || !target_exists
                     || member_in_guild(&subject, &request.guild_id).is_some()
                     || own_invitation.is_some_and(|e| e > now)

@@ -81,6 +81,8 @@ impl DurabilityRoot {
                     UNION ALL
                     SELECT l.item_instance_id, l.world_id, 2 kind
                     FROM owner JOIN game_item_character_inbox_locations l USING(character_id,world_id)
+                    JOIN game_item_instances p USING(item_instance_id,world_id)
+                    WHERE p.definition_production_key<>'oteryn:item.tibia.i23721'
                 ), tree AS (
                     SELECT * FROM roots
                     UNION
@@ -200,6 +202,52 @@ mod tests {
         );
         assert!(aggregate_holdings([])?.is_empty());
         assert!(aggregate_holdings([(1, 0, 0, u32::MAX), (1, 0, 0, 1)]).is_err());
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod postgres_tests {
+    use super::*;
+    use crate::bestiary_postgres_harness::{self as harness, Harness, TestResult, debug, id};
+
+    #[test]
+    fn depot_search_reads_exclude_carried_gold_pouch_tree() -> TestResult {
+        let Some(admin) = harness::configured_admin() else { return Ok(()) };
+        std::thread::Builder::new().stack_size(64 << 20).spawn(move || {
+            harness::runtime().map_err(|error| error.to_string())?.block_on(async move {
+                let h = Harness::create(admin, "depot_pouch", true).await?;
+                let result = exercise(&h).await;
+                h.cleanup().await?;
+                result
+            }).map_err(|error| error.to_string())
+        })?.join().map_err(|_| "depot pouch regression panicked")??;
+        Ok(())
+    }
+
+    async fn exercise(h: &Harness) -> TestResult {
+        // Historical Store provisioning: the pouch is an Inbox root but already carried.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        for (item, definition, quantity) in [(201, 23721, 1), (202, 3031, 100), (203, 3031, 7)] {
+            sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',$4,1,encode($1,'hex')::uuid)")
+                .bind(id(item).as_slice()).bind(id(harness::WORLD).as_slice()).bind(format!("oteryn:item.tibia.i{definition}")).bind(quantity).execute(&mut *tx).await?;
+        }
+        for (item, ordinal) in [(201, 1i64), (203, 2)] {
+            sqlx::query("INSERT INTO game_item_character_inbox_locations(character_id,world_id,item_instance_id,ordinal) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4)")
+                .bind(id(harness::CHARACTER).as_slice()).bind(id(harness::WORLD).as_slice()).bind(id(item).as_slice()).bind(ordinal).execute(&mut *tx).await?;
+        }
+        sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($1,'hex')::uuid)")
+            .bind(id(202).as_slice()).bind(id(harness::WORLD).as_slice()).bind(id(201).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+        let character = CharacterId::from_bytes(id(harness::CHARACTER)).map_err(debug)?;
+        let expected = SearchResult { client_id: 3031, depot: 0, stash: 0, inbox: 7, tiers: vec![TierCount { tier: 0, count: 7 }] };
+        assert_eq!(h.root.read_depot_search(&authority, character, 3031).await?, Some(expected.clone()));
+        assert_eq!(h.root.read_depot_search(&authority, character, 23721).await?, None);
+        assert_eq!(h.root.read_depot_holdings(&authority, character, Some(3031), Some(0), 0).await?.as_slice(), std::slice::from_ref(&expected));
+        assert_eq!(h.root.read_depot_holdings(&authority, character, None, None, 0).await?, [expected]);
         Ok(())
     }
 }

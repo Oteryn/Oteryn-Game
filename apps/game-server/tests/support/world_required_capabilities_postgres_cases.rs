@@ -318,6 +318,21 @@ fn admit0_current_runtime_replacement_refuses_a_prepared_old_generation() -> Tes
 // Focused V2 setup retained from the existing complete-reconnect owner qualification.
 #[test]
 fn admit0_v2_prepare_and_commit_refusal_preserve_current_authority() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            admit0_v2_prepare_commit_with_aborted_higher_attempt()
+                .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "reconnect regression panicked")??;
+    Ok(())
+}
+
+fn admit0_v2_prepare_commit_with_aborted_higher_attempt() -> TestResult {
     use base64::Engine;
     use durability::fresh_admission::FreshReconciliation;
     use ed25519_dalek::{Signer, SigningKey};
@@ -514,12 +529,46 @@ fn admit0_v2_prepare_and_commit_refusal_preserve_current_authority() -> TestResu
             let valid: CurrentCapabilityCheck = Arc::new(move |scope, generation, policy| {
                 scope == binding_scope && generation == binding_generation && policy == binding_policy
             });
+            // Prepare and abort a higher reference before a lower reference in this loss epoch.
+            // Both receipts may have the same second-resolution decision timestamp.
+            assert!(matches!(store.apply_complete_reconnect_with_capabilities(prepare, source.clone(), valid.clone()).await?, CompleteReconnectOutcomeV1::Prepared { .. }));
+            assert!(store.abort_complete_reconnect(&flow.operation().recovery.identity).await?);
+            let identity = authority_matrix::checked(ReconnectIdentityV1::new(
+                session.commit().game_session_id(), authority_matrix::checked(ReconnectAttemptRef::new(2))?, account,
+                session.commit().character_id(), session.commit().world_id(), session.current_runtime_scope(),
+            ))?;
+            let candidate = authority_matrix::checked(ReconnectCandidateBindingV1::new(
+                session.commit().game_session_id(), identity.reconnect_attempt_ref(),
+                authority_matrix::checked(ConnectionGeneration::new(2))?,
+                authority_matrix::checked(AuthenticatedTransportRefV1::decode(&[0x62; 16]))?, now + 5,
+            ))?;
+            let budget = store.recovery_budget(lost.commit().game_session_id(), authority_matrix::checked(ControlLossEpochRefV1::new(1))?).await?;
+            {
+                let mut current = source.current.lock().map_err(|_| "owner lock")?;
+                current.snapshot.budget = budget;
+                current.snapshot.candidate = candidate;
+                current.snapshot.proof_transition.candidate = candidate;
+            }
+            let verified = verify_recovery_grant_durability_v2(&token, now,
+                &RecoveryDurabilityTrustContextV2::from_owning_source(&security), &recovery)
+                .map_err(|error| format!("verify lower attempt: {error:?}"))?;
+            let authorization = CompleteReconnectAuthorizationV1::authorize(source.as_ref(), identity,
+                CompleteReconnectProofV1::V2(Box::new(verified)), now).map_err(|error| format!("authorize lower attempt: {error:?}"))?;
+            let mut flow = CompleteReconnectFlowV1::begin(authorization, None).map_err(|error| format!("begin lower attempt: {error:?}"))?;
+            let prepare = Arc::new(flow.take_request(CompleteReconnectRequestKindV1::Prepare).map_err(|error| format!("prepare lower attempt: {error:?}"))?);
             let before_claims = guards.load(&keys).await?;
             for phase in [CompleteReconnectRequestKindV1::Prepare, CompleteReconnectRequestKindV1::Commit] {
                 if phase == CompleteReconnectRequestKindV1::Commit {
                     let prepared = store.apply_complete_reconnect_with_capabilities(prepare.clone(), source.clone(), valid.clone()).await?;
                     assert!(matches!(prepared, CompleteReconnectOutcomeV1::Prepared { .. }));
+                    // Retain the real receipts, but deterministically exercise a timestamp tie.
+                    let mut fixture = pool.begin().await?;
+                    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *fixture).await?;
+                    sqlx::query("UPDATE game_durability_admission_lifecycle_receipts SET decided_at=(SELECT max(decided_at) FROM game_durability_admission_lifecycle_receipts) WHERE substring(operation_key FROM 1 FOR octet_length($1::bytea))=$1")
+                        .bind(b"complete-reconnect-prepare-v1".as_slice()).execute(&mut *fixture).await?;
+                    fixture.commit().await?;
                     let budget = store.recovery_budget(lost.commit().game_session_id(), authority_matrix::checked(ControlLossEpochRefV1::new(1))?).await?;
+                    assert_eq!(budget.entries().iter().map(|entry| u64::from_be_bytes(entry.attempt.to_be_bytes())).collect::<Vec<_>>(), [20, 2]);
                     {
                         let mut current = source.current.lock().map_err(|_| "owner lock")?;
                         current.snapshot.budget = budget;

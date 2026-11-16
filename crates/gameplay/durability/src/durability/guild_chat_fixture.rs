@@ -94,6 +94,7 @@ pub async fn initial_member(
     Ok(())
 }
 
+#[path = "guild_chat_fixture/schema.rs"]
 mod schema;
 pub use schema::{GUILD_GUARDS_PROPOSAL, GUILD_TABLES_PROPOSAL, guard, prepare};
 

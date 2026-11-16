@@ -122,6 +122,15 @@ fn scenario(warring_killer: bool) -> TestResult {
             seed::sid(90, 2),
         )
         .await?;
+        for (guild, first) in [(declaring, 100_u32), (opposing, 110)] {
+            for n in first..first+4 {
+                let character=CharacterId::from_bytes(seed::sid(n,1)).map_err(debug)?;
+                let name=format!("War Vice {}{}",char::from(b'A'+u8::try_from(n/26)?),char::from(b'A'+u8::try_from(n%26)?));
+                seed::historical_character(&h.pool,n,character,seed::sid(n,2),id(42),&name).await?;
+                seed::initial_member(&h.pool,guild,character,seed::sid(n,2),2).await?;
+            }
+        }
+        sqlx::query("UPDATE game_guilds SET vice_deficit_since=NULL").execute(&h.pool).await?;
         let mut guest_base = fence(1)?.item_fence();
         guest_base.character_lease_generation = 1;
         let guest = seed::historical_session(&h.pool, 90, guest_base).await?;
