@@ -21,7 +21,7 @@ pub(super) struct PresentationCache {
     pixels: Vec<u8>,
     glyphs: BTreeMap<char, u16>,
     outfits: BTreeMap<(u32, u32), Vec<Draw>>,
-    items: ItemDrawCache,
+    world_items: ItemDrawCache,
     image: Option<Arc<AtlasImage>>,
     visuals: BTreeMap<(u32, bool, u32, [i32; 2]), Vec<Draw>>,
     packed_cells: usize,
@@ -49,7 +49,7 @@ impl PresentationCache {
         self.visuals.clear();
         #[cfg(feature = "bevy-shell")]
         self.items.clear();
-        self.items.clear();
+        self.world_items.clear();
         self.image = None;
         self.packed_cells = 0;
     }
@@ -114,7 +114,7 @@ impl PresentationCache {
             return draws.clone();
         }
         // Bound even negative cache entries when appearances change over a long session.
-        if self.outfits.len() + self.items.len() >= 1024 {
+        if self.outfits.len() + self.world_items.len() >= 1024 {
             return marker();
         }
         let resolved = self.assets.as_ref().and_then(|assets| {
@@ -147,7 +147,7 @@ impl PresentationCache {
         draws
     }
 
-    pub(super) fn item(
+    pub(super) fn world_item(
         &mut self,
         appearance: std::num::NonZeroU16,
         position: oteryn_session::ActorPosition,
@@ -160,11 +160,11 @@ impl PresentationCache {
             position.y,
             position.floor,
         );
-        if let Some(draws) = self.items.get(&key) {
+        if let Some(draws) = self.world_items.get(&key) {
             return draws.clone();
         }
         // Same presentation-cache budget as outfits; this never hides a target.
-        if self.outfits.len() + self.items.len() >= 1024 {
+        if self.outfits.len() + self.world_items.len() >= 1024 {
             return None;
         }
         let resolved = self.assets.as_ref().and_then(|assets| {
@@ -202,7 +202,7 @@ impl PresentationCache {
                 .map(|(offset, rgba)| self.append(&rgba).map(|cell| Draw { cell, offset }))
                 .collect()
         });
-        self.items.insert(key, draws.clone());
+        self.world_items.insert(key, draws.clone());
         draws
     }
 

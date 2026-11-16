@@ -102,9 +102,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // lane or Channel locks. Sample time only after acquiring its owners;
         // field entry must not predate the condition predecessor it observes.
         let now = self.owner_now().get();
+        // Every refusal below returns the field holder observably, after the
+        // Channel guards: a dropped pass returns it only after this task yields,
+        // so the session's next non-blocking checkout would find it busy.
         if runtime.note_rotten_movement_time(now).is_err() {
             #[cfg(test)]
             eprintln!("M25 movement preflight rejected at {}", line!());
+            drop((states, runtime));
+            let _ = Self::return_unused_field_step_pass(field_pass).await;
             return (StepOutcome::rejected(), None);
         }
         // USE-AUTOWALK-1: a relocation (even away and back) invalidates the queued step.
@@ -126,12 +131,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             #[cfg(test)]
             eprintln!("M25 movement preflight rejected at {}", line!());
             operator_event("event=step_rejected_stale_position");
+            drop((states, runtime));
+            let _ = Self::return_unused_field_step_pass(field_pass).await;
             return (StepOutcome::rejected(), None);
         }
         if states.has_pending_spell_commit(actor, session) {
             #[cfg(test)]
             eprintln!("M25 movement preflight rejected at {}", line!());
             operator_event("event=step_rejected_pending_spell");
+            drop((states, runtime));
+            let _ = Self::return_unused_field_step_pass(field_pass).await;
             return (StepOutcome::rejected(), None);
         }
         let cardinal = match direction {
@@ -153,6 +162,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } {
             Ok(direction) => direction,
             Err(MovementError::Blocked) => {
+                drop((states, runtime));
+                let _ = Self::return_unused_field_step_pass(field_pass).await;
                 return (
                     StepOutcome {
                         disposition: StepDisposition::Blocked,
@@ -163,6 +174,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Err(_) => {
                 operator_event("event=step_rejected_drome");
+                drop((states, runtime));
+                let _ = Self::return_unused_field_step_pass(field_pass).await;
                 return (StepOutcome::rejected(), None);
             }
         };

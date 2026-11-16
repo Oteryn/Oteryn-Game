@@ -115,7 +115,9 @@ impl Scene {
                     continue;
                 }
                 if entity.position.floor == floor
-                    && let Some(draws) = self.cache.item(appearance_id, entity.position, quantity)
+                    && let Some(draws) =
+                        self.cache
+                            .world_item(appearance_id, entity.position, quantity)
                 {
                     self.object_draws
                         .push((entity.position, item_definition_ref, draws));

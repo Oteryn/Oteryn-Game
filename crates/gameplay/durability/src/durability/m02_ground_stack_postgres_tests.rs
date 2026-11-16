@@ -67,7 +67,8 @@ mod additional_ground_stacks {
     #[test]
     fn m02_ground_stack_postgres_exact_order_quantity_and_scope() -> TestResult {
         std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
-            run("encx_m02_ground_stack", async |h| {
+            // A distinct tag: the harness keeps one recovery fence directory per tag.
+            run("encx_m02_ground_stack_additional", async |h| {
                 let started = std::time::Instant::now();
                 let at = target();
                 let gold = TypedDefinitionRef { production_key: "oteryn:item.tibia.i3031".into(), ..definition() };
