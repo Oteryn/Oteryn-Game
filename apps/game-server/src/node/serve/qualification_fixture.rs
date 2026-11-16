@@ -34,7 +34,10 @@ pub(super) async fn prepare(
     };
     match prepare_build(root, authority, proof, config, native, session, profile).await {
         Ok(()) => "qualified",
-        Err(_) => "rejected",
+        Err(error) => {
+            eprintln!("[DBG-prov] qualify rejected: {error}");
+            "rejected"
+        }
     }
 }
 

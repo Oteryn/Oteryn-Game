@@ -279,7 +279,13 @@ pub(super) async fn run(
         if client.join_snapshot().game_session_id == session
             || client.world_spatial().actor_position != saved_position
         {
-            return Err("E2EF3 fresh admission session/position mismatch".into());
+            return Err(format!(
+                "E2EF3 fresh admission session/position mismatch: session={session:?}->{:?} position={saved_position:?}->{:?} occupants={:?}",
+                client.join_snapshot().game_session_id,
+                client.world_spatial().actor_position,
+                client.world_entities().map(|entities| entities.iter().filter(|entry| entry.position == saved_position).map(|entry| (entry.kind, entry.entity)).collect::<Vec<_>>())
+            )
+            .into());
         }
         open_backpack(&mut client).await?;
         if backpack_inspection(&mut client).await? != before

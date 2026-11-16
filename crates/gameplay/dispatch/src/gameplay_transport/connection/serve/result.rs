@@ -283,6 +283,23 @@ pub(super) fn encode(
                 None => return Err(ServeEnd::Disconnected),
             }
         }
+        // NBREL3: a deferred or permit-less step keeps its typed refusal. Field 1 of
+        // WorldActorStepResultV1 is required, so an empty payload fails the client closed.
+        Dispatch::Unregistered
+            if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT
+                && session
+                    .selected_capabilities
+                    .command_selected(command.command_type) =>
+        {
+            (
+                CommandStatus::Rejected,
+                encode_step_outcome(
+                    session.selected_capabilities.as_slice(),
+                    StepDisposition::Rejected,
+                    0,
+                ),
+            )
+        }
         Dispatch::Achievements(
             AccountAchievementsReply::Terminal(_) | AccountAchievementsReply::Rejected,
         )
