@@ -34,7 +34,7 @@ fn npc_item_exchanges_consume_exact_recipes_with_one_receipt_and_replay() -> Tes
         )
     })?;
     eprintln!(
-        "NPC_EXCHANGE POSTGRES_CASE_COMPLETED three_source_recipes duration={:?}",
+        "NPC_EXCHANGE POSTGRES_CASE_COMPLETED all_fluid_subtypes_and_plain_recipes duration={:?}",
         started.elapsed()
     );
     Ok(())
@@ -64,7 +64,7 @@ pub(super) async fn exercise(
         .collect();
     // A resumed apprenticeship is legal outside August. Establish only its
     // preconditions; the recipe's item/progress transaction is the owner under test.
-    let mut transitions: Vec<_> = [6, 8, 14]
+    let mut transitions: Vec<_> = [1, 2, 4, 5, 6, 7, 8, 11, 12, 14]
         .into_iter()
         .map(|index| QuestTransition {
             key: format!("oteryn:quest-transition/fixture/resumed-cook-{index}"),
@@ -120,7 +120,7 @@ pub(super) async fn exercise(
         .ok_or("native")?;
     let weights = crate::gameplay_transport::item_ref_admission::NativeItemWeights(native);
     let mut mint_ordinal = 700;
-    for index in [6_u64, 8, 14] {
+    for index in [1_u64, 2, 4, 5, 6, 7, 8, 11, 12, 14] {
         let recipe = &book["recipes"][usize::try_from(index - 1)?];
         let mut fence = owner
             .current_quest_fence(admitted.game_session_id)
@@ -200,29 +200,43 @@ pub(super) async fn exercise(
                 .map_err(debug)?
         );
         for ingredient in recipe["ingredients"].as_array().ok_or("ingredients")? {
-            assert!(
-                ingredient
-                    .get("subtype")
-                    .is_none_or(|subtype| subtype.is_null())
-            );
-            super::quest_world_callbacks::input_item(
-                owner,
-                fence.item_fence(),
-                &Offering {
-                    position: Position {
-                        x: 33293,
-                        y: 31677,
-                        floor: -15,
-                    },
-                    item: ingredient["item"].as_str().ok_or("item")?.into(),
-                    count: u16::try_from(ingredient["count"].as_u64().ok_or("count")?)?,
-                },
-                mint_ordinal,
-                true,
-            )
-            .await
-            .map_err(|error| format!("ingredient {}: {error}", ingredient["item"]))?;
-            mint_ordinal += 1;
+            let subtype = ingredient.get("subtype").and_then(|value| value.as_u64());
+            let count = ingredient["count"].as_u64().ok_or("count")?;
+            if subtype.is_none() {
+                assert!(ingredient.get("subtype").is_none_or(|subtype| subtype.is_null()));
+            }
+            // A fluid vessel is one physical item, regardless of recipe count.
+            for _ in 0..if subtype.is_some() { count } else { 1 } {
+                super::quest_world_callbacks::input_item(
+                    owner, fence.item_fence(),
+                    &Offering { position: Position { x: 33293, y: 31677, floor: -15 },
+                        item: ingredient["item"].as_str().ok_or("item")?.into(),
+                        count: if subtype.is_some() { 1 } else { u16::try_from(count)? } },
+                    mint_ordinal, true,
+                ).await.map_err(|error| format!("ingredient {}: {error}", ingredient["item"]))?;
+                mint_ordinal += 1;
+            }
+            if let Some(subtype) = subtype {
+                let vessels: Vec<Vec<u8>> = sqlx::query_scalar("SELECT uuid_send(i.item_instance_id) FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_production_key=$3 ORDER BY i.item_instance_id")
+                    .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+                    .bind(ingredient["item"].as_str().ok_or("fluid item")?).fetch_all(&h.pool).await?;
+                assert_eq!(vessels.len(), usize::try_from(count)?);
+                for vessel in vessels {
+                    let transaction: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(game_character_uuid_v7())").fetch_one(&h.pool).await?;
+                    assert_eq!(owner.root.commit_item_fluid(authority, owner.holder, fence.item_fence(),
+                        crate::durability::item_use::fluid::ItemFluidRequest {
+                            command_id: 10000 + mint_ordinal,
+                            transaction_id: transaction.try_into().map_err(|_| "fluid transaction")?,
+                            change: crate::durability::item_use::fluid::ItemFluidChange {
+                                item_instance_id: vessel.try_into().map_err(|_| "fluid vessel")?,
+                                definition: crate::durability::item_mint::TypedDefinitionRef { family: "Item".into(),
+                                    production_key: ingredient["item"].as_str().ok_or("fluid item")?.into(), revision_ref: "definition-r1".into() },
+                                fluid_before: 0, fluid_after: u8::try_from(subtype)?,
+                            }, other: None,
+                        }).await.map_err(debug)?, crate::durability::item_use::fluid::ItemFluidOutcome::Written);
+                    mint_ordinal += 1;
+                }
+            }
         }
         let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
         let committed = slot

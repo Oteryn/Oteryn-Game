@@ -162,11 +162,10 @@ fn evaluate_source(
         if let Some(program) = source.program(oteryn_gameplay_quests::quest::hot_cuisine::QUEST)
             && let Some(plan) = hot.plan(program, &input, &calendar)?
         {
-            // The shared participant admits plain recipes. Typed fluids and
-            // optional removals still need their own durable consumer.
+            // Carried consumption preserves exact fluid subtypes. Optional
+            // removals and typed rewards still need their own participants.
             if plan.effects.iter().any(|effect| matches!(effect,
-                oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::TakeItem { subtype: Some(_), .. }
-                | oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::TakeItem { optional: true, .. }
+                oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::TakeItem { optional: true, .. }
                 | oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::GiveItem { subtype: Some(_), .. }
             )) {
                 return Err(oteryn_gameplay_quests::quest::npc_rules::NpcRuleError::MissingNativeResolution("Hot Cuisine item shape".into()));
@@ -387,18 +386,23 @@ impl DurabilityRoot {
             for query in ["UPDATE game_character_roots SET character_revision=$2::text::numeric WHERE character_id=encode($1,'hex')::uuid AND character_revision=$3::text::numeric", "UPDATE game_character_progression_state SET character_revision=$2::text::numeric WHERE character_id=encode($1,'hex')::uuid AND character_revision=$3::text::numeric"] {
                 if sqlx::query(query).bind(id).bind(&committed).bind(&original).execute(&mut **tx).await?.rows_affected()!=1 {return Err(DurabilityError::InvalidStoredState);}
             }
+            // These source branches hand over the terminal reward. Dialogue,
+            // acceptance and individual material deliveries remain unfinished.
+            let completes = matches!(request.transition_key.as_str(),
+                "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-complete"
+                | "oteryn:quest-npc/marlin_trophy_quest/pemaret/deliver");
             let before=plan.track_changes.iter().map(|c|c.before).collect::<Vec<_>>();
             let after=plan.track_changes.iter().map(|c|c.after).collect::<Vec<_>>();
-            sqlx::query("INSERT INTO game_character_quest_receipts(character_id,cause_kind,cause_id,cause_ordinal,transition_key,quest_key,request_binding,pinned_content_revision,definition_hash,completes,track_keys,values_before,values_after,original_character_revision,committed_character_revision,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,committed_at) SELECT s.character_id,'command',encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8,false,$9::text[],$10::bigint[],$11::bigint[],$12::text::numeric,$13::text::numeric,s.level,s.level,s.total_experience,s.total_experience,s.profile_revision,s.ruleset_revision,s.content_revision,s.simulation_revision,s.evidence_revision,s.declaration_revision,s.policy_revision,s.reward_revision,floor(extract(epoch FROM statement_timestamp())*1000)::bigint FROM game_character_progression_state s WHERE character_id=encode($1,'hex')::uuid")
-                .bind(id).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).bind(quest).bind(request.binding(character).as_slice()).bind(&pin).bind(hash.as_slice()).bind(&keys).bind(&before).bind(&after).bind(&original).bind(&committed).execute(&mut **tx).await?;
+            sqlx::query("INSERT INTO game_character_quest_receipts(character_id,cause_kind,cause_id,cause_ordinal,transition_key,quest_key,request_binding,pinned_content_revision,definition_hash,completes,track_keys,values_before,values_after,original_character_revision,committed_character_revision,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,committed_at) SELECT s.character_id,'command',encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8,$14,$9::text[],$10::bigint[],$11::bigint[],$12::text::numeric,$13::text::numeric,s.level,s.level,s.total_experience,s.total_experience,s.profile_revision,s.ruleset_revision,s.content_revision,s.simulation_revision,s.evidence_revision,s.declaration_revision,s.policy_revision,s.reward_revision,floor(extract(epoch FROM statement_timestamp())*1000)::bigint FROM game_character_progression_state s WHERE character_id=encode($1,'hex')::uuid")
+                .bind(id).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).bind(quest).bind(request.binding(character).as_slice()).bind(&pin).bind(hash.as_slice()).bind(&keys).bind(&before).bind(&after).bind(&original).bind(&committed).bind(completes).execute(&mut **tx).await?;
             for change in &plan.track_changes {
                 sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5::text::numeric) ON CONFLICT(character_id,track_key) DO UPDATE SET value=EXCLUDED.value,committed_character_revision=EXCLUDED.committed_character_revision")
                     .bind(id).bind(&change.key).bind(quest).bind(change.after).bind(&committed).execute(&mut **tx).await?;
             }
             if stored_state.is_some() {
-                sqlx::query("UPDATE game_character_quest_states SET committed_character_revision=$3::text::numeric WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id).bind(quest).bind(&committed).execute(&mut **tx).await?;
+                sqlx::query("UPDATE game_character_quest_states SET committed_character_revision=$3::text::numeric,completed_character_revision=coalesce(completed_character_revision,CASE WHEN $4 THEN $3::text::numeric END) WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id).bind(quest).bind(&committed).bind(completes).execute(&mut **tx).await?;
             } else {
-                sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5::text::numeric,$5::text::numeric)").bind(id).bind(quest).bind(&pin).bind(hash.as_slice()).bind(&committed).execute(&mut **tx).await?;
+                sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision,completed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5::text::numeric,$5::text::numeric,CASE WHEN $6 THEN $5::text::numeric END)").bind(id).bind(quest).bind(&pin).bind(hash.as_slice()).bind(&committed).bind(completes).execute(&mut **tx).await?;
             }
             sqlx::query("INSERT INTO game_quest_npc_program_receipts(character_id,game_session_id,command_id,transition_key,reply,next_topic,inventory_changed,end_conversation,end_delay_ms) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8,$9::text::integer)")
                 .bind(id).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).bind(&plan.reply).bind(plan.next_topic).bind(item_action).bind(items::ends(&plan)).bind(items::end_delay(&plan).to_string()).execute(&mut **tx).await?;
@@ -474,4 +478,49 @@ mod calendar_tests {
         }
         Ok(())
     }
+    #[test]
+    fn audit_hot_cuisine_preserves_typed_ingredient_confirmations() -> Result<(), String> {
+        use super::*;
+        use oteryn_gameplay_quests::quest::hot_cuisine::{HotCuisineProgram, NPC, QUEST};
+        let source = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
+        let program = source.program(QUEST).ok_or("Hot Cuisine source")?;
+        let hot = HotCuisineProgram::embedded().map_err(|e| e.to_string())?;
+        let inventory = hot.optimistic_inventory().map_err(|e| e.to_string())?;
+        let book: serde_json::Value = serde_json::from_str(
+            oteryn_gameplay_quests::quest::hot_cuisine::EMBEDDED).map_err(|e| e.to_string())?;
+        let catalogue = QuestStateCatalogue::new("content-1", vec![], vec![])
+            .map_err(|e| format!("{e:?}"))?;
+        let bytes = [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1];
+        let command = CommandRef::new(GameSessionId::decode(&bytes).map_err(|e| format!("{e:?}"))?,
+            CommandId::new(1).map_err(|e| format!("{e:?}"))?);
+        for recipe in book["recipes"].as_array().ok_or("recipes")? {
+            let mut tracks = program.document.tracks.iter()
+                .map(|track| (track.key.clone(), track.initial)).collect::<BTreeMap<_, _>>();
+            tracks.insert(book["quest_start_track"].as_str().ok_or("start")?.into(), 1);
+            tracks.insert(book["current_dish_track"].as_str().ok_or("dish")?.into(),
+                recipe["index"].as_i64().ok_or("index")?);
+            let request = NpcProgramRequest { command, npc: NPC.into(), trigger: NpcRuleTrigger::Say,
+                message: "yes".into(), topic: i32::try_from(recipe["topic"].as_i64().ok_or("topic")?).map_err(|e| e.to_string())?,
+                transition_key: format!("oteryn:quest-npc/hot_cuisine_quest/jean_pierre/native-cook-{}", recipe["index"]) };
+            let plan = evaluate_source(source, &request, &tracks, &catalogue, 1_785_542_400, Some(&inventory))
+                .map_err(|e| e.to_string())?.ok_or("cook plan")?;
+            assert!(!plan.track_changes.is_empty(), "dish {}", recipe["dish_number"]);
+            for ingredient in recipe["ingredients"].as_array().ok_or("ingredients")? {
+                if ingredient["subtype"].is_number() {
+                    let mut wrong = inventory.clone();
+                    let item = ingredient["item"].as_str().ok_or("fluid item")?;
+                    wrong.items.retain(|key, _| key.item != item);
+                    wrong.items.insert(oteryn_gameplay_quests::quest::npc_rules::NpcItemKey {
+                        item: item.into(), subtype: Some(250),
+                    }, 100);
+                    let missing = evaluate_source(source, &request, &tracks, &catalogue, 1_785_542_400, Some(&wrong))
+                        .map_err(|e| e.to_string())?.ok_or("missing plan")?;
+                    assert!(missing.track_changes.is_empty());
+                    assert_eq!(missing.inventory_before, missing.inventory_after);
+                }
+            }
+        }
+        Ok(())
+    }
+
 }

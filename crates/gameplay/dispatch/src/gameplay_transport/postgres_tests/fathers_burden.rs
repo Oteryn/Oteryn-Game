@@ -134,6 +134,10 @@ pub(super) async fn exercise(
             .await?,
         2
     );
+    let completion: (bool, Option<String>, String) = sqlx::query_as("SELECT r.completes,s.completed_character_revision::text,r.committed_character_revision::text FROM game_character_quest_receipts r JOIN game_character_quest_states s USING(character_id,quest_key) WHERE r.character_id=encode($1,'hex')::uuid AND r.transition_key='oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-complete'")
+        .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+    assert!(completion.0, "terminal handover completes the quest receipt");
+    assert_eq!(completion.1.as_deref(), Some(completion.2.as_str()));
     let expected = initial_xp + 28_000;
     let actual: (i64, i64) = sqlx::query_as("SELECT (SELECT total_experience FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid),(SELECT count(*) FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i11701')")
         .bind(id(41).as_slice()).fetch_one(&h.pool).await?;

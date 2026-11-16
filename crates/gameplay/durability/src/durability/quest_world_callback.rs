@@ -774,17 +774,22 @@ pub(super) async fn consume_npc_inputs(
     let super::quest_state::QuestCause::Command(command) = request.cause else {
         return Ok(false);
     };
-    use oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect;
-    let mut remaining = std::collections::BTreeMap::<String, i64>::new();
+    use oteryn_gameplay_quests::quest::npc_rules::{NpcItemKey, NpcRuleEffect};
+    let mut remaining = std::collections::BTreeMap::<NpcItemKey, i64>::new();
     for effect in &plan.effects {
         if let NpcRuleEffect::TakeItem {
             item,
             count,
-            subtype: None,
+            subtype,
             optional: false,
         } = effect
         {
-            let total = remaining.entry(item.clone()).or_default();
+            let total = remaining
+                .entry(NpcItemKey {
+                    item: item.clone(),
+                    subtype: *subtype,
+                })
+                .or_default();
             *total = total
                 .checked_add(i64::from(*count))
                 .ok_or(DurabilityError::InvalidStoredState)?;
@@ -804,11 +809,16 @@ pub(super) async fn consume_npc_inputs(
     } else {
         8
     };
-    if remaining.len() > input_limit {
+    let keys: Vec<_> = remaining
+        .keys()
+        .map(|key| key.item.clone())
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .collect();
+    if keys.len() > input_limit {
         return Ok(false);
     }
-    let keys: Vec<_> = remaining.keys().cloned().collect();
-    let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
+    let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key,f.fluid_subtype FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item LEFT JOIN game_item_fluid_states f ON f.item_instance_id=i.item_instance_id AND f.world_id=i.world_id WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
         .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(&keys).fetch_all(&mut **tx).await?;
     if rows.len() > 500 {
         return Ok(false);
@@ -816,11 +826,27 @@ pub(super) async fn consume_npc_inputs(
     let mut inputs = Vec::new();
     for row in rows {
         let key: String = row.try_get("definition_production_key")?;
-        let Some(required) = remaining.get_mut(&key) else {
-            continue;
-        };
+        let subtype = row
+            .try_get::<Option<i16>, _>("fluid_subtype")?
+            .map(u16::try_from)
+            .transpose()
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
         let quantity: i64 = row.try_get("quantity")?;
-        let count = (*required).min(quantity);
+        let mut count = 0;
+        // Reserve exact typed requirements before applying wildcard removals.
+        for candidate in [subtype, None]
+            .into_iter()
+            .take(if subtype.is_some() { 2 } else { 1 })
+        {
+            if let Some(required) = remaining.get_mut(&NpcItemKey {
+                item: key.clone(),
+                subtype: candidate,
+            }) {
+                let taken = (*required).min(quantity - count);
+                *required -= taken;
+                count += taken;
+            }
+        }
         if count == 0 {
             continue;
         }
@@ -834,12 +860,21 @@ pub(super) async fn consume_npc_inputs(
             replacement: None,
         };
         lock_location(tx, &input).await?;
+        let actual: Option<i16> = sqlx::query_scalar("SELECT fluid_subtype FROM game_item_fluid_states WHERE item_instance_id=$1::uuid FOR UPDATE")
+            .bind(&input.item).fetch_optional(&mut **tx).await?;
+        if actual
+            .map(u16::try_from)
+            .transpose()
+            .map_err(|_| DurabilityError::InvalidStoredState)?
+            != subtype
+        {
+            return Ok(false);
+        }
         let plain:bool=sqlx::query_scalar("SELECT NOT (EXISTS(SELECT 1 FROM game_item_keys WHERE item_instance_id=$1::uuid) OR EXISTS(SELECT 1 FROM game_item_timed_states WHERE item_instance_id=$1::uuid) OR EXISTS(SELECT 1 FROM game_item_texts WHERE item_instance_id=$1::uuid) OR EXISTS(SELECT 1 FROM game_item_imbuements WHERE item_instance_id=$1::uuid) OR EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=$1::uuid) OR EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=$1::uuid))")
             .bind(&input.item).fetch_one(&mut **tx).await?;
         if !plain {
             return Ok(false);
         }
-        *required -= count;
         inputs.push(input);
     }
     if remaining.values().any(|n| *n != 0) {
