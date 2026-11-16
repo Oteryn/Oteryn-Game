@@ -17,6 +17,9 @@ struct Snapshot {
     sort_available: bool,
     windows: std::collections::BTreeMap<u8, presentation::Window>,
     browse: bool,
+    /// The writing (115) and timed item (39) windows the item menu can open.
+    write: bool,
+    timed: bool,
     /// Tibia Global's Manual Sort Mode: orange container titles, and drops name their slot.
     manual_sort: bool,
 }
@@ -93,6 +96,8 @@ pub(super) fn project(
         containers,
         windows: ui.windows.clone(),
         browse: play.link.browse_field_panel().selected,
+        write: play.link.mail_panel().selected,
+        timed: play.link.timed_item_panel().selected,
         slots: play.link.equipment_slots(),
         movement,
         selection: ui.selection,
@@ -127,6 +132,8 @@ pub(super) fn project(
             && old.sort_available == snapshot.sort_available
             && old.windows == snapshot.windows
             && old.browse == snapshot.browse
+            && old.write == snapshot.write
+            && old.timed == snapshot.timed
             && old.manual_sort == snapshot.manual_sort
     }) {
         previous.0 = Some(snapshot);
@@ -191,7 +198,13 @@ pub(super) fn project(
         label(&mut commands, &skins, equipment, "Moving item…");
     }
     if let Some((slot, position)) = snapshot.menu {
-        context(&mut commands, &skins, slot, position);
+        context(
+            &mut commands,
+            &skins,
+            slot,
+            position,
+            (snapshot.write, snapshot.timed),
+        );
     }
     previous.0 = Some(snapshot);
 }

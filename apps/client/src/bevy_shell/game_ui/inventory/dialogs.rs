@@ -44,7 +44,14 @@ fn modal(commands: &mut Commands, skins: &Skins, width: f32) -> Entity {
         ))
         .id()
 }
-pub(super) fn context(commands: &mut Commands, skins: &Skins, slot: Slot, position: Vec2) {
+/// `extra` admits the writing and timed item windows (capabilities 115 and 39).
+pub(super) fn context(
+    commands: &mut Commands,
+    skins: &Skins,
+    slot: Slot,
+    position: Vec2,
+    extra: (bool, bool),
+) {
     use oteryn_client_ui::world_interaction::menu::Action;
     let overlay = commands
         .spawn((
@@ -92,6 +99,14 @@ pub(super) fn context(commands: &mut Commands, skins: &Skins, slot: Slot, positi
             Control::Context(slot, action),
             126.,
         );
+    }
+    for (shown, text, control) in [
+        (extra.0, "Write…", Control::Write(slot)),
+        (extra.1, "Timed item…", Control::Timed(slot)),
+    ] {
+        if shown {
+            button(commands, skins, panel, text, control, 126.);
+        }
     }
     button(
         commands,

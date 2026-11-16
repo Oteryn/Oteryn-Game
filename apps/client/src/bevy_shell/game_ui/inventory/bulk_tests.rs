@@ -575,3 +575,125 @@ fn carried_container_without_parent_has_no_ground_up() -> Result {
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+fn item_menu(app: &mut App, handle: u64, write: bool) -> Result {
+    let slot = app
+        .world_mut()
+        .query::<&Slot>()
+        .iter(app.world())
+        .find(|slot| slot.item.is_some_and(|item| item.handle.get() == handle))
+        .copied()
+        .ok_or("item slot")?;
+    app.world_mut().resource_mut::<InventoryUi>().menu = Some((slot, Vec2::ZERO));
+    app.update();
+    let entity = app
+        .world_mut()
+        .query::<(Entity, &Control)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| match control {
+            Control::Write(_) if write => Some(entity),
+            Control::Timed(_) if !write => Some(entity),
+            _ => None,
+        })
+        .ok_or("item menu entry")?;
+    app.world_mut().trigger(Activate { entity });
+    Ok(())
+}
+fn property_form(link: &PlayLink, title: &str) -> Result<crate::play::FeatureForm> {
+    crate::play::FeatureForm::all()
+        .iter()
+        .copied()
+        .find(|form| form.title(link) == title)
+        .ok_or_else(|| format!("missing form: {title}").into())
+}
+fn property_command(
+    commands: &mut tokio::sync::mpsc::UnboundedReceiver<PlayCommand>,
+) -> Result<oteryn_client_runtime::raw_feature::FeatureCommand> {
+    match commands.try_recv()? {
+        PlayCommand::Feature(command) => Ok(command),
+        _ => Err("feature command".into()),
+    }
+}
+fn property_reply(payload: Vec<u8>) -> oteryn_client_runtime::raw_feature::GatedCommandResult {
+    oteryn_client_runtime::raw_feature::GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: oteryn_client_runtime::raw_feature::CommandStatus::Accepted,
+        payload,
+    }
+}
+
+#[test]
+fn item_menu_write_opens_the_writing_window_and_saves_the_item_text() -> Result {
+    use oteryn_session::property_services::mail::{MailIntent, decode_intent};
+    let (mut app, mut commands, outbox) = app()?;
+    assert!(
+        item_menu(&mut app, 11, true).is_err(),
+        "no Write before the session admits capability 115"
+    );
+    outbox.bevy_property_items_selected();
+    app.world_mut().resource_mut::<InventoryUi>().menu = None;
+    app.update();
+    item_menu(&mut app, 11, true)?;
+    assert!(app.world().resource::<InventoryUi>().menu.is_none());
+    let owner = app.world().non_send::<HostOwner>();
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    let window = property_form(link, "Writing and mail")?;
+    let view = link.feature_form_view(window);
+    assert!(view.open);
+    assert_eq!(view.fields[0], "11");
+    link.feature_form_submit(window, 0, vec!["11".into(), String::new(), "hello".into()]);
+    let write = property_command(&mut commands)?;
+    assert_eq!(write.kind, 124);
+    assert_eq!(
+        decode_intent(&write.payload).map_err(|e| format!("{e:?}"))?,
+        MailIntent::WriteText {
+            item_handle: 11,
+            text: "hello".into(),
+        }
+    );
+    outbox.bevy_properties_result(&write, &property_reply(vec![2]));
+    let text = link.feature_form_view(window).text;
+    assert!(text.contains("Item text saved"), "{text}");
+    Ok(())
+}
+
+#[test]
+fn item_menu_timed_item_inspects_the_item_then_uses_the_shown_revision() -> Result {
+    use oteryn_client_runtime::timed_item as wire;
+    let (mut app, mut commands, outbox) = app()?;
+    outbox.bevy_property_items_selected();
+    app.update();
+    item_menu(&mut app, 11, false)?;
+    let inspect = property_command(&mut commands)?;
+    assert_eq!(inspect.kind, 38);
+    let intent = wire::decode_timed_item_intent(&inspect.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(intent.action, wire::TimedAction::Inspect);
+    assert_eq!(intent.target.get(), 11);
+    assert_eq!(intent.expected_revision, 0);
+    let reply = wire::encode_timed_item_result(wire::TimedItemResult {
+        disposition: wire::TimedDisposition::Ok,
+        revision: 5,
+        charges: Some(8),
+        remaining_ms: Some(1000),
+        retired: false,
+        fee_gold: 0,
+    })
+    .map_err(|e| format!("{e:?}"))?;
+    outbox.bevy_properties_result(&inspect, &property_reply(reply));
+    let owner = app.world().non_send::<HostOwner>();
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    let window = property_form(link, "Timed items")?;
+    let view = link.feature_form_view(window);
+    assert!(view.open);
+    assert_eq!(view.fields[..2], ["11".to_string(), "5".to_string()]);
+    assert!(view.text.contains("Timed item updated"), "{}", view.text);
+    link.feature_form_submit(window, 1, view.fields);
+    let used = property_command(&mut commands)?;
+    let intent = wire::decode_timed_item_intent(&used.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        (intent.action, intent.target.get(), intent.expected_revision),
+        (wire::TimedAction::Use, 11, 5)
+    );
+    Ok(())
+}

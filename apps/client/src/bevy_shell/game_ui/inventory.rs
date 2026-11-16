@@ -141,6 +141,10 @@ struct InventoryUi {
 enum Control {
     Open(Slot),
     Context(Slot, oteryn_client_ui::world_interaction::menu::Action),
+    /// Edit the text of a writable item (letter, book, label) in the writing window.
+    Write(Slot),
+    /// Inspect a timed item, then use or repair it in the timed item window.
+    Timed(Slot),
     Up {
         generation: u64,
         view: u8,
