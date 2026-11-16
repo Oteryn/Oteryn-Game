@@ -229,7 +229,7 @@ fn scenario() -> TestResult {
                 .runtime
                 .lock()
                 .await
-                .set_riding(dependencies.actor, command.game_session_id, 139, 10)
+                .set_riding(dependencies.actor, command.game_session_id, 140, 99)
                 .map_err(debug)?;
             let held = harness.root.try_issue_semantic_pass()?;
             let mut refresh = std::pin::pin!(owner.refresh_riding(dependencies.actor, command));
@@ -244,6 +244,18 @@ fn scenario() -> TestResult {
             refresh
                 .await
                 .ok_or("riding reconciled after holder return")?;
+            let motion = owner
+                .runtime
+                .lock()
+                .await
+                .actor_motion(dependencies.actor)
+                .ok_or("reconciled motion")?;
+            let (_, content) = owner.appearance_context().ok_or("cosmetics")?;
+            assert_eq!(
+                (motion.2, motion.3),
+                content.mount_metadata(&mount_key).ok_or("selected mount")?,
+                "retry installs the selected mount and replaces the old speed bonus"
+            );
         }
         assert_eq!(
             owner.set_mount(dependencies.actor, command, false).await,
