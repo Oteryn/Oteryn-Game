@@ -22,8 +22,30 @@ enum Kind {
     SlotBoss(bool),
 }
 
+/// The "Track kills" toggle of one boss entry, by the server's boss key.
+#[derive(Component, Clone)]
+struct TrackToggle {
+    generation: u64,
+    key: String,
+    track: bool,
+}
+/// The Bosstiary tracker as the entry toggles show it: tracked boss keys, and whether the
+/// tracker can take a change now.
+#[derive(Clone, PartialEq, Eq)]
+struct Tracking {
+    keys: Vec<String>,
+    ready: bool,
+    feedback: Option<&'static str>,
+}
+
 #[derive(Resource, Default)]
-struct Snapshot(Option<(u64, oteryn_client_ui::boss_encounter::BossEncounterPanel)>);
+struct Snapshot(
+    Option<(
+        u64,
+        oteryn_client_ui::boss_encounter::BossEncounterPanel,
+        Tracking,
+    )>,
+);
 pub(super) fn install(app: &mut App) {
     app.init_resource::<Snapshot>().add_systems(Update, project);
 }
@@ -40,7 +62,24 @@ fn project(
         .filter(|_| {
             owner.phase == Phase::Playing && owner.settings.preferences.panel_visible("bosstiary")
         })
-        .map(|play| (owner.generation(), play.link.boss_encounter_panel()));
+        .map(|play| {
+            let tracker = play.link.cyclopedia_tracker_panel();
+            let tracking = Tracking {
+                keys: tracker
+                    .bosstiary_snapshot
+                    .iter()
+                    .flat_map(|tracked| &tracked.entries)
+                    .map(|entry| entry.creature_key.clone())
+                    .collect(),
+                ready: tracker.selected && !tracker.tracker_busy(true),
+                feedback: tracker.widget_feedback[1],
+            };
+            (
+                owner.generation(),
+                play.link.boss_encounter_panel(),
+                tracking,
+            )
+        });
     if snapshot.0 == panel {
         return;
     }
@@ -48,7 +87,7 @@ fn project(
     for root in &roots {
         commands.entity(root).despawn();
     }
-    let Some((_, panel)) = panel else {
+    let Some((generation, panel, tracking)) = panel else {
         return;
     };
     let root = commands
@@ -170,6 +209,108 @@ fn project(
     }
     commands.entity(root).add_child(row);
     commands.entity(root).add_child(label);
+    track_toggles(&mut commands, &skins, root, generation, &panel, &tracking);
+}
+/// Tibia's "Track kills" checkbox on each boss entry; the server takes a Bosstiary tracker
+/// change only after the boss's first credited kill.
+fn track_toggles(
+    commands: &mut Commands,
+    skins: &Skins,
+    root: Entity,
+    generation: u64,
+    panel: &oteryn_client_ui::boss_encounter::BossEncounterPanel,
+    tracking: &Tracking,
+) {
+    if let Some(feedback) = tracking.feedback {
+        let line = commands
+            .spawn((
+                Text::new(feedback),
+                TextFont {
+                    font: skins.font.clone().into(),
+                    font_size: 15.0.into(),
+                    ..default()
+                },
+            ))
+            .id();
+        commands.entity(root).add_child(line);
+    }
+    for entry in catalogue_cards(panel) {
+        let tracked = tracking.keys.contains(&entry.key);
+        let row = commands
+            .spawn(Node {
+                column_gap: px(6.),
+                align_items: AlignItems::Center,
+                ..default()
+            })
+            .id();
+        let name = commands
+            .spawn((
+                Text::new(entry.name.clone()),
+                TextFont {
+                    font: skins.font.clone().into(),
+                    font_size: 15.0.into(),
+                    ..default()
+                },
+            ))
+            .id();
+        let button = commands
+            .spawn((
+                oteryn_client_ui_bevy::button(skins.buttons.clone(), 140.),
+                TrackToggle {
+                    generation,
+                    key: entry.key.clone(),
+                    track: !tracked,
+                },
+            ))
+            .observe(track)
+            .id();
+        if !tracking.ready || entry.kills == 0 {
+            commands
+                .entity(button)
+                .insert(bevy::ui::InteractionDisabled);
+        }
+        let caption = commands
+            .spawn((
+                Text::new(if tracked {
+                    "Stop tracking kills"
+                } else {
+                    "Track kills"
+                }),
+                TextFont {
+                    font: skins.font.clone().into(),
+                    font_size: 15.0.into(),
+                    ..default()
+                },
+            ))
+            .id();
+        commands.entity(button).add_child(caption);
+        commands.entity(row).add_children(&[name, button]);
+        commands.entity(root).add_child(row);
+    }
+}
+fn track(
+    event: On<Activate>,
+    toggles: Query<&TrackToggle>,
+    owner: NonSend<HostOwner>,
+    guard: super::modal::ModalGuard,
+) {
+    let Ok(toggle) = toggles.get(event.entity) else {
+        return;
+    };
+    if guard.allows(event.entity)
+        && owner.phase == Phase::Playing
+        && owner.generation() == toggle.generation
+        && !owner.modal_active()
+        && let Some(play) = &owner.play
+    {
+        let intent = if toggle.track {
+            oteryn_client_ui::cyclopedia_tracker::Intent::Add
+        } else {
+            oteryn_client_ui::cyclopedia_tracker::Intent::Remove
+        };
+        play.link
+            .cyclopedia_tracker_change(true, intent, &toggle.key);
+    }
 }
 fn activate(
     event: On<Activate>,
@@ -540,6 +681,144 @@ mod tests {
         );
         outbox.bevy_bosstiary_result(&accepted(slots(["test:boss", ""]).encode().ok_or("slots")?));
         assert!(window_text(&mut app).contains("> Slot 1: Confirmed boss | +4% equipment loot"));
+        Ok(())
+    }
+    #[test]
+    fn bosstiary_entry_track_kills_toggle_adds_and_removes_the_boss_on_the_tracker()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::combat_input::PlayCommand;
+        use oteryn_client_runtime::cyclopedia_tracker::{
+            TrackerAction, TrackerEntry, TrackerRequest, TrackerSnapshot, encode_domain_snapshot,
+            encode_request, encode_snapshot,
+        };
+        let tracker = |keys: &[&str]| TrackerSnapshot {
+            boss: true,
+            entries: keys
+                .iter()
+                .map(|key| TrackerEntry {
+                    creature_key: (*key).into(),
+                    kill_count: 1,
+                    thresholds: [5, 10, 20],
+                    completed: false,
+                })
+                .collect(),
+        };
+        let mut owner = HostOwner::new(None)?;
+        let (link, mut commands, outbox) = crate::play::play_channel();
+        link.use_shared_frontend();
+        outbox.bevy_bosstiary_initialize();
+        outbox.bevy_cyclopedia_tracker_initialize();
+        let view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+        owner.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+        owner.phase = Phase::Playing;
+        crate::bevy_shell::ui::toolbar::open_toolbar(
+            &mut owner,
+            crate::bevy_shell::ui::Control::Panel("bosstiary"),
+        );
+        assert!(matches!(commands.try_recv()?, PlayCommand::Feature(c) if c.kind == 133));
+        let entry = |key: &str, name: &str, kills| {
+            oteryn_client_runtime::boss_encounter::catalogue::Entry {
+                key: key.into(),
+                name: name.into(),
+                category: 1,
+                kills,
+                thresholds: [5, 10, 20],
+                points: [10, 30, 60],
+                look: 1,
+                object: false,
+            }
+        };
+        let page = oteryn_client_runtime::boss_encounter::catalogue::Page {
+            next: None,
+            points: 10,
+            entries: vec![
+                entry("oteryn:creature.ferumbras", "Ferumbras", 1),
+                entry("oteryn:creature.morgaroth", "Morgaroth", 0),
+            ],
+        };
+        outbox.bevy_bosstiary_result(&accepted(page.encode().ok_or("catalogue")?));
+        // The login join snapshot of domain 98: nothing tracked yet.
+        outbox.bevy_cyclopedia_tracker_push(
+            encode_domain_snapshot(
+                &TrackerSnapshot {
+                    boss: false,
+                    entries: vec![],
+                },
+                &tracker(&[]),
+            )
+            .ok_or("domain snapshot")?,
+        );
+        let mut app = App::new();
+        app.add_plugins((
+            MinimalPlugins,
+            bevy::asset::AssetPlugin::default(),
+            oteryn_client_ui_bevy::GlobalUiPlugin,
+        ))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .insert_non_send(owner)
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+        install(&mut app);
+        app.update();
+        let toggle = |app: &mut App,
+                      key: &str|
+         -> Result<(Entity, bool, bool), Box<dyn std::error::Error>> {
+            app.update();
+            let (entity, track) = app
+                .world_mut()
+                .query::<(Entity, &TrackToggle)>()
+                .iter(app.world())
+                .find_map(|(entity, toggle)| (toggle.key == key).then_some((entity, toggle.track)))
+                .ok_or("track toggle")?;
+            let disabled = app
+                .world()
+                .get::<bevy::ui::InteractionDisabled>(entity)
+                .is_some();
+            Ok((entity, track, disabled))
+        };
+        // No kill of Morgaroth yet: the server would refuse, so the toggle is disabled.
+        assert!(toggle(&mut app, "oteryn:creature.morgaroth")?.2);
+        let (entity, track, disabled) = toggle(&mut app, "oteryn:creature.ferumbras")?;
+        assert!(track && !disabled);
+        assert!(window_text(&mut app).contains("Track kills"));
+        app.world_mut().trigger(Activate { entity });
+        let PlayCommand::Feature(add) = commands.try_recv()? else {
+            return Err("tracker add".into());
+        };
+        assert_eq!((add.capability, add.kind), (197, 384));
+        assert_eq!(
+            Some(add.payload),
+            encode_request(&TrackerRequest::Change {
+                action: TrackerAction::Add,
+                creature_key: "oteryn:creature.ferumbras".into(),
+            })
+        );
+        outbox.bevy_cyclopedia_tracker_result(&accepted(
+            encode_snapshot(&tracker(&["oteryn:creature.ferumbras"])).ok_or("snapshot")?,
+        ));
+        let (entity, track, _) = toggle(&mut app, "oteryn:creature.ferumbras")?;
+        assert!(!track);
+        assert!(window_text(&mut app).contains("Stop tracking kills"));
+        app.world_mut().trigger(Activate { entity });
+        let PlayCommand::Feature(remove) = commands.try_recv()? else {
+            return Err("tracker remove".into());
+        };
+        assert_eq!(
+            Some(remove.payload),
+            encode_request(&TrackerRequest::Change {
+                action: TrackerAction::Remove,
+                creature_key: "oteryn:creature.ferumbras".into(),
+            })
+        );
+        outbox.bevy_cyclopedia_tracker_result(
+            &oteryn_client_runtime::raw_feature::GatedCommandResult {
+                command_id: 2,
+                server_sequence: 2,
+                status: oteryn_session::CommandStatus::Rejected,
+                payload: Vec::new(),
+            },
+        );
+        assert!(window_text(&mut app).contains("The server refused the tracker action"));
         Ok(())
     }
 }
