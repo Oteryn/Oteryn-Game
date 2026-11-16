@@ -71,7 +71,7 @@ jobs:
         id: plan
         env:
           SET: ${{ inputs.set || 'full' }}
-          GROUPS: ${{ inputs.groups }}
+          SHARD_GROUPS: ${{ inputs.groups }}
           ROWS: ${{ inputs.rows }}
           BATCH: ${{ inputs.batch || '10' }}
           BASIC: ${{ inputs.basic }}
@@ -79,7 +79,7 @@ jobs:
           GAME_PLATFORM: ${{ inputs.game_platform }}
         run: |
           set -euo pipefail
-          python3 tools/qualification/node_boot/matrix.py plan --set "$SET" --groups "$GROUPS" --rows "$ROWS" \
+          python3 tools/qualification/node_boot/matrix.py plan --set "$SET" --groups "$SHARD_GROUPS" --rows "$ROWS" \
             --batch "$BATCH" --basic "$BASIC" --spells "$SPELLS" --game-platform "$GAME_PLATFORM" > "$RUNNER_TEMP/shards.json"
           printf 'shards=%s\n' "$(cat "$RUNNER_TEMP/shards.json")" >> "$GITHUB_OUTPUT"
           python3 -c 'import json,sys; [print(s["name"], s["entry"], s["env"]) for s in json.load(open(sys.argv[1]))]' \
@@ -106,11 +106,6 @@ jobs:
         env:
           EXPECTED_SHA: ${{ github.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
-
-      - name: Select shard
-        env:
-          SHARD_JSON: ${{ toJSON(matrix.shard) }}
-        run: python3 tools/qualification/node_boot/matrix.py export-env "$SHARD_JSON" | tee -a "$GITHUB_ENV"
 
       - name: Check out exact public Platform producer
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -152,10 +147,21 @@ jobs:
           python3 tools/qualification/node_boot/test_diagnostics.py
           echo 'NODE_BOOT_EVIDENCE static_validation=PASS shell=parsed'
 
+      # Shard knobs enter the environment only after the harness self-tests ran clean.
+      - name: Select shard
+        env:
+          SHARD_JSON: ${{ toJSON(matrix.shard) }}
+        run: |
+          set -euo pipefail
+          python3 tools/qualification/node_boot/matrix.py export-env "$SHARD_JSON" > "$RUNNER_TEMP/shard.env"
+          cat "$RUNNER_TEMP/shard.env" | tee -a "$GITHUB_ENV"
+
       - name: Run node boot shard
         env:
           PLATFORM_SOURCE: ${{ github.workspace }}/_platform
         run: |
+          # A failing shard still writes result.json, so no errexit here.
+          set +e
           set -uo pipefail
           logs="$RUNNER_TEMP/node-boot-failure-logs"
           mkdir -p "$logs" "$RUNNER_TEMP/node-boot-shard"
@@ -163,10 +169,11 @@ jobs:
           started=$SECONDS
           if [[ "$SHARD_ENTRY" == game_platform ]]; then
             bash tools/qualification/game_platform/run.sh | tee "$evidence"
+            code=${PIPESTATUS[0]}
           else
             NODE_BOOT_FAILURE_LOG_DIR="$logs" bash tools/qualification/node_boot/run.sh | tee "$evidence"
+            code=${PIPESTATUS[0]}
           fi
-          code=${PIPESTATUS[0]}
           grep -E '^(NODE_BOOT_EVIDENCE |SEAM_EVIDENCE |NODE_BOOT_RESULT=|GAME_PLATFORM_RESULT=)' "$evidence" >> "$GITHUB_STEP_SUMMARY" || true
           python3 tools/qualification/node_boot/matrix.py extract "$evidence" "$RUNNER_TEMP/node-boot-shard/result.json" \
             --shard "$SHARD_NAME" --entry "$SHARD_ENTRY" --exit-code "$code" --seconds "$((SECONDS - started))"
