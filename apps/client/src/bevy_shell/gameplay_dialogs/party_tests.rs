@@ -279,6 +279,7 @@ fn combined_menu_preserves_base_look_and_real_name_and_old_choices_cannot_replac
                 report: None,
                 trade: None,
                 browse: None,
+                npc: None,
             },
         );
     }
