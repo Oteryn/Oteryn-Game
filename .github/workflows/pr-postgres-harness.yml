@@ -688,6 +688,8 @@ jobs:
 
       - name: Run registered PostgreSQL E2E targets
         if: needs.build.outputs.empty != 'true'
+        # Tee the run output so a failure step can list every failed test of this partition.
+        shell: bash --noprofile --norc -c 'bash --noprofile --norc -eo pipefail "$0" 2>&1 | tee -a "$RUNNER_TEMP/pg-nextest.log"; exit "${PIPESTATUS[0]}"' {0}
         run: |
           set -euo pipefail
           mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-e2e.filters"
@@ -698,6 +700,8 @@ jobs:
 
       - name: Run PostgreSQL-backed library tests
         if: ${{ !cancelled() && steps.partition.outcome == 'success' }}
+        # Tee the run output so a failure step can list every failed test of this partition.
+        shell: bash --noprofile --norc -c 'bash --noprofile --norc -eo pipefail "$0" 2>&1 | tee -a "$RUNNER_TEMP/pg-nextest.log"; exit "${PIPESTATUS[0]}"' {0}
         run: |
           set -euo pipefail
           mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib.filters"
@@ -705,6 +709,30 @@ jobs:
           "$PG_RUN" cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" \
             --workspace-remap "$PG_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \
             --no-fail-fast "${filters[@]}"
+
+      # --no-fail-fast runs every planned test; this lists each failed one with a filter that
+      # reruns exactly it, so a fix can be checked without the whole partition.
+      - name: List failed PostgreSQL tests
+        if: ${{ failure() && steps.partition.outcome == 'success' }}
+        env:
+          LABEL: ${{ matrix.partition }}
+        run: |
+          set -uo pipefail
+          log="$RUNNER_TEMP/pg-nextest.log"
+          test -f "$log" || exit 0
+          failed="$(sed 's/\x1b\[[0-9;]*m//g' "$log" \
+            | grep -E '^[[:space:]]+(FAIL|TIMEOUT|SIGSEGV|SIGABRT|SIGKILL|ABORT|LEAK-FAIL)[[:space:]]+\[' \
+            | awk '{print $(NF-1), $NF}' | sort -u)"
+          test -n "$failed" || exit 0
+          {
+            echo "### Failed PostgreSQL tests, partition $LABEL"
+            echo
+            echo '```'
+            while read -r binary test; do
+              echo "--filterset 'binary_id(=$binary) & test(=$test)'"
+            done <<< "$failed"
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Stop ephemeral PostgreSQL 18
         if: always() && runner.environment == 'self-hosted'

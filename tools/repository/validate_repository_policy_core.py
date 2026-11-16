@@ -542,7 +542,7 @@ def main() -> int:
             ),
             "rust_linux": (
                 "    name: Merge Queue / Rust Linux workspace\n",
-                "      fail-fast: true\n",
+                "      fail-fast: false\n",
                 "        shard: [lint, lib-content, lib-rest, integration-heavy, integration-rest, build-smoke]\n",
                 "cargo +1.100.0 clippy --locked --workspace --all-targets -- -D warnings",
                 "python tools/repository/test_check_duplicate_test_sources.py",
