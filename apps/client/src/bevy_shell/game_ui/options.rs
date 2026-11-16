@@ -14,6 +14,7 @@ use oteryn_client_ui_bevy as source;
 mod audio_device;
 mod audio_feedback;
 mod commands;
+mod conditions;
 #[cfg(test)]
 mod frame_tests;
 mod keys;

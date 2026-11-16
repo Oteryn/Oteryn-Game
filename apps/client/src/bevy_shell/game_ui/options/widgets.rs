@@ -309,6 +309,9 @@ pub(super) fn page(
     if page == Page::Sound {
         super::audio_device::build(commands, parent, skins, draft);
     }
+    if page == Page::Hud {
+        super::conditions::build(commands, parent, skins, draft);
+    }
     if page == Page::Screenshots {
         super::screenshots::build(commands, parent, skins, draft);
     }
