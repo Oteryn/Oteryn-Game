@@ -33,6 +33,20 @@ for name in ('oteryn-game-server', 'oteryn-game-ops', 'oteryn-game-migrate'):
 (out / 'artifacts.jsonl').unlink()
 PY_ARTIFACT
 done
+# The full-manifest preflight also needs a test harness without invoking Cargo on shards.
+cargo +1.100.0 test --locked -p oteryn-gameplay-content --lib --no-run --message-format=json > "$OUT/spell-artifacts.jsonl"
+python3 - "$OUT" <<'PY_SPELL'
+import json, pathlib, shutil, sys
+out = pathlib.Path(sys.argv[1])
+artifacts = [json.loads(line) for line in (out / 'spell-artifacts.jsonl').read_text().splitlines()]
+tests = [a['executable'] for a in artifacts if a.get('reason') == 'compiler-artifact'
+         and a.get('target', {}).get('name') == 'oteryn_gameplay_content'
+         and 'lib' in a['target']['kind'] and a.get('profile', {}).get('test') and a.get('executable')]
+if len(tests) != 1:
+    raise SystemExit(f'expected one content lib test artifact, got {len(tests)}')
+shutil.copy2(tests[0], out / 'spell-map-lib-test')
+(out / 'spell-artifacts.jsonl').unlink()
+PY_SPELL
 cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler -- compile-regions "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$OUT/world/world.otwb" "$NODE_BOOT_WORLD_REGIONS" > "$OUT/world/world-compile.json"
 python3 - "$OUT/manifest.json" "$SOURCE_SHA" "$NODE_BOOT_WORLD_REGIONS" <<'PY_MANIFEST'
 import json, sys

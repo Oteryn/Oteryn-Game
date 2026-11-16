@@ -170,8 +170,18 @@ if [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD 2>/dev/null)" != "$NODE_BOOT_P
 fi
 if [[ "$NODE_BOOT_SPELLS" == 1 && "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
   # Execute the existing compile/decode/stage qualification before creating services.
+  if [[ -n "${NODE_BOOT_PREBUILT_DIR:-}" ]]; then
+    ( cd "$GAME_SOURCE/crates/gameplay/content"
+      CARGO_MANIFEST_DIR="$GAME_SOURCE/crates/gameplay/content" \
+      OTERYN_FULL_SPELL_TEST_MANIFEST="$NODE_BOOT_SPELL_MANIFEST" \
+      RUST_MIN_STACK="${RUST_MIN_STACK:-16777216}" \
+        "$NODE_BOOT_PREBUILT_DIR/spell-map-lib-test" \
+        content::native_gameplay::tests::actual_full_manifest_qualifies_source_world_and_all_owner_profiles \
+        --ignored --exact --nocapture )
+  else
   RUST_MIN_STACK="${RUST_MIN_STACK:-16777216}" \
     bash "$GAME_SOURCE/tools/qualification/spells/run.sh" map "$NODE_BOOT_SPELL_MANIFEST"
+  fi
 fi
 
 WORK="$(mktemp -d "${RUNNER_TEMP:-/tmp}/node-boot.XXXXXX")"
