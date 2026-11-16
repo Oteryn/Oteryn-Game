@@ -143,7 +143,9 @@ pub(in crate::play) fn tick(mailbox: &mut Mailbox, commands: &UnboundedSender<Pl
     };
     let handle = handle.get();
     let settled = match properties.mail_inscription.known {
-        Known::Read { handle: read, .. } | Known::Refused(read) => read == handle,
+        Known::Read { handle: read, .. } | Known::Refused(read) | Known::TooLong(read) => {
+            read == handle
+        }
         Known::Unread | Known::Reading(_) => false,
     };
     if !settled {
@@ -170,7 +172,7 @@ pub(in crate::play) fn inscription_result(
             if !oteryn_client_ui::modal_dialogs::TextEditor::accepts(&reply.text, FIELD_BYTES) =>
         {
             if let Known::Read { handle, .. } = properties.mail_inscription.known {
-                properties.mail_inscription.known = Known::Refused(handle);
+                properties.mail_inscription.known = Known::TooLong(handle);
             }
             tr!("The letter text is too long").into()
         }
@@ -182,7 +184,7 @@ pub(in crate::play) fn inscription_result(
             panel.fields[2] = reply.text;
             String::new()
         }
-        Some(_) => tr!("The item's text was read; press Write again to replace it").into(),
+        Some(_) => tr!("The item's text was read; press Write to replace it").into(),
         None => tr!("The server refused to read the item's text").into(),
     };
 }

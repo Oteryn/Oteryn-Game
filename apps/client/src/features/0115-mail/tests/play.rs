@@ -506,7 +506,7 @@ fn inscription_read_keeps_typed_text_and_asks_for_the_dropped_write_again() -> R
     let read = sent_feature(&mut incoming)?;
     outbox.properties_result(&read, &inscription_reply("old text")?);
     assert_eq!(link.mail_panel().fields[2], "typed letter");
-    assert_eq!(link.mail_panel().feedback, "The item's text was read; press Write again to replace it");
+    assert_eq!(link.mail_panel().feedback, "The item's text was read; press Write to replace it");
     link.mail_request(Intent::Write);
     let write = sent_feature(&mut incoming)?;
     assert_eq!(
@@ -536,6 +536,21 @@ fn inscription_read_at_the_form_byte_bound_fills_the_editor_and_beyond_blocks_wr
     link.mail_edit(2, "replacement".into());
     link.mail_request(Intent::Write);
     assert!(incoming.try_recv().is_err(), "an unshown text is never replaced");
-    assert!(!link.mail_panel().feedback.is_empty());
+    assert_eq!(link.mail_panel().feedback, "The letter text is too long");
+    Ok(())
+}
+
+#[test]
+fn inscription_read_opened_for_an_item_keeps_typed_text_and_prompts_write() -> Result<(), Error> {
+    let (link, mut incoming, outbox) = writing_window(true);
+    link.mail_edit(0, "7".into());
+    link.mail_edit(2, "typed letter".into());
+    link.mail_write_item(7.try_into()?);
+    let read = sent_feature(&mut incoming)?;
+    outbox.properties_result(&read, &inscription_reply("old text")?);
+    assert_eq!(link.mail_panel().fields[2], "typed letter");
+    assert_eq!(link.mail_panel().feedback, "The item's text was read; press Write to replace it");
+    assert!(!link.mail_panel().feedback.contains("again"));
+    assert!(incoming.try_recv().is_err());
     Ok(())
 }

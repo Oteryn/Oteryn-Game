@@ -78,3 +78,20 @@ fn without_the_capability_no_read_is_sent_and_an_empty_write_is_refused() {
     assert!(matches!(write_check(&state, 7, ""), WriteCheck::Refused(_)));
     assert_eq!(write_check(&state, 7, "typed text"), WriteCheck::Allowed);
 }
+
+#[test]
+fn an_unshown_too_long_text_blocks_only_the_same_items_write() {
+    let state = Inscription {
+        selected: true,
+        known: Known::TooLong(7),
+    };
+    assert_eq!(
+        write_check(&state, 7, "replacement"),
+        WriteCheck::Refused("The letter text is too long")
+    );
+    assert_eq!(
+        write_check(&state, 7, ""),
+        WriteCheck::Refused("The letter text is too long")
+    );
+    assert_eq!(write_check(&state, 8, "other item"), WriteCheck::Read);
+}

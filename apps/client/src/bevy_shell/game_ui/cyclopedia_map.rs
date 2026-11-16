@@ -179,11 +179,13 @@ fn project(
     if state.snapshot.as_ref() == Some(&panel) {
         return;
     }
+    // Let queued edits reach the old editor before preserving its draft and replacing it.
+    let gold = state.root.and_then(|_| donation.single().ok());
+    if gold.is_some_and(|gold| gold.pending_paste.is_some() || !gold.pending_edits.is_empty()) {
+        return;
+    }
     // The typed gold survives a redraw of the same window; only Donate submits it.
-    let draft = state
-        .root
-        .and_then(|_| donation.single().ok())
-        .map(|gold| gold.value().to_string());
+    let draft = gold.map(|gold| gold.value().to_string());
     remove_root(&mut state, &mut commands, &mut focus, &parents);
     let pressed = state.donate == Some(state.serial);
     state.serial = state.serial.wrapping_add(1);

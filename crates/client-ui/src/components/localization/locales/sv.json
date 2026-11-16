@@ -39,7 +39,7 @@
  "Skill Order": "Färdighetsordning",
  "Client Language (used after the client restarts)": "Klientspråk (används efter att klienten startats om)",
  "Artwork exceeds the preview bound": "Grafiken överskrider förhandsvisningens gräns",
- "The item's text was read; press Write again to replace it": "Föremålets text lästes; tryck Skriv igen för att ersätta den",
+ "The item's text was read; press Write to replace it": "Föremålets text lästes; tryck Skriv för att ersätta den",
  "Reading the item's text": "Läser föremålets text",
  "The server refused to read the item's text": "Servern vägrade läsa föremålets text",
  "The item's current text is unknown; an empty text would erase it": "Föremålets nuvarande text är okänd; en tom text skulle radera den",

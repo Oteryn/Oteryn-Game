@@ -39,7 +39,7 @@
  "Skill Order": "Skill Order",
  "Client Language (used after the client restarts)": "Client Language (used after the client restarts)",
  "Artwork exceeds the preview bound": "Artwork exceeds the preview bound",
- "The item's text was read; press Write again to replace it": "The item's text was read; press Write again to replace it",
+ "The item's text was read; press Write to replace it": "The item's text was read; press Write to replace it",
  "Reading the item's text": "Reading the item's text",
  "The server refused to read the item's text": "The server refused to read the item's text",
  "The item's current text is unknown; an empty text would erase it": "The item's current text is unknown; an empty text would erase it",

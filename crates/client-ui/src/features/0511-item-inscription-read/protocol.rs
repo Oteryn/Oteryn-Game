@@ -20,6 +20,9 @@ pub enum Known {
     },
     /// The server refused to read this handle.
     Refused(u64),
+    /// The server's text of this handle exceeds the writing window and cannot be shown,
+    /// so it is never replaced.
+    TooLong(u64),
 }
 
 /// Whether a Write of `text` to an item may be sent.
@@ -103,6 +106,9 @@ pub fn write_check(state: &Inscription, handle: u64, text: &str) -> WriteCheck {
             } else {
                 WriteCheck::Allowed
             }
+        }
+        Known::TooLong(read) if read == handle => {
+            WriteCheck::Refused(tr!("The letter text is too long"))
         }
         Known::Refused(refused) if refused == handle => {
             WriteCheck::Refused(tr!("The server refused to read the item's text"))

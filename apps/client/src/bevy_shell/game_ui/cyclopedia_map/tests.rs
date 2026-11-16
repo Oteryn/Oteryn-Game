@@ -14,6 +14,7 @@ fn fixture(link: crate::play::PlayLink) -> Result<App, Box<dyn std::error::Error
     app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
         .init_asset::<Font>()
         .init_asset::<Image>()
+        .add_plugins(bevy::text::TextPlugin)
         .init_resource::<bevy::input_focus::InputFocus>()
         .insert_non_send(owner)
         .add_systems(Startup, crate::bevy_shell::ui::setup);
@@ -478,6 +479,8 @@ fn cyclopedia_map_donate_pressed_before_a_map_update_is_sent_after_the_redraw()
     {
         *text = EditableText::new("500");
     }
+    // Settle the constructor's queued cursor move before pressing Donate.
+    app.update();
     let entity = app
         .world_mut()
         .query::<(Entity, &Action)>()
@@ -575,5 +578,58 @@ fn cyclopedia_map_floor_controls_reach_every_region_atlas_floor()
     press(&mut app, Kind::Floor { previous: true })?;
     assert!(has_text(&mut app, "Harbour > Quays [#2]"));
     assert!(rx.try_recv().is_err(), "floor selection stays local");
+    Ok(())
+}
+
+#[test]
+fn cyclopedia_map_donate_preserves_pending_edits_when_the_snapshot_changes()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::cyclopedia_map as map;
+    let (mut app, mut rx, _outbox) = ready()?;
+    let field = app
+        .world_mut()
+        .query_filtered::<Entity, With<Donation>>()
+        .single(app.world())?;
+    {
+        let mut text = app
+            .world_mut()
+            .get_mut::<EditableText>(field)
+            .ok_or("gold")?;
+        *text = EditableText::new("75");
+        text.queue_edit(bevy::text::TextEdit::Insert("0".into()));
+    }
+    let button = app
+        .world_mut()
+        .query::<(Entity, &Action)>()
+        .iter(app.world())
+        .find_map(|(e, a)| (a.kind == Kind::Explore(Intent::Donate)).then_some(e))
+        .ok_or("Donate")?;
+    app.world_mut().trigger(Activate { entity: button });
+    let serial = app.world().resource::<State>().serial;
+    let root = app.world().resource::<State>().root;
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .cyclopedia_map_edit(0, "1".into());
+    app.update();
+    assert_eq!(
+        app.world().resource::<State>().serial,
+        serial,
+        "pending edits defer redraw"
+    );
+    assert_eq!(app.world().resource::<State>().root, root);
+    assert_eq!(gold(&mut app)?, "750");
+    assert!(rx.try_recv().is_err());
+    app.update();
+    assert_ne!(app.world().resource::<State>().serial, serial);
+    let donate = feature(&mut rx)?;
+    assert_eq!(
+        (donate.kind, &donate.payload),
+        (73, &map::request(4, 750).map_err(|e| format!("{e:?}"))?.1)
+    );
+    assert!(rx.try_recv().is_err());
     Ok(())
 }

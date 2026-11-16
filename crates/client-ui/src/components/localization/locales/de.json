@@ -39,7 +39,7 @@
  "Skill Order": "Fertigkeitsreihenfolge",
  "Client Language (used after the client restarts)": "Client-Sprache (gilt nach dem Neustart des Clients)",
  "Artwork exceeds the preview bound": "Grafik überschreitet die Vorschaugrenze",
- "The item's text was read; press Write again to replace it": "Der Text des Gegenstands wurde gelesen; drücke erneut Schreiben, um ihn zu ersetzen",
+ "The item's text was read; press Write to replace it": "Der Text des Gegenstands wurde gelesen; drücke Schreiben, um ihn zu ersetzen",
  "Reading the item's text": "Der Text des Gegenstands wird gelesen",
  "The server refused to read the item's text": "Der Server hat das Lesen des Gegenstandstextes abgelehnt",
  "The item's current text is unknown; an empty text would erase it": "Der aktuelle Text des Gegenstands ist unbekannt; ein leerer Text würde ihn löschen",
