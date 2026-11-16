@@ -20,7 +20,7 @@ Column "client layer" names what decodes/reduces the reply on the client side:
 that the client crates re-export.
 
 "Verified how": `read` = traced by reading the phase against the PW.md links; `compiled` =
-`cargo test -p oteryn-game-server --lib --no-run` on this branch (result in the commit that follows the build). No node-boot run was
+`cargo test -p oteryn-game-server --lib --no-run` built it on this branch (`cargo test -p oteryn-game-server --lib qualification`: 304 passed, 0 failed, 3 ignored pre-existing). No node-boot run was
 possible in this session (no node-boot world bundle/pin and Platform descriptor here), so no row
 below is claimed as passing at run time.
 
