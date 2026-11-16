@@ -1,5 +1,5 @@
 //! Timed outfit composition uses the same verified sheets as the world view.
-#[cfg(any(windows, feature = "bevy-shell"))]
+#[cfg(feature = "bevy-shell")]
 use crate::appearance_mount_binding as mount_binding;
 #[cfg(any(windows, feature = "bevy-shell"))]
 use oteryn_client_assets::{AppearanceIndex, AssetStore, Catalog, SpriteSheets};
@@ -11,6 +11,7 @@ use std::path::Path;
 pub struct Assets {
     index: AppearanceIndex,
     sheets: SpriteSheets,
+    #[cfg(feature = "bevy-shell")]
     mounts: Option<([u8; 32], std::collections::BTreeMap<String, u32>)>,
 }
 #[cfg(any(windows, feature = "bevy-shell"))]
@@ -27,6 +28,7 @@ impl Assets {
         let index = AppearanceIndex::load(&store, &catalog).map_err(|e| e.to_string())?;
         Ok(Self {
             index,
+            #[cfg(feature = "bevy-shell")]
             mounts: mount_binding::load(root).ok(),
             sheets: SpriteSheets::new(store, catalog),
         })
@@ -43,6 +45,7 @@ impl Assets {
         )?;
         Ok(pixels)
     }
+    #[cfg(feature = "bevy-shell")]
     pub fn draw_panel(
         &mut self,
         panel: &oteryn_client_ui::appearance::Panel,
