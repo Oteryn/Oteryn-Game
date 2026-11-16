@@ -475,8 +475,37 @@ fn house_browser_shows_and_closes_the_entrance_map_of_the_selected_row() -> Test
             "missing entrance map text: {expected}"
         );
     }
+    // The house list still names every row; only the map panel (caption -> header -> panel)
+    // must leave the other floor's entrance out.
+    let map = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| {
+            (text.0 == "House entrances — north up").then_some(parent.parent())
+        })
+        .and_then(|header| app.world().get::<ChildOf>(header))
+        .map(ChildOf::parent)
+        .ok_or("missing entrance map panel")?;
+    let on_map = app
+        .world()
+        .iter_entities()
+        .filter(|entity| {
+            std::iter::successors(Some(entity.id()), |id| {
+                app.world().get::<ChildOf>(*id).map(ChildOf::parent)
+            })
+            .any(|id| id == map)
+        })
+        .filter_map(|entity| entity.get::<Text>().map(|text| text.0.clone()))
+        .collect::<Vec<_>>();
     assert!(
-        !shown.iter().any(|text| text.contains("Cellar Flat")),
+        on_map
+            .iter()
+            .any(|text| text == "◆ 2: Harbour Home\n120,130,7"),
+        "the map panel holds the markers"
+    );
+    assert!(
+        !on_map.iter().any(|text| text.contains("Cellar Flat")),
         "an entrance on another floor stays off the map"
     );
     assert!(receiver.try_recv().is_err(), "the map sends no request");

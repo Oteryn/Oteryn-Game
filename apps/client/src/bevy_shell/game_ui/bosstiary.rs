@@ -445,7 +445,7 @@ mod tests {
             next: None,
             points: 10,
             entries: vec![oteryn_client_runtime::boss_encounter::catalogue::Entry {
-                key: "test:boss".into(),
+                key: "oteryn:creature.test_boss".into(),
                 name: "Confirmed boss".into(),
                 category: 1,
                 kills: 5,
@@ -478,7 +478,7 @@ mod tests {
             (
                 117,
                 178,
-                encode_boss_key("test:boss").map_err(|e| format!("{e:?}"))?
+                encode_boss_key("oteryn:creature.test_boss").map_err(|e| format!("{e:?}"))?
             )
         );
         outbox.bevy_bosstiary_result(&accepted(
@@ -492,7 +492,7 @@ mod tests {
         for (kind, intent) in [(179, Intent::Defeated), (180, Intent::Timeout)] {
             click(&mut app, Kind::Request(intent))?;
             assert!(
-                matches!(commands.try_recv()?, PlayCommand::Feature(c) if c.kind == kind && c.payload == encode_boss_key("test:boss").map_err(|e| format!("{e:?}"))?)
+                matches!(commands.try_recv()?, PlayCommand::Feature(c) if c.kind == kind && c.payload == encode_boss_key("oteryn:creature.test_boss").map_err(|e| format!("{e:?}"))?)
             );
             outbox.bevy_bosstiary_result(&accepted(
                 encode_boss_activity_reply(&BossActivityReply::Accepted {
@@ -536,11 +536,15 @@ mod tests {
             Some(equip.payload),
             BossSlotRequest::Detailed(Box::new(BossSlotRequest::Equip {
                 slot: 1,
-                boss: "test:boss".into(),
+                boss: "oteryn:creature.test_boss".into(),
             }))
             .encode()
         );
-        outbox.bevy_bosstiary_result(&accepted(slots(["test:boss", ""]).encode().ok_or("slots")?));
+        outbox.bevy_bosstiary_result(&accepted(
+            slots(["oteryn:creature.test_boss", ""])
+                .encode()
+                .ok_or("slots")?,
+        ));
         assert!(window_text(&mut app).contains("> Slot 1: Confirmed boss | +4% equipment loot"));
         Ok(())
     }

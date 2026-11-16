@@ -509,6 +509,8 @@ fn proficiency_shapes_slot_through_modify_rank_reshape_and_confirmed_clear() -> 
     };
     let (mut app, mut commands, outbox) = app()?;
     outbox.bevy_proficiency_state_initialize();
+    // Actions bind to the observed panel; let the window observe the selected capability.
+    app.update();
     click(&mut app, |kind| matches!(kind, Kind::Weapon(0)))?;
     let query = command(&mut commands)?;
     assert_eq!((query.capability, query.kind), (448, 732));

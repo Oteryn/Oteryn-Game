@@ -419,6 +419,36 @@ fn hireling_management_banker_button_opens_the_banker_service() -> TestResult {
         Modifiers::one(Modifier::Control).with(Modifier::Shift),
     )?;
     assert!(form_open(&app, "Hireling management")?);
+    // The window opens with a List query; its buttons wait for the server's answer.
+    let PlayCommand::Feature(list) = commands.try_recv()? else {
+        return Err("hireling management list query missing".into());
+    };
+    assert_eq!(list.capability, 250);
+    let mut hireling = [1; 16];
+    hireling[6] = 0x70;
+    hireling[8] = 0x80;
+    outbox.bevy_hireling_management_result(
+        &oteryn_client_runtime::raw_feature::GatedCommandResult {
+            command_id: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            server_sequence: 1,
+            payload: oteryn_client_ui::hireling_management::wire::Reply::State(vec![
+                oteryn_client_ui::hireling_management::wire::Entry {
+                    hireling,
+                    name: "Alice".into(),
+                    sex: 2,
+                    look_type: 1107,
+                    colors: [1, 2, 3, 4],
+                    skills: 15,
+                    outfits: 1,
+                    position: Some((7, 9, -1)),
+                },
+            ])
+            .encode()
+            .ok_or("hireling management state")?,
+        },
+    );
+    app.update();
     while commands.try_recv().is_ok() {}
     click(&mut app, Some(12))?;
     let PlayCommand::Hireling(command) = commands.try_recv()? else {
@@ -478,7 +508,10 @@ fn banker_summon_uses_the_adjacent_tile_the_player_picked() -> TestResult {
 
     click(&mut app, Some(0))?;
     assert!(commands.try_recv().is_err());
+    // The press is submitted in PostUpdate, after this frame's projection; the refusal
+    // text appears on the next frame.
     let refused = |app: &mut App| {
+        app.update();
         app.world_mut()
             .query::<&Text>()
             .iter(app.world())

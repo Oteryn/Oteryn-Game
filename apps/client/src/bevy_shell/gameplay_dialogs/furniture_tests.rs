@@ -200,6 +200,14 @@ fn wrap_on_clicked_item_lists_house_furniture_and_wraps_the_chosen_one() -> Resu
     let view = link.feature_form_view(window);
     assert!(view.open);
     assert!(view.text.contains("1. oven — Wrap"));
+    // The first press only reviews the exact wrap; the second press confirms and sends it.
+    link.feature_form_submit(window, 3, vec!["1".into()]);
+    assert!(commands.try_recv().is_err(), "the review sends nothing");
+    assert!(
+        link.house_furniture_panel()
+            .feedback
+            .contains("Press Wrap / place again to confirm")
+    );
     link.feature_form_submit(window, 3, vec!["1".into()]);
     let wrap = feature(&mut commands)?;
     assert_eq!(

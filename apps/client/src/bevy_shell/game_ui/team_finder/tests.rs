@@ -239,8 +239,19 @@ fn manage_team_decides_applicants_and_publishes_and_removes_the_listing() -> Res
         decode_query(&sent.payload).map_err(|error| format!("{error:?}"))?,
         TeamFinderQuery::Applicants { after: None }
     );
+    let listing = LeaderListing {
+        min_level: 10,
+        max_level: 100,
+        vocation_mask: 1,
+        slots: 4,
+        free_slots: 3,
+        party_members_join: true,
+        timestamp: 0,
+        target: TeamTarget::Hunt { kind: 7, area: 12 },
+    };
+    // The wire requires the leader's listing on any applicants page with members.
     let applicants = TeamFinderResult::Applicants {
-        listing: None,
+        listing: Some(listing),
         occupied_slots: 1,
         members: vec![Applicant {
             handle: 5,
@@ -268,24 +279,15 @@ fn manage_team_decides_applicants_and_publishes_and_removes_the_listing() -> Res
     reply(&outbox, vec![]);
     app.update();
     // An incomplete listing stays local and says why.
+    listing_texts(&mut app, [""; 9]);
     click(&mut app, Kind::Publish(Vec::new()))?;
     assert!(rx.try_recv().is_err());
     app.update();
     assert!(shown(&mut app, tr!("Enter a valid team listing")));
-    listing_texts(&mut app, ["10", "100", "0", "4", "3", "1", "2", "7", "12"]);
+    listing_texts(&mut app, ["10", "100", "1", "4", "3", "1", "2", "7", "12"]);
     click(&mut app, Kind::Publish(Vec::new()))?;
     let sent = command(&mut rx)?;
     assert_eq!((sent.capability, sent.command_type), (200, 390));
-    let listing = LeaderListing {
-        min_level: 10,
-        max_level: 100,
-        vocation_mask: 0,
-        slots: 4,
-        free_slots: 3,
-        party_members_join: true,
-        timestamp: 0,
-        target: TeamTarget::Hunt { kind: 7, area: 12 },
-    };
     assert_eq!(
         decode_upsert(&sent.payload).map_err(|error| format!("{error:?}"))?,
         listing

@@ -342,7 +342,7 @@ fn cyclopedia_map_bevy_resets_pois_donates_and_pages_the_region_atlas()
                 x: 100,
                 end: 103,
                 y: 100,
-                floor: 7,
+                floor: -7,
             }],
         })
         .map_err(|e| format!("{e:?}"))?,

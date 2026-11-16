@@ -68,13 +68,16 @@ impl PlayLink {
         if !oteryn_client_ui::weapon_proficiency::open_key(events) {
             return false;
         }
-        let mut mailbox = lock(&self.mailbox);
-        let panel = &mut mailbox.weapon_proficiency;
-        panel.open = true;
-        // Restart the catalogue walk without invalidating an in-flight page reply.
-        if !panel.pending {
-            panel.catalogue_offset = 0;
+        {
+            let mut mailbox = lock(&self.mailbox);
+            let panel = &mut mailbox.weapon_proficiency;
+            panel.open = true;
+            // Restart the catalogue walk without invalidating an in-flight page reply.
+            if !panel.pending {
+                panel.catalogue_offset = 0;
+            }
         }
+        // The request takes the mailbox lock itself; holding it here would self-deadlock.
         self.weapon_proficiency_request(Intent::Catalogue);
         true
     }
