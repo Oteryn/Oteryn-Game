@@ -42,7 +42,9 @@
         assert_eq!(first, retry);
         Ok(())
     }
-struct Peer;
+struct Peer {
+ reply_gate: std::sync::Arc<tokio::sync::Notify>,
+}
 impl crate::play::Stepper for Peer {
  fn market_selected(&self)->bool{true}
  async fn server_mechanic(&mut self,r:&oteryn_client_runtime::server_mechanic::ServerMechanicCommand)->Result<oteryn_session::GatedCommandResult,oteryn_session::SessionError>{
@@ -51,6 +53,7 @@ impl crate::play::Stepper for Peer {
   let r=wire::decode(&r.payload).map_err(|_|SessionError::SessionUnusable)?;
   let h=r.operation.iter().map(|b|format!("{b:02x}")).collect::<String>();let op=format!("{}-{}-{}-{}-{}",&h[..8],&h[8..12],&h[12..16],&h[16..20],&h[20..]);
   let view=serde_json::json!({"result":"ok","operation":op,"kind":"reserve","amount":r.amount,"price":r.price,"pending":false,"receipt":{"operation_id":op,"kind":"reserve","amount":r.amount.to_string(),"transferable_after":"70","non_transferable_after":"5","reserved_after":r.amount.to_string(),"occurred_at":"2026-11-09T00:00:00Z"}});
+  self.reply_gate.notified().await;
   Ok(oteryn_session::GatedCommandResult{command_id:1,server_sequence:1,status:CommandStatus::Accepted,payload:wire::encode_reply(&view.to_string()).map_err(|_|SessionError::SessionUnusable)?})
  }
  async fn serve(&mut self,duration:std::time::Duration)->Result<(),oteryn_session::SessionError>{tokio::time::sleep(duration).await;Ok(())}
@@ -64,10 +67,13 @@ fn coin_market_session_loop_applies_only_the_confirmed_server_receipt()->Result<
  std::thread::Builder::new().stack_size(128<<20).spawn(||{
   let runtime=oteryn_client_runtime::ClientRuntime::new()?;
   runtime.block_on(async{
-   let (link,incoming,outbox)=play_channel();let task=tokio::spawn(crate::play::run_session(Peer,incoming,outbox));
+   let reply_gate=std::sync::Arc::new(tokio::sync::Notify::new());
+   let (link,incoming,outbox)=play_channel();let task=tokio::spawn(crate::play::run_session(Peer { reply_gate: reply_gate.clone() },incoming,outbox));
    tokio::time::timeout(std::time::Duration::from_secs(3),async{while !link.market_panel().selected{tokio::task::yield_now().await;}}).await?;
    let fields=["30".into(),"100".into(),String::new()];link.coin_market_control(2,fields.clone());assert!(link.market_panel().coins.view.is_none());
    link.coin_market_control(6,fields);assert!(link.market_panel().coins.view.is_none());
+   assert!(link.market_panel().coins.pending.is_some());
+   reply_gate.notify_one();
    tokio::time::timeout(std::time::Duration::from_secs(3),async{while link.market_panel().coins.pending.is_some() || link.market_panel().coins.view.is_none(){tokio::task::yield_now().await;}}).await?;
    let panel=link.market_panel();assert!(panel.coins.confirmed.is_none());assert!(panel.coins.view.as_deref().is_some_and(|s|s.contains("Balance after: 75")));assert!(panel.coins.view.as_deref().is_some_and(|s|s.contains("Receipt:")));
    drop(link);task.await?;Ok::<_,Box<dyn std::error::Error+Send+Sync>>(())
