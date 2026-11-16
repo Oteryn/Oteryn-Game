@@ -1,3 +1,5 @@
+#[path = "editor.rs"]
+pub(in crate::play) mod editor;
 #[path = "metadata.rs"]
 mod metadata;
 use crate::play::{PlayLink, mailbox::lock};

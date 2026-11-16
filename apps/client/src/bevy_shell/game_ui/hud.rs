@@ -31,6 +31,7 @@ enum Command {
     Expert(u8),
     Skills,
     BattleList(usize),
+    BattleListEditor,
     Analyser(oteryn_client_ui::analyser::Tool),
 }
 #[derive(Component)]
@@ -257,6 +258,7 @@ fn activate(
         Command::BattleList(index) => {
             let _ = play.link.battle_select_list(index);
         }
+        Command::BattleListEditor => play.link.battle_list_editor_open(),
         Command::Analyser(tool) => {
             super::analyser::open(&owner, tool);
         }

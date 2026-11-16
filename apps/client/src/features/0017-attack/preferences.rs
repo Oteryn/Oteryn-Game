@@ -120,6 +120,8 @@ pub struct BattleListsState {
     pub dirty: bool,
     pub edit: u64,
     pub active: usize,
+    /// The list editor window is open; it always edits the active list.
+    pub editing: bool,
 }
 
 impl Default for BattleListsState {
@@ -129,6 +131,7 @@ impl Default for BattleListsState {
             dirty: false,
             edit: 0,
             active: 0,
+            editing: false,
         }
     }
 }

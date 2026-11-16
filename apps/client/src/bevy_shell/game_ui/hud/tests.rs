@@ -531,3 +531,28 @@ fn parity_a_battle_chord_and_stacked_row_preserve_exact_target() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn edit_lists_button_opens_the_battle_list_editor_form() -> TestResult {
+    let (mut app, _, _) = app()?;
+    let button = app
+        .world_mut()
+        .query::<(Entity, &HudAction)>()
+        .iter(app.world())
+        .find_map(|(entity, action)| {
+            matches!(action.command, Command::BattleListEditor).then_some(entity)
+        })
+        .ok_or("edit lists button")?;
+    app.world_mut().trigger(Activate { entity: button });
+    let owner = app.world().non_send::<HostOwner>();
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    let form = crate::play::FeatureForm::all()
+        .iter()
+        .copied()
+        .find(|form| form.title(link) == "Battle lists")
+        .ok_or("battle list form")?;
+    let view = link.feature_form_view(form);
+    assert!(view.open);
+    assert_eq!(view.fields.first().map(String::as_str), Some("Nearby"));
+    Ok(())
+}
