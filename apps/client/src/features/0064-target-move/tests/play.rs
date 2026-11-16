@@ -277,3 +277,262 @@ fn escape_without_combat_capability_only_stops_movement() -> Result<(), Box<dyn 
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+fn walk_reply(
+    outbox: &crate::play::Outbox,
+    disposition: oteryn_client_runtime::target_move::WalkDisposition,
+) {
+    use oteryn_client_runtime::target_move::{WalkDisposition, WalkResponse};
+    oteryn_client_ui::target_move::apply(
+        &mut super::super::mailbox::lock(&outbox.0).target_walk,
+        WalkResponse {
+            status: if disposition == WalkDisposition::Rejected {
+                CommandStatus::Rejected
+            } else {
+                CommandStatus::Accepted
+            },
+            disposition: Some(disposition),
+        },
+    );
+}
+
+fn own_at(outbox: &crate::play::Outbox, sequence: u64, x: i32) {
+    outbox.push(vec![oteryn_session::SessionEvent::WorldSpatial(
+        oteryn_session::AppliedDelta {
+            server_sequence: sequence,
+            base_revision: sequence,
+            new_revision: sequence + 1,
+            value: oteryn_session::WorldSpatialObservation {
+                content_generation: [0; 32],
+                actor_position: ActorPosition {
+                    x,
+                    y: 200,
+                    floor: 0,
+                },
+            },
+        },
+    )]);
+}
+
+/// The server's terminal refusal after a blocked step (`serve/target_move.rs` `no_way`).
+fn no_way(outbox: &crate::play::Outbox, sequence: u64) {
+    outbox.push(vec![oteryn_session::SessionEvent::TutorialNotice(
+        oteryn_session::AppliedDelta {
+            server_sequence: sequence,
+            base_revision: 0,
+            new_revision: 1,
+            value: oteryn_client_runtime::tutorial_notices::TutorialNotice::StatusText(
+                "There is no way.".into(),
+            ),
+        },
+    )]);
+}
+
+const GOAL: ActorPosition = ActorPosition {
+    x: 104,
+    y: 200,
+    floor: 0,
+};
+
+#[test]
+fn t14_click_walk_re_requests_the_same_goal_after_a_blocked_step_until_arrival()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::target_move::WalkDisposition;
+    let mut view = PlayView::new(TileCoord::new(100, 200), 0, &[])?;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.target_walk_initialize(true);
+    view.click(TileCoord::new(104, 200))?;
+    assert_eq!(view.tick(&link), Ok(()));
+    assert_eq!(commands.try_recv()?, PlayCommand::TargetWalk(GOAL));
+    walk_reply(&outbox, WalkDisposition::Accepted);
+    own_at(&outbox, 1, 101);
+    assert_eq!(view.tick(&link), Ok(()));
+    assert!(commands.try_recv().is_err());
+    // A blocked step: Tibia Global asks for a new route to the same destination.
+    no_way(&outbox, 2);
+    assert_eq!(view.tick(&link), Ok(()));
+    assert_eq!(commands.try_recv()?, PlayCommand::TargetWalk(GOAL));
+    walk_reply(&outbox, WalkDisposition::Accepted);
+    own_at(&outbox, 3, 104);
+    assert_eq!(view.tick(&link), Ok(()));
+    assert_eq!(link.target_walk_state().goal, None, "arrival ends the walk");
+    no_way(&outbox, 4);
+    assert_eq!(view.tick(&link), Ok(()));
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn t14_click_walk_retries_are_bounded_and_a_final_no_path_stops_them()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::target_move::WalkDisposition;
+    let mut view = PlayView::new(TileCoord::new(100, 200), 0, &[])?;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.target_walk_initialize(true);
+    view.click(TileCoord::new(104, 200))?;
+    assert_eq!(view.tick(&link), Ok(()));
+    assert_eq!(commands.try_recv()?, PlayCommand::TargetWalk(GOAL));
+    for sequence in 1..=oteryn_client_ui::target_move::MAX_WALK_RETRIES {
+        walk_reply(&outbox, WalkDisposition::Accepted);
+        no_way(&outbox, u64::from(sequence));
+        assert_eq!(view.tick(&link), Ok(()));
+        assert_eq!(commands.try_recv()?, PlayCommand::TargetWalk(GOAL));
+    }
+    walk_reply(&outbox, WalkDisposition::Accepted);
+    no_way(&outbox, 10);
+    assert_eq!(view.tick(&link), Ok(()));
+    assert!(commands.try_recv().is_err(), "the retries are bounded");
+    assert_eq!(link.target_walk_state().goal, None);
+
+    // A re-request the server answers with no path is final.
+    view.click(TileCoord::new(104, 200))?;
+    assert_eq!(view.tick(&link), Ok(()));
+    assert_eq!(commands.try_recv()?, PlayCommand::TargetWalk(GOAL));
+    walk_reply(&outbox, WalkDisposition::Accepted);
+    no_way(&outbox, 11);
+    assert_eq!(view.tick(&link), Ok(()));
+    assert_eq!(commands.try_recv()?, PlayCommand::TargetWalk(GOAL));
+    walk_reply(&outbox, WalkDisposition::NoPath);
+    no_way(&outbox, 12);
+    assert_eq!(view.tick(&link), Ok(()));
+    assert!(commands.try_recv().is_err());
+    assert_eq!(link.target_walk_state().goal, None);
+    Ok(())
+}
+
+#[test]
+fn t14_a_silent_server_cancel_re_requests_the_route_after_the_walk_stalls()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::target_move::WalkDisposition;
+    let mut view = PlayView::new(TileCoord::new(100, 200), 0, &[])?;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.target_walk_initialize(true);
+    view.click(TileCoord::new(104, 200))?;
+    assert_eq!(view.tick(&link), Ok(()));
+    assert_eq!(commands.try_recv()?, PlayCommand::TargetWalk(GOAL));
+    walk_reply(&outbox, WalkDisposition::Accepted);
+    own_at(&outbox, 1, 102);
+    assert_eq!(view.tick(&link), Ok(()));
+    assert!(commands.try_recv().is_err());
+    // The server dropped the walk without a notice; no step has arrived for the stall window.
+    let stalled = std::time::Instant::now()
+        .checked_sub(oteryn_client_ui::target_move::WALK_STALL)
+        .ok_or("clock")?;
+    super::super::mailbox::lock(&outbox.0)
+        .target_walk
+        .last_progress = Some(stalled);
+    assert_eq!(view.tick(&link), Ok(()));
+    assert_eq!(commands.try_recv()?, PlayCommand::TargetWalk(GOAL));
+    Ok(())
+}
+
+#[test]
+fn t14_user_input_ends_the_click_walk_and_its_retries() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::target_move::WalkDisposition;
+    let mut view = PlayView::new(TileCoord::new(100, 200), 0, &[])?;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.target_walk_initialize(true);
+    outbox.target_move_initialize(true);
+    view.click(TileCoord::new(104, 200))?;
+    assert_eq!(view.tick(&link), Ok(()));
+    assert_eq!(commands.try_recv()?, PlayCommand::TargetWalk(GOAL));
+    walk_reply(&outbox, WalkDisposition::Accepted);
+    assert!(view.target_move_input(
+        &link,
+        &[NormalizedInputEvent::Key {
+            code: KeyCode::ESCAPE,
+            modifiers: Modifiers::NONE,
+            state: ButtonState::Pressed,
+            repeat: false,
+        }]
+    ));
+    assert!(matches!(
+        commands.try_recv()?,
+        PlayCommand::ServerMechanic(_)
+    ));
+    no_way(&outbox, 1);
+    assert_eq!(view.tick(&link), Ok(()));
+    assert!(commands.try_recv().is_err());
+    assert_eq!(link.target_walk_state().goal, None);
+
+    // A manual step ends a walk as well.
+    view.click(TileCoord::new(104, 200))?;
+    assert_eq!(view.tick(&link), Ok(()));
+    assert_eq!(commands.try_recv()?, PlayCommand::TargetWalk(GOAL));
+    walk_reply(&outbox, WalkDisposition::Accepted);
+    view.arrow(StepDir::North);
+    assert_eq!(view.tick(&link), Ok(()));
+    assert_eq!(commands.try_recv()?, PlayCommand::Step(StepDir::North));
+    no_way(&outbox, 2);
+    assert_eq!(view.tick(&link), Ok(()));
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+/// Using or moving an object walks to it on the server; that walk replaces the click walk, so
+/// its "There is no way." must not re-request the old destination.
+#[test]
+fn t14_an_action_that_walks_to_its_object_ends_the_click_walk()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::world_interaction::{Action, Command, Target};
+    for (index, command) in [
+        PlayCommand::WorldContext(Command {
+            target: Target::Item(oteryn_session::ItemHandle::MIN),
+            action: Action::Use,
+            selection: None,
+        }),
+        PlayCommand::MoveItem(oteryn_client_runtime::inventory::MoveRequest {
+            source: oteryn_session::ItemHandle::MIN,
+            destination: oteryn_client_runtime::inventory::ItemMoveDestination::MainBackpack,
+            count: None,
+        }),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (link, commands, outbox) = play_channel();
+        // The session start re-initializes the walk state; the marker shows it has run.
+        super::super::mailbox::lock(&outbox.0).target_walk.retries = u8::MAX;
+        let walk_outbox = outbox.clone();
+        let fake = super::Fake {
+            serves: std::sync::Arc::default(),
+            fail_step: false,
+            fail_serve_after: usize::MAX,
+            queued: Vec::new(),
+            drained: std::sync::Arc::default(),
+            combats: std::sync::Arc::default(),
+            logouts: std::sync::Arc::default(),
+        };
+        let runtime = oteryn_client_runtime::ClientRuntime::new()?;
+        runtime.spawn(super::run_session(fake, commands, outbox))?;
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        while link.target_walk_state().retries == u8::MAX && std::time::Instant::now() < deadline {
+            std::thread::sleep(std::time::Duration::from_millis(1));
+        }
+        {
+            let mut mailbox = super::super::mailbox::lock(&link.mailbox);
+            mailbox.target_walk.selected = true;
+            assert_eq!(
+                oteryn_client_ui::target_move::request(&mut mailbox.target_walk, GOAL),
+                Some(GOAL)
+            );
+        }
+        walk_reply(
+            &walk_outbox,
+            oteryn_client_runtime::target_move::WalkDisposition::Accepted,
+        );
+        assert_eq!(link.target_walk_state().goal, Some(GOAL));
+        link.commands.send(command)?;
+        while link.target_walk_state().goal.is_some() && std::time::Instant::now() < deadline {
+            std::thread::sleep(std::time::Duration::from_millis(1));
+        }
+        assert_eq!(link.target_walk_state().goal, None, "command {index}");
+        runtime.shutdown(std::time::Duration::from_millis(250));
+    }
+    Ok(())
+}

@@ -68,6 +68,7 @@ macro_rules! dispatch {
         super::feature_0011_world_interaction::protocol::dispatch! {
             $command, $session, $outbox, $held, $publish;
             Ok(crate::combat_input::PlayCommand::MoveContainerContents(requests)) => {
+                $outbox.target_walk_replaced();
                 let result = async {
                     let mut last = None;
                     for request in requests {
@@ -84,6 +85,7 @@ macro_rules! dispatch {
                 }
             }
             Ok(crate::combat_input::PlayCommand::MoveItem(request)) => {
+                $outbox.target_walk_replaced();
                 match $session.move_item(request).await {
                     Ok(response) => {
                         $outbox.item_move_result(response);

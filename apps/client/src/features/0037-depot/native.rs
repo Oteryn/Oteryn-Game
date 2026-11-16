@@ -155,7 +155,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: tokio::sync::mpsc::UnboundedSender<
         let market = control(
             hwnd,
             "BUTTON",
-            tr!("Market (Ctrl+M)"),
+            tr!("Market"),
             37,
             [235, 490, 215, 28],
         );

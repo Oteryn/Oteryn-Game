@@ -26,11 +26,13 @@ pub fn preference_bindings() -> Result<Vec<PreferenceBinding>, PreferenceError> 
     Ok(bindings)
 }
 
-/// Features whose input chord belongs to a Global channel or help command by default; the
-/// player can still bind them, and the feature keeps reading its own chord internally.
+/// Features whose input chord belongs to a Global channel, help or console command by default;
+/// the player can still bind them, and the feature keeps reading its own chord internally.
+/// Global opens the Market only from the depot locker, and its Ctrl+M toggles server messages.
 const UNBOUND_BY_DEFAULT: &[&str] = &[
     "0009-highscores-open",
     "0060-player-trade-open",
+    "0063-market-open",
     "0072-task-board-open",
     "0147-exiva-settings-open",
 ];

@@ -58,6 +58,7 @@ impl PlayView {
             if *repeat {
                 return !manual;
             }
+            oteryn_client_ui::target_move::cancel(&mut lock(&link.mailbox).target_walk);
             self.creature_drag.source = None;
 
             self.inputs.retain(|input| {
@@ -123,5 +124,21 @@ impl PlayLink {
             mailbox.target_walk.feedback = Some(tr!("Session ended"));
         }
         true
+    }
+
+    /// Arrival ends a click or minimap walk; a blocked step or a dropped walk re-requests it.
+    pub(in crate::play) fn target_walk_follow_up(&self, own: ActorPosition) {
+        let now = std::time::Instant::now();
+        let mut mailbox = lock(&self.mailbox);
+        oteryn_client_ui::target_move::progress(&mut mailbox.target_walk, own, now);
+        if mailbox.world_input_blocked() {
+            return;
+        }
+        if let Some(goal) = oteryn_client_ui::target_move::retry(&mut mailbox.target_walk, now)
+            && self.commands.send(PlayCommand::TargetWalk(goal)).is_err()
+        {
+            mailbox.target_walk.pending = false;
+            mailbox.target_walk.feedback = Some(tr!("Session ended"));
+        }
     }
 }

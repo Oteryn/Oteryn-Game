@@ -21,10 +21,13 @@ pub enum UtilityAction {
     OpenHelpChannel,
     PreviousChannel,
     ToggleLensHelp,
+    ShowPrey,
+    ToggleVipWidget,
+    ToggleSkillsWidget,
 }
 
 impl UtilityAction {
-    pub const ALL: [Self; 15] = [
+    pub const ALL: [Self; 18] = [
         Self::ToggleCreatureHuds,
         Self::ToggleFpsLagIndicator,
         Self::NextHotkeyPreset,
@@ -40,6 +43,9 @@ impl UtilityAction {
         Self::OpenHelpChannel,
         Self::PreviousChannel,
         Self::ToggleLensHelp,
+        Self::ShowPrey,
+        Self::ToggleVipWidget,
+        Self::ToggleSkillsWidget,
     ];
 
     pub fn label(self) -> &'static str {
@@ -59,6 +65,9 @@ impl UtilityAction {
             Self::OpenHelpChannel => "Utility: open the Help channel",
             Self::PreviousChannel => "Utility: previous chat channel",
             Self::ToggleLensHelp => "Utility: show or hide the lens help",
+            Self::ShowPrey => "Utility: show the Prey dialog",
+            Self::ToggleVipWidget => "Utility: show or hide the VIP list",
+            Self::ToggleSkillsWidget => "Utility: show or hide the skills window",
         }
     }
 }
