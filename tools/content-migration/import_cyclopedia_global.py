@@ -24,6 +24,12 @@ def load_weights(root):
     rows = {row['id']: row for row in records}
     if len(rows) != len(records) or len(rows) != manifest['records']:
         raise ValueError('Cyclopedia record count or duplicate ID')
+    corrections = json.loads((capture / 'weight-corrections.json').read_bytes())
+    for correction in corrections:
+        row = rows[correction['id']]
+        if row['basic']['Weight'] != correction['captured_weight']:
+            raise ValueError('Stale Cyclopedia weight correction')
+        row['basic']['Weight'] = correction['global_weight']
     weights = {}
     for identifier, row in rows.items():
         seen = set()
@@ -103,12 +109,16 @@ def apply_profile_weights(records, root):
 
 
 def apply_overlay_weights(root, weights):
-    """Give native-gameplay overlay profiles the client weight, changing only weight values.
+    """Refresh generated source overlays; donor captures are qualified by their consumers.
 
     Each overlay keeps its own byte layout: a record's weight is replaced on the
     line that names its key, and the parsed result must equal the expected edit."""
     changed = {}
     for path in sorted((root / OVERLAY_DIR).glob('*.json')):
+        # These producers emit Global weights. Other files retain raw donor
+        # facts and apply Global weights in memory when their owner admits them.
+        if path.name not in ('coin-item-profiles.json', 'event-item-profiles.json'):
+            continue
         raw = path.read_bytes()
         document = json.loads(raw)
         edits = {}
@@ -137,6 +147,31 @@ def apply_overlay_weights(root, weights):
     return changed
 
 
+def refresh_overlay_weights(root, weights):
+    """Replay weight admissions while retaining the verified donor profile closure."""
+    import import_spell_families as spell_import
+    import register_spell_families as registration
+    import compose_monster_current_sources as composition
+
+    generated = spell_import.baseline_outputs(root)
+    baseline = dict(generated)
+    generated = registration.current_sources.outputs(root, generated)
+    generated = composition.compose(root, baseline, generated)
+    # Validate the existing closure before changing its weight leaves or digest.
+    registration.admit_overlay_profiles(root, generated)
+    provider = json.loads(generated[spell_import.PROVIDER_DESTINATIONS['item_profiles']])
+    for identifier, weight in _overlay_profiles(provider):
+        weight['value'] = weights.get(identifier, weight['value'])
+    raw = (json.dumps(provider, indent=2, ensure_ascii=False) + '\n').encode()
+    changed = apply_overlay_weights(root, weights)
+    for relative in (registration.COIN_PROFILES, registration.DOOR_PROFILES):
+        path = root / relative
+        document = json.loads(path.read_bytes())
+        document['item_profiles_sha256'] = hashlib.sha256(raw).hexdigest()
+        path.write_text(json.dumps(document, indent=2, ensure_ascii=False) + '\n')
+    return changed
+
+
 def apply_admissions(item_records, root):
     """Client weights are tree-first; retain them across legacy regeneration."""
     weights = load_weights(root)
@@ -150,6 +185,7 @@ def main():
     args = parser.parse_args()
     root = args.root
     weights = load_weights(root)
+    overlays = refresh_overlay_weights(root, weights)
     counts = Counter()
     constructors = []
 
@@ -180,7 +216,8 @@ def main():
             declaration['weight'] = weights[identifier]
     if constructors:
         write(path, document)
-    print(json.dumps({'weight_changes_by_file': counts, 'constructor_weights': constructors}, indent=2))
+    print(json.dumps({'weight_changes_by_file': counts, 'constructor_weights': constructors,
+                      'overlay_weights': overlays}, indent=2))
 
 
 if __name__ == '__main__':

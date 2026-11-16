@@ -683,10 +683,14 @@ def main() -> int:
     refresh_source_cohort_extent()
     repin_rust_inventory()
     run(["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers"])
+    run(["python3", "tools/content-migration/import_cyclopedia_global.py"])
     run(["python3", "tools/content-migration/world_project_v2_to_tree.py"])
     # Callback witnesses add authored props to the native index; rooms must pin that final index.
     run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     for tool in AUTHORING_TOOLS:
+        if tool.endswith("/reward_claim_authoring.py"):
+            run(["python3", "tools/content-migration/refresh_reward_stack_weight_proof.py"])
+            run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py"])
         if (ROOT / tool).is_file():
             run(["python3", tool, "content"])
     # Claims above may add complete native container recipes. Rebuild their
@@ -699,6 +703,17 @@ def main() -> int:
         run(["python3", "tools/contracts/refresh_quest_custody_" + census + ".py"])
     run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
     run(["python3", "tools/content-migration/refresh_season_creature_inventory.py"])
+    run(["python3", "tools/content-schema/quest-authoring/quest_tree_authoring.py", "content",
+         "--source-packet", "tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json"])
+    for script in (
+        "quest_binding_authoring", "quest_completion_matrix", "quest_rollout_authoring",
+        "quest_v2_export", "quest_state_lowering", "source_lowered_binding_plan",
+        "quest_completion_import", "collect_claim_candidates", "use_trigger_candidates",
+        "quest_native_binding_preflight", "quest_reward_only_binding_candidates",
+    ):
+        run(["python3", f"tools/content-schema/quest-authoring/{script}.py"])
+    # Donor captures bind both the final Quest index and its binding crosswalk.
+    run(["python3", "tools/content-schema/quest-authoring/quest_donor_source_authoring.py"])
     if not args.skip_checks:
         for command in CHECKS:
             if command[0] != "python3" or (ROOT / command[1]).is_file():
