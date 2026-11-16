@@ -2,7 +2,7 @@
 use oteryn_client_runtime::raw_feature::FeatureCommand;
 use oteryn_client_ui::boss_difficulty::{BossDifficultyPanel, Intent, request};
 
-pub(super) fn difficulty_levels(
+pub(in crate::play) fn difficulty_levels(
     reply: Option<&oteryn_client_runtime::boss_difficulty::Reply>,
 ) -> std::ops::RangeInclusive<u16> {
     0..=match reply {
@@ -13,11 +13,11 @@ pub(super) fn difficulty_levels(
     }
 }
 
-pub(super) fn enabled(panel: &BossDifficultyPanel) -> bool {
+pub(in crate::play) fn enabled(panel: &BossDifficultyPanel) -> bool {
     panel.selected && !panel.pending
 }
 
-pub(super) fn submit(
+pub(in crate::play) fn submit(
     panel: &mut BossDifficultyPanel,
     intent: Intent,
     boss: &str,

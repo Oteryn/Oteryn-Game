@@ -6,6 +6,7 @@ use super::{GameModal, modal::ModalGuard};
 use crate::bevy_shell::{owner::HostOwner, ui::Skins};
 use crate::play::{FeatureForm, FormView};
 use bevy::{
+    ecs::system::SystemParam,
     input::keyboard::KeyboardInput,
     input_focus::{
         InputFocus,
@@ -89,6 +90,13 @@ fn keyboard(
     }
 }
 
+/// The shown window's summary text and buttons, updated in place while its layout holds.
+#[derive(SystemParam)]
+struct ShownWidgets<'w, 's> {
+    summaries: Query<'w, 's, &'static mut Text, With<Summary>>,
+    controls: Query<'w, 's, (Entity, &'static Control)>,
+}
+
 fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
@@ -96,8 +104,7 @@ fn project(
     mut state: ResMut<FormWindow>,
     mut focus: ResMut<InputFocus>,
     fields: Query<(), With<Field>>,
-    mut summaries: Query<&mut Text, With<Summary>>,
-    controls: Query<(Entity, &Control)>,
+    mut shown_widgets: ShownWidgets,
 ) {
     let generation = owner.generation();
     if state.generation != Some(generation) || owner.play.is_none() {
@@ -142,13 +149,13 @@ fn project(
         && shown.layout == layout
     {
         if shown.text != view.text {
-            for mut text in &mut summaries {
+            for mut text in &mut shown_widgets.summaries {
                 text.0.clone_from(&view.text);
             }
             shown.text = view.text;
         }
         if shown.pending != view.pending {
-            for (entity, control) in &controls {
+            for (entity, control) in &shown_widgets.controls {
                 if control.root == shown.root && control.action.is_some() {
                     if view.pending {
                         commands.entity(entity).insert(InteractionDisabled);

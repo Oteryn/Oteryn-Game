@@ -7,7 +7,7 @@ impl PlayLink {
     }
 }
 #[path = "native.rs"]
-mod native;
+pub(in crate::play) mod native;
 
 /// Boss difficulty selection for the shared frontend; the difficulty list is a number field.
 pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {

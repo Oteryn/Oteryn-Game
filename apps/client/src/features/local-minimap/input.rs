@@ -62,8 +62,7 @@ impl PlayView {
             // A mark already sits at the player's position: edit it.
             return true;
         }
-        let edit = oteryn_client_ui::minimap::editor_key(events);
-        edit
+        oteryn_client_ui::minimap::editor_key(events)
     }
 }
 

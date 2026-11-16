@@ -7,7 +7,6 @@ impl PlayLink {
         }
         if self.uses_shared_frontend() {
             lock(&self.mailbox).vip_presence.open = true;
-        } else {
         }
         true
     }

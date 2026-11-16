@@ -39,8 +39,7 @@ fn controls_encode_exact_request_and_reply_and_refusal_are_visible() {
     assert!(p.feedback.is_some());
 }
 
-#[path = "../native.rs"]
-mod native;
+use crate::play::feature_0225_boss_difficulty::view::native;
 
 #[test]
 fn boss_difficulty_native_controls_validate_and_send() {

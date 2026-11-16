@@ -232,7 +232,7 @@ fn communication_lists_form_edits_the_chat_lists_it_was_opened_for() -> TestResu
         app.world_mut()
             .query::<(&Field, &EditableText)>()
             .iter(app.world())
-            .any(|(field, text)| field.0 == 0 && text.value().to_string() == "Alice")
+            .any(|(field, text)| field.0 == 0 && text.value() == "Alice")
     );
     while commands.try_recv().is_ok() {}
     click(&mut app, Some(1))?;
