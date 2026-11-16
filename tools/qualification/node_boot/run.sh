@@ -10,6 +10,9 @@
 # SEAM stage against its own bound port.
 set -Eeuo pipefail
 umask 077
+# Hosted qualification group selection (scratch branch only).
+export NODE_BOOT_SKIP_BASIC=1
+export NODE_BOOT_E2E_ONLY=f4
 
 readonly NODE_BOOT_WORLD_REGIONS='126,125;126,126;127,127'
 
