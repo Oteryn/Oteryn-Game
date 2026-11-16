@@ -161,12 +161,6 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
         service_cadence.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         let mut next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
         loop {
-            if tokio::time::Instant::now() >= next_staff_refresh {
-                if !authority.staff_refresh(admitted).await {
-                    return Err(ServeEnd::Disconnected);
-                }
-                next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
-            }
             let event = {
                 let mut sequence = admitted.continuity.server_sequence;
                 zones_nologout_transport::drain(stream, authority, &mut admitted, &mut sequence)
@@ -191,6 +185,16 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                     None => continue,
                 }
             };
+            // Refresh before ingress/probes, not immediately after a reply: stash and
+            // receipt readers need the same holder while we wait for the next command.
+            if !matches!(&event, house_hireling::step::Event::Services)
+                && tokio::time::Instant::now() >= next_staff_refresh
+            {
+                if !authority.staff_refresh(admitted).await {
+                    return Err(ServeEnd::Disconnected);
+                }
+                next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
+            }
             let inbound::Input {
                 frame,
                 arrived_while_buffered,
