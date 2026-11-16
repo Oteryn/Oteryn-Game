@@ -128,7 +128,8 @@ const GLOBAL_CHORDS_V1: [&str; 6] = ["CTRL+M", "CTRL+Y", "CTRL+P", "ALT+S", "CTR
 impl ReferencePreferences {
     /// One-time upgrade of a file written before `schema_version` 1: the active custom hotkeys
     /// and every saved hotkey profile gain each version 1 Global chord that no binding of the
-    /// player already uses. A player binding is never replaced.
+    /// player already uses. A player binding is never replaced. A profile saved without custom
+    /// hotkeys starts from an empty map.
     pub(super) fn upgrade_schema(&mut self) {
         if self.schema_version >= PREFERENCES_SCHEMA_VERSION {
             return;
@@ -142,11 +143,12 @@ impl ReferencePreferences {
             let _ = self.assign_custom_hotkey(chord, action.clone());
         }
         for (name, bindings) in self.hotkey_profiles.clone() {
-            let Some(saved) = self.custom_hotkey_profiles.get(&name) else {
-                continue;
-            };
             let mut profile = self.clone();
-            profile.custom_hotkeys = saved.clone();
+            profile.custom_hotkeys = self
+                .custom_hotkey_profiles
+                .get(&name)
+                .cloned()
+                .unwrap_or_default();
             profile.action_keys = self
                 .bar_hotkey_profiles
                 .get(&name)
