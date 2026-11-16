@@ -233,7 +233,10 @@ fn wiring_text(root: &Path, directories: &[&str]) -> Result<String, Box<dyn Erro
 fn json_files(directory: &Path) -> Result<Vec<serde_json::Value>, Box<dyn Error>> {
     let mut values = Vec::new();
     for path in sorted_children(directory)? {
-        if path.extension().is_some_and(|extension| extension == "json") {
+        if path
+            .extension()
+            .is_some_and(|extension| extension == "json")
+        {
             values.push(serde_json::from_str(&fs::read_to_string(&path)?)?);
         }
     }
@@ -332,7 +335,9 @@ fn feature_directory_capabilities(root: &Path) -> Result<BTreeSet<u32>, Box<dyn 
             continue;
         }
         for path in sorted_children(&directory)? {
-            let name = path.file_name().map(|name| name.to_string_lossy().into_owned());
+            let name = path
+                .file_name()
+                .map(|name| name.to_string_lossy().into_owned());
             if let Some((prefix, _)) = name.as_deref().and_then(|name| name.split_once('-'))
                 && prefix.len() == 4
                 && prefix.chars().all(|character| character.is_ascii_digit())
@@ -361,7 +366,10 @@ fn session_loop_text(root: &Path) -> Result<String, Box<dyn Error>> {
 fn mechanic_command_ids(root: &Path) -> Result<BTreeSet<u32>, Box<dyn Error>> {
     let mut ids = BTreeSet::new();
     for path in sorted_children(&root.join(MECHANIC_FILES))? {
-        if path.extension().is_none_or(|extension| extension != "mechanic") {
+        if path
+            .extension()
+            .is_none_or(|extension| extension != "mechanic")
+        {
             continue;
         }
         let text = fs::read_to_string(&path)?;
@@ -382,10 +390,14 @@ fn compare(kind: &str, found: &BTreeSet<u32>, listed: &[(u32, &str)], problems: 
         problems.push(format!("{kind}: a gap is listed twice"));
     }
     for id in found.difference(&expected) {
-        problems.push(format!("{kind}: new gap {id}; wire it or list it with its citation"));
+        problems.push(format!(
+            "{kind}: new gap {id}; wire it or list it with its citation"
+        ));
     }
     for id in expected.difference(found) {
-        problems.push(format!("{kind}: gap {id} is wired now; remove it from the list"));
+        problems.push(format!(
+            "{kind}: gap {id} is wired now; remove it from the list"
+        ));
     }
 }
 
@@ -479,7 +491,9 @@ fn every_registry_command_and_domain_is_wired_or_a_listed_gap() -> TestResult {
             ));
         }
         if !fs::read_to_string(root.join(file))?.contains(*anchor) {
-            problems.push(format!("command {command}: routing anchor `{anchor}` is gone from {file}"));
+            problems.push(format!(
+                "command {command}: routing anchor `{anchor}` is gone from {file}"
+            ));
         }
     }
     let mut server_gaps = BTreeSet::new();
@@ -520,8 +534,18 @@ fn every_registry_command_and_domain_is_wired_or_a_listed_gap() -> TestResult {
     }
 
     compare("server dispatch", &server_gaps, SERVER_GAPS, &mut problems);
-    compare("client builder", &client_builder_gaps, CLIENT_BUILDER_GAPS, &mut problems);
-    compare("client reducer", &client_reducer_gaps, CLIENT_REDUCER_GAPS, &mut problems);
+    compare(
+        "client builder",
+        &client_builder_gaps,
+        CLIENT_BUILDER_GAPS,
+        &mut problems,
+    );
+    compare(
+        "client reducer",
+        &client_reducer_gaps,
+        CLIENT_REDUCER_GAPS,
+        &mut problems,
+    );
 
     if problems.is_empty() {
         Ok(())
