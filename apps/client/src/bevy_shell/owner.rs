@@ -324,7 +324,7 @@ impl HostOwner {
         });
     }
     /// Turning stay-logged-in or remember-device off in the options forgets this device on the
-    /// Platform; the session in play keeps running.
+    /// Platform and, as the Win32 page did, logs the character in play out.
     fn forget_device(&mut self) {
         if self.phase == Phase::Offline
             && let Ok(config) = self.login.form.settings.config()
@@ -334,6 +334,9 @@ impl HostOwner {
         }
         if let Some(entry) = &mut self.entry {
             entry.native_sign_out();
+        }
+        if let Some(play) = &mut self.play {
+            play.view.logout();
         }
     }
     /// Opens a Platform page (support tickets, cookie policy) from the login window with the

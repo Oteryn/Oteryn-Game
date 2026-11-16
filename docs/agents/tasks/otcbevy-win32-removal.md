@@ -295,10 +295,12 @@ this branch's base. Status of the 95 MISSING rows on this branch:
   import/export (144) and the combined status line (173). Their client-ui and `PlayLink`
   back ends stay for a later port. Offline world (16), touch (138) and renderer
   selection (152) are by design.
-- Row 12 keeps the Win32 rules: remembering the device implies staying logged in, and
-  turning either off forgets the device on the Platform (`HostOwner::apply`). The Win32
-  checkboxes were disabled unless `OTERYN_NATIVE_REMEMBERED_DEVICES_ENABLED=true`; the
-  Bevy rows are always editable, and the native entry still applies that switch.
+- Row 12 keeps the Win32 rules and labels: remembering the device implies staying logged
+  in, and applying with either turned off forgets the device on the Platform and logs the
+  character in play out (`HostOwner::apply`). Page Reset leaves the three rows alone, as
+  the Win32 reset did. The Win32 checkboxes were disabled unless
+  `OTERYN_NATIVE_REMEMBERED_DEVICES_ENABLED=true`; the Bevy rows are always editable, and
+  `DeviceLogin::configured` still applies that switch. The revoke itself has no test.
 - Workflows, installer and packaging, the exe manifest, `[[bin]]`/`[features]` wiring and
   the build and shipping docs (`apps/client/BEVY.md` build section) moved to a separate
   lane, as did the pre-game account screens (bazaar, transfer, coin packages, premium

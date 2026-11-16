@@ -183,6 +183,7 @@ const BASIC: [Row; 7] = [
     sound::MAIN[0],
     sound::MAIN[1],
 ];
+pub(super) use miscellaneous::LOGIN_CHOICES;
 pub(super) fn find(page: Page, id: &str) -> Option<Row> {
     rows(page).iter().find(|row| row.id == id).copied()
 }
