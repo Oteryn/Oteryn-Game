@@ -199,6 +199,15 @@ pub(super) fn choose(control: Control, owner: &HostOwner, ui: &mut InventoryUi) 
                 }
             }
         }
+        Control::GroundUp {
+            generation,
+            view,
+            handle,
+        } if generation == owner.generation() && !owner.modal_active() => {
+            if let Some(play) = &owner.play {
+                play.link.browse_field_up_bound(view, handle);
+            }
+        }
         Control::Count(prompt, delta) if prompt_current(prompt, owner, ui) => {
             super::amount::change_count(owner, ui, prompt, Some(delta));
         }

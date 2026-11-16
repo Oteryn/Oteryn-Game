@@ -248,4 +248,11 @@ impl crate::play::Outbox {
     pub(crate) fn bevy_browse_field_supported(&self) {
         crate::play::mailbox::lock(&self.0).browse_field.selected = true;
     }
+    /// Applies a server reply through the production browse-field reducer.
+    pub(crate) fn bevy_browse_field_result(
+        &self,
+        response: &oteryn_client_runtime::server_mechanic::ServerMechanicResponse,
+    ) {
+        self.browse_field_result(response);
+    }
 }

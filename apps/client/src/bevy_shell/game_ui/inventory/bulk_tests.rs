@@ -478,3 +478,100 @@ fn container_names_resolve_live_inspection_handles_without_opening_or_stealing_i
     assert!(has_text(&mut app, "Leather backpack (2/20)"));
     Ok(())
 }
+
+fn ground_up(app: &mut App, view: u8) -> Option<Entity> {
+    app.world_mut()
+        .query::<(Entity, &Control)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| {
+            matches!(control, Control::GroundUp { view: at, .. } if *at == view).then_some(entity)
+        })
+}
+
+#[test]
+fn ground_container_up_opens_its_browse_field_and_shows_the_server_view() -> Result {
+    use oteryn_session::{
+        CommandStatus, GatedCommandResult,
+        browse_field::BrowseFieldPage,
+        container_tree::{
+            ContainerViewIntent, ContainerViewOutcome, decode_container_view_intent,
+            encode_container_view_result,
+        },
+    };
+    let (mut app, mut commands, outbox) = app()?;
+    assert!(
+        ground_up(&mut app, 0).is_none(),
+        "no ground Up without capability 230"
+    );
+    outbox.bevy_browse_field_supported();
+    app.update();
+    let up = ground_up(&mut app, 0).ok_or("ground Up")?;
+    app.world_mut().trigger(Activate { entity: up });
+    let PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("up command".into());
+    };
+    assert_eq!((command.capability, command.command_type), (14, 21));
+    assert_eq!(
+        decode_container_view_intent(&command.payload).map_err(|e| format!("{e:?}"))?,
+        ContainerViewIntent::Up { view_id: 0 }
+    );
+    app.world_mut().trigger(Activate { entity: up });
+    assert!(
+        commands.try_recv().is_err(),
+        "a pending Up is not sent twice"
+    );
+    outbox.bevy_browse_field_result(&GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: CommandStatus::Accepted,
+        payload: encode_container_view_result(ContainerViewOutcome::Opened),
+    });
+    // The server replaces the same window id by the tile's browse field.
+    let mut field = views()?;
+    field.views.truncate(1);
+    field.views[0].capacity = 30;
+    field.views[0].browse = Some(BrowseFieldPage {
+        position: oteryn_session::item_view::WorldTilePosition {
+            x: 100,
+            y: 100,
+            floor: 7,
+        },
+        index: 0,
+        total: 2,
+    });
+    replace_views(&outbox, field);
+    app.update();
+    assert!(has_text(&mut app, "Browse Field (2/2)"));
+    assert!(ground_up(&mut app, 0).is_none(), "a browse field has no Up");
+    let owner = app.world().non_send::<HostOwner>();
+    let panel = owner.play.as_ref().ok_or("play")?.link.browse_field_panel();
+    assert!(!panel.pending);
+    assert_eq!(
+        panel.feedback.as_deref(),
+        Some("Field contents updated by the server")
+    );
+    Ok(())
+}
+
+#[test]
+fn carried_container_without_parent_has_no_ground_up() -> Result {
+    let (mut app, mut commands, outbox) = app()?;
+    outbox.bevy_browse_field_supported();
+    let inventory = oteryn_session::CharacterInventory {
+        main_backpack: Some(tests::entry(10, 1)?),
+        entries: vec![],
+        equipment: vec![],
+    };
+    PlayLink::bevy_items_fixture(&outbox, Some(inventory), Some(views()?), true, true);
+    app.update();
+    assert!(
+        ground_up(&mut app, 0).is_none(),
+        "the main backpack is carried"
+    );
+    assert!(
+        ground_up(&mut app, 1).is_some(),
+        "the other view lies on the ground"
+    );
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}

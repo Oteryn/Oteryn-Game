@@ -460,19 +460,36 @@ fn container(
         })
         .id();
     commands.entity(panel).add_child(row);
-    if view.parent_handle.is_some() {
-        button(
-            commands,
-            skins,
-            row,
-            "Up",
-            Control::Up {
-                generation: snapshot.generation,
-                view: view.view_id,
-                handle: view.container_handle,
-            },
-            36.,
-        );
+    // A carried top-level container has no Up; one lying on the ground opens its tile's browse field.
+    let carried = snapshot
+        .inventory
+        .inventory
+        .iter()
+        .flat_map(|inventory| {
+            inventory
+                .main_backpack
+                .iter()
+                .chain(inventory.equipment.iter().map(|equipped| &equipped.item))
+        })
+        .chain(snapshot.slots.iter().filter_map(|slot| slot.item.as_ref()))
+        .any(|item| item.handle == view.container_handle);
+    let up = if view.parent_handle.is_some() {
+        Some(Control::Up {
+            generation: snapshot.generation,
+            view: view.view_id,
+            handle: view.container_handle,
+        })
+    } else if snapshot.browse && view.browse.is_none() && !carried {
+        Some(Control::GroundUp {
+            generation: snapshot.generation,
+            view: view.view_id,
+            handle: view.container_handle,
+        })
+    } else {
+        None
+    };
+    if let Some(up) = up {
+        button(commands, skins, row, "Up", up, 36.);
     }
     button(
         commands,

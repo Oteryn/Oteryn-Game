@@ -146,6 +146,12 @@ enum Control {
         view: u8,
         handle: oteryn_session::ItemHandle,
     },
+    /// Up from a ground container: the session opens that tile's browse field.
+    GroundUp {
+        generation: u64,
+        view: u8,
+        handle: oteryn_session::ItemHandle,
+    },
     Close {
         generation: u64,
         view: u8,
