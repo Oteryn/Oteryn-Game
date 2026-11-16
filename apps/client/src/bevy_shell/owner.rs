@@ -261,8 +261,6 @@ impl HostOwner {
         config.preference_path.clone_from(&self.preferences_path);
         config.select_character = self.selector.clone();
         self.services.configure(&mut config);
-        // Pre-login purchases are a separate presentation batch.
-        config.coin_shop = std::sync::Arc::new(|_, _| crate::coin_shop::Action::Back);
         self.selection.cancel();
         self.services.cancel();
         if self

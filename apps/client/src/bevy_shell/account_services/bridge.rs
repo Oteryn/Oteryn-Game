@@ -1,5 +1,6 @@
 //! Bounded handoff of public account views; credentials remain in the admission worker.
-use crate::{account_services, premium};
+use super::screens;
+use crate::{account_services, coin_shop, premium};
 use oteryn_foundation::CancellationToken;
 use std::sync::{
     Arc,
@@ -8,95 +9,138 @@ use std::sync::{
 };
 use std::time::{Duration, Instant};
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(in crate::bevy_shell) enum Action {
-    Premium,
-    Refresh,
-    Back,
+/// One selectable list; choosing a row may put its value into a field.
+#[derive(Clone, Default)]
+pub(in crate::bevy_shell) struct List {
+    pub label: &'static str,
+    pub rows: Vec<String>,
+    pub selected: Option<usize>,
+    pub fill: Option<(usize, Vec<String>)>,
+}
+#[derive(Clone)]
+pub(in crate::bevy_shell) struct Field {
+    pub label: &'static str,
+    pub value: String,
+}
+#[derive(Clone)]
+pub(in crate::bevy_shell) struct Button {
+    pub id: &'static str,
+    pub label: &'static str,
+    pub enabled: bool,
+}
+/// What one account screen shows. The worker builds it from its controller view.
+#[derive(Clone, Default)]
+pub(in crate::bevy_shell) struct Screen {
+    pub title: &'static str,
+    pub text: String,
+    pub notice: Option<String>,
+    /// Premium text is re-evaluated every frame against the controller's own clock.
+    pub premium: Option<premium::View>,
+    pub lists: Vec<List>,
+    pub fields: Vec<Field>,
+    pub buttons: Vec<Button>,
+    /// The button Escape presses.
+    pub escape: &'static str,
+}
+impl Screen {
+    pub fn text(&self) -> String {
+        let mut text = self
+            .premium
+            .as_ref()
+            .map_or_else(|| self.text.clone(), premium::View::status_text);
+        if let Some(notice) = &self.notice {
+            text.push_str("\n\n");
+            text.push_str(notice);
+        }
+        text
+    }
+    /// Shows the screen again with the player's choices and typed values kept.
+    pub fn keep(&mut self, reply: &Reply, notice: String) {
+        for (list, selected) in self.lists.iter_mut().zip(&reply.selected) {
+            list.selected = *selected;
+        }
+        for (field, value) in self.fields.iter_mut().zip(&reply.fields) {
+            field.value.clone_from(value);
+        }
+        self.notice = Some(notice);
+    }
+}
+/// The pressed button with the selections and field values it was pressed with.
+pub(in crate::bevy_shell) struct Reply {
+    pub button: &'static str,
+    pub selected: Vec<Option<usize>>,
+    pub fields: Vec<String>,
 }
 pub(in crate::bevy_shell) struct Request {
     pub id: u64,
-    pub account_feedback: String,
-    pub premium: Option<premium::View>,
+    pub screen: Screen,
     cancel: CancellationToken,
-    reply: SyncSender<Action>,
+    reply: SyncSender<Reply>,
     epoch: u64,
     deadline: Instant,
 }
+/// Shows a screen and waits for its answer; `None` when cancelled, superseded or expired.
+pub(super) type Ask = dyn Fn(Screen, &CancellationToken) -> Option<Reply> + Send + Sync;
 pub(in crate::bevy_shell) struct Services {
     requests: Receiver<Request>,
     pending: Option<Request>,
     epoch: Arc<AtomicU64>,
     account: account_services::Presenter,
+    coins: coin_shop::Presenter,
     premium: premium::Presenter,
 }
 impl Services {
     pub fn new() -> Self {
         let (sender, requests) = mpsc::sync_channel(1);
         let epoch = Arc::new(AtomicU64::new(1));
-        let sequence = Arc::new(AtomicU64::new(1));
+        let sequence = AtomicU64::new(1);
         let callback_epoch = epoch.clone();
-        let ask = move |premium, account_feedback, cancel: CancellationToken| {
+        let ask: Arc<Ask> = Arc::new(move |screen, cancel| {
             let current = callback_epoch.load(Ordering::Acquire);
             let (reply, result) = mpsc::sync_channel(1);
             let deadline = Instant::now() + Duration::from_secs(300);
             let request = Request {
                 id: sequence.fetch_add(1, Ordering::Relaxed),
-                premium,
-                account_feedback,
+                screen,
                 cancel: cancel.clone(),
                 reply,
                 epoch: current,
                 deadline,
             };
             if cancel.is_cancelled() || sender.try_send(request).is_err() {
-                return Action::Back;
+                return None;
             }
+            let live = || {
+                !cancel.is_cancelled()
+                    && callback_epoch.load(Ordering::Acquire) == current
+                    && Instant::now() < deadline
+            };
             loop {
-                if cancel.is_cancelled()
-                    || callback_epoch.load(Ordering::Acquire) != current
-                    || Instant::now() >= deadline
-                {
-                    return Action::Back;
+                if !live() {
+                    return None;
                 }
                 match result.recv_timeout(Duration::from_millis(50)) {
-                    Ok(action) => {
-                        return if cancel.is_cancelled()
-                            || callback_epoch.load(Ordering::Acquire) != current
-                            || Instant::now() >= deadline
-                        {
-                            Action::Back
-                        } else {
-                            action
-                        };
-                    }
+                    Ok(reply) => return live().then_some(reply),
                     Err(mpsc::RecvTimeoutError::Timeout) => {}
-                    Err(_) => return Action::Back,
+                    Err(_) => return None,
                 }
             }
-        };
-        // Both callbacks share the bounded queue and identity sequence.
-        let account_ask = ask.clone();
+        });
+        // Every presenter shares the bounded queue and identity sequence.
+        let account = ask.clone();
+        let coins = ask.clone();
         Self {
             requests,
             pending: None,
             epoch,
-            account: Arc::new(move |view, cancel| {
-                match account_ask(None, view.feedback.clone(), cancel) {
-                    Action::Premium => account_services::Action::Premium,
-                    _ => account_services::Action::Back,
-                }
-            }),
-            premium: Arc::new(move |view, cancel| {
-                match ask(Some(view.clone()), String::new(), cancel) {
-                    Action::Refresh => premium::Action::Refresh,
-                    _ => premium::Action::Back,
-                }
-            }),
+            account: Arc::new(move |view, cancel| screens::account(view, &*account, &cancel)),
+            coins: Arc::new(move |view, cancel| screens::coins(view, &*coins, &cancel)),
+            premium: Arc::new(move |view, cancel| screens::premium(view, &*ask, &cancel)),
         }
     }
     pub fn configure(&self, config: &mut crate::NativeLoginConfig) {
         config.account_services = self.account.clone();
+        config.coin_shop = self.coins.clone();
         config.premium = self.premium.clone();
     }
     pub fn pending(&self) -> Option<&Request> {
@@ -120,20 +164,27 @@ impl Services {
             }
         }
     }
-    pub fn respond(&mut self, id: u64, action: Action) {
+    /// Answers the shown screen with an enabled button; a stale or malformed answer is dropped.
+    pub fn respond(&mut self, id: u64, reply: Reply) {
         if !self.pending().is_some_and(|r| {
+            let screen = &r.screen;
             r.id == id
-                && (action == Action::Back
-                    || if r.premium.is_some() {
-                        action == Action::Refresh
-                    } else {
-                        action == Action::Premium
-                    })
+                && screen
+                    .buttons
+                    .iter()
+                    .any(|b| b.id == reply.button && b.enabled)
+                && reply.selected.len() == screen.lists.len()
+                && screen
+                    .lists
+                    .iter()
+                    .zip(&reply.selected)
+                    .all(|(list, at)| at.is_none_or(|at| at < list.rows.len()))
+                && reply.fields.len() == screen.fields.len()
         }) {
             return;
         }
         if let Some(request) = self.pending.take() {
-            let _ = request.reply.try_send(action);
+            let _ = request.reply.try_send(reply);
         }
     }
     pub fn cancel(&mut self) {

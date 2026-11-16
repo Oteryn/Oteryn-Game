@@ -24,7 +24,7 @@ fn wait(app: &mut App, after: Option<u64>) -> Result<u64, &'static str> {
     }
     Err("account presenter did not reach Bevy")
 }
-fn click(app: &mut App, action: Action) -> TestResult {
+fn click(app: &mut App, button: &str) -> TestResult {
     let id = app
         .world()
         .non_send::<HostOwner>()
@@ -36,7 +36,7 @@ fn click(app: &mut App, action: Action) -> TestResult {
         .world_mut()
         .query::<(Entity, &Control)>()
         .iter(app.world())
-        .find(|(_, c)| c.request == id && c.action == action)
+        .find(|(_, c)| c.request == id && c.button == button)
         .map(|(e, _)| e)
         .ok_or("button")?;
     app.world_mut().trigger(Activate { entity });
@@ -79,7 +79,7 @@ fn premium_bevy_buttons_fetch_refresh_report_errors_and_return_to_account_menu()
                 .map_err(|e| format!("{e:?}"))
         })?;
         let menu = wait(&mut app, None)?;
-        click(&mut app, Action::Premium)?;
+        click(&mut app, "premium")?;
         let premium = wait(&mut app, Some(menu))?;
         let text = app
             .world_mut()
@@ -89,7 +89,7 @@ fn premium_bevy_buttons_fetch_refresh_report_errors_and_return_to_account_menu()
         assert!(text.0.contains("Expiry:"));
         assert!(text.0.contains("[available]"));
         authority.lock().map_err(|_| "lock")?.premium_http_status = Some(503);
-        click(&mut app, Action::Refresh)?;
+        click(&mut app, "refresh")?;
         let failed = wait(&mut app, Some(premium))?;
         let text = app
             .world_mut()
@@ -98,13 +98,20 @@ fn premium_bevy_buttons_fetch_refresh_report_errors_and_return_to_account_menu()
         assert!(text.0.contains("Premium service unavailable"));
         assert!(!text.0.contains("[available]"));
         authority.lock().map_err(|_| "lock")?.premium_http_status = None;
-        click(&mut app, Action::Refresh)?;
+        click(&mut app, "refresh")?;
         let refreshed = wait(&mut app, Some(failed))?;
         // A stale button's request must not dismiss a refreshed view.
         app.world_mut()
             .non_send_mut::<HostOwner>()
             .services
-            .respond(premium, Action::Back);
+            .respond(
+                premium,
+                Reply {
+                    button: "back",
+                    selected: Vec::new(),
+                    fields: Vec::new(),
+                },
+            );
         assert_eq!(
             app.world()
                 .non_send::<HostOwner>()
@@ -113,7 +120,7 @@ fn premium_bevy_buttons_fetch_refresh_report_errors_and_return_to_account_menu()
                 .map(|r| r.id),
             Some(refreshed)
         );
-        click(&mut app, Action::Back)?;
+        click(&mut app, "back")?;
         wait(&mut app, Some(refreshed))?;
         app.world_mut()
             .write_message(bevy::input::keyboard::KeyboardInput {
