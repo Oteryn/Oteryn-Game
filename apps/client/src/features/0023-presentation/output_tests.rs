@@ -31,3 +31,17 @@ fn live_rodio_sinks_keep_ui_attenuation_when_accepted_gains_change() {
         voice.sink.stop();
     }
 }
+
+#[test]
+fn device_names_stay_valid_after_the_first_asking_thread_exits() {
+    // The Sound page lists devices from whichever thread builds it; a thread that has exited must
+    // not take the shared host enumerator with it (an access violation on Windows before).
+    let first = std::thread::spawn(audio_device_names).join();
+    assert!(first.is_ok());
+    let second = std::thread::spawn(audio_device_names).join();
+    assert!(second.is_ok());
+    assert_eq!(
+        audio_device_names().len(),
+        second.map_or(0, |names| names.len())
+    );
+}
