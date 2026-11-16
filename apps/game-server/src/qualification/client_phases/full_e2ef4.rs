@@ -118,9 +118,9 @@ pub(super) async fn run(
         }};
     }
     row!("E01", E01, shop, clients, world, npcs);
-    row!("E03", E03, coins);
+    row!("E03", E03, coins, world, npcs);
     row!("E04", E04, trade, clients, world);
-    row!("E05", E05, market, world);
+    row!("E05", E05, market, clients, world);
     row!("E07", E07, storage, clients, world);
     row!("S01", S01, party, clients, world);
     row!("S03", S03, guild);
@@ -219,140 +219,533 @@ async fn locker(client: &mut DevClientSession, world: &BundleWorld) -> TestResul
     walk(client, world, &path).await
 }
 
+/// Gold value of the carried coins and the carried non-coin units, from the client inventory.
+fn split_coins(
+    units: &BTreeMap<u32, u64>,
+    refs: [std::num::NonZeroU32; 3],
+) -> (BTreeMap<u32, u64>, u64) {
+    let mut items = units.clone();
+    let mut value = 0;
+    for (reference, worth) in refs.into_iter().zip([1, 100, 10_000]) {
+        value += items.remove(&reference.get()).unwrap_or(0) * worth;
+    }
+    (items, value)
+}
+
+/// Waits until the client inventory shows exactly `items` and coins worth `value`.
+async fn wait_trade(
+    client: &mut DevClientSession,
+    refs: [std::num::NonZeroU32; 3],
+    items: &BTreeMap<u32, u64>,
+    value: u64,
+    step: &str,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let (observed, coins) = split_coins(&inventory_units(client)?, refs);
+        if &observed == items && coins == value {
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(
+                format!("{step}-inventory-deadline;coins={coins};expected-coins={value}").into(),
+            );
+        }
+        client.service_liveness(Duration::from_millis(20)).await?;
+        client.take_events();
+    }
+}
+
+fn adjust(items: &mut BTreeMap<u32, u64>, definition: u32, delta: i64) -> TestResult {
+    let entry = items.entry(definition).or_default();
+    *entry = entry
+        .checked_add_signed(delta)
+        .ok_or_else(|| format!("inventory-unit-underflow;definition={definition}"))?;
+    if *entry == 0 {
+        items.remove(&definition);
+    }
+    Ok(())
+}
+
+/// One NPC utterance through the native talk adapter, reduced by the native dialogue panel.
+async fn say(
+    client: &mut DevClientSession,
+    service: &mut oteryn_dev_client::client_ui::npc_shop::NpcServicePanel,
+    actor: EntityRef,
+    text: &str,
+) -> TestResult<Vec<String>> {
+    use oteryn_dev_client::{client_runtime::npc_shop as runtime, client_ui::npc_shop as ui};
+    use ui::npc_service as wire;
+    // The NPC talk rate limit refuses utterances closer than its interval.
+    tokio::time::sleep(Duration::from_millis(260)).await;
+    let disposition = runtime::talk(
+        client.session_mut(),
+        &wire::NpcTalkIntent {
+            npc_actor: actor,
+            text: text.into(),
+        },
+    )
+    .await?;
+    if disposition != wire::NpcIntentDisposition::Ok {
+        return Err(format!("npc-say-{text}:{disposition:?}").into());
+    }
+    let delta = client
+        .session_mut()
+        .read_gated_delta(wire::STATE_DOMAIN_NPC_CONVERSATION, 1)
+        .await?;
+    if !ui::apply_conversation(service, &delta.payload) {
+        return Err(format!("npc-say-{text}:conversation-reducer-rejected").into());
+    }
+    Ok(service
+        .conversation
+        .as_ref()
+        .map(|conversation| conversation.lines.clone())
+        .unwrap_or_default())
+}
+
+const BALANCE_PREFIX: &str = "Your account balance is ";
+
+fn balance_of(lines: &[String]) -> TestResult<u64> {
+    let line = lines
+        .iter()
+        .rev()
+        .find_map(|line| line.strip_prefix(BALANCE_PREFIX))
+        .ok_or_else(|| format!("no-balance-line;lines={lines:?}"))?;
+    Ok(line.trim_end_matches(" gold.").parse()?)
+}
+
+async fn balance(
+    client: &mut DevClientSession,
+    service: &mut oteryn_dev_client::client_ui::npc_shop::NpcServicePanel,
+    actor: EntityRef,
+) -> TestResult<u64> {
+    balance_of(&say(client, service, actor, "balance").await?)
+}
+
+/// A prompted bank operation: the native dialogue must prompt, then confirm with `done`.
+async fn bank(
+    client: &mut DevClientSession,
+    service: &mut oteryn_dev_client::client_ui::npc_shop::NpcServicePanel,
+    actor: EntityRef,
+    command: &str,
+    prompt: &str,
+    done: &str,
+) -> TestResult {
+    let lines = say(client, service, actor, command).await?;
+    if !lines.iter().any(|line| line == prompt) {
+        return Err(format!("{command}:no-prompt;lines={lines:?}").into());
+    }
+    let lines = say(client, service, actor, "yes").await?;
+    if !lines.iter().any(|line| line == done) {
+        return Err(format!("{command}:not-confirmed;lines={lines:?}").into());
+    }
+    Ok(())
+}
+
+/// The first reachable NPC whose native dialogue answers `balance` with an account balance.
+async fn find_banker<'n>(
+    client: &mut DevClientSession,
+    service: &mut oteryn_dev_client::client_ui::npc_shop::NpcServicePanel,
+    world: &BundleWorld,
+    npcs: &'n oteryn_world_bundle::npc::Table,
+) -> TestResult<(&'n oteryn_world_bundle::npc::Npc, EntityRef, u64)> {
+    let mut attempted = Vec::new();
+    for npc in &npcs.npcs {
+        let from = tile(client.world_spatial().actor_position)?;
+        if route(world, from, |at| {
+            npc.placements
+                .iter()
+                .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
+        })
+        .is_none()
+        {
+            continue;
+        }
+        let actor = super::full_e2ef20::approach(client, world, npc).await?;
+        say(client, service, actor, "hi").await?;
+        let lines = say(client, service, actor, "balance").await?;
+        if let Ok(amount) = balance_of(&lines) {
+            return Ok((npc, actor, amount));
+        }
+        attempted.push(npc.key.clone());
+    }
+    Err(format!("content:no-reachable-banker;attempted={attempted:?}").into())
+}
+
 async fn shop(
     row: &mut Row,
     client: &mut DevClientSession,
-    _clients: &SeamClients<'_>,
+    clients: &SeamClients<'_>,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult {
-    use oteryn_dev_client::client_runtime::npc_shop as runtime;
-    use oteryn_protocol_oteryn::{npc_service as wire, npc_shop as shop};
+    use oteryn_dev_client::{client_runtime::npc_shop as runtime, client_ui::npc_shop as ui};
+    use ui::npc_service as wire;
+    let refs = super::full_e2ef20::coin_refs()?;
+    let coin_ids = refs.map(std::num::NonZeroU32::get);
     let npc = npcs
         .npcs
         .iter()
         .find(|npc| npc.key == "oteryn:npc.sam")
         .ok_or("content:oteryn:npc.sam absent")?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        npc.placements
-            .iter()
-            .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
-    })
-    .ok_or("content:oteryn:npc.sam unreachable")?;
-    walk(client, world, &path).await?;
-    let actor = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entity| {
-                entity.kind == oteryn_dev_client::EntityKind::Npc
-                    && npc.placements.iter().any(|p| {
-                        entity.position.x == i32::from(p.x)
-                            && entity.position.y == i32::from(p.y)
-                            && entity.position.floor == -i16::from(p.floor)
-                    })
-            })
-        })
-        .map(|entity| entity.entity)
-        .ok_or("Sam actor not visible at authored placement")?;
-    for text in ["hi", "trade"] {
-        let result = runtime::talk(
-            client.session_mut(),
-            &wire::NpcTalkIntent {
-                npc_actor: actor,
-                text: text.into(),
-            },
-        )
-        .await?;
-        if result != wire::NpcIntentDisposition::Ok {
-            return Err(format!("Sam {text}: {result:?}").into());
-        }
-        if text == "hi" {
-            let delta = client
-                .session_mut()
-                .read_gated_delta(wire::STATE_DOMAIN_NPC_CONVERSATION, 1)
-                .await?;
-            let conversation = wire::decode_npc_conversation(&delta.payload)
-                .map_err(|e| format!("NPC conversation: {e:?}"))?;
-            if conversation.open.is_none() {
-                return Err("greeting did not open conversation".into());
-            }
-            row.pass("greet", "native-conversation-open");
-        }
+    let actor = super::full_e2ef20::approach(client, world, npc).await?;
+    let mut service = ui::NpcServicePanel::default();
+    say(client, &mut service, actor, "hi").await?;
+    if service
+        .conversation
+        .as_ref()
+        .is_none_or(|conversation| conversation.open.is_none())
+    {
+        return Err("greeting did not open conversation".into());
     }
+    row.pass("greet", "native-conversation-open");
+    say(client, &mut service, actor, "trade").await?;
     let delta = client
         .session_mut()
         .read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
         .await?;
-    let window =
-        wire::decode_npc_trade_window(&delta.payload).map_err(|e| format!("shop window: {e:?}"))?;
-    let (index, offer) = window
+    if !ui::apply_window(&mut service, &delta.payload) {
+        return Err("shop window reducer rejected the payload".into());
+    }
+    let window = service.window.clone().ok_or("shop window absent")?;
+    let (npc_actor, revision) = window.open.ok_or("trade window closed")?;
+    let offer_intent = |index: usize, action| -> TestResult<runtime::npc_shop::NpcShopIntent> {
+        let offer = window.offers.get(index).ok_or("offer index")?;
+        Ok(runtime::npc_shop::NpcShopIntent {
+            npc_actor,
+            catalogue_revision: revision,
+            offer_index: u32::try_from(index)?,
+            side: offer.side,
+            action,
+            expected_unit_price: offer.unit_price,
+        })
+    };
+    let trade_intent = |index: usize| -> TestResult<wire::NpcTradeIntent> {
+        let offer = window.offers.get(index).ok_or("offer index")?;
+        Ok(wire::NpcTradeIntent {
+            npc_actor,
+            catalogue_revision: revision,
+            offer_index: u32::try_from(index)?,
+            side: offer.side,
+            quantity: 1,
+            expected_unit_price: offer.unit_price,
+        })
+    };
+    let cheapest = window
         .offers
         .iter()
         .enumerate()
         .filter(|(_, o)| o.side == wire::NpcTradeSide::Buy)
         .min_by_key(|(_, o)| o.unit_price)
-        .ok_or("Sam has no buy offer")?;
-    let result = runtime::send(
-        client.session_mut(),
-        &runtime::NpcShopCommand(shop::NpcShopIntent {
-            npc_actor: actor,
-            catalogue_revision: window.open.ok_or("trade window closed")?.1,
-            offer_index: u32::try_from(index)?,
-            side: offer.side,
-            action: shop::NpcShopAction::Look,
-            expected_unit_price: offer.unit_price,
-        }),
+        .map(|(index, _)| index)
+        .ok_or("content:oteryn:npc.sam has no buy offer")?;
+    let mut panel = ui::NpcShopPanel {
+        selected: true,
+        ..Default::default()
+    };
+    let command = ui::request(
+        &mut panel,
+        ui::Intent::Look(offer_intent(
+            cheapest,
+            runtime::npc_shop::NpcShopAction::Look,
+        )?),
     )
-    .await?;
-    if !result
-        .result
-        .is_some_and(|r| r.disposition == wire::NpcIntentDisposition::Ok && !r.look_text.is_empty())
+    .ok_or("shop look input")?;
+    ui::apply_result(
+        &mut panel,
+        &runtime::send(client.session_mut(), &command).await?,
+    );
+    if panel.feedback.is_some()
+        || panel
+            .result
+            .as_ref()
+            .is_none_or(|result| result.look_text.is_empty())
     {
-        return Err("shop look did not return a description".into());
+        return Err(format!("shop look did not describe the offer: {:?}", panel.feedback).into());
     }
     row.pass("look", "native-offer-description-nonempty");
-    let result = runtime::buy(
-        client.session_mut(),
-        &wire::NpcTradeIntent {
-            npc_actor: actor,
-            catalogue_revision: window.open.ok_or("trade window closed")?.1,
-            offer_index: u32::try_from(index)?,
-            side: offer.side,
-            quantity: 1,
-            expected_unit_price: offer.unit_price,
-        },
+
+    // SELL one lot of a carried starter item Sam buys: the item leaves, its price arrives as coins.
+    let (mut items, mut value) = split_coins(&inventory_units(client)?, refs);
+    let (sell, offer) = window
+        .offers
+        .iter()
+        .enumerate()
+        .find(|(_, o)| {
+            o.side == wire::NpcTradeSide::Sell
+                && !coin_ids.contains(&o.item_definition_ref)
+                && items.get(&o.item_definition_ref).copied().unwrap_or(0) >= u64::from(o.count)
+        })
+        .ok_or("content:oteryn:npc.sam-buys-no-carried-starter-item")?;
+    let disposition = runtime::trade(client.session_mut(), &trade_intent(sell)?).await?;
+    if disposition != wire::NpcIntentDisposition::Ok {
+        return Err(format!("sell refused: {disposition:?}").into());
+    }
+    adjust(
+        &mut items,
+        offer.item_definition_ref,
+        -i64::from(offer.count),
+    )?;
+    value += u64::from(offer.unit_price);
+    wait_trade(client, refs, &items, value, "sell").await?;
+    row.pass(
+        "sell",
+        format!(
+            "definition={};units={};gold={}",
+            offer.item_definition_ref, offer.count, offer.unit_price
+        ),
+    );
+
+    // BUY the cheapest affordable lot, preferring one Sam buys back one unit at a time.
+    let buy_back = |definition: u32| {
+        window.offers.iter().position(|o| {
+            o.side == wire::NpcTradeSide::Sell
+                && o.count == 1
+                && o.item_definition_ref == definition
+        })
+    };
+    let mut affordable: Vec<_> = window
+        .offers
+        .iter()
+        .enumerate()
+        .filter(|(_, o)| o.side == wire::NpcTradeSide::Buy && u64::from(o.unit_price) <= value)
+        .collect();
+    affordable.sort_by_key(|(_, o)| (buy_back(o.item_definition_ref).is_none(), o.unit_price));
+    let (buy, offer) = affordable.first().copied().ok_or_else(|| {
+        format!("content:no-buy-offer-affordable-with-legitimate-gold;coins={value}")
+    })?;
+    let disposition = runtime::trade(client.session_mut(), &trade_intent(buy)?).await?;
+    if disposition != wire::NpcIntentDisposition::Ok {
+        return Err(format!("buy refused: {disposition:?}").into());
+    }
+    adjust(
+        &mut items,
+        offer.item_definition_ref,
+        i64::from(offer.count),
+    )?;
+    value -= u64::from(offer.unit_price);
+    wait_trade(client, refs, &items, value, "buy").await?;
+    row.pass(
+        "buy",
+        format!(
+            "definition={};units={};gold={}",
+            offer.item_definition_ref, offer.count, offer.unit_price
+        ),
+    );
+
+    // SELL-ALL a count-1 SELL offer of a carried definition through the native shop panel.
+    let sell_all = buy_back(offer.item_definition_ref)
+        .or_else(|| {
+            window.offers.iter().position(|o| {
+                o.side == wire::NpcTradeSide::Sell
+                    && o.count == 1
+                    && !coin_ids.contains(&o.item_definition_ref)
+                    && items.contains_key(&o.item_definition_ref)
+            })
+        })
+        .ok_or("content:oteryn:npc.sam-has-no-count-1-sell-offer-for-a-carried-item")?;
+    let command = ui::request(
+        &mut panel,
+        ui::Intent::SellAll(offer_intent(
+            sell_all,
+            runtime::npc_shop::NpcShopAction::SellAll,
+        )?),
+    )
+    .ok_or("sell-all input")?;
+    ui::apply_result(
+        &mut panel,
+        &runtime::send(client.session_mut(), &command).await?,
+    );
+    let sold = panel.result.clone().ok_or("sell-all result absent")?;
+    let offer = *window.offers.get(sell_all).ok_or("sell-all offer index")?;
+    if panel.feedback.is_some()
+        || sold.sold_units == 0
+        || sold.total_gold_units != u64::from(sold.sold_units) * u64::from(offer.unit_price)
+    {
+        return Err(format!("sell-all: {:?} {sold:?}", panel.feedback).into());
+    }
+    adjust(
+        &mut items,
+        offer.item_definition_ref,
+        -i64::from(sold.sold_units),
+    )?;
+    value += sold.total_gold_units;
+    wait_trade(client, refs, &items, value, "sell-all").await?;
+    row.pass(
+        "sell-all",
+        format!(
+            "definition={};units={};gold={}",
+            offer.item_definition_ref, sold.sold_units, sold.total_gold_units
+        ),
+    );
+
+    // Bank through the native dialogue: deposit, withdraw and transfer, each confirmed.
+    let (banker, actor, opening) = find_banker(client, &mut service, world, npcs).await?;
+    let deposit = value.min(10);
+    if deposit < 2 {
+        return Err(
+            format!("content:legitimate-gold-below-bank-journey-minimum;coins={value}").into(),
+        );
+    }
+    bank(
+        client,
+        &mut service,
+        actor,
+        &format!("deposit {deposit} gold"),
+        &format!("Do you want to deposit {deposit} gold?"),
+        &format!("You have deposited {deposit} gold."),
     )
     .await?;
-    // A receipt alone cannot prove inventory/bank custody or qualify buy/sell.
-    Err(format!("buy-disposition={result:?};sell/sell-all/bank/relog-assertions-unimplemented;source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:1").into())
+    value -= deposit;
+    wait_trade(client, refs, &items, value, "deposit").await?;
+    let after = balance(client, &mut service, actor).await?;
+    if after != opening + deposit {
+        return Err(format!("deposit balance {opening}->{after}").into());
+    }
+    row.pass(
+        "deposit",
+        format!("banker={};gold={deposit};balance={after}", banker.key),
+    );
+    bank(
+        client,
+        &mut service,
+        actor,
+        "withdraw 1 gold",
+        "Do you want to withdraw 1 gold?",
+        "You have withdrawn 1 gold.",
+    )
+    .await?;
+    value += 1;
+    wait_trade(client, refs, &items, value, "withdraw").await?;
+    let withdrawn = balance(client, &mut service, actor).await?;
+    if withdrawn != after - 1 {
+        return Err(format!("withdraw balance {after}->{withdrawn}").into());
+    }
+    row.pass("withdraw", format!("gold=1;balance={withdrawn}"));
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let recipient: String = sqlx::query_scalar(
+        "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(clients.characters[0].as_slice())
+    .fetch_one(&mut connection)
+    .await?;
+    let recipient_balance = async |connection: &mut sqlx::PgConnection| -> TestResult<i64> {
+        Ok(sqlx::query_scalar(
+            "SELECT COALESCE((SELECT balance FROM game_account_bank_balances WHERE account_id=$1::uuid AND world_id=encode($2,'hex')::uuid),0)::bigint",
+        )
+        .bind(&clients.accounts[0])
+        .bind(clients.world.as_slice())
+        .fetch_one(connection)
+        .await?)
+    };
+    let received_before = recipient_balance(&mut connection).await?;
+    bank(
+        client,
+        &mut service,
+        actor,
+        &format!("transfer 1 gold to {recipient}"),
+        &format!("Do you want to transfer 1 gold to {recipient}?"),
+        &format!("Very well. You have transferred 1 gold to {recipient}."),
+    )
+    .await?;
+    let transferred = balance(client, &mut service, actor).await?;
+    let received_after = recipient_balance(&mut connection).await?;
+    if transferred != withdrawn - 1 || received_after != received_before + 1 {
+        return Err(format!(
+            "transfer balances sender {withdrawn}->{transferred} recipient {received_before}->{received_after}"
+        )
+        .into());
+    }
+    row.pass(
+        "transfer",
+        format!("gold=1;balance={transferred};recipient=+1"),
+    );
+
+    // A fresh admission shows the same inventory and the same bank balance.
+    let carried = inventory_units(client)?;
+    relog(client, clients).await?;
+    if inventory_units(client)? != carried {
+        return Err("fresh-admission inventory differs from the committed trades".into());
+    }
+    let actor = super::full_e2ef20::approach(client, world, banker).await?;
+    let mut service = ui::NpcServicePanel::default();
+    say(client, &mut service, actor, "hi").await?;
+    let persisted = balance(client, &mut service, actor).await?;
+    if persisted != transferred {
+        return Err(format!("fresh-admission balance {persisted} != {transferred}").into());
+    }
+    row.pass(
+        "relog-inventory-bank",
+        format!("inventory=same;balance={persisted}"),
+    );
+    Ok(())
 }
 
-async fn coins(_row: &mut Row, client: &mut DevClientSession) -> TestResult {
-    let definitions = provisioning::item_index()?;
-    let mut observed = Vec::new();
-    for id in [3031, 3035, 3043, 23722, 25719, 28525, 28526] {
-        let reference = provisioning::item_reference(&definitions, id)?;
-        let item = client
-            .inventory()
-            .and_then(|inventory| {
-                inventory
-                    .entries
-                    .iter()
-                    .find(|i| i.item_definition_ref == reference)
-            })
-            .copied();
-        if let Some(item) = item {
-            let result = client.use_item(item.handle).await?;
-            observed.push(format!(
-                "{id}:{}:{:?}",
-                item.count.get(),
-                result.disposition
-            ));
-        } else {
-            observed.push(format!("{id}:absent"));
-        }
+/// Native USE of a carried coin stack; waits for the backpack coin counts the use must produce.
+async fn use_coin(
+    client: &mut DevClientSession,
+    refs: [std::num::NonZeroU32; 3],
+    coin: usize,
+    stack: fn(u32) -> bool,
+    delta: [i64; 3],
+    step: &'static str,
+) -> TestResult<String> {
+    let entry = client
+        .inventory()
+        .and_then(|inventory| {
+            inventory
+                .entries
+                .iter()
+                .find(|e| e.item_definition_ref == refs[coin] && stack(e.count.get()))
+        })
+        .copied()
+        .ok_or_else(|| format!("{step}:no-carried-coin-stack-to-use"))?;
+    let before = super::full_e2ef20::backpack_coins(client, refs)?;
+    let mut expected = before;
+    for (slot, change) in expected.iter_mut().zip(delta) {
+        *slot = slot
+            .checked_add_signed(change)
+            .ok_or_else(|| format!("{step}:coin-underflow"))?;
     }
-    Err(format!("coin-use-observations={};conversion-quantities/charges/tick/retirement/relog-unproven;source:crates/gameplay/dispatch/src/gameplay_transport/coin_use.rs:42", observed.join(",")).into())
+    let outcome = client.use_item(entry.handle).await?;
+    if outcome.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
+        return Err(format!("{step}:use-{:?}", outcome.disposition).into());
+    }
+    super::full_e2ef20::wait_coins(client, refs, expected, step).await?;
+    Ok(format!("coins={before:?}->{expected:?}"))
+}
+
+async fn coins(
+    row: &mut Row,
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+) -> TestResult {
+    let refs = super::full_e2ef20::coin_refs()?;
+    // Gold comes only from ordinary NPC sales of carried starter items.
+    super::full_e2ef20::earn_gold(client, world, npcs, refs).await?;
+    // USE of a gold stack of at least 100 is GoldToPlatinum (coin_use.rs).
+    let observed = use_coin(
+        client,
+        refs,
+        0,
+        |count| count >= 100,
+        [-100, 1, 0],
+        "gold-up",
+    )
+    .await?;
+    row.pass("gold-up", observed);
+    let observed = use_coin(
+        client,
+        refs,
+        1,
+        |count| count < 100,
+        [100, -1, 0],
+        "platinum-down",
+    )
+    .await?;
+    row.pass("platinum-down", observed);
+    Err("content-gap:platinum-up-needs-100-platinum-(10000-gold)-and-crystal-down-a-crystal-coin-from-a-legitimate-source;converter-charge/converter-retirement/magic-toggle/magic-tick/relog-coins-charges-need-a-gold-or-magic-converter-(i23722/i25719/i28525/i28526)-that-no-reachable-npc-catalogue-offers;source:crates/gameplay/dispatch/src/gameplay_transport/coin_use.rs:1".into())
 }
 
 async fn trade(
@@ -382,6 +775,7 @@ async fn trade(
         .copied()
         .ok_or("no direct-backpack leaf for real trade;starter backpack itself is not a leaf")?;
     let mut peer = connect_character(clients, 0x81, 0).await?;
+    let mut peer_open = true;
     let result: TestResult = async {
         approach_peer(client, &peer, world).await?;
         let command = runtime::PlayerTradeCommand::new(runtime::player_trade::Intent::Offer {
@@ -413,9 +807,145 @@ async fn trade(
             return Err("active trade cancellation did not close escrow".into());
         }
         row.pass("cancel", "active-offer-closed");
-        Err("accept/logout-race/relog-custody assertions unfinished".into())
+        // Offer and counter-offer through the native panels, then both accept.
+        let counter = peer
+            .inventory()
+            .and_then(|i| i.entries.first())
+            .copied()
+            .ok_or("content:peer-starter-has-no-direct-backpack-leaf-to-counter-offer")?;
+        let mut panel = ui::PlayerTradePanel {
+            selected: true,
+            ..Default::default()
+        };
+        let mut peer_panel = ui::PlayerTradePanel {
+            selected: true,
+            ..Default::default()
+        };
+        let command = ui::request(
+            &mut panel,
+            ui::Intent::Offer {
+                partner: own(&peer)?,
+                item: item.handle.get(),
+            },
+        )
+        .ok_or("trade offer input")?;
+        let reply = runtime::send(client.session_mut(), &command).await?;
+        ui::apply_result(&mut panel, &reply);
+        if reply.result != runtime::player_trade::ResultCode::Offered {
+            return Err(format!("second trade request: {:?}", reply.result).into());
+        }
+        peer.session_mut().read_gated_delta(26, 1).await?;
+        let command = ui::request(
+            &mut peer_panel,
+            ui::Intent::Offer {
+                partner: own(client)?,
+                item: counter.handle.get(),
+            },
+        )
+        .ok_or("trade counter offer input")?;
+        let reply = runtime::send(peer.session_mut(), &command).await?;
+        ui::apply_result(&mut peer_panel, &reply);
+        if reply.result != runtime::player_trade::ResultCode::Offered {
+            return Err(format!("trade counter offer: {:?}", reply.result).into());
+        }
+        let delta = client.session_mut().read_gated_delta(26, 1).await?;
+        panel.state = Some(
+            runtime::player_trade::decode_state(&delta.payload)
+                .map_err(|error| format!("trade update: {error:?}"))?,
+        );
+        let command = ui::request(&mut panel, ui::Intent::Accept).ok_or("trade accept input")?;
+        let reply = runtime::send(client.session_mut(), &command).await?;
+        ui::apply_result(&mut panel, &reply);
+        if reply.result != runtime::player_trade::ResultCode::Accepted {
+            return Err(format!("trade accept: {:?}", reply.result).into());
+        }
+        let delta = peer.session_mut().read_gated_delta(26, 1).await?;
+        peer_panel.state = Some(
+            runtime::player_trade::decode_state(&delta.payload)
+                .map_err(|error| format!("trade counter update: {error:?}"))?,
+        );
+        let command =
+            ui::request(&mut peer_panel, ui::Intent::Accept).ok_or("trade counter accept input")?;
+        let reply = runtime::send(peer.session_mut(), &command).await?;
+        ui::apply_result(&mut peer_panel, &reply);
+        if reply.result != runtime::player_trade::ResultCode::Completed {
+            return Err(format!("trade completion: {:?}", reply.result).into());
+        }
+        client.session_mut().read_gated_delta(26, 1).await?;
+        let mut mine = inventory_units(client)?;
+        let mut theirs = inventory_units(&peer)?;
+        for (units, gone, came) in [(&mut mine, item, counter), (&mut theirs, counter, item)] {
+            for (entry, sign) in [(gone, -1), (came, 1)] {
+                let slot = units.entry(entry.item_definition_ref.get()).or_default();
+                *slot = slot
+                    .checked_add_signed(sign * i64::from(entry.count.get()))
+                    .ok_or("trade unit underflow")?;
+                if *slot == 0 {
+                    units.remove(&entry.item_definition_ref.get());
+                }
+            }
+        }
+        wait_inventory(client, &mine).await?;
+        wait_inventory(&mut peer, &theirs).await?;
+        row.pass("accept", "both-inventories-exchanged-exactly");
+
+        // A partner that logs out while an offer is open ends the trade; the offer stays carried.
+        let received = client
+            .inventory()
+            .and_then(|i| {
+                i.entries
+                    .iter()
+                    .find(|e| e.item_definition_ref == counter.item_definition_ref)
+            })
+            .copied()
+            .ok_or("received leaf absent from the direct backpack")?;
+        let command = runtime::PlayerTradeCommand::new(runtime::player_trade::Intent::Offer {
+            partner: own(&peer)?,
+            item: received.handle.get(),
+        })
+        .ok_or("race offer encoding")?;
+        let reply = runtime::send(client.session_mut(), &command).await?;
+        if reply.result != runtime::player_trade::ResultCode::Offered {
+            return Err(format!("race offer: {:?}", reply.result).into());
+        }
+        peer.session_mut().read_gated_delta(26, 1).await?;
+        let (logout, detail, attempts, busy_timed_out) =
+            super::logout_retrying_busy(&mut peer).await?;
+        peer_open = false;
+        if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("partner logout during open trade refused: {detail}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+        }
+        let delta = client.session_mut().read_gated_delta(26, 1).await?;
+        let state = runtime::player_trade::decode_state(&delta.payload)
+            .map_err(|error| format!("race update: {error:?}"))?;
+        if state.trade_id.is_some() {
+            return Err(format!("partner logout left the trade open: {state:?}").into());
+        }
+        wait_inventory(client, &mine).await?;
+        row.pass("logout-race", "partner-logout-closed-trade;offer-retained");
+
+        // Fresh admissions show the exchanged custody on both sides.
+        relog(client, clients).await?;
+        if inventory_units(client)? != mine {
+            return Err("fresh-admission inventory differs from the completed trade".into());
+        }
+        let mut fresh = connect_character(clients, 0x86, 0).await?;
+        let persisted = inventory_units(&fresh)?;
+        let (logout, detail, attempts, busy_timed_out) =
+            super::logout_retrying_busy(&mut fresh).await?;
+        if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("partner fresh logout refused: {detail}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+        }
+        if persisted != theirs {
+            return Err("partner fresh-admission inventory differs from the completed trade".into());
+        }
+        row.pass("relog-custody", "both-fresh-admissions-match-exchange");
+        Ok(())
     }
     .await;
+    if !peer_open {
+        return result;
+    }
     let (cleanup_result, cleanup, attempts, busy_timed_out) =
         super::logout_retrying_busy(&mut peer).await?;
     if cleanup_result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
@@ -424,7 +954,12 @@ async fn trade(
     result
 }
 
-async fn market(row: &mut Row, client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+async fn market(
+    row: &mut Row,
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+) -> TestResult {
     use oteryn_dev_client::{client_runtime::market as runtime, client_ui::market as ui};
     locker(client, world).await?;
     let mut panel = ui::MarketPanel {
@@ -484,7 +1019,97 @@ async fn market(row: &mut Row, client: &mut DevClientSession, world: &BundleWorl
         return Err("cancelled offer remains active".into());
     }
     row.pass("cancel", "cancelled-id-absent-from-own-offers");
-    Err("cross-player-accept/history/relog-settlement assertions unfinished".into())
+    let command = ui::request(&mut panel, ui::Intent::History).ok_or("market history input")?;
+    let reply = runtime::send(client.session_mut(), &command).await?;
+    if !ui::apply_result(&mut panel, &reply)
+        || !panel.rows.iter().any(|r| r.offer == id && r.state == 2)
+    {
+        return Err("cancelled offer absent from history".into());
+    }
+    row.pass("history", "cancelled-id-in-history-state-2");
+
+    // A second player sells into a fresh one-unit buy offer through its own native panel.
+    let command = ui::request(&mut panel, ui::Intent::CreateOffer).ok_or("market create input")?;
+    let reply = runtime::send(client.session_mut(), &command).await?;
+    if !ui::apply_result(&mut panel, &reply) {
+        return Err(format!("second market create refused: {:?}", reply.reply).into());
+    }
+    let accepted = reply
+        .reply
+        .ok_or("second market create receipt missing")?
+        .offer;
+    let mut peer = connect_character(clients, 0x87, 0).await?;
+    let result: TestResult = async {
+        let mut units = inventory_units(&peer)?;
+        let carried = units.entry(panel.definition).or_default();
+        *carried = carried
+            .checked_sub(1)
+            .ok_or("content:peer-starter-does-not-carry-the-offered-definition")?;
+        if *carried == 0 {
+            units.remove(&panel.definition);
+        }
+        locker(&mut peer, world).await?;
+        let mut peer_panel = ui::MarketPanel {
+            selected: true,
+            selected_offer: Some(accepted),
+            ..Default::default()
+        };
+        let command =
+            ui::request(&mut peer_panel, ui::Intent::AcceptOffer).ok_or("market accept input")?;
+        let reply = runtime::send(peer.session_mut(), &command).await?;
+        if !ui::apply_result(&mut peer_panel, &reply) {
+            return Err(format!("market accept refused: {:?}", reply.reply).into());
+        }
+        wait_inventory(&mut peer, &units).await
+    }
+    .await;
+    let (logout, detail, attempts, busy_timed_out) = super::logout_retrying_busy(&mut peer).await?;
+    result?;
+    if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("market peer logout refused: {detail}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+    }
+    let settled = |panel: &ui::MarketPanel| {
+        [id, accepted]
+            .iter()
+            .all(|offer| panel.rows.iter().any(|r| r.offer == *offer && r.state != 1))
+    };
+    let command = ui::request(&mut panel, ui::Intent::History).ok_or("market history input")?;
+    let reply = runtime::send(client.session_mut(), &command).await?;
+    if !ui::apply_result(&mut panel, &reply) || !settled(&panel) {
+        return Err("accepted offer absent from the creator's history".into());
+    }
+    row.pass(
+        "accept",
+        "peer-sold-into-buy-offer;item-left-peer;offer-ended-in-history",
+    );
+
+    // A fresh admission at the same locker shows the same ended offers and no active one.
+    relog(client, clients).await?;
+    locker(client, world).await?;
+    let mut panel = ui::MarketPanel {
+        selected: true,
+        ..Default::default()
+    };
+    let command = ui::request(&mut panel, ui::Intent::OwnOffers).ok_or("market own input")?;
+    let reply = runtime::send(client.session_mut(), &command).await?;
+    if !ui::apply_result(&mut panel, &reply)
+        || panel
+            .rows
+            .iter()
+            .any(|r| r.offer == id || r.offer == accepted)
+    {
+        return Err("fresh-admission own offers still list an ended offer".into());
+    }
+    let command = ui::request(&mut panel, ui::Intent::History).ok_or("market history input")?;
+    let reply = runtime::send(client.session_mut(), &command).await?;
+    if !ui::apply_result(&mut panel, &reply) || !settled(&panel) {
+        return Err("fresh-admission history lost an ended offer".into());
+    }
+    row.pass(
+        "relog-settlement",
+        "fresh-admission-history-and-own-offers-match",
+    );
+    Ok(())
 }
 
 async fn storage(

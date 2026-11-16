@@ -73,7 +73,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     });
 }
 
-fn coin_refs() -> TestResult<[std::num::NonZeroU32; 3]> {
+pub(super) fn coin_refs() -> TestResult<[std::num::NonZeroU32; 3]> {
     let index = provisioning::item_index()?;
     Ok([
         provisioning::item_reference(&index, GOLD_ID)?,
@@ -82,7 +82,7 @@ fn coin_refs() -> TestResult<[std::num::NonZeroU32; 3]> {
     ])
 }
 
-fn backpack_coins(client: &DevClientSession, refs: [std::num::NonZeroU32; 3]) -> TestResult<[u64; 3]> {
+pub(super) fn backpack_coins(client: &DevClientSession, refs: [std::num::NonZeroU32; 3]) -> TestResult<[u64; 3]> {
     let inventory = client.inventory().ok_or("step=inventory observed=snapshot-absent")?;
     let mut counts = [0; 3];
     for entry in &inventory.entries {
@@ -93,7 +93,7 @@ fn backpack_coins(client: &DevClientSession, refs: [std::num::NonZeroU32; 3]) ->
     Ok(counts)
 }
 
-async fn wait_coins(
+pub(super) async fn wait_coins(
     client: &mut DevClientSession,
     refs: [std::num::NonZeroU32; 3],
     expected: [u64; 3],
@@ -113,7 +113,7 @@ async fn wait_coins(
     }
 }
 
-async fn talk(client: &mut DevClientSession, actor: EntityRef, text: &str) -> TestResult<wire::NpcConversation> {
+pub(super) async fn talk(client: &mut DevClientSession, actor: EntityRef, text: &str) -> TestResult<wire::NpcConversation> {
     tokio::time::sleep(Duration::from_millis(260)).await;
     let disposition = runtime::talk(
         client.session_mut(),
@@ -142,7 +142,7 @@ fn visible_npc(client: &DevClientSession, npc: &oteryn_world_bundle::npc::Npc) -
     }).map(|entity| entity.entity)
 }
 
-async fn approach(
+pub(super) async fn approach(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npc: &oteryn_world_bundle::npc::Npc,
@@ -194,7 +194,7 @@ async fn exchange(
     last.ok_or_else(|| "step=exchange observed=empty-command-sequence".into())
 }
 
-async fn earn_gold(
+pub(super) async fn earn_gold(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
@@ -271,7 +271,7 @@ async fn earn_gold(
     Ok(observed)
 }
 
-fn exact_delta(before: [u64; 3], after: [u64; 3], delta: [i64; 3]) -> bool {
+pub(super) fn exact_delta(before: [u64; 3], after: [u64; 3], delta: [i64; 3]) -> bool {
     before.into_iter().zip(after).zip(delta).all(|((before, after), delta)| {
         i128::from(after) - i128::from(before) == i128::from(delta)
     })
