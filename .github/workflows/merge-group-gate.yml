@@ -996,10 +996,10 @@ jobs:
           PY
 
       - name: Run registered PostgreSQL E2E targets
-        # Tee the run output so a failure step can list every failed test of this partition.
-        shell: bash --noprofile --norc -c 'bash --noprofile --norc -eo pipefail "$0" 2>&1 | tee -a "$RUNNER_TEMP/pg-nextest.log"; exit "${PIPESTATUS[0]}"' {0}
         run: |
           set -euo pipefail
+          # Copy the run output to a log so a failure step can list every failed test of this partition.
+          exec > >(tee -a "$RUNNER_TEMP/pg-nextest.log") 2>&1
           mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-e2e.filters"
           if (( ${#filters[@]} == 0 )); then exit 0; fi
           cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" \
@@ -1008,10 +1008,10 @@ jobs:
 
       - name: Run PostgreSQL-backed library tests
         if: ${{ !cancelled() && steps.partition.outcome == 'success' }}
-        # Tee the run output so a failure step can list every failed test of this partition.
-        shell: bash --noprofile --norc -c 'bash --noprofile --norc -eo pipefail "$0" 2>&1 | tee -a "$RUNNER_TEMP/pg-nextest.log"; exit "${PIPESTATUS[0]}"' {0}
         run: |
           set -euo pipefail
+          # Copy the run output to a log so a failure step can list every failed test of this partition.
+          exec > >(tee -a "$RUNNER_TEMP/pg-nextest.log") 2>&1
           mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib.filters"
           if (( ${#filters[@]} == 0 )); then exit 0; fi
           cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" \
