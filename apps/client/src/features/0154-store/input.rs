@@ -115,7 +115,7 @@ impl crate::play::PlayLink {
     }
 }
 
-#[cfg(any(windows, test, feature = "bevy-shell"))]
+#[cfg(any(test, bevy_shell))]
 impl PlayLink {
     /// Called only after confirmation, with the exact displayed quote.
     pub fn store_confirm_purchase(
@@ -150,7 +150,7 @@ impl PlayLink {
 #[path = "input/gift.rs"]
 pub(in crate::play) mod gift;
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl crate::play::Outbox {
     pub(crate) fn bevy_store_initialize(&self) {
         self.store_initialize(true, false);

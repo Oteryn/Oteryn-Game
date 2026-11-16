@@ -196,7 +196,7 @@ fn an_unselected_walk_sends_nothing_and_leaves_arrows_usable() -> Result<(), Bat
     Ok(())
 }
 
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 impl crate::play::Outbox {
     pub(crate) fn bevy_target_walk_selected(&self) {
         self.target_move_initialize(true);

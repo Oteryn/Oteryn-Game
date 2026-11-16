@@ -88,7 +88,7 @@ pub(in crate::play) fn edit(
     }
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl crate::play::Outbox {
     pub(crate) fn bevy_bestiary_initialize(&self) {
         lock(&self.0).properties.charm_progression.selected = true;

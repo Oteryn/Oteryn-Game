@@ -11,18 +11,18 @@ impl PlayLink {
     pub fn inspection_set_open(&self, open: bool) {
         lock(&self.mailbox).discovery.inspection.open = open;
     }
-    #[cfg(all(test, feature = "bevy-shell"))]
+    #[cfg(all(test, bevy_shell))]
     pub(crate) fn bevy_item_details_selected(&self, selected: bool) {
         lock(&self.mailbox).discovery.inspection.selected = selected;
     }
-    #[cfg(all(test, feature = "bevy-shell"))]
+    #[cfg(all(test, bevy_shell))]
     pub(crate) fn bevy_item_details_response(
         &self,
         response: &oteryn_client_runtime::server_mechanic::ServerMechanicResponse,
     ) {
         crate::play::Outbox(self.mailbox.clone()).discovery_result(132, response);
     }
-    #[cfg(all(test, feature = "bevy-shell"))]
+    #[cfg(all(test, bevy_shell))]
     pub(crate) fn bevy_item_details_link(&self) -> Self {
         Self {
             owns_session: false,

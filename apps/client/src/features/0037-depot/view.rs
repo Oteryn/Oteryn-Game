@@ -23,13 +23,13 @@ impl PlayLink {
 mod native;
 
 /// Shared frontend actions are bound to the exact displayed inventory and depot page.
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum DepotUiAction {
     Close,
     Request(Intent),
 }
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 impl PlayLink {
     pub(crate) fn depot_action_bound(&self, expected: &DepotPanel, action: DepotUiAction) {
         let mut mailbox = lock(&self.mailbox);

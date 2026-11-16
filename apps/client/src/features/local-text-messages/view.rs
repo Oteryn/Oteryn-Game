@@ -1,11 +1,11 @@
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 #[derive(Debug, Clone)]
 pub(crate) struct LookMessage {
     pub receipt: u64,
     pub text: String,
 }
 
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 impl crate::play::PlayLink {
     pub(crate) fn look_message(&self) -> Option<LookMessage> {
         crate::play::mailbox::lock(&self.mailbox)
@@ -14,7 +14,7 @@ impl crate::play::PlayLink {
     }
 }
 
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 impl crate::play::PlayView {
     pub(crate) fn screen_message_controls(&self) -> (bool, bool, u64, u64) {
         let center =
@@ -31,7 +31,7 @@ impl crate::play::PlayView {
     }
 }
 
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 pub(in crate::play) fn record_look(
     mailbox: &mut crate::play::mailbox::Mailbox,
     action: oteryn_client_runtime::world_interaction::Action,
@@ -59,5 +59,5 @@ pub(in crate::play) fn record_look(
         .push(oteryn_client_ui::chat::NoticeClass::Status, text, received);
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 mod tests;

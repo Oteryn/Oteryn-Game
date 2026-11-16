@@ -100,11 +100,11 @@ pub(in crate::play) mod memorial;
 #[cfg(windows)]
 #[path = "native.rs"]
 mod native;
-#[cfg(any(windows, all(test, not(feature = "bevy-shell"))))]
+#[cfg(any(windows, all(test, not(bevy_shell))))]
 #[path = "preview.rs"]
 pub(in crate::play) mod preview;
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl crate::play::Outbox {
     pub(crate) fn bevy_outfit_test_panel(&self, panel: oteryn_client_ui::appearance::Panel) {
         lock(&self.0).properties.appearance = panel;

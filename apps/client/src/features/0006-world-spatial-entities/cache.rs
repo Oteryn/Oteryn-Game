@@ -25,7 +25,7 @@ pub(super) struct PresentationCache {
     image: Option<Arc<AtlasImage>>,
     visuals: BTreeMap<(u32, bool, u32, [i32; 2]), Vec<Draw>>,
     packed_cells: usize,
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     items: BTreeMap<(u16, u32, u32), Vec<Draw>>,
     #[cfg(test)]
     counts: [usize; 3], // asset loads, base unpacks, atlas packs
@@ -52,7 +52,7 @@ impl PresentationCache {
         self.outfit_free.clear();
         self.visuals.clear();
         self.icon_cells = None;
-        #[cfg(feature = "bevy-shell")]
+        #[cfg(bevy_shell)]
         self.items.clear();
         self.image = None;
         self.packed_cells = 0;
@@ -456,5 +456,5 @@ mod outfit_tests {
     }
 }
 
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 include!("cache_items.rs");

@@ -1,9 +1,9 @@
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 #[path = "presentation.rs"]
 mod presentation;
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::player_trade::PlayerTradePanel;
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 pub use presentation::{
     TradeAction, TradePhase, same_presentation, trade_action_enabled, trade_phase,
     trade_picker_available,
@@ -30,7 +30,7 @@ impl PlayLink {
     }
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl crate::play::Outbox {
     pub(crate) fn bevy_trade_initialize(&self, state: Option<oteryn_session::player_trade::State>) {
         self.player_trade_initialize(true, state);

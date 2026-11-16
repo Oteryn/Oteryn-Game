@@ -151,7 +151,7 @@ impl PlayView {
     }
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 pub(crate) fn bevy_diagonal_fixture(outbox: &crate::play::Outbox) {
     outbox.diagonal_movement_initialize(true);
 }

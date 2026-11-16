@@ -67,7 +67,7 @@ impl PlayLink {
             price,
         )
     }
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(crate) fn analyser_item_price_for(
         &self,
         tool: oteryn_client_ui::analyser::Tool,

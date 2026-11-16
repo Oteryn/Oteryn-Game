@@ -5,10 +5,10 @@ extern crate oteryn_client_ui;
 pub mod about;
 #[path = "features/local-account-services/mod.rs"]
 pub mod account_services;
-#[cfg(any(windows, test, feature = "bevy-shell"))]
+#[cfg(any(test, bevy_shell))]
 #[path = "features/0025-appearance/mount_binding.rs"]
 mod appearance_mount_binding;
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 pub mod bevy_shell;
 pub mod bulletin;
 pub mod cast_watch;

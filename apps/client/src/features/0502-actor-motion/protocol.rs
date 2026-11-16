@@ -1,4 +1,4 @@
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 use crate::play::PlayLink;
 use crate::play::{Outbox, mailbox::lock};
 
@@ -13,7 +13,7 @@ impl Outbox {
     }
 }
 
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 impl PlayLink {
     pub(crate) fn riding(&self) -> Option<bool> {
         let mailbox = lock(&self.mailbox);
@@ -52,7 +52,7 @@ impl PlayLink {
     }
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl Outbox {
     pub(crate) fn bevy_mount_test_actor(&self, actor: oteryn_session::WorldSpatialEntity) {
         self.actor_motion_initialize(true);

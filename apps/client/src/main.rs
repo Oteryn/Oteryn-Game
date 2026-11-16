@@ -1,9 +1,8 @@
 #[macro_use]
 extern crate oteryn_client_ui;
-#[cfg(windows)]
-mod windows_shell;
 
-/// Build the process runtime once; the window owns every native entry attempt.
+/// Build the process runtime once for the pre-native entry.
+#[cfg(not(windows))]
 fn native_client() -> Option<oteryn_client::ClientBootstrap> {
     match oteryn_client::ClientBootstrap::new() {
         Ok(client) => Some(client),
@@ -37,7 +36,8 @@ fn installation_check() -> Option<std::process::ExitCode> {
 }
 
 /// Holds `Global\OterynClient-<SID>` for the process lifetime and refuses to start while an
-/// install or uninstall holds the transaction mutex (CLIENT-INSTALLER-0 §2.1).
+/// install or uninstall holds the transaction mutex (CLIENT-INSTALLER-0 §2.1), then runs the
+/// Bevy desktop host over the shared client owners.
 #[cfg(windows)]
 fn main() -> std::process::ExitCode {
     oteryn_client::crash_report::install_hook();
@@ -61,12 +61,12 @@ fn main() -> std::process::ExitCode {
         };
     }
 
-    match windows_shell::run(native_client()) {
+    match oteryn_client::bevy_shell::run(std::env::args_os().skip(1)) {
         Ok(()) => std::process::ExitCode::SUCCESS,
         Err(error) => {
             oteryn_client::crash_report::record_startup_failure(
                 "client",
-                &format!("windows shell failed: {error}"),
+                &format!("Bevy host failed: {error}"),
             );
             leprintln!("Error: {error:?}", error = error);
             std::process::ExitCode::FAILURE

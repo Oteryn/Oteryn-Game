@@ -101,7 +101,7 @@ fn occurrence() -> Option<[u8; 16]> {
 #[path = "gem_presentation.rs"]
 pub(in crate::play) mod gem_presentation;
 
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 #[path = "shared.rs"]
 pub(crate) mod shared;
 

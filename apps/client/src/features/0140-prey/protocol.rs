@@ -11,7 +11,7 @@ impl Outbox {
     }
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl Outbox {
     pub(crate) fn bevy_prey_initialize(&self, selected: bool) {
         self.prey_initialize(selected);

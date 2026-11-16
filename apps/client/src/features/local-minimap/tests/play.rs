@@ -42,7 +42,7 @@ fn minimap_projects_live_tiles_creatures_floor_changes_and_reset() -> Result<(),
     let map = snapshot(101);
     play.set_live_map(&map)?;
     let base = mini(&play);
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     {
         let range = play.scene().minimap_quad_range();
         assert_eq!(range.len(), base.len());
@@ -390,7 +390,7 @@ fn minimap_edge_clicks_never_queue_out_of_world_navigation() -> Result<(), Batch
     Ok(())
 }
 
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 impl PlayView {
     pub(crate) fn bevy_minimap_colours_fixture(&mut self) {
         let mut map = crate::play::feature_local_minimap::state::lock(&self.minimap);

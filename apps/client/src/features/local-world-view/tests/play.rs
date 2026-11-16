@@ -222,9 +222,9 @@ fn floor_replacement_follows_origin_and_draws_visible_floors() -> Result<(), Bat
     for floor in [-10, -9, -8] {
         assert!(view.local.world().floor_tile(floor, 100, 200).is_some());
     }
-    #[cfg(not(feature = "bevy-shell"))]
+    #[cfg(not(bevy_shell))]
     assert_eq!(view.scene().sprites().len(), 4); // Three visible map glyphs and the own actor.
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     assert_eq!(view.scene().sprites().len(), 5); // The hidden floor remains available for fading.
     Ok(())
 }
@@ -277,9 +277,9 @@ fn surface_and_deep_windows_draw_every_server_visible_floor() -> Result<(), Batc
         hide_minimap(&mut view)?;
         view.set_live_map(&map)?;
         assert_eq!(view.local.world().tile_count(), count);
-        #[cfg(not(feature = "bevy-shell"))]
+        #[cfg(not(bevy_shell))]
         assert_eq!(view.scene().sprites().len(), count + 1);
-        #[cfg(feature = "bevy-shell")]
+        #[cfg(bevy_shell)]
         assert_eq!(view.scene().sprites().len(), map.tiles.len() + 1);
     }
     Ok(())

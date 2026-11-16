@@ -106,7 +106,7 @@ impl Outbox {
     }
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl Outbox {
     pub(crate) fn bevy_server_info_quest_observation_command(
         &self,

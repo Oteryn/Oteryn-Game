@@ -119,7 +119,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(super) screen_look: Option<super::feature_local_text_messages::view::LookMessage>,
     pub(super) shared_frontend: bool,
     pub(super) command_latency: Option<(std::time::Instant, std::time::Duration)>,
@@ -171,7 +171,7 @@ pub(super) struct Mailbox {
     pub(super) depot: oteryn_client_ui::depot::DepotPanel,
     pub(super) depot_shutdown: bool,
     pub(super) target_walk: oteryn_client_ui::target_move::WalkState,
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(super) achievement_banners: std::collections::VecDeque<String>,
     pub(super) achievement_notices: oteryn_client_ui::achievement_notices::AchievementNoticesPanel,
     pub(super) vitals: Option<oteryn_session::ActorVitals>,

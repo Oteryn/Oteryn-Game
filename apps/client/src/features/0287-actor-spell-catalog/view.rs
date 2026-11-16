@@ -12,7 +12,7 @@ mod book;
 mod book_detail;
 #[path = "preferences.rs"]
 mod preferences;
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 pub use book::{GROUPS as SPELLBOOK_GROUPS, VOCATIONS as SPELLBOOK_VOCATIONS};
 pub use book::{SpellbookFilter, SpellbookState};
 #[cfg(windows)]
@@ -183,7 +183,7 @@ fn snapshot(mailbox: &crate::play::mailbox::Mailbox) -> (bool, bool, Vec<String>
 #[path = "archive_tests.rs"]
 mod archive_tests;
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl crate::play::Outbox {
     pub(crate) fn bevy_journal_spellbook_select(&self) {
         self.spellbook_details_initialize(true);
@@ -195,7 +195,7 @@ impl crate::play::Outbox {
         self.spellbook_details_result(result);
     }
 }
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl crate::play::Outbox {
     pub(crate) fn bevy_journal_catalogue(
         &self,

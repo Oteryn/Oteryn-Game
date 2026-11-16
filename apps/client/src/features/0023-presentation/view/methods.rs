@@ -139,7 +139,7 @@ impl PlayView {
         fixed.push(fixed_start..batch.len());
         if !effects {
             self.scene.player_quads.extend(fixed);
-            #[cfg(feature = "bevy-shell")]
+            #[cfg(bevy_shell)]
             { self.scene.native_hud_quads = hud_quads; }
             return Ok(());
         }
@@ -282,9 +282,9 @@ impl PlayView {
             }
         }
         self.scene.player_quads.extend(fixed);
-        #[cfg(feature = "bevy-shell")]
+        #[cfg(bevy_shell)]
         { self.scene.native_hud_quads = hud_quads; }
-        #[cfg(not(feature = "bevy-shell"))]
+        #[cfg(not(bevy_shell))]
         let _ = hud_quads;
         Ok(())
     }

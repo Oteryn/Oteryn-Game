@@ -3,7 +3,7 @@ use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::market::{Intent, request};
 impl PlayLink {
     /// Confirms one currently displayed sell offer under the mailbox's single owner lock.
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(crate) fn market_buy_bound(
         &self,
         expected: &oteryn_client_ui::market::MarketPanel,

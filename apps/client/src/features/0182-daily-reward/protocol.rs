@@ -49,7 +49,7 @@ impl Outbox {
     }
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl Outbox {
     pub(crate) fn bevy_reward_wall(&self, panel: oteryn_client_ui::daily_reward::DailyRewardPanel) {
         lock(&self.0).daily_reward = panel;

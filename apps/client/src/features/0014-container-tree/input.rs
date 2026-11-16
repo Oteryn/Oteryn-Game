@@ -83,7 +83,7 @@ impl PlayLink {
             panel.close()
         })
     }
-    #[cfg(all(test, feature = "bevy-shell"))]
+    #[cfg(all(test, bevy_shell))]
     pub(crate) fn bevy_items_fixture(
         outbox: &crate::play::Outbox,
         inventory: Option<oteryn_session::CharacterInventory>,

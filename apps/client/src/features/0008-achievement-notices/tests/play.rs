@@ -250,7 +250,7 @@ fn recovery_snapshot_replaces_achievement_totals_without_replaying_notices() {
     let panel = link.achievement_notices_panel();
     assert_eq!(panel.watermark, Some(expected));
     assert!(panel.recent.is_empty());
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     assert!(
         crate::play::mailbox::lock(&outbox.0)
             .achievement_banners

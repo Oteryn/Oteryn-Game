@@ -115,5 +115,5 @@ mod bridge;
 pub use bridge::ServerModalPanel;
 pub(in crate::play) use bridge::SharedModal;
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 pub(crate) use bridge::BevyServerModalFixture;

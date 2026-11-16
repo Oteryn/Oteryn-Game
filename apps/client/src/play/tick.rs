@@ -6,7 +6,7 @@ use super::{
 use oteryn_platform_client::native_login::PublicClass;
 
 impl PlayView {
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(crate) const fn step_receipt(&self) -> Option<super::StepReceipt> {
         self.last_step
     }
@@ -27,7 +27,7 @@ impl PlayView {
                 PlayEvent::ActionFeedback(line) => self.action_line = line,
                 PlayEvent::Stepped(outcome) => {
                     self.apply(&outcome).map_err(|_error| UNAVAILABLE)?;
-                    #[cfg(feature = "bevy-shell")]
+                    #[cfg(bevy_shell)]
                     {
                         self.last_step = Some(super::StepReceipt {
                             reply_count: self

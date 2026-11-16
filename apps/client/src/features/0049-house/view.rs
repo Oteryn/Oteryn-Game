@@ -92,7 +92,7 @@ fn text(panel: &oteryn_client_ui::house::Panel) -> String {
 #[path = "view/ownership_window.rs"]
 pub(super) mod ownership_window;
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl PlayLink {
     pub(crate) fn bevy_house_ownership_result(
         &self,

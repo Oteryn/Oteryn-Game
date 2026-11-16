@@ -202,7 +202,7 @@ fn open_window(link: &PlayLink) {
 #[path = "tests/e2e_n04.rs"]
 mod e2e_n04;
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl crate::play::Outbox {
     pub(crate) fn bevy_bug_report_result(
         &self,

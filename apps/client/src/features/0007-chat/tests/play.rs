@@ -242,7 +242,7 @@ fn clear_oldest_utility_survives_session_publish_and_new_chat() -> Result<(), Er
         .map_err(|_| "chat clear test thread panicked")?
 }
 
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 impl crate::play::Outbox {
     pub(crate) fn bevy_chat_guild_member(&self) {
         let mut mailbox = crate::play::mailbox::lock(&self.0);

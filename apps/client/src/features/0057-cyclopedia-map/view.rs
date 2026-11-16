@@ -356,7 +356,7 @@ mod atlas_tests;
 #[path = "view/discovery_tests.rs"]
 mod discovery_tests;
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl crate::play::Outbox {
     pub(crate) fn bevy_cyclopedia_map_selected(&self) {
         lock(&self.0).properties.cyclopedia_map.selected = true;

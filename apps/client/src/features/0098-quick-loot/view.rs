@@ -34,7 +34,7 @@ fn loot_panel(mailbox: &crate::play::mailbox::Mailbox) -> oteryn_client_ui::quic
     }
     panel
 }
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 #[derive(Clone, PartialEq, Eq)]
 pub enum QuickLootControl {
     Request(oteryn_client_ui::quick_loot::Action),
@@ -45,7 +45,7 @@ impl PlayLink {
     pub fn quick_loot_panel(&self) -> oteryn_client_ui::quick_loot::Panel {
         loot_panel(&lock(&self.mailbox))
     }
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub fn quick_loot_dispatch_bound(
         &self,
         expected: &oteryn_client_ui::quick_loot::Panel,
@@ -100,7 +100,7 @@ pub(in crate::play) use native_context::{available, choose, decorate};
 #[path = "native_context.rs"]
 mod native_context;
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl crate::play::Outbox {
     pub(crate) fn bevy_quick_loot_end(&self) {
         self.end(oteryn_platform_client::native_login::PublicClass::SessionUnavailable);

@@ -69,7 +69,7 @@ pub(in crate::play) fn enqueue_book(
     enqueue(mailbox, commands, Query::Book { definition, page })
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl Outbox {
     pub(crate) fn bevy_market_initialize(&self, selected: bool) {
         self.market_initialize(selected);
@@ -83,7 +83,7 @@ impl Outbox {
     }
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl Outbox {
     pub(crate) fn bevy_market_response(
         &self,

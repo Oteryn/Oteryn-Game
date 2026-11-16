@@ -61,7 +61,7 @@ impl PlayLink {
         };
         send_move(&mut mailbox, &self.commands, request);
     }
-    #[cfg(all(test, feature = "bevy-shell"))]
+    #[cfg(all(test, bevy_shell))]
     pub(crate) fn bevy_manual_sort_fixture(outbox: &crate::play::Outbox, selected: bool) {
         outbox.container_manual_sort_initialize(selected);
     }

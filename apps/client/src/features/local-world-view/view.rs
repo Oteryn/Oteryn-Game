@@ -38,7 +38,7 @@ impl PlayView {
         self.floor
     }
 
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(crate) fn prepare_item_icons<'a>(
         &mut self,
         items: impl Iterator<Item = &'a oteryn_session::ItemEntry>,
@@ -51,7 +51,7 @@ impl PlayView {
         Ok(())
     }
 
-    #[cfg(all(test, feature = "bevy-shell"))]
+    #[cfg(all(test, bevy_shell))]
     pub(crate) fn prime_icon_assets(&mut self, root: std::path::PathBuf) {
         self.scene.prime_visual_assets(root);
     }

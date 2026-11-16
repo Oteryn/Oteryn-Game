@@ -50,7 +50,7 @@ impl crate::play::Outbox {
     }
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl Outbox {
     pub(crate) fn bevy_task_board_fixture(&self, panel: oteryn_client_ui::task_board::TaskBoardPanel) {
         lock(&self.0).task_board = panel;

@@ -2,7 +2,7 @@ use crate::play::{PlayLink, mailbox::lock};
 
 impl PlayLink {
     /// Consume only transient Bevy presentation events; retained panel history is unchanged.
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(crate) fn take_achievement_banners(&self) -> std::collections::VecDeque<String> {
         std::mem::take(&mut lock(&self.mailbox).achievement_banners)
     }

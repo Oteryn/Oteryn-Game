@@ -1,4 +1,5 @@
-//! Opt-in production composition; the legacy client entry point remains intact.
+//! The Bevy host for non-Windows development builds (`--features bevy-shell`); on Windows
+//! `oteryn-client` runs the same host.
 fn main() -> std::process::ExitCode {
     oteryn_client::crash_report::install_hook();
     #[cfg(windows)]

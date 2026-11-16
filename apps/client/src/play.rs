@@ -21,7 +21,7 @@ use std::collections::{BTreeMap, VecDeque};
 use std::num::NonZeroU32;
 
 /// Actual step replies observed by this view, never inferred from input or position.
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 #[derive(Debug, Clone, Copy, serde::Serialize)]
 pub(crate) struct StepReceipt {
     reply_count: u64,
@@ -33,7 +33,7 @@ pub(crate) struct StepReceipt {
 
 #[derive(Debug, Clone)]
 pub struct PlayView {
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     last_step: Option<StepReceipt>,
     shared_frontend: bool,
     game_notifications: feature_local_game_notifications::state::State,
@@ -145,9 +145,9 @@ pub use feature_0021_logout::protocol::logout_refusal_text;
 pub use feature_0031_tutorial_notices::protocol::run_session;
 pub use feature_0092_zones_nologout::state::ServerMessageInbox;
 pub use feature_0115_mail::view::form::{FeatureForm, FormView};
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 pub(crate) use feature_0148_wheel_allocation::input::gem_presentation::Action as GemControl;
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 pub use feature_0148_wheel_allocation::input::shared::WheelControl;
 pub use feature_0450_server_modal::protocol::ServerModalPanel;
 pub use mailbox::{Outbox, PlayEvent, PlayLink, Pushed, play_channel};
@@ -160,7 +160,7 @@ mod tests;
 #[path = "screenshots_live_tests.rs"]
 mod screenshots_live_tests;
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 pub(crate) fn audit_step_reply(outbox: &Outbox, outcome: oteryn_session::StepOutcome) {
     outbox.stepped(outcome);
 }

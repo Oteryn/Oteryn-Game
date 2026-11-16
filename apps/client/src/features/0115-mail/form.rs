@@ -163,7 +163,7 @@ impl PlayLink {
     }
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl crate::play::Outbox {
     /// Admits the capabilities the generic form window tests drive; no server reply is made up.
     pub(crate) fn bevy_feature_forms_selected(&self) {

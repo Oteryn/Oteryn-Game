@@ -37,7 +37,7 @@ impl PlayLink {
         }
         true
     }
-    #[cfg(any(test, feature = "bevy-shell"))]
+    #[cfg(any(test, bevy_shell))]
     pub(crate) fn mechanics_status_panel(
         &self,
     ) -> oteryn_client_ui::mechanics_status::MechanicsStatusPanel {
@@ -64,7 +64,7 @@ impl Outbox {
 }
 
 // Publish the same view models read by the Bevy HUD without a network peer.
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl PlayLink {
     pub(crate) fn bevy_status_fixture(
         &self,

@@ -4,7 +4,7 @@ impl PlayLink {
         let mailbox = lock(&self.mailbox);
         panel_text(&mailbox, mailbox.analyser.tool)
     }
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(crate) fn analyser_text_for(&self, tool: oteryn_client_ui::analyser::Tool) -> String {
         panel_text(&lock(&self.mailbox), tool)
     }

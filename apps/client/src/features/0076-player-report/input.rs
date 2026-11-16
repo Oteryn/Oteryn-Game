@@ -117,7 +117,7 @@ fn violation_ready(panel: &oteryn_client_ui::player_report::Panel) -> bool {
         && super::protocol::command(panel, Intent::Violation).is_ok()
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl crate::play::Outbox {
     pub(crate) fn bevy_report_selected(&self, selected: bool) {
         lock(&self.0).properties.player_report.selected = selected;
