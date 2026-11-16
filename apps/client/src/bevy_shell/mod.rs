@@ -26,6 +26,10 @@ use bevy::{
     asset::AssetPlugin,
     image::ImagePlugin,
     prelude::*,
+    render::{
+        RenderPlugin,
+        settings::{Backends, WgpuSettings},
+    },
     window::{PresentMode, PrimaryWindow, WindowMode},
 };
 use owner::HostOwner;
@@ -128,6 +132,11 @@ fn build_app(options: Options, owner: HostOwner) -> App {
                 run_on_any_thread: cfg!(test),
             })
             .set(ImagePlugin::default_nearest())
+            .set(RenderPlugin {
+                render_creation: render_settings(options.smoke, |name| std::env::var_os(name))
+                    .into(),
+                ..default()
+            })
             .set(WindowPlugin {
                 close_when_requested: false,
                 primary_window: Some(Window {
@@ -214,6 +223,23 @@ fn build_app(options: Options, owner: HostOwner) -> App {
     app
 }
 
+/// A `--smoke` packaging run must start on a runner without a GPU, so it asks wgpu for the
+/// software fallback adapter (WARP through DX12 on Windows), unless the environment already
+/// chose one through `WGPU_FORCE_FALLBACK_ADAPTER` or `WGPU_BACKEND`. Normal runs keep Bevy's
+/// defaults.
+fn render_settings(smoke: bool, env: impl Fn(&str) -> Option<OsString>) -> WgpuSettings {
+    let mut settings = WgpuSettings::default();
+    if smoke {
+        if env("WGPU_FORCE_FALLBACK_ADAPTER").is_none() {
+            settings.force_fallback_adapter = true;
+        }
+        if cfg!(windows) && env("WGPU_BACKEND").is_none() {
+            settings.backends = Some(Backends::DX12);
+        }
+    }
+    settings
+}
+
 /// Ends a `--smoke` run once the window has drawn a few frames.
 fn smoke_exit(mut frames: Local<u8>, mut exit: MessageWriter<AppExit>) {
     *frames = frames.saturating_add(1);
@@ -270,3 +296,42 @@ fn apply_window(preferences: &crate::play::ReferencePreferences, window: &mut Wi
 
 #[cfg(test)]
 mod layout_tests;
+
+#[cfg(test)]
+mod render_settings_tests {
+    use super::*;
+
+    #[test]
+    fn smoke_run_forces_the_software_fallback_adapter() {
+        let settings = render_settings(true, |_| None);
+        assert!(settings.force_fallback_adapter);
+        let expected = if cfg!(windows) {
+            Some(Backends::DX12)
+        } else {
+            WgpuSettings::default().backends
+        };
+        assert_eq!(settings.backends, expected);
+    }
+
+    #[test]
+    fn normal_run_keeps_the_default_render_settings() {
+        let settings = render_settings(false, |_| None);
+        let default = WgpuSettings::default();
+        assert_eq!(
+            settings.force_fallback_adapter,
+            default.force_fallback_adapter
+        );
+        assert_eq!(settings.backends, default.backends);
+    }
+
+    #[test]
+    fn smoke_run_leaves_an_adapter_chosen_in_the_environment_to_wgpu() {
+        let settings = render_settings(true, |_| Some(OsString::from("0")));
+        let default = WgpuSettings::default();
+        assert_eq!(
+            settings.force_fallback_adapter,
+            default.force_fallback_adapter
+        );
+        assert_eq!(settings.backends, default.backends);
+    }
+}
