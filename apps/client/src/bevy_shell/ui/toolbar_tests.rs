@@ -206,6 +206,8 @@ fn toolbar_shortcuts_activate_existing_window_owners() -> Result<(), Box<dyn std
             "stash" => link.stash_panel().open,
             "store" => link.store_panel().open,
             "tasks" => link.task_board_panel().open,
+            "bestiary_tracker" => link.cyclopedia_tracker_panel().bestiary_widget_open,
+            "bosstiary_tracker" => link.cyclopedia_tracker_panel().bosstiary_widget_open,
             "bug" => link.player_report_panel().bug.open,
             "report" => link.player_report_panel().open,
             "memorial" => link.appearance_panel().memorial.open,
