@@ -22,3 +22,18 @@ impl Outbox {
         }
     }
 }
+
+#[cfg(all(test, bevy_shell))]
+impl Outbox {
+    /// Admits hireling 165 and its management 250, as a server offering both selects them.
+    pub(crate) fn bevy_hireling_management_selected(&self) {
+        self.hireling_initialize(true);
+        self.hireling_management_initialize(true);
+    }
+    pub(crate) fn bevy_hireling_result(
+        &self,
+        response: &oteryn_client_runtime::hireling::HirelingResponse,
+    ) {
+        self.hireling_result(response);
+    }
+}

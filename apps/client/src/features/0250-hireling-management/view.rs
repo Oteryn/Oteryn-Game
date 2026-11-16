@@ -38,6 +38,7 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
             "Unlock Steward",
             "Unlock Trader",
             "Confirm",
+            "Banker",
         ],
         snapshot: |mailbox| {
             let p = &mailbox.hireling_management;
@@ -112,6 +113,22 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
                                 Some("Choose a configuration to review first");
                         }
                     }
+                    return;
+                }
+                12 => {
+                    // The banker service (capability 165, command 220) of the same hireling.
+                    let panel = &mut mailbox.hireling;
+                    if let Some(command) = oteryn_client_ui::hireling::request(
+                        panel,
+                        oteryn_client_ui::hireling::Intent::Refresh,
+                    ) && commands
+                        .send(crate::combat_input::PlayCommand::Hireling(command))
+                        .is_err()
+                    {
+                        panel.pending = None;
+                        panel.feedback = Some(tr!("The session has ended"));
+                    }
+                    panel.open = true;
                     return;
                 }
                 _ => {}
