@@ -140,6 +140,15 @@ fn here(client: &DevClientSession) -> WorldTilePosition {
     }
 }
 
+fn ground(client: &DevClientSession) -> WorldTilePosition {
+    let at = client.world_spatial().actor_position;
+    WorldTilePosition {
+        x: at.x,
+        y: at.y,
+        floor: at.floor,
+    }
+}
+
 /// Drops the first backpack entry on the actor's own tile and returns its definition and count.
 async fn drop_first(
     client: &mut DevClientSession,
@@ -159,8 +168,7 @@ async fn drop_first(
         })
         .copied()
         .ok_or("step=drop observed=no-backpack-item;needed:player-acquired-item")?;
-    // The ground destination names the native floor (`floor = -z`) of the actor tile.
-    let at = here(client);
+    let at = ground(client);
     let before = quantity(client, item.item_definition_ref)?;
     client.take_events();
     let moved = client
