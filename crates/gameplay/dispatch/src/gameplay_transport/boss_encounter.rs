@@ -283,7 +283,8 @@ mod slot_loot_tests {
     }
 
     #[test]
-    fn a_slot_bonus_plan_above_forty_eight_corpse_entries_is_refused_whole() {
+    fn a_slot_bonus_plan_above_forty_eight_corpse_entries_is_refused_whole()
+    -> Result<(), &'static str> {
         use crate::combat::{
             CombatResourceLimitError, GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX,
             check_corpse_container_capacity,
@@ -329,11 +330,12 @@ mod slot_loot_tests {
         assert_eq!(check_corpse_container_capacity(48), Ok(()));
         // The bosstiary bonus rolls every equipment entry again: 96 entries, refused whole.
         super::apply_slot_loot_bonus(&mut table, 100, death, |_| true);
-        let entries = direct(&table).expect("bounded plan");
+        let entries = direct(&table).map_err(|_| "bounded plan")?;
         assert!(entries > GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, "{entries}");
         assert_eq!(
             check_corpse_container_capacity(entries),
             Err(CombatResourceLimitError::CorpseContainerEntriesExceeded)
         );
+        Ok(())
     }
 }
