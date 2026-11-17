@@ -82,3 +82,8 @@ Native admission regression `test_brain_ground_output_closes_native_item_provide
 passed (116.75 seconds), proving 19078 has ordinary nonstackable portable admission
 and weight 1500 without changing canonical Item facts. The full profile test module
 and real-USE diagnostic run are in progress; native regeneration is next.
+
+The real-USE diagnostic confirmed SourceOfferingMissing for one input, and the
+two-input refusal came from `native.item_policy` returning None for 19078.
+Temporary diagnostic prints were removed. Wrong quest state passed against PG
+in 33.74 seconds; the public schema acceptance/rejection test also passed.
