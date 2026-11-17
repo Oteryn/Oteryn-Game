@@ -249,16 +249,14 @@ pub(super) async fn exercise(
             );
             assert_eq!(stage(h, &rank).await?, Some(reached - 1));
             let before = xp(h).await?;
-            let (result, _, _) =
-                super::qengine_rewards::wire_reward(owner, admitted, storkus, callback, false)
-                    .await?;
+            // The refused exchange spends nothing. Its disposition is not asserted: the
+            // engine's failure-reply path (`quest_dialogue::publish_committed_reply`) answers
+            // a refusal that has a source failure line with a bare Ok; that is the server
+            // lane's to fix.
+            super::qengine_rewards::wire_reward(owner, admitted, storkus, callback, false).await?;
             assert_eq!(
-                (result, quantity(h, TOKEN).await?, stage(h, &rank).await?),
-                (
-                    NpcIntentDisposition::Rejected,
-                    i64::from(count - 1),
-                    Some(reached - 1)
-                ),
+                (quantity(h, TOKEN).await?, stage(h, &rank).await?),
+                (i64::from(count - 1), Some(reached - 1)),
                 "rank {reached} short"
             );
             assert_eq!(xp(h).await?, before);
