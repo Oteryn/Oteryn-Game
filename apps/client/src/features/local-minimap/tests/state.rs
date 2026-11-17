@@ -32,8 +32,8 @@ fn exploration_and_markers_survive_reopen_and_bindings_stay_separate()
     };
     map.observe(&snapshot);
     map.edit_marker(100, 200, -7, "Home".into(), 1)?;
-    // Legacy item-only cells must not return as terrain when an older cache is reopened.
-    map.cells.insert((-7, 999, 999), 86);
+    // A live window clears a legacy item-only cell when it confirms no ground there.
+    map.cells.insert((-7, 103, 200), 86);
     map.dirty = true;
     map.save()?;
     let binding = map.binding;
@@ -43,7 +43,7 @@ fn exploration_and_markers_survive_reopen_and_bindings_stay_separate()
     restored.observe(&snapshot);
     assert_eq!(restored.markers[0].label, "Home");
     assert!(restored.cells.contains_key(&(-7, 100, 200)));
-    assert!(!restored.cells.contains_key(&(-7, 999, 999)));
+    assert!(!restored.cells.contains_key(&(-7, 103, 200)));
     snapshot.header.reset_epoch += 1;
     restored.observe(&snapshot);
     assert!(restored.markers.is_empty());
@@ -153,4 +153,39 @@ fn t076_floor_and_zoom_controls_stop_following_and_recentre_on_the_player() {
     let (x, y, floor) = map.own;
     map.follow(x, y, floor);
     assert_eq!((map.x, map.y, map.floor), (101, 200, -7));
+}
+
+#[test]
+fn version_one_palette_survives_rejoin_save_and_transfer() -> Result<(), Box<dyn std::error::Error>>
+{
+    let root = std::env::temp_dir().join(format!("minimap-palette-{}", std::process::id()));
+    let mut map = Minimap::default();
+    map.root = Some(root.clone());
+    map.bind_world("11111111-1111-4111-8111-111111111111");
+    map.binding = Some(([1; 32], [2; 32], 1));
+    let active = map.path().ok_or("active map")?;
+    std::fs::create_dir_all(active.parent().ok_or("map directory")?)?;
+    std::fs::write(
+        &active,
+        r#"{"version":1,"cells":[[-7,500,500,0],[-7,501,500,86]],"markers":[{"x":500,"y":500,"floor":-7,"label":"Home","color":1}]}"#,
+    )?;
+    map.load()?;
+    map.edit_marker(502, 500, -7, "Gate".into(), 2)?;
+    map.load()?;
+    let portable = root.join("portable.json");
+    map.export_to(&portable)?;
+    map.cells.clear();
+    map.markers.clear();
+    map.import_from(&portable)?;
+    assert_eq!(map.cells.get(&(-7, 500, 500)), Some(&0));
+    assert_eq!(map.cells.get(&(-7, 501, 500)), Some(&86));
+    assert_eq!(
+        map.markers
+            .iter()
+            .map(|marker| marker.label.as_str())
+            .collect::<Vec<_>>(),
+        ["Home", "Gate"]
+    );
+    std::fs::remove_dir_all(root)?;
+    Ok(())
 }

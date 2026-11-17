@@ -55,11 +55,12 @@ impl PlayView {
     pub fn minimap_input(&mut self, events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {
         if oteryn_client_ui::minimap::create_mark_key(events) {
             let own = (self.own.x, self.own.y, self.floor);
-            let created = super::state::lock(&self.minimap).create_mark_at(own);
-            if let Err(error) = &created {
-                super::state::lock(&self.minimap).feedback = error.to_string();
+            let mut map = super::state::lock(&self.minimap);
+            match map.create_mark_at(own) {
+                Ok(false) => map.pending_edit = Some(own),
+                Ok(true) => {}
+                Err(error) => map.feedback = error.to_string(),
             }
-            // A mark already sits at the player's position: edit it.
             return true;
         }
         oteryn_client_ui::minimap::editor_key(events)
@@ -122,6 +123,10 @@ impl PlayView {
 }
 
 impl PlayView {
+    #[cfg(bevy_shell)]
+    pub(crate) fn take_minimap_marker_edit(&self) -> Option<(i32, i32, i16)> {
+        super::state::lock(&self.minimap).pending_edit.take()
+    }
     #[cfg(bevy_shell)]
     pub(crate) fn edit_minimap_marker(&mut self, at: (i32, i32, i16), label: String, color: u8) -> std::io::Result<()> {
         super::state::lock(&self.minimap).edit_marker(at.0, at.1, at.2, label, color)?;

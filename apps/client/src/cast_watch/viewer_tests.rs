@@ -125,3 +125,143 @@ fn watch_window_draws_the_cast_and_sends_chat_then_leaves_on_escape()
     assert!(shown_text(&mut app)?.contains("Cast unavailable"));
     Ok(())
 }
+
+#[test]
+fn watch_layout_keeps_long_chat_and_draft_reachable_after_resize()
+-> Result<(), Box<dyn std::error::Error>> {
+    use bevy::{
+        app::{HierarchyPropagatePlugin, PropagateSet},
+        camera::{ComputedCameraValues, RenderTargetInfo},
+        text::TextPlugin,
+        ui::{
+            ComputedUiRenderTargetInfo, ComputedUiTargetCamera, UiSystems, ui_layout_system,
+            ui_surface::UiSurface, update::propagate_ui_target_cameras,
+        },
+    };
+    let (link, _) = channel();
+    link.apply(Message::Ready {
+        epoch: 1,
+        chat: true,
+        delay: 0,
+    })?;
+    for sequence in 1..=8 {
+        link.apply(Message::ChatLine {
+            epoch: 1,
+            sequence,
+            handle: [1; 16],
+            text: "Long spectator message. ".repeat(8),
+        })?;
+    }
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        AssetPlugin::default(),
+        TextPlugin,
+        HierarchyPropagatePlugin::<ComputedUiTargetCamera>::new(PostUpdate),
+        HierarchyPropagatePlugin::<ComputedUiRenderTargetInfo>::new(PostUpdate),
+    ))
+    .init_asset::<Image>()
+    .init_resource::<Assets<TextureAtlasLayout>>()
+    .init_resource::<UiScale>()
+    .init_resource::<UiSurface>()
+    .add_message::<KeyboardInput>()
+    .configure_sets(
+        PostUpdate,
+        (
+            UiSystems::Prepare,
+            UiSystems::Propagate,
+            UiSystems::Content,
+            UiSystems::Layout,
+        )
+            .chain(),
+    )
+    .configure_sets(
+        PostUpdate,
+        PropagateSet::<ComputedUiTargetCamera>::default().in_set(UiSystems::Propagate),
+    )
+    .configure_sets(
+        PostUpdate,
+        PropagateSet::<ComputedUiRenderTargetInfo>::default().in_set(UiSystems::Propagate),
+    )
+    .add_systems(
+        PostUpdate,
+        (
+            propagate_ui_target_cameras.in_set(UiSystems::Prepare),
+            bevy::ui::widget::update_image_content_size_system.in_set(UiSystems::Content),
+            bevy::ui::widget::measure_text_system
+                .after(bevy::text::detect_text_needs_rerender)
+                .after(bevy::text::load_font_assets_into_font_collection)
+                .in_set(UiSystems::Content),
+            ui_layout_system.in_set(UiSystems::Layout),
+        ),
+    );
+    let window = app
+        .world_mut()
+        .spawn((
+            Window {
+                resolution: (WIDTH, 700).into(),
+                ..default()
+            },
+            PrimaryWindow,
+        ))
+        .id();
+    install(&mut app, link);
+    app.update();
+    for mut camera in app
+        .world_mut()
+        .query::<&mut Camera>()
+        .iter_mut(app.world_mut())
+    {
+        camera.computed = ComputedCameraValues {
+            target_info: Some(RenderTargetInfo {
+                physical_size: UVec2::new(360, 260),
+                scale_factor: 1.,
+            }),
+            ..default()
+        };
+    }
+    let text = app
+        .world_mut()
+        .query_filtered::<Entity, With<WatchText>>()
+        .single(app.world())?;
+    let font = Font::from_bytes(include_bytes!("../../tests/assets/FiraMono-subset.ttf").to_vec());
+    let font = app.world_mut().resource_mut::<Assets<Font>>().add(font);
+    app.world_mut()
+        .get_mut::<TextFont>(text)
+        .ok_or("chat font")?
+        .font = font.into();
+    app.world_mut()
+        .get_mut::<Window>(window)
+        .ok_or("watch window")?
+        .resolution
+        .set(360., 260.);
+    app.world_mut()
+        .write_message(key(Key::Character("h".into()), Some("h")));
+    app.update();
+    app.update();
+
+    let picture = app
+        .world_mut()
+        .query_filtered::<&ComputedNode, With<ImageNode>>()
+        .single(app.world())?;
+    assert!(picture.size().y < 260. && picture.size().x <= 360.);
+    let parent = app
+        .world()
+        .get::<ChildOf>(text)
+        .ok_or("chat viewport")?
+        .parent();
+    let viewport = app
+        .world()
+        .get::<ComputedNode>(parent)
+        .ok_or("chat viewport bounds")?;
+    let text_bounds = app
+        .world()
+        .get::<ComputedNode>(text)
+        .ok_or("chat content bounds")?;
+    assert!(viewport.size().y > 0. && text_bounds.size().y > viewport.size().y);
+    assert!(
+        (viewport.scroll_position.y + viewport.size().y - viewport.content_size().y).abs() <= 1.
+    );
+    assert!(shown_text(&mut app)?.ends_with("Cast chat: h"));
+    Ok(())
+}

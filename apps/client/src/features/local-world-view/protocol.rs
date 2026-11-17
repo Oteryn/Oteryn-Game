@@ -68,6 +68,9 @@ pub(in crate::play) fn activity_scope(
     pushed: &mut Pushed,
     scope: AppliedDelta<oteryn_session::activity_scope::ActivityScopeSnapshot>,
 ) {
-    *pushed = Pushed::default();
-    pushed.activity_scope = Some(scope.value);
+    *pushed = Pushed {
+        scope_changed: true,
+        activity_scope: Some(scope.value),
+        ..Pushed::default()
+    };
 }

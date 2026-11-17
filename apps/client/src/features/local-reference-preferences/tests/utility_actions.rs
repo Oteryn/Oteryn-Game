@@ -647,3 +647,14 @@ fn shift_s_toggles_manual_sort_mode_and_a_container_drop_sends_its_slot()
     }
     Ok(())
 }
+
+#[test]
+fn vip_hotkey_closes_toolbar_visible_sidebar() {
+    use crate::play::UtilityAction::ToggleVipWidget;
+    let (link, _, _) = play_channel();
+    let mut settings = bare();
+    settings.preferences.visible_panels = vec!["vip".into()];
+    assert!(settings.run_utility(&link, ToggleVipWidget));
+    assert!(!settings.preferences.panel_visible("vip"));
+    assert!(!link.vip_is_open());
+}

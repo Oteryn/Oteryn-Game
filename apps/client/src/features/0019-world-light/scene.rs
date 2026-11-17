@@ -104,7 +104,8 @@ impl Scene {
                                         && !v.item.is_some_and(|item| {
                                             self.object_draws.iter().any(
                                                 |(position, reference, _)| {
-                                                    position.x == tile.x
+                                                    position.floor == floor
+                                                        && position.x == tile.x
                                                         && position.y == tile.y
                                                         && *reference == item.definition()
                                                 },
@@ -123,7 +124,9 @@ impl Scene {
                                 self.object_draws
                                     .iter()
                                     .filter(|(position, _, _)| {
-                                        position.x == tile.x && position.y == tile.y
+                                        position.floor == floor
+                                            && position.x == tile.x
+                                            && position.y == tile.y
                                     })
                                     .flat_map(|(_, _, draws)| draws.iter().copied()),
                             )

@@ -107,6 +107,7 @@ pub struct Minimap {
     // Read by the native Windows marker editor.
     #[allow(dead_code)]
     pub editor_open: bool,
+    pub(super) pending_edit: Option<(i32, i32, i16)>,
     editor: Option<Editor>,
     pub own: (i32, i32, i16),
     pub feedback: String,
@@ -114,6 +115,7 @@ pub struct Minimap {
     world: Option<String>,
     binding: Option<Binding>,
     dirty: bool,
+    load_failed: bool,
     saved_at: Instant,
 }
 impl Default for Minimap {
@@ -129,6 +131,7 @@ impl Default for Minimap {
             zoom: 1,
             tracking: true,
             editor_open: false,
+            pending_edit: None,
             editor: None,
             own: (0, 0, -7),
             feedback: String::new(),
@@ -136,6 +139,7 @@ impl Default for Minimap {
             world: None,
             binding: None,
             dirty: false,
+            load_failed: false,
             saved_at: Instant::now(),
         }
     }
@@ -173,6 +177,7 @@ impl Minimap {
     }
 
     pub fn bind_world(&mut self, world: &str) {
+        self.pending_edit = None;
         // Native admission calls this even when another Character enters the same World.
         self.quest_marks = Default::default();
         self.quest_markers.clear();
@@ -234,6 +239,7 @@ impl Minimap {
             map.header.reset_epoch,
         );
         if self.binding != Some(binding) {
+            self.pending_edit = None;
             if let Err(error) = self.save() {
                 self.feedback = error.to_string();
             }
@@ -241,7 +247,9 @@ impl Minimap {
             self.markers.clear();
             self.dirty = false;
             self.binding = Some(binding);
+            self.load_failed = false;
             if let Err(error) = self.load() {
+                self.load_failed = true;
                 self.feedback = lfmt!("Could not load minimap: {error}", error = error);
             }
         }
@@ -433,8 +441,8 @@ impl Minimap {
         let Some(path) = self.path() else {
             return Ok(());
         };
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)?;
+        if self.load_failed {
+            return Err(io::Error::other(tr!("Invalid minimap file")));
         }
         let saved = Saved {
             version: 1,
@@ -469,12 +477,11 @@ impl Minimap {
         }
         let saved: Saved = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
         saved.validate()?;
-        // Older caches recorded gray item-only cells. They are not persistent terrain.
-        self.dirty |= saved.cells.iter().any(|cell| cell[3] == 86);
+        // Version 1 uses the same value for old item-only cells and real gray terrain.
+        // Only an authoritative observation can tell which remembered cells to clear.
         self.cells = saved
             .cells
             .into_iter()
-            .filter(|cell| cell[3] == 55)
             .map(|[f, x, y, c]| ((f as i16, x, y), c as u8))
             .collect();
         self.markers = saved.markers;

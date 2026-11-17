@@ -47,11 +47,7 @@ impl PlayView {
         target: oteryn_session::EntityRef,
         link: &PlayLink,
     ) -> Option<Menu> {
-        self.entities.iter().find(|row| {
-            row.entity == target
-                && row.position.floor == self.floor
-                && matches!(row.detail, oteryn_session::EntityDetail::Actor { .. })
-        })?;
+        self.context_creature_position(target)?;
         let mailbox = lock(&link.mailbox);
         if mailbox.world_context.pending {
             return None;
@@ -63,6 +59,22 @@ impl PlayView {
         );
         (!menu.entries.is_empty()).then_some(menu)
     }
+    fn context_creature_position(
+        &self,
+        target: oteryn_session::EntityRef,
+    ) -> Option<oteryn_session::ActorPosition> {
+        self.entities.iter().find_map(|row| {
+            (row.entity == target
+                && row.position.floor == self.floor
+                && matches!(
+                    row.detail,
+                    oteryn_session::EntityDetail::Actor { .. }
+                        | oteryn_session::EntityDetail::ActorWithIcons { .. }
+                ))
+            .then_some(row.position)
+        })
+    }
+
     pub fn world_context(&self, tile: TileCoord, link: &PlayLink) -> Option<Menu> {
         self.world_context_for(tile, link, false)
     }
@@ -124,9 +136,14 @@ impl PlayView {
         if mailbox.world_context.pending {
             return false;
         }
+        let mut position = menu.tile.map(|tile| oteryn_session::ActorPosition {
+            x: tile.x,
+            y: tile.y,
+            floor: self.floor,
+        });
         if menu.tile.is_none() {
             use oteryn_client_runtime::world_interaction::Target;
-            let carried = match menu.target {
+            let valid = match menu.target {
                 Target::Item(handle) => {
                     mailbox
                         .inventory
@@ -147,14 +164,13 @@ impl PlayView {
                             })
                         })
                 }
-                Target::Creature(entity) => self.entities.iter().any(|row| {
-                    row.entity == entity
-                        && row.position.floor == self.floor
-                        && matches!(row.detail, oteryn_session::EntityDetail::Actor { .. })
-                }),
+                Target::Creature(entity) => {
+                    position = self.context_creature_position(entity);
+                    position.is_some()
+                }
                 _ => false,
             };
-            if !carried {
+            if !valid {
                 mailbox
                     .world_context
                     .set_feedback(tr!("Target changed").into(), std::time::Instant::now());
@@ -183,13 +199,9 @@ impl PlayView {
             .send(crate::combat_input::PlayCommand::WorldContext(Command {
                 target: menu.target.clone(),
                 action,
-                selection: menu.tile.map(|tile| {
+                selection: position.map(|position| {
                     oteryn_client_runtime::world_interaction::Selection {
-                        position: oteryn_session::ActorPosition {
-                            x: tile.x,
-                            y: tile.y,
-                            floor: self.floor,
-                        },
+                        position,
                         binding: menu.binding,
                     }
                 }),

@@ -24,12 +24,29 @@ impl Stepper for AutomaticQueryHandoff {
             "scope transition must not replay its source query"
         );
         self.changed = true;
-        self.pending.push(SessionEvent::ActivityScope(AppliedDelta {
-            server_sequence: 1,
-            base_revision: 0,
-            new_revision: 1,
-            value: self.scope.clone(),
-        }));
+        if self.activity {
+            let payload = encode_activity_scope(&self.scope)
+                .map_err(|_| SessionError::ActivityScopeChanged)?;
+            self.pending
+                .push(SessionEvent::GatedSnapshotReplaced(AppliedDelta {
+                    server_sequence: 0,
+                    base_revision: 0,
+                    new_revision: 1,
+                    value: oteryn_session::GatedSnapshot {
+                        domain_id: 99,
+                        snapshot_type: 1,
+                        revision: 1,
+                        payload,
+                    },
+                }));
+        } else {
+            self.pending.push(SessionEvent::ActivityScope(AppliedDelta {
+                server_sequence: 1,
+                base_revision: 0,
+                new_revision: 1,
+                value: self.scope.clone(),
+            }));
+        }
         self.pending.push(spatial_event(2, 32000));
         Err(if self.activity {
             SessionError::ActivityScopeChanged
@@ -195,4 +212,102 @@ fn support_delivery_scope_changed_publishes_destination_and_continues() -> Resul
 fn support_delivery_activity_scope_changed_publishes_destination_and_continues()
 -> Result<(), String> {
     support_delivery_handoff_continues(true)
+}
+
+fn house_handoff(outbox: &Outbox) {
+    let mut id = [1; 16];
+    id[6] = 0x70;
+    id[8] = 0x80;
+    let mut destination = id;
+    destination[15] = 2;
+    let scope = ActivityScopeSnapshot {
+        handoff: id,
+        source_session: id,
+        session: destination,
+        scope: ActivityScope::Channel {
+            world: id,
+            channel: id,
+        },
+        scope_generation: 2,
+        connection_generation: 1,
+        lease_generation: 2,
+        selection: vec![117],
+        requires_ack: false,
+    };
+    let pending = vec![
+        SessionEvent::ActivityScope(AppliedDelta {
+            server_sequence: 1,
+            base_revision: 0,
+            new_revision: 1,
+            value: scope.clone(),
+        }),
+        spatial_event(2, 32000),
+    ];
+    super::super::session_stepper::publish(
+        &mut AutomaticQueryHandoff {
+            scope,
+            changed: true,
+            activity: false,
+            capability: 117,
+            pending,
+            serves: Arc::new(AtomicUsize::new(0)),
+        },
+        outbox,
+        &mut Vec::new(),
+    );
+}
+
+#[test]
+fn typed_handoff_resets_presented_message_namespace() -> Result<(), String> {
+    let (link, _, outbox) = play_channel();
+    let mut view = super::PlayView::new(oteryn_renderer::TileCoord::new(100, 200), 0, &[])
+        .map_err(|error| error.to_string())?;
+    let source_namespace = view.message_namespace;
+    house_handoff(&outbox);
+    view.tick(&link).map_err(|error| format!("{error:?}"))?;
+    assert_ne!(source_namespace, view.message_namespace);
+    Ok(())
+}
+
+#[test]
+fn handoff_retains_shared_frontend_and_admitted_byte_counters() {
+    let (link, _, outbox) = play_channel();
+    link.use_shared_frontend();
+    link.set_traffic(Arc::default());
+    house_handoff(&outbox);
+    assert_eq!(
+        (link.uses_shared_frontend(), link.traffic_bytes()),
+        (true, Some((0, 0)))
+    );
+}
+
+#[test]
+fn handoff_preserves_saved_chat_mode_on_settings_tick() {
+    use crate::play::feature_local_reference_preferences::settings::ChatMode;
+    for mode in [ChatMode::Off, ChatMode::Auto] {
+        let (link, _, outbox) = play_channel();
+        let mut settings = super::SettingsState::new(None);
+        settings.preferences.chat_mode = Some(mode);
+        settings.sync_chat_context(&link);
+        house_handoff(&outbox);
+        settings.sync_chat_context(&link);
+        assert_eq!(settings.preferences.chat_mode, Some(mode));
+    }
+}
+
+#[cfg(bevy_shell)]
+#[test]
+fn destination_look_uses_a_fresh_receipt() -> Result<(), &'static str> {
+    use super::{feature_local_text_messages::view::record_look, mailbox::lock};
+    use oteryn_client_runtime::world_interaction::Action;
+    let (link, _, outbox) = play_channel();
+    record_look(&mut lock(&outbox.0), Action::Look, "Source");
+    let source = link.look_message().ok_or("source look")?;
+    house_handoff(&outbox);
+    assert!(link.look_message().is_none());
+    record_look(&mut lock(&outbox.0), Action::Look, "Destination");
+    let destination = link.look_message().ok_or("destination look")?;
+    assert!(destination.receipt > source.receipt);
+    assert_eq!(destination.text, "Destination");
+    Ok(())
 }

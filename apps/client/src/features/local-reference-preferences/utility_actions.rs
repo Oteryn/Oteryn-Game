@@ -114,6 +114,14 @@ impl ReferencePreferences {
 }
 
 impl SettingsState {
+    #[cfg(bevy_shell)]
+    pub(crate) fn take_skills_toggles(&mut self, link: &PlayLink) -> usize {
+        self.skills_toggles
+            .drain(..)
+            .filter(|session| session.as_ptr() == std::sync::Arc::as_ptr(&link.mailbox))
+            .count()
+    }
+
     /// Preference actions edit and persist the settings; the rest use the live session.
     pub fn run_utility(&mut self, link: &PlayLink, action: UtilityAction) -> bool {
         let mut preferences = self.preferences.clone();
@@ -131,6 +139,21 @@ impl SettingsState {
             UtilityAction::ShowOptionsHotkeys => {
                 self.request_page(SettingsPage::Hotkeys);
                 return true;
+            }
+            #[cfg(bevy_shell)]
+            UtilityAction::ToggleSkillsWidget if link.uses_shared_frontend() => {
+                self.skills_toggles
+                    .push(std::sync::Arc::downgrade(&link.mailbox));
+                return true;
+            }
+            UtilityAction::ToggleVipWidget => {
+                if preferences.panel_visible("vip") || link.vip_is_open() {
+                    preferences.visible_panels.retain(|panel| panel != "vip");
+                    link.vip_close();
+                } else {
+                    preferences.visible_panels.push("vip".into());
+                    link.utility_action(action);
+                }
             }
             _ => return link.utility_action(action),
         }

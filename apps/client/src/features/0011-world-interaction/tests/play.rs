@@ -448,3 +448,69 @@ fn control_click_cases(cases: &[(bool, bool, bool)]) -> Result<(), Box<dyn std::
     }
     Ok(())
 }
+
+#[cfg(bevy_shell)]
+#[test]
+fn battle_list_look_sends_the_visible_creature_position() -> Result<(), Box<dyn std::error::Error>>
+{
+    let (link, mut commands, outbox) = play_channel();
+    outbox.world_context_initialize(true, false);
+    let entity = battle_list_creature(oteryn_session::EntityDetail::Actor {
+        direction: StepDirection::South,
+        appearance_ref: 1,
+        health_percent: 75,
+    });
+    let view = view()?.with_entities(vec![entity])?;
+    let menu = view
+        .creature_context(entity.entity, &link)
+        .ok_or("creature menu")?;
+    assert!(view.world_context_choose(&link, &menu, Action::Look));
+    let crate::combat_input::PlayCommand::WorldContext(command) = commands.try_recv()? else {
+        return Err("look command".into());
+    };
+    assert_eq!(
+        command.selection.map(|selection| selection.position),
+        Some(entity.position)
+    );
+    Ok(())
+}
+
+#[cfg(bevy_shell)]
+fn battle_list_creature(detail: oteryn_session::EntityDetail) -> WorldSpatialEntity {
+    WorldSpatialEntity {
+        motion: None,
+        display_name: None,
+        kind: EntityKind::Creature,
+        entity: EntityRef {
+            identity: [1; 16],
+            generation: 1,
+        },
+        position: ActorPosition {
+            x: 101,
+            y: 200,
+            floor: 0,
+        },
+        detail,
+    }
+}
+
+#[cfg(bevy_shell)]
+#[test]
+fn battle_list_and_health_bar_accept_actors_with_icons() -> Result<(), Box<dyn std::error::Error>> {
+    let (link, _, outbox) = play_channel();
+    outbox.world_context_initialize(true, false);
+    let entity = battle_list_creature(oteryn_session::EntityDetail::ActorWithIcons {
+        direction: StepDirection::South,
+        appearance_ref: 1,
+        health_percent: 75,
+        icons: Default::default(),
+    });
+    let view = view()?.with_entities(vec![entity])?;
+    assert!(view.creature_context(entity.entity, &link).is_some());
+    assert!(
+        view.creature_health_bars()
+            .iter()
+            .any(|bar| bar.health == 75)
+    );
+    Ok(())
+}

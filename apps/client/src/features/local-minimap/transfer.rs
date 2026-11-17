@@ -99,10 +99,10 @@ impl Minimap {
             .saved
             .cells
             .into_iter()
-            .filter(|cell| cell[3] == 55)
             .map(|[f, x, y, c]| ((f as i16, x, y), c as u8))
             .collect();
         self.markers = portable.saved.markers;
+        self.load_failed = false;
         self.dirty = false;
         self.saved_at = Instant::now();
         Ok(())
@@ -118,7 +118,7 @@ impl Saved {
                 !(-15..=0).contains(f)
                     || !(0..=65535).contains(x)
                     || !(0..=65535).contains(y)
-                    || ![55, 86].contains(c)
+                    || u8::try_from(*c).is_err()
             })
             || self.markers.iter().any(|m| {
                 !(0..=65535).contains(&m.x)

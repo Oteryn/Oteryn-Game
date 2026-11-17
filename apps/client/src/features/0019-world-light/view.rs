@@ -58,7 +58,12 @@ impl PlayView {
             });
         }
         if self.preferences().show_effects {
-            sources.extend(self.scene.presentation_lights(&self.visuals, now, self.floor));
+            let visibility = self.preferences().game_window;
+            let visible = self
+                .visuals
+                .iter()
+                .filter(|cue| visibility.visible(&cue.kind));
+            sources.extend(self.scene.presentation_lights(visible, now, self.floor));
         }
         self.scene.set_lights(sources);
         Ok(())

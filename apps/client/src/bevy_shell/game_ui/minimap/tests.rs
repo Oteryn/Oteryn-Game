@@ -496,3 +496,93 @@ fn create_mark_key_marks_the_player_position_through_the_router() -> TestResult 
     }));
     Ok(())
 }
+
+#[test]
+fn routed_shortcut_edits_existing_player_mark() -> TestResult {
+    use oteryn_input_actions::{ButtonState, Modifier, Modifiers, NormalizedInputEvent};
+    let mut app = fixture()?;
+    let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+    let play = owner.play.as_mut().ok_or("play")?;
+    let at = play.view.satellite_player();
+    play.view.edit_minimap_marker(at, "Camp".into(), 3)?;
+    owner.route_input(
+        &[NormalizedInputEvent::Key {
+            code: oteryn_input_actions::KeyCode::new(16)?,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::one(Modifier::Alt).with(Modifier::Shift),
+            repeat: false,
+        }],
+        false,
+    );
+    app.update();
+    let field = app
+        .world_mut()
+        .query::<&bevy::text::EditableText>()
+        .single(app.world())?;
+    assert_eq!(field.value(), "Camp");
+    activate(&mut app, "Save mark")?;
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .view
+        .satellite_map(|_, marks| {
+            assert_eq!(marks.len(), 1);
+            assert_eq!((marks[0].x, marks[0].y, marks[0].floor), at);
+            assert_eq!(marks[0].color, 3);
+        });
+    Ok(())
+}
+
+#[test]
+fn routed_shortcut_toggles_toolbar_opened_skills() -> TestResult {
+    use oteryn_input_actions::{ButtonState, Modifier, Modifiers, NormalizedInputEvent};
+    let mut app = fixture()?;
+    super::super::hud_panes::install(&mut app);
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .use_shared_frontend();
+    app.update();
+    let named = |app: &mut App, name: &str| {
+        app.world_mut()
+            .query::<(Entity, &Name)>()
+            .iter(app.world())
+            .find_map(|(e, n)| (n.as_str() == name).then_some(e))
+            .ok_or("missing widget or button")
+    };
+    let button = named(&mut app, "control-skills")?;
+    let frame = named(&mut app, "Skills")?;
+    for display in [Display::None, Display::Flex] {
+        app.world_mut().trigger(Activate { entity: button });
+        app.update();
+        assert_eq!(
+            app.world().get::<Node>(frame).ok_or("frame")?.display,
+            display
+        );
+    }
+    for display in [Display::None, Display::Flex] {
+        for state in [ButtonState::Pressed, ButtonState::Released] {
+            app.world_mut().non_send_mut::<HostOwner>().route_input(
+                &[NormalizedInputEvent::Key {
+                    code: oteryn_input_actions::KeyCode::new(22)?,
+                    state,
+                    modifiers: Modifiers::one(Modifier::Alt),
+                    repeat: false,
+                }],
+                false,
+            );
+        }
+        app.update();
+        app.update();
+        assert_eq!(
+            app.world().get::<Node>(frame).ok_or("frame")?.display,
+            display
+        );
+    }
+    Ok(())
+}

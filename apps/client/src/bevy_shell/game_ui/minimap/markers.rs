@@ -64,8 +64,13 @@ pub(super) fn click(
     if !(0..=65535).contains(&x) || !(0..=65535).contains(&y) {
         return;
     }
-    editor.at = Some((owner.generation(), (x, y, floor)));
-    editor.feedback.clear();
+    editor.open((owner.generation(), (x, y, floor)));
+}
+impl Editor {
+    fn open(&mut self, key: MarkerKey) {
+        self.at = Some(key);
+        self.feedback.clear();
+    }
 }
 fn project(
     mut commands: Commands,
@@ -77,6 +82,13 @@ fn project(
 ) {
     if editor.at.is_some_and(|key| key.0 != owner.generation()) || owner.play.is_none() {
         editor.at = None;
+    }
+    if let Some(at) = owner
+        .play
+        .as_ref()
+        .and_then(|play| play.view.take_minimap_marker_edit())
+    {
+        editor.open((owner.generation(), at));
     }
     if *seen == editor.at {
         return;

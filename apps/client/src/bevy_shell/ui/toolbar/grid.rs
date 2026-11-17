@@ -282,9 +282,7 @@ fn activate(
         // The skills and analytics buttons toggle their sidebar widgets; opening the skills
         // widget also asks the server for fresh values.
         ControlButton::Grid(Control::Skills) => {
-            if widgets.toggle(Widget::Skills) {
-                open_toolbar(&mut owner, Control::Skills);
-            }
+            toggle_skills(&mut owner, &mut widgets);
         }
         ControlButton::Grid(Control::Analysers) => {
             widgets.toggle(Widget::AnalyticsSelector);
@@ -293,6 +291,12 @@ fn activate(
             open_toolbar(&mut owner, control);
         }
         ControlButton::Extra(extra) => open_extra(&mut owner, extra),
+    }
+}
+
+fn toggle_skills(owner: &mut HostOwner, widgets: &mut SidebarWidgets) {
+    if widgets.toggle(Widget::Skills) {
+        open_toolbar(owner, Control::Skills);
     }
 }
 
@@ -330,11 +334,19 @@ fn open_extra(owner: &mut HostOwner, extra: Extra) {
 /// Shows the enabled grid buttons in the player's order.
 pub(in crate::bevy_shell) fn project(
     mut commands: Commands,
-    owner: NonSend<HostOwner>,
+    mut owner: NonSendMut<HostOwner>,
+    mut widgets: ResMut<SidebarWidgets>,
     grids: Query<(Entity, &Children), With<ControlGrid>>,
     mut buttons: Query<(&ControlButton, &mut Node)>,
 ) {
-    let enabled = enabled(&owner);
+    let owner = &mut *owner;
+    if let Some(play) = &owner.play {
+        let toggles = owner.settings.take_skills_toggles(&play.link);
+        for _ in 0..toggles {
+            toggle_skills(owner, &mut widgets);
+        }
+    }
+    let enabled = enabled(owner);
     for (grid, children) in &grids {
         let mut order = Vec::new();
         for child in children.iter() {

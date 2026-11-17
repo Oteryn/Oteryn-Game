@@ -9,6 +9,7 @@ use bevy::{
     input::{
         ButtonState,
         keyboard::{Key, KeyboardInput},
+        mouse::{MouseScrollUnit, MouseWheel},
     },
     prelude::*,
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
@@ -71,8 +72,12 @@ struct Viewer {
 #[derive(Component)]
 struct WatchText;
 
+#[derive(Component)]
+struct WatchChat;
+
 fn install(app: &mut App, link: WatchLink) {
     app.add_message::<AppExit>()
+        .add_message::<MouseWheel>()
         .insert_non_send(Viewer {
             link,
             pictures: Pictures::new(),
@@ -82,7 +87,7 @@ fn install(app: &mut App, link: WatchLink) {
             image: Handle::default(),
         })
         .add_systems(Startup, setup)
-        .add_systems(Update, (keyboard, refresh).chain());
+        .add_systems(Update, (keyboard, refresh, scroll_chat).chain());
 }
 
 fn setup(
@@ -111,18 +116,32 @@ fn setup(
                 },
             ),
             (
-                WatchText,
-                Text::new(String::new()),
-                TextFont {
-                    font: assets.load("fonts/verdanab.ttf").into(),
-                    font_size: 12.0.into(),
-                    ..default()
-                },
-                TextColor(Color::WHITE),
+                WatchChat,
+                // Layout clamps this to the end, including when wrapped text grows on resize.
+                ScrollPosition(Vec2::new(0., f32::MAX)),
                 Node {
-                    margin: UiRect::all(px(8.)),
+                    flex_grow: 1.,
+                    flex_basis: px(0.),
+                    min_height: px(0.),
+                    flex_direction: FlexDirection::Column,
+                    overflow: Overflow::scroll_y(),
                     ..default()
                 },
+                children![(
+                    WatchText,
+                    Text::new(String::new()),
+                    TextFont {
+                        font: assets.load("fonts/verdanab.ttf").into(),
+                        font_size: 12.0.into(),
+                        ..default()
+                    },
+                    TextColor(Color::WHITE),
+                    Node {
+                        flex_shrink: 0.,
+                        margin: UiRect::all(px(8.)),
+                        ..default()
+                    },
+                )],
             ),
         ],
     ));
@@ -166,7 +185,22 @@ fn refresh(
     mut images: ResMut<Assets<Image>>,
     mut windows: Query<&mut Window, With<PrimaryWindow>>,
     mut texts: Query<&mut Text, With<WatchText>>,
+    mut chat: Query<&mut ScrollPosition, With<WatchChat>>,
+    mut pictures: Query<&mut Node, With<ImageNode>>,
 ) {
+    if let Ok(window) = windows.single()
+        && let Ok(mut picture) = pictures.single_mut()
+    {
+        let scale = (window.width() / WIDTH as f32)
+            .min(window.height() * 0.65 / HEIGHT as f32)
+            .min(1.);
+        let width = px(WIDTH as f32 * scale);
+        let height = px(HEIGHT as f32 * scale);
+        if (picture.width, picture.height) != (width, height) {
+            picture.width = width;
+            picture.height = height;
+        }
+    }
     let viewer = &mut *viewer;
     let Some((version, panel)) = viewer.link.snapshot() else {
         viewer.link.fail();
@@ -208,7 +242,30 @@ fn refresh(
     for mut shown in &mut texts {
         if shown.0 != text {
             shown.0.clone_from(&text);
+            if let Ok(mut position) = chat.single_mut() {
+                position.0.y = f32::MAX;
+            }
         }
+    }
+}
+
+fn scroll_chat(
+    mut wheel: MessageReader<MouseWheel>,
+    mut chat: Query<(&ComputedNode, &mut ScrollPosition), With<WatchChat>>,
+) {
+    let delta: f32 = wheel
+        .read()
+        .map(|event| match event.unit {
+            MouseScrollUnit::Line => event.y * 24.,
+            MouseScrollUnit::Pixel => event.y,
+        })
+        .sum();
+    if delta != 0.
+        && let Ok((node, mut position)) = chat.single_mut()
+    {
+        let scale = node.inverse_scale_factor();
+        position.0.y = (node.scroll_position.y * scale - delta)
+            .clamp(0., (node.content_size().y - node.size().y).max(0.) * scale);
     }
 }
 

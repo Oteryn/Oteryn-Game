@@ -177,6 +177,8 @@ impl SettingsState {
             screenshot_requested: false,
             native_sign_out: false,
             web_link: None,
+            #[cfg(bevy_shell)]
+            skills_toggles: Vec::new(),
             window_actions: Default::default(),
             custom_choices: Vec::new(),
             custom_choices_refreshed: None,
