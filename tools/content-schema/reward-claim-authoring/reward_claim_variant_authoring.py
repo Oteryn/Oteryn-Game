@@ -138,9 +138,6 @@ def derive_definitions(packet, items, stack_problem, root=Path(__file__).resolve
     out, identities, positions = [], set(), set()
     selected = {c['source_identity']['key']: c for c in stack_normalization_proof()['cases']}
     for row in packet['records']:
-        from qaitems_rewards import LOTTERY
-        if row['source_claim']['identity']['key'] == LOTTERY:
-            continue  # Global 5957 is a plain reward, emitted by the primary authoring tool.
         source = row['source_claim']; bindings = {}
         claim_items = container_native.claim_items(source['identity']['key'], items)
         for binding in row['item_bindings']:
