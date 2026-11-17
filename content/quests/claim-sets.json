@@ -257,5 +257,18 @@
         "kv/minohell3"
       ]
     ]
+  },
+  "oteryn:quest.skull_of_ratha_quest": {
+    "groups": [
+      [
+        "kv/witch_house_quest"
+      ],
+      [
+        "quest/u7_6/explorer_society/skull_of_ratha/bag1"
+      ],
+      [
+        "quest/u7_6/explorer_society/skull_of_ratha/bag2"
+      ]
+    ]
   }
 }

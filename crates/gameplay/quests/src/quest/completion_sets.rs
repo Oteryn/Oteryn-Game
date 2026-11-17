@@ -287,7 +287,7 @@ mod tests {
         let lowered = super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|e| format!("{e:?}"))?;
         let catalogue = lowered.catalogue();
-        assert_eq!(catalogue.completion_sets.len(), 23);
+        assert_eq!(catalogue.completion_sets.len(), 24);
         for (quest, rule) in &catalogue.completion_sets {
             if quest == "oteryn:quest.fanfare_quest" {
                 // Crystal chest.lua:1680-1687: the access key is not final loot.
