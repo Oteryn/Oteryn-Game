@@ -53,5 +53,18 @@ fn lersatio_encounter_accepts_bounded_current_spectator_input() -> Result<(), se
     })?;
     assert_eq!(spectators.minimum.floor, -2);
     assert_eq!(spectators.destination.floor, -1);
+    use oteryn_gameplay_quests::quest::world_callbacks::Position;
+    for (x, y) in [(32954, 31447), (32972, 31465), (32963, 31456)] {
+        assert!(spectators.contains(Position { x, y, floor: -2 }));
+        assert!(!spectators.contains(Position { x, y, floor: -1 }));
+    }
+    for (x, y) in [
+        (32953, 31456),
+        (32973, 31456),
+        (32963, 31446),
+        (32963, 31466),
+    ] {
+        assert!(!spectators.contains(Position { x, y, floor: -2 }));
+    }
     Ok(())
 }

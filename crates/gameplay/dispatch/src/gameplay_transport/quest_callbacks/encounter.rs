@@ -173,29 +173,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             members.clear();
             for (who, position, member_session) in &census {
                 let at = position.position();
-                if member_session.is_some()
-                    && at.floor == -i16::from(spectators.minimum.floor)
-                    && (i32::from(spectators.minimum.x)..=i32::from(spectators.maximum.x))
-                        .contains(&at.x)
-                    && (i32::from(spectators.minimum.y)..=i32::from(spectators.maximum.y))
-                        .contains(&at.y)
-                {
+                let (Ok(x), Ok(y), Ok(floor)) = (
+                    at.x.try_into(),
+                    at.y.try_into(),
+                    (-i32::from(at.floor)).try_into(),
+                ) else {
+                    continue;
+                };
+                let source = Position { x, y, floor };
+                if member_session.is_some() && spectators.contains(source) {
                     if members.len() >= 8 {
                         return UseDisposition::Rejected;
                     }
                     members.push((
                         oteryn_gameplay_quests::quest::world_callbacks::EncounterPlayer {
-                            from: Position {
-                                x: match at.x.try_into() {
-                                    Ok(x) => x,
-                                    Err(_) => return UseDisposition::Rejected,
-                                },
-                                y: match at.y.try_into() {
-                                    Ok(y) => y,
-                                    Err(_) => return UseDisposition::Rejected,
-                                },
-                                floor: spectators.minimum.floor,
-                            },
+                            from: source,
                             to: spectators.destination,
                         },
                         Some(*who),

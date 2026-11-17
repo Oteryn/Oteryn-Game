@@ -305,6 +305,15 @@ pub struct EncounterSpectators {
     pub destination: Position,
 }
 
+impl EncounterSpectators {
+    /// Membership follows the source's inclusive rectangle on exactly one floor.
+    pub fn contains(&self, position: Position) -> bool {
+        position.floor == self.minimum.floor
+            && (self.minimum.x..=self.maximum.x).contains(&position.x)
+            && (self.minimum.y..=self.maximum.y).contains(&position.y)
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Encounter {
@@ -787,7 +796,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && !callback.reversible
             && callback.offerings.is_empty()
             && callback.item_on_target.is_none()
-            && encounter.players.len() == 1
+            && (encounter.players.len() == 1 || encounter.spectators.is_some())
             && encounter.timing.is_none()
             && effects.item_reward.is_none()
             && effects.outfit_reward.is_none()
