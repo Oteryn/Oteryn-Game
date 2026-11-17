@@ -161,3 +161,40 @@ fn lersatio_first_mirror_can_transform_statue_with_personal_counter() -> Result<
     );
     Ok(())
 }
+
+#[test]
+fn lersatio_mirrors_are_registered_with_both_counter_transitions() -> Result<(), String> {
+    use oteryn_gameplay_quests::quest::world_callbacks::load;
+    let callbacks = load()?;
+    let mirrors: Vec<_> = callbacks
+        .iter()
+        .filter(|callback| {
+            callback
+                .key
+                .starts_with("oteryn:quest-callback/blood-brothers-lersatio-mirror-")
+        })
+        .collect();
+    assert_eq!(mirrors.len(), 6);
+    for index in 1..=3 {
+        for (phase, minimum, maximum, set) in [("first", 0, 0, 1), ("second", 1, 2147483647, 0)] {
+            let key =
+                format!("oteryn:quest-callback/blood-brothers-lersatio-mirror-{index}-{phase}");
+            let callback = mirrors
+                .iter()
+                .find(|callback| callback.key == key)
+                .ok_or("mirror phase")?;
+            let counter = callback
+                .storage
+                .iter()
+                .find(|storage| storage.track.ends_with("/mirror_counter"))
+                .ok_or("mirror counter")?;
+            assert_eq!(
+                (counter.minimum, counter.maximum, counter.set),
+                (minimum, maximum, set)
+            );
+            assert_eq!(callback.effects.reset_after_ms, Some(30_000));
+            assert_eq!(callback.effects.encounter.is_some(), phase == "second");
+        }
+    }
+    Ok(())
+}

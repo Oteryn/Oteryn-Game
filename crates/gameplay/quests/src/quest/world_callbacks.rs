@@ -669,6 +669,9 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/lersatio-mirrors.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/questpc5-nomads-cabinet.json"
     ))?);
     callbacks.extend(parse(
