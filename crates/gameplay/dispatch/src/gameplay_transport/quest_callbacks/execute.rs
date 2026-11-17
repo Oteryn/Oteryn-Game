@@ -1267,6 +1267,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if let Ok(mut pending)=self.states.quest_callbacks.records.lock(){pending.remove(&session);}
                     return UseDisposition::Committed;
                 }
+                Ok(QuestTransitionOutcome::Refused(oteryn_gameplay_quests::quest::QuestRefusal::SourceOfferingMissing))
+                    if callback.effects.ground_output.is_some() => {
+                    if let Some(output) = &callback.effects.ground_output {
+                        self.states.chat.push_quest_feedback(session, &output.missing_message);
+                    }
+                    if let Ok(mut pending) = self.states.quest_callbacks.records.lock() { pending.remove(&session); }
+                    return UseDisposition::Rejected;
+                }
                 Ok(_) | Err(_) => {
                     if oteryn_gameplay_quests::quest::death_objectives::load().is_ok_and(|objectives|
                         objectives.iter().any(|objective| objective.quest == callback.quest && objective.guardian.is_some()))

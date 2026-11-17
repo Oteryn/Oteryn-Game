@@ -1210,7 +1210,7 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let character = fence.character_id;
                     let mut reward_tuple=None;
-                    let mut tx = if reward_admission.is_some() {
+                    let mut tx = if reward_admission.is_some() || callback.as_ref().is_some_and(|c| c.effects.ground_output.is_some()) {
                         let typed=begin_type2_transaction(holder,deadline).await?;
                         reward_tuple=Some(typed.tuple());
                         typed.into_inner()
@@ -1924,7 +1924,19 @@ impl DurabilityRoot {
                     }
                     if let (Some(callback), Some((permit, context, _))) = (&callback, &context)
                         && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, &changes, context, (&recovery, &node)).await?
-                    { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
+                    { return Ok(Ok(QuestTransitionOutcome::Refused(if callback.effects.ground_output.is_some() {
+                        QuestRefusal::SourceOfferingMissing
+                    } else { QuestRefusal::StageMismatch }))); }
+                    if let Some(callback) = &callback && callback.effects.ground_output.is_some() {
+                        let Some((permit, context, Some(native))) = &context else { return Err(DurabilityError::InvalidStoredState); };
+                        let Some(tuple) = reward_tuple else { return Err(DurabilityError::InvalidStoredState); };
+                        if !super::super::reward_claim_mint::ground_output::create(
+                            &mut tx, tuple, permit, (&recovery, &node), fence, &request, callback, context, native,
+                        ).await? {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
                     if native_claim {
                         let Some((permit, world, _)) = &context else { return Err(DurabilityError::InvalidStoredState); };
                         if !super::super::quest_world_callback::context_is_current(&mut tx, permit, fence, world).await? {

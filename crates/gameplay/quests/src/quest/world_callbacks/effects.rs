@@ -45,6 +45,9 @@ pub struct ItemDisguiseRequirement {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    /// One portable output created on its source-authored Ground tile.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ground_output: Option<GroundOutput>,
     /// Distinct carried definitions consumed atomically by the Quest receipt owner.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
@@ -103,6 +106,16 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
     pub encounter: Option<Encounter>,
+}
+
+/// A bounded plain output and the donor's ingredient refusal feedback.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct GroundOutput {
+    pub position: Position,
+    pub item: String,
+    pub count: u16,
+    pub missing_message: String,
 }
 
 /// The original wire shapes retain distinct owners: a child quest or the current quest.
@@ -393,6 +406,20 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if let Some(output) = &effects.ground_output {
+        if callback.trigger != Trigger::Use || callback.actor_kind != ActorKind::Player
+            || callback.is_read_only() || !callback.has_state_writes()
+            || callback.offerings.is_empty() || callback.offerings.len() > 8
+            || callback.reversible || callback.item_on_target.is_some()
+            || callback.item_reward().is_some() || !effects.carried_inputs.is_empty()
+            || effects.scene.is_some() || effects.encounter.is_some()
+            || !(-15..=0).contains(&output.position.floor)
+            || !(1..=100).contains(&output.count)
+            || output.missing_message.is_empty() || output.missing_message.chars().count() > 256
+            || output.missing_message.chars().any(char::is_control)
+            || !output.item.strip_prefix("oteryn:item.tibia.i").is_some_and(|id| id.parse::<u16>().is_ok_and(|id| id > 0))
+        { return false; }
+    }
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
     if inputs.len() > 8

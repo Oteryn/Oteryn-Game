@@ -635,6 +635,7 @@ mod tests {
             // QMECH source cohorts retain their separate registration owners.
             include_str!("../../../../../content/quests/world-callbacks/children-grease.json"),
             include_str!("../../../../../content/quests/world-callbacks/engenc2-cults.json"),
+            include_str!("../../../../../content/quests/world-callbacks/gravedigger-brain.json"),
             include_str!("../../../../../content/quests/world-callbacks/ice-islands-seals.json"),
             include_str!("../../../../../content/quests/world-callbacks/m07-dreamer-levers.json"),
             include_str!("../../../../../content/quests/world-callbacks/m07-lion-offerings.json"),

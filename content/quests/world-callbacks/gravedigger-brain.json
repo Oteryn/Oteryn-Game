@@ -1,0 +1,175 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/gravedigger-brain",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33022,
+          "y": 32329,
+          "floor": -10
+        },
+        "appearance": 19161,
+        "unique": null,
+        "action": 4631,
+        "native": {
+          "position": {
+            "x": 33022,
+            "y": 32329,
+            "floor": -10
+          },
+          "ordinal": 4,
+          "appearance": 19161
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "requires_world_admission": true,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission08",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission09",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [
+        {
+          "position": {
+            "x": 33020,
+            "y": 32332,
+            "floor": -10
+          },
+          "item": "oteryn:item.tibia.i9659",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 33025,
+            "y": 32332,
+            "floor": -10
+          },
+          "item": "oteryn:item.tibia.i9659",
+          "count": 1
+        }
+      ],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "You have already got your brain",
+      "success_message": "<brzzl> <frzzp> <fsssh>",
+      "effects": {
+        "ground_output": {
+          "position": {
+            "x": 33022,
+            "y": 32332,
+            "floor": -10
+          },
+          "item": "oteryn:item.tibia.i19078",
+          "count": 1,
+          "missing_message": "No brains"
+        }
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/the_gravedigger_of_drefia/actions_brain.lua:1-22",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/item.lua:682-688",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/others/functions.lua:49-94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/gravedigger-brain-east",
+      "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33023,
+          "y": 32329,
+          "floor": -10
+        },
+        "appearance": 19162,
+        "unique": null,
+        "action": 4631,
+        "native": {
+          "position": {
+            "x": 33023,
+            "y": 32329,
+            "floor": -10
+          },
+          "ordinal": 4,
+          "appearance": 19162
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "requires_world_admission": true,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission08",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission09",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [
+        {
+          "position": {
+            "x": 33020,
+            "y": 32332,
+            "floor": -10
+          },
+          "item": "oteryn:item.tibia.i9659",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 33025,
+            "y": 32332,
+            "floor": -10
+          },
+          "item": "oteryn:item.tibia.i9659",
+          "count": 1
+        }
+      ],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "You have already got your brain",
+      "success_message": "<brzzl> <frzzp> <fsssh>",
+      "effects": {
+        "ground_output": {
+          "position": {
+            "x": 33022,
+            "y": 32332,
+            "floor": -10
+          },
+          "item": "oteryn:item.tibia.i19078",
+          "count": 1,
+          "missing_message": "No brains"
+        }
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/the_gravedigger_of_drefia/actions_brain.lua:1-22",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/item.lua:682-688",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/others/functions.lua:49-94"
+      ]
+    }
+  ]
+}
