@@ -19,6 +19,7 @@ mod questpc2_gerimor_source;
 mod questpc2_gnomus_source;
 mod questpc2_henricus_source;
 mod questpc2_oldrak_source;
+pub mod random_outcome;
 pub mod teleport;
 mod validate;
 
