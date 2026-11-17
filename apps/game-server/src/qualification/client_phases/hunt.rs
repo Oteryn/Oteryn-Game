@@ -36,6 +36,8 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut damaged = false;
     let mut last_position = target.position;
+    eprintln!("[DBG-gcore] start target={target:?} me={position:?} attack={attack:?} vitals={:?}", client.actor_vitals()); // [DBG-gcore]
+    let mut dbg_tick = tokio::time::Instant::now(); // [DBG-gcore]
     let corpse = loop {
         client.service_liveness(Duration::from_millis(100)).await?;
         for event in client.take_events() {
@@ -62,6 +64,13 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
         {
             break corpse;
         }
+        if dbg_tick.elapsed() >= Duration::from_secs(5) { // [DBG-gcore]
+            dbg_tick = tokio::time::Instant::now(); // [DBG-gcore]
+            let me = client.world_spatial().actor_position; // [DBG-gcore]
+            let cur = client.world_entities().and_then(|e| e.get(&target.entity).map(|x| format!("{:?}@{:?}", x.detail, x.position))); // [DBG-gcore]
+            let corpses: Vec<String> = client.world_entities().map(|e| e.iter().filter(|x| x.kind == EntityKind::Corpse).map(|x| format!("{:?}", x.position)).collect()).unwrap_or_default(); // [DBG-gcore]
+            eprintln!("[DBG-gcore] tick me={me:?} vitals={:?} damaged={damaged} last={last_position:?} target={cur:?} corpses={corpses:?}", client.actor_vitals()); // [DBG-gcore]
+        } // [DBG-gcore]
         if tokio::time::Instant::now() >= deadline {
             return Err("hunt produced no corpse before deadline".into());
         }
