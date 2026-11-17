@@ -45,6 +45,10 @@ impl Row {
         Self(self.0.needs(needs))
     }
 
+    fn fail_detail(self) -> Self {
+        Self(self.0.fail_detail())
+    }
+
     fn pass(&mut self, action: &'static str, observed: impl std::fmt::Debug) {
         self.0.pass(action, format_args!("observed={observed:?}"));
     }
@@ -156,7 +160,9 @@ pub(super) async fn run(
         .await;
     finish_blessing_row(consumption, result);
 
-    let mut resting = Row::new("P10", RESTING_BONUSES).needs(&[Fixture(1)]);
+    let mut resting = Row::new("P10", RESTING_BONUSES)
+        .needs(&[Fixture(1)])
+        .fail_detail();
     let watch = resting.0.watch();
     let result = watch
         .bound(
@@ -252,7 +258,13 @@ async fn daily_claim(client: &mut DevClientSession, disposition: u8) -> TestResu
     Ok(())
 }
 
-fn resting_tiles(world: &BundleWorld, start: TilePos) -> TestResult<(TilePos, TilePos)> {
+/// The nearest production reward shrine anywhere in the bundle that has a PZ approach and an
+/// outside return route; the player walks there with the whole-bundle route search.
+async fn resting_tiles(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    start: TilePos,
+) -> TestResult<(TilePos, TilePos)> {
     use crate::map::view::MapFacts;
     use oteryn_protocol_oteryn::world_map::MapDefinition;
     let content = crate::content::daily_reward::DailyRewardContent::catalogue()
@@ -263,31 +275,35 @@ fn resting_tiles(world: &BundleWorld, start: TilePos) -> TestResult<(TilePos, Ti
         .iter()
         .map(|id| provisioning::item_reference(&index, *id))
         .collect::<TestResult<Vec<_>>>()?;
-    let facts = world.facts().pinned();
     let mut shrines = Vec::new();
-    for (floor, x, y, tile) in world.base().tiles() {
-        if start.x.abs_diff(x) > 160 || start.y.abs_diff(y) > 160 {
-            continue;
-        }
-        let at = TilePos { floor, x, y };
-        if tile.ids().iter().zip(tile.depths()).filter(|(_, depth)| **depth == 0)
-            .enumerate().any(|(ordinal, (id, _))| {
-                u8::try_from(ordinal).ok().and_then(|ordinal| facts.base_entry(at, ordinal, *id))
-                    .is_some_and(|entry| matches!(entry.definition, MapDefinition::Item(reference) if references.contains(&reference)))
-            }) {
-            shrines.push(at);
+    {
+        let facts = world.facts().pinned();
+        for (floor, x, y, tile) in world.base().tiles() {
+            let at = TilePos { floor, x, y };
+            if tile.ids().iter().zip(tile.depths()).filter(|(_, depth)| **depth == 0)
+                .enumerate().any(|(ordinal, (id, _))| {
+                    u8::try_from(ordinal).ok().and_then(|ordinal| facts.base_entry(at, ordinal, *id))
+                        .is_some_and(|entry| matches!(entry.definition, MapDefinition::Item(reference) if references.contains(&reference)))
+                }) {
+                shrines.push(at);
+            }
         }
     }
     shrines.sort_by_key(|at| (start.x.abs_diff(at.x).max(start.y.abs_diff(at.y)), *at));
-    for shrine in shrines {
-        let Some(path) = route(world, start, |at| {
+    let compiled = shrines.len();
+    let mut unreachable = 0usize;
+    for shrine in shrines.into_iter().take(8) {
+        let Ok(path) = reach_route(client, world, start, |at| {
             at.floor == shrine.floor
                 && at.x.abs_diff(shrine.x).max(at.y.abs_diff(shrine.y)) <= 1
                 && world
                     .base()
                     .tile(at.x, at.y, at.floor)
                     .is_some_and(|tile| tile.protection_zone())
-        }) else {
+        })
+        .await?
+        else {
+            unreachable += 1;
             continue;
         };
         // Resolve the exact endpoint through the same bundle movement oracle.
@@ -313,7 +329,10 @@ fn resting_tiles(world: &BundleWorld, start: TilePos) -> TestResult<(TilePos, Ti
             return Ok((inside, outside));
         }
     }
-    Err("P10 player route blocked: no reachable production reward shrine with a PZ approach and outside return route in the 160-tile town window".into())
+    Err(format!(
+        "P10 player route blocked: step=shrine-route observed=compiled-shrines={compiled};unreachable-from-{start:?}={unreachable};no PZ approach with an outside return route among the nearest 8"
+    )
+    .into())
 }
 
 async fn resting_walk(
@@ -322,8 +341,13 @@ async fn resting_walk(
     to: TilePos,
 ) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route(world, from, |at| at == to)
-        .ok_or_else(|| format!("P10 player walking route blocked: {from:?}->{to:?}"))?;
+    let path = reach_route(client, world, from, |at| at == to)
+        .await?
+        .map_err(|searched| {
+            format!(
+                "P10 player walking route blocked: {from:?}->{to:?} (searched {searched} tiles)"
+            )
+        })?;
     walk(client, world, &path).await?;
     if tile(client.world_spatial().actor_position)? != to {
         return Err(format!("P10 server STEP did not reach {to:?}").into());
@@ -338,7 +362,13 @@ async fn resting_reentry(
     inside: TilePos,
 ) -> TestResult<tokio::time::Instant> {
     let mut at = tile(client.world_spatial().actor_position)?;
-    let path = route(world, at, |at| at == inside).ok_or("P10 reentry walking route blocked")?;
+    let path = reach_route(client, world, at, |at| at == inside)
+        .await?
+        .map_err(|searched| {
+            format!(
+                "P10 reentry walking route blocked: {at:?}->{inside:?} (searched {searched} tiles)"
+            )
+        })?;
     let mut entered = None;
     for direction in path {
         let to = destination(world, at, direction).ok_or("P10 reentry destination absent")?;
@@ -512,7 +542,7 @@ async fn resting_bonuses(
             return Err("P10 unopened refusal changed daily state or item custody".into());
         }
         row.pass("unopened-claim-refused", initial);
-        let (inside, outside) = resting_tiles(world, tile(client.world_spatial().actor_position)?)?;
+        let (inside, outside) = resting_tiles(&mut client, world, tile(client.world_spatial().actor_position)?).await?;
         resting_walk(&mut client, world, inside).await?;
         let opened = client.session_mut().use_object(b"oteryn:placement/daily-reward-shrine", 0).await?;
         if opened.disposition != UseDisposition::Committed {
