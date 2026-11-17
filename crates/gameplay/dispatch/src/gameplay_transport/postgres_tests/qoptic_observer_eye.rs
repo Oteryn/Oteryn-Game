@@ -1,14 +1,12 @@
-//! A committed wire STEP drives a second admitted actor on the west field.
+//! A committed STEP drives a second admitted actor on the west field.
 use super::fixture::{Harness, debug};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, MovementLocalPosition};
-use oteryn_protocol_oteryn::world_spatial::{
-    COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
-    encode_step_intent,
-};
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
 #[test]
-fn qoptic_observer_eye_wire_step_moves_only_the_paired_player() -> TestResult {
+fn qoptic_observer_eye_dispatch_moves_only_the_paired_player() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -119,8 +117,6 @@ fn qoptic_observer_eye_wire_step_moves_only_the_paired_player() -> TestResult {
         deps.initialize(&owner).await;
         deps.initialize_player(&owner, partner, partner_session)
             .await;
-        let mut admitted = deps.admitted;
-        admitted.first_entry = crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
         for (command, direction, controller_y, partner_y) in [
             (1, StepDirection::South, 32913, 32907),
             (2, StepDirection::South, 32914, 32908),
@@ -130,18 +126,10 @@ fn qoptic_observer_eye_wire_step_moves_only_the_paired_player() -> TestResult {
             (5, StepDirection::North, 32913, 32908),
             (6, StepDirection::South, 32914, 32908),
         ] {
-            let result = super::quest_world_callbacks::wire(
-                &owner,
-                &mut admitted,
-                command,
-                COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-                encode_step_intent(direction),
-            )
-            .await?;
-            assert_eq!(
-                decode_step_result(&result).map_err(debug)?,
-                StepDisposition::Moved
-            );
+            let (result, _) = owner
+                .paced_step(deps.actor, deps.admitted.game_session_id, direction)
+                .await;
+            assert_eq!(result.disposition, StepDisposition::Moved);
             let runtime = deps.runtime.lock().await;
             assert_eq!(
                 runtime
