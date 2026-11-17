@@ -138,7 +138,7 @@ fn definition(key: &str) -> TypedDefinitionRef {
     }
 }
 
-const PLAIN_PARCHMENT: &str = "Survey notes\nKeep the original café spelling.\n";
+const PLAIN_BOOK: &str = "Survey notes\nKeep the original café spelling.\n";
 
 pub(super) fn plain_container_scenario() -> TestResult {
     execute(Case::PlainContainer, "RCAUTH_PLAIN_CONTAINER")
@@ -282,7 +282,7 @@ fn scenario_case(
             6114,
             "oteryn:item.tibia.i2853",
             vec![
-                ("oteryn:item.tibia.i2835", 1, 0),
+                ("oteryn:item.tibia.i2821", 1, 0),
                 ("oteryn:item.tibia.i3031", 40, 0),
             ],
         ),
@@ -401,7 +401,7 @@ fn scenario_case(
                         "legacy_unique_ids":[{"server":"crystalserver","unique_id":unique}]
                     },
                     "reward":{"container":item(2853),"items":[
-                        {"count":1,"item":item(2835),"written_text":{"text":PLAIN_PARCHMENT}},
+                        {"count":1,"item":item(2821),"written_text":{"text":PLAIN_BOOK}},
                         {"count":40,"item":item(3031)}
                     ]}
                 }]
@@ -957,7 +957,7 @@ fn scenario_case(
                     .bind(root.item_instance_id.as_slice())
                     .fetch_one(&harness.pool)
                     .await?;
-                    assert_eq!(text, PLAIN_PARCHMENT);
+                    assert_eq!(text, PLAIN_BOOK);
                 }
                 if let Some(chest) = catalogue {
                     let texts: Vec<(String, String)> = sqlx::query_as("SELECT i.definition_production_key,t.text \

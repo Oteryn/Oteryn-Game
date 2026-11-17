@@ -1,4 +1,4 @@
-//! Prove the plain MINT owner persists a full container and its authored parchment.
+//! Prove the plain MINT owner persists a full container and its authored book.
 use crate::bestiary_postgres_harness as f;
 use crate::durability::item_transfer::ItemWeightLookup;
 use crate::durability::reward_claim_mint::{
@@ -8,7 +8,7 @@ use oteryn_gameplay_content::content::native_gameplay::test_support::activated_w
 use oteryn_gameplay_items::item_ref_admission::generation_item_facts;
 
 #[test]
-fn rcauth_plain_claim_persists_filled_container_and_exact_parchment() -> f::TestResult {
+fn rcauth_plain_claim_persists_filled_container_and_exact_book() -> f::TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -66,7 +66,7 @@ async fn claim(h: &f::Harness) -> f::TestResult {
         quantity: 1,
         contents: vec![
             RewardClaimMintContent {
-                item: facts(2835)?,
+                item: facts(2821)?,
                 quantity: 1,
                 text: Some(TEXT.into()),
                 key_number: None,
@@ -141,7 +141,7 @@ async fn claim(h: &f::Harness) -> f::TestResult {
     assert_eq!(
         children,
         [
-            ("oteryn:item.tibia.i2835".into(), 1, Some(TEXT.into())),
+            ("oteryn:item.tibia.i2821".into(), 1, Some(TEXT.into())),
             ("oteryn:item.tibia.i3031".into(), 40, None),
         ]
     );

@@ -1252,7 +1252,31 @@ pub(super) async fn exercise(
                 preserve: true,
             });
     }
-    seed(owner, admitted, &setup, 9000).await?;
+    if key == "rcauth/wyda-blood-herb" {
+        // This test starts after the source chest was claimed. Its protected
+        // track cannot be initialized using a synthetic generic transition.
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|_| "fence")?
+            .ok_or("fence")?;
+        sqlx::query(
+            "INSERT INTO game_character_quest_tracks \
+                 (character_id,track_key,quest_key,value,committed_character_revision) \
+             SELECT character_id,$2,$3,1,character_revision FROM game_character_roots \
+             WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind("oteryn:quest-progress/kv/bloodherb/claimed")
+        .bind(&callback.quest)
+        .execute(&h.pool)
+        .await?;
+        owner
+            .refresh_quest_session(admitted.game_session_id, false)
+            .await;
+    } else if !key.starts_with("rcauth/") {
+        seed(owner, admitted, &setup, 9000).await?;
+    }
     let [npc] = super::classic_quests::install(owner, admitted, [callback.npc.as_str()]).await?;
     let mut selected = admitted
         .continuity

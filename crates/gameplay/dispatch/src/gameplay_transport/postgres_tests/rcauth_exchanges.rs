@@ -9,7 +9,7 @@ fn rcauth_lee_delle_exchanges_honey_flowers_for_studded_legs_twice() -> super::T
 }
 
 #[test]
-fn rcauth_plain_container_and_written_parchment_are_in_inventory() -> super::TestResult {
+fn rcauth_plain_container_and_written_book_are_in_inventory() -> super::TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
