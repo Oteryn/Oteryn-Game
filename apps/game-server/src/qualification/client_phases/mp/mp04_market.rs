@@ -23,7 +23,28 @@ pub(super) async fn run(core: &SeamClients<'_>, packets: &SeamClients<'_>) -> Te
                 return Err(detail.into());
             }
         }
-        Err("market transaction journey not established by opening overview".into())
+        for (index, bot) in participants.iter_mut().enumerate() {
+            let client = bot.client()?;
+            let item = client.inventory().and_then(|inventory| inventory.entries.first().or(inventory.main_backpack.as_ref())).copied().ok_or("no admitted item definition available")?;
+            for (case, action, amount, price) in [
+                ("sell_offer", 6, 2, 100),
+                ("browse", 2, 0, 0),
+                ("buy_offer", 5, 2, 100),
+                ("excess_items_refused", 6, 64_000, 1),
+                ("insufficient_gold_refused", 5, 1, 999_999_999_999),
+            ] {
+                let request = oteryn_protocol_oteryn::market::MarketRequest {
+                    action, definition: item.item_definition_ref.get(), offer: [0; 16], amount, price, anonymous: false, page: 0,
+                };
+                let response = market::send(client.session_mut(), &market::MarketCommand(request)).await?;
+                let accepted = response.reply.as_ref().is_some_and(|reply| reply.code == 1);
+                evidence(&format!("MP_CHECK MP04 {case}_{index} {} request={request:?} reply={response:?} source=crates/gameplay/dispatch/src/gameplay_transport/market.rs:214", if accepted { "PASS" } else { "FAIL" }));
+                if !accepted {
+                    return Err(format!("case={case} bot={index} request={request:?} reply={response:?} source=crates/gameplay/dispatch/src/gameplay_transport/market.rs:214").into());
+                }
+            }
+        }
+        Ok(())
     }.await;
     if let Err(error) = &result {
         for case in [
