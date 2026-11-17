@@ -77,10 +77,12 @@ pub(super) async fn exercise(
         },
         1,
     )?;
+    let first_started = owner.owner_now().get();
     assert_eq!(
         use_target(owner, admitted, 1, &target).await?,
         UseDisposition::Committed
     );
+    let first_finished = owner.owner_now().get();
     assert_ne!(
         use_target(owner, admitted, 2, &target).await?,
         UseDisposition::Committed,
@@ -122,6 +124,11 @@ pub(super) async fn exercise(
         .facts
         .next_movement_decay_time()
         .ok_or("mirror reset timer")?;
+    // use_target advances the owner clock by two seconds before dispatch.
+    assert!(
+        (first_started + 32_000_000..=first_finished + 30_000_000).contains(&due),
+        "real USE schedules its reset thirty seconds after publication"
+    );
     assert_eq!(map.facts.expire_movement_items(due - 1), 0);
     assert_eq!(map.facts.object_revision(key), 1);
     assert_eq!(map.facts.expire_movement_items(due), 1);
