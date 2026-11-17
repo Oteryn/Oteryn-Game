@@ -70,8 +70,9 @@ fn scenario(admin: String) -> TestResult {
             .map_err(|_| "fence")?
             .ok_or("current")?;
         let elixir = "oteryn:item.tibia.i11588";
+        let worn_ring = "oteryn:item.tibia.i3053";
         let ring = "oteryn:item.tibia.i3090";
-        super::item_look::seed_main_backpack(&h, &[(elixir, 1), (ring, 1)]).await?;
+        super::item_look::seed_main_backpack(&h, &[(elixir, 2), (worn_ring, 1)]).await?;
         let mut tx = h.pool.begin().await?;
         sqlx::raw_sql("
             SET LOCAL session_replication_role = replica;
@@ -80,7 +81,7 @@ fn scenario(admin: String) -> TestResult {
             WITH worn AS (
                 DELETE FROM game_item_container_entries e USING game_item_instances i
                 WHERE e.item_instance_id=i.item_instance_id
-                  AND i.definition_production_key='oteryn:item.tibia.i3090'
+                  AND i.definition_production_key='oteryn:item.tibia.i3053'
                 RETURNING e.character_id,e.item_instance_id,e.world_id,e.placed_transaction_id
             )
             INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id)
@@ -133,37 +134,42 @@ fn scenario(admin: String) -> TestResult {
             use_with_position: None,
         })
         .map_err(debug)?;
-        let (_, disposition, _) = super::rust_lottery::exchange(
+        let elixir_ref = index.definition_ref("Item", elixir, "definition-r1");
+        let (admitted, disposition, actual) = super::rust_lottery::exchange(
             &owner,
             admitted,
             1,
             &payload,
-            index.definition_ref("Item", elixir, "definition-r1"),
+            elixir_ref,
             None,
         )
         .await?;
         assert_eq!(disposition, UseDisposition::Committed);
+        let (admitted, replay, _) =
+            super::rust_lottery::exchange(&owner, admitted, 1, &actual, None, None).await?;
+        assert_eq!(replay, UseDisposition::Committed);
+        let (_, cooling, _) =
+            super::rust_lottery::exchange(&owner, admitted, 2, &payload, elixir_ref, None).await?;
+        assert_eq!(cooling, UseDisposition::Exhausted);
 
         let backpack = h
             .root
             .read_character_backpack(&authority, fence.character_id)
             .await?
             .ok_or("backpack")?;
-        assert_eq!(backpack.entries.len(), 10);
-        assert!(
-            backpack
-                .entries
-                .iter()
-                .all(|entry| entry.item.definition.production_key == ring
-                    && entry.item.quantity == 1)
-        );
+        assert_eq!(backpack.entries.len(), 11);
+        assert!(backpack.entries.iter().all(|entry| entry.item.quantity == 1));
+        assert_eq!(backpack.entries.iter().filter(|entry|
+            entry.item.definition.production_key == ring).count(), 10);
+        assert_eq!(backpack.entries.iter().filter(|entry|
+            entry.item.definition.production_key == elixir).count(), 1);
         let equipped: String = sqlx::query_scalar(
             "SELECT i.definition_production_key FROM game_character_equipment_slots s
              JOIN game_item_instances i USING(item_instance_id) WHERE s.slot=8",
         )
         .fetch_one(&h.pool)
         .await?;
-        assert_eq!(equipped, ring);
+        assert_eq!(equipped, worn_ring);
         Ok(())
     })
 }
