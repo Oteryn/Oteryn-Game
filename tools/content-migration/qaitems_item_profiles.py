@@ -11,7 +11,8 @@ import qengine_reward_item_profiles as shared
 from import_cyclopedia_global import apply_profile_weights
 from refresh_item_overlay_inputs import qualify_native_core
 
-# Global Ghostsilver Lantern rev 1148076 selects lit 23738. Crystal items.xml:
+# Global Ghostsilver Lantern rev 1148076 selects lit 23738; donor chest.lua:2920
+# instead gives unlit 23734. QA owns the claim data. Crystal items.xml:
 # 47292-47296 supplies its name, description and weight, with no explicit decay
 # or numeric light attributes. Preserve accepted client facts; invent no timer.
 IDS = {347, 3208, 23738}
