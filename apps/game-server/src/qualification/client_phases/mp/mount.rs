@@ -2,6 +2,7 @@
 use super::*;
 
 mod bots;
+mod diagnostics;
 mod mp01_party_pvp;
 
 pub(super) async fn run(

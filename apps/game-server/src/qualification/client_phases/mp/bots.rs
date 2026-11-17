@@ -1,4 +1,5 @@
 //! Real admissions and protocol actions. The sole setup writer is root provision.py.
+use super::diagnostics::role_context;
 use super::*;
 use oteryn_dev_client::client_runtime::party as party_client;
 use oteryn_dev_client::{DevClientSession, EntityRef, SessionEvent};
@@ -7,12 +8,52 @@ use oteryn_protocol_oteryn::{attack, logout::LogoutResult, party, target_move};
 pub(super) struct Bot<'p, 'a> {
     pub pair: &'p SeamClients<'a>,
     pub index: usize,
+    ordinal: usize,
+    profile: Option<String>,
     pub session: Option<DevClientSession>,
     pub character: [u8; 16],
     pub name: String,
 }
 
 impl Bot<'_, '_> {
+    fn context(&self, stage: &str) -> String {
+        let role = role_context(
+            self.ordinal,
+            self.index,
+            self.profile.as_deref(),
+            self.pair.address,
+            stage,
+        );
+        let (session, sequence) = self.session.as_ref().map_or_else(
+            || ("none".to_owned(), 0),
+            |client| {
+                (
+                    uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+                    client.last_server_sequence(),
+                )
+            },
+        );
+        format!(
+            "{role} character={} session={session} observed_server_sequence={sequence}",
+            uuid_text(&self.character)
+        )
+    }
+
+    fn contextualize<T>(&self, stage: &str, result: TestResult<T>) -> TestResult<T> {
+        result.map_err(|error| format!("{} error={error}", self.context(stage)).into())
+    }
+
+    fn progress(&self, stage: &str, outcome: &str) -> TestResult {
+        let at_unix_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_millis();
+        evidence(&format!(
+            "MP_BOT MP01 {} outcome={outcome} at_unix_ms={at_unix_ms}",
+            self.context(stage)
+        ));
+        Ok(())
+    }
+
     pub fn client(&mut self) -> TestResult<&mut DevClientSession> {
         self.session
             .as_mut()
@@ -46,42 +87,70 @@ async fn connect_into<'p, 'a>(
     roles: &[(&'p SeamClients<'a>, usize, Option<&str>)],
     bots: &mut Vec<Bot<'p, 'a>>,
 ) -> TestResult {
-    for &(pair, index, profile) in roles {
+    for (ordinal, &(pair, index, profile)) in roles.iter().enumerate() {
         if bots.iter().any(|bot| {
             bot.character == pair.characters[index]
                 || bot.pair.accounts[bot.index] == pair.accounts[index]
         }) {
             return Err("MP roles must own distinct Accounts and Characters".into());
         }
-        let session = connect_character(pair, 0xa0 + u8::try_from(bots.len())?, index).await?;
-        if bots
-            .iter()
-            .filter_map(|bot| bot.session.as_ref())
-            .any(|old| {
-                old.join_snapshot().game_session_id == session.join_snapshot().game_session_id
-            })
-        {
-            return Err("MP roles reused a GameSession".into());
-        }
         bots.push(Bot {
             pair,
             index,
-            session: Some(session),
+            ordinal,
+            profile: profile.map(str::to_owned),
+            session: None,
             character: pair.characters[index],
             name: String::new(),
         });
         let bot = bots.last_mut().ok_or("admitted bot absent")?;
+        connect_bot(bot, 0xa0 + u8::try_from(ordinal)?, "connect-initial").await?;
+        let session = bot.client()?.join_snapshot().game_session_id;
+        if bots[..ordinal]
+            .iter()
+            .filter_map(|bot| bot.session.as_ref())
+            .any(|old| old.join_snapshot().game_session_id == session)
+        {
+            return Err(format!(
+                "{} error=MP roles reused a GameSession",
+                bots[ordinal].context("connect-initial")
+            )
+            .into());
+        }
+        let bot = &mut bots[ordinal];
         if let Some(profile) = profile {
             provision_as(bot, profile).await?;
         }
         // Same bounded, read-only PgConnection pattern as qualification/death.rs.
-        let mut database = sqlx::PgConnection::connect(pair.url).await?;
-        bot.name = sqlx::query_scalar("SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND account_id=$2::text::uuid AND world_id=encode($3,'hex')::uuid")
-            .bind(bot.character.as_slice()).bind(&pair.accounts[index]).bind(pair.world.as_slice())
-            .fetch_one(&mut database).await?;
-        database.close().await?;
-        pump(bots).await?;
+        let result = async {
+            let mut database = sqlx::PgConnection::connect(pair.url).await?;
+            bot.name = sqlx::query_scalar("SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND account_id=$2::text::uuid AND world_id=encode($3,'hex')::uuid")
+                .bind(bot.character.as_slice()).bind(&pair.accounts[index]).bind(pair.world.as_slice())
+                .fetch_one(&mut database).await?;
+            database.close().await?;
+            TestResult::Ok(())
+        }.await;
+        bot.contextualize("read-character-name", result)?;
+        pump_at(bots, "admissions-pump")
+            .await
+            .map_err(|error| format!("while_admitting_bot={ordinal} {error}"))?;
     }
+    Ok(())
+}
+
+async fn connect_bot(bot: &mut Bot<'_, '_>, tag: u8, stage: &str) -> TestResult {
+    bot.progress(stage, "begin")?;
+    let result = connect_character(bot.pair, tag, bot.index).await;
+    bot.session = Some(bot.contextualize(stage, result)?);
+    bot.progress(stage, "pass")?;
+    Ok(())
+}
+
+async fn logout_at(bot: &mut Bot<'_, '_>, stage: &str) -> TestResult {
+    bot.progress(stage, "begin")?;
+    let result = logout(bot).await;
+    bot.contextualize(stage, result)?;
+    bot.progress(stage, "pass")?;
     Ok(())
 }
 
@@ -89,8 +158,17 @@ async fn connect_into<'p, 'a>(
 async fn provision_as(bot: &mut Bot<'_, '_>, profile: &str) -> TestResult {
     // Core's E2EF1 wrapper qualifies a reconnection, after a checked first-entry logout.
     // Match that lifecycle for this Character without running the unrelated movement rows.
-    logout(bot).await?;
-    bot.session = Some(connect_character(bot.pair, 0xa6, bot.index).await?);
+    logout_at(bot, "logout-before-provision").await?;
+    connect_bot(bot, 0xa6, "connect-for-provision").await?;
+    bot.progress("provision", "begin")?;
+    let result = provision_current(bot, profile).await;
+    bot.contextualize("provision", result)?;
+    bot.progress("provision", "pass")?;
+    logout_at(bot, "logout-after-provision").await?;
+    connect_bot(bot, 0xa4, "connect-profiled").await
+}
+
+async fn provision_current(bot: &mut Bot<'_, '_>, profile: &str) -> TestResult {
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
     let session = uuid_text(bot.client()?.join_snapshot().game_session_id.as_bytes());
     let profile = profile.to_owned();
@@ -120,17 +198,23 @@ async fn provision_as(bot: &mut Bot<'_, '_>, profile: &str) -> TestResult {
         )
         .into());
     }
-    logout(bot).await?;
-    bot.session = Some(connect_character(bot.pair, 0xa4, bot.index).await?);
     Ok(())
 }
 
 pub(super) async fn pump(bots: &mut [Bot<'_, '_>]) -> TestResult<Vec<Vec<SessionEvent>>> {
+    pump_at(bots, "liveness").await
+}
+
+async fn pump_at(bots: &mut [Bot<'_, '_>], stage: &str) -> TestResult<Vec<Vec<SessionEvent>>> {
     let mut events = Vec::with_capacity(bots.len());
     for bot in bots {
-        let client = bot.client()?;
-        client.service_liveness(Duration::from_millis(20)).await?;
-        events.push(client.take_events());
+        let result = async {
+            let client = bot.client()?;
+            client.service_liveness(Duration::from_millis(20)).await?;
+            TestResult::Ok(client.take_events())
+        }
+        .await;
+        events.push(bot.contextualize(stage, result)?);
     }
     Ok(events)
 }
@@ -305,7 +389,7 @@ async fn logout_all(bots: &mut [Bot<'_, '_>]) -> TestResult {
     let mut failures = Vec::new();
     let mut pending = Vec::new();
     for bot in bots.iter_mut().filter(|bot| bot.session.is_some()) {
-        pending.push(Box::pin(logout(bot)));
+        pending.push(Box::pin(logout_at(bot, "logout-all")));
     }
     while !pending.is_empty() {
         let result = std::future::poll_fn(|cx| {
@@ -333,10 +417,9 @@ pub(super) async fn relog_all(bots: &mut [Bot<'_, '_>]) -> TestResult {
     logout_all(bots).await?;
     for index in 0..bots.len() {
         let bot = &mut bots[index];
-        wait_character_released(bot.pair, bot.index).await?;
-        bot.session = Some(connect_character(bot.pair, 0xa5, bot.index).await?);
+        connect_bot(bot, 0xa5, "connect-relog").await?;
         // Service only the already re-admitted sessions; the rest are intentionally closed.
-        pump(&mut bots[..=index]).await?;
+        pump_at(&mut bots[..=index], "relog-pump").await?;
     }
     Ok(())
 }
