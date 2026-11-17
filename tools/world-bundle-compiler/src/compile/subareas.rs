@@ -95,6 +95,52 @@ struct Position {
 }
 
 impl Source {
+    /// Select an authored hometown for an explicitly configured fixture bundle.
+    /// Ordinary source loading retains the production pin's default.
+    pub fn select_default_town(
+        &mut self,
+        town: u32,
+        regions: Option<&[(u16, u16)]>,
+    ) -> Result<(), Error> {
+        if self.table.town(town).and_then(|area| area.temple).is_none() {
+            return Err(fail(format!("unknown hometown or missing temple: {town}")));
+        }
+        let temple = self
+            .table
+            .town(town)
+            .and_then(|area| area.temple)
+            .ok_or_else(|| fail("missing temple"))?;
+        if regions.is_some_and(|regions| !regions.contains(&(temple.x / 256, temple.y / 256))) {
+            return Err(fail("fixture temple outside selected regions"));
+        }
+        self.table.default_town = Some(town);
+        Ok(())
+    }
+
+    /// Ensure the selected respawn temple is a real tile in the emitted input.
+    pub fn validate_default_town_tile(&self, regions: &[Vec<u8>]) -> Result<(), Error> {
+        let temple = self
+            .table
+            .default_town
+            .and_then(|id| self.table.town(id))
+            .and_then(|area| area.temple)
+            .ok_or_else(|| fail("fixture temple absent"))?;
+        let mut budget = crate::bundle::BUNDLE_BUDGET;
+        for data in regions {
+            let region = crate::b3::decode_region(data, crate::bundle::TILE_LIMITS, &mut budget)?;
+            if i16::from(region.z) == -i16::from(temple.floor)
+                && region
+                    .sectors
+                    .iter()
+                    .flat_map(|(_, _, tiles)| tiles)
+                    .any(|tile| tile.x == temple.x && tile.y == temple.y)
+            {
+                return Ok(());
+            }
+        }
+        Err(fail("fixture temple tile absent from compiled regions"))
+    }
+
     /// Decode and verify the source assets before native World admission in `compile`.
     pub fn load(root: &Path) -> Result<Self, Error> {
         let mut source = Self::default();
@@ -602,6 +648,31 @@ pub(super) fn realize(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn fixture_default_town_requires_authored_temple() -> Result<(), Error> {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let mut source = Source::load(&root)?;
+        assert_eq!(source.table.default_town, Some(33));
+        assert!(source.select_default_town(u32::MAX, None).is_err());
+        assert_eq!(source.table.default_town, Some(33));
+        assert!(
+            source
+                .select_default_town(34, Some(&[(126, 125), (126, 126), (127, 127)]))
+                .is_err()
+        );
+        source.select_default_town(8, Some(&[(126, 125), (126, 126), (127, 127)]))?;
+        assert_eq!(source.table.default_town, Some(8));
+        assert_eq!(
+            source.table.town(8).and_then(|area| area.temple),
+            Some(subarea::Temple {
+                x: 32369,
+                y: 32241,
+                floor: -7,
+            })
+        );
+        Ok(())
+    }
 
     #[test]
     fn hometown_lookup_retains_temples_and_resolves_newhaven_start() -> Result<(), Error> {

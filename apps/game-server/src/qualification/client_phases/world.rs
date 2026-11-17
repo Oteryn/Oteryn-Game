@@ -2041,6 +2041,201 @@ fn route(
 const REACH_SEARCH_NODES: usize = 3_000_000;
 const REACH_CHUNK: usize = 20_000;
 
+#[derive(Clone, Copy, Debug)]
+pub(super) struct ReachFailure {
+    searched: usize,
+    component: (TilePos, TilePos),
+}
+
+impl std::fmt::Display for ReachFailure {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            formatter,
+            "searched={} component={:?}..{:?}",
+            self.searched, self.component.0, self.component.1
+        )
+    }
+}
+
+// Authored PZ flags remain authoritative for a safe return, independently of
+// which hometown is currently recorded for the Character.
+fn return_protection_zone(world: &BundleWorld, at: TilePos) -> bool {
+    world
+        .base()
+        .tile(at.x, at.y, at.floor)
+        .is_some_and(|tile| tile.walkable() && tile.protection_zone())
+        && world.enterable(at)
+}
+
+async fn return_to_protection_zone(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+) -> TestResult<TilePos> {
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = reach_route(client, world, from, |at| return_protection_zone(world, at))
+        .await?
+        .map_err(|failure| {
+            format!(
+                "profile return has no reachable protection-zone temple: from={from:?} {failure}"
+            )
+        })?;
+    walk(client, world, &path).await?;
+    let at = tile(client.world_spatial().actor_position)?;
+    if !return_protection_zone(world, at) {
+        return Err(
+            format!("profile return did not reach a protection-zone temple: at={at:?}").into(),
+        );
+    }
+    Ok(at)
+}
+
+// Initially usable closed doors from map/door_registry.rs. Key-door closed
+// forms 1629/1632 start unlocked; quest/level doors are never accepted.
+fn retry_door(appearance: u16, action: Option<u16>) -> bool {
+    ([1638, 1640, 1656, 1658, 1685, 1694, 2177, 2179].contains(&appearance) && action.is_none())
+        || ([1629, 1632].contains(&appearance) && !matches!(action, Some(101 | 1001)))
+}
+
+// Resolve the configured entry against authored hometown temples, independently
+// of the production pin default. The qualification bundle must agree.
+#[cfg(test)]
+fn fixture_home_town(world: &BundleWorld) -> TestResult<&oteryn_world_bundle::subarea::Area> {
+    let temples: BTreeMap<_, _> = world
+        .base()
+        .subareas
+        .areas
+        .iter()
+        .filter(|area| area.hometown)
+        .filter_map(|area| {
+            let temple = area.temple?;
+            let at = TilePos {
+                x: temple.x,
+                y: temple.y,
+                floor: temple.floor,
+            };
+            return_protection_zone(world, at).then_some((at, area))
+        })
+        .collect();
+    // The entry may be a few cells from the catalogue's temple (Thais is three
+    // cells south). Resolve the nearest reachable temple from the fixture ENTRY,
+    // never from the post-death position or the source pin's default town.
+    let path = route(world, TOWN, |at| temples.contains_key(&at))
+        .ok_or("configured fixture start has no reachable authored hometown temple")?;
+    let mut at = TOWN;
+    for direction in path {
+        at = destination(world, at, direction).ok_or("fixture temple route")?;
+    }
+    temples
+        .get(&at)
+        .copied()
+        .ok_or_else(|| "fixture hometown temple absent".into())
+}
+
+fn home_temple_return(at: TilePos, failure: ReachFailure) -> String {
+    format!("profile_return goal=home_temple at={at:?} fixture_town=unreachable {failure}")
+}
+
+/// Like `route` without its 160-tile and two-floor window: whole bundle up to
+/// REACH_SEARCH_NODES tiles, serving the connection every REACH_CHUNK expansions.
+/// `Ok(Err(failure))` records the searched component when unreachable or capped.
+pub(super) async fn reach_route(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    from: TilePos,
+    goal: impl Fn(TilePos) -> bool,
+) -> TestResult<Result<Vec<StepDirection>, ReachFailure>> {
+    let mut origin = from;
+    loop {
+        client.service_liveness(Duration::from_millis(1)).await?;
+        client.take_events(); // Canonical session stores retain the applied observations.
+        let observed = tile(client.world_spatial().actor_position)?;
+        if observed != origin {
+            origin = observed;
+        }
+        let path = reach_route_serviced(world, origin, &goal, async || {
+            verdict::Harness::global().progress("route-search");
+            client.service_liveness(Duration::from_millis(1)).await?;
+            client.take_events();
+            Ok(())
+        })
+        .await?;
+        client.service_liveness(Duration::from_millis(1)).await?;
+        client.take_events();
+        let observed = tile(client.world_spatial().actor_position)?;
+        if observed == origin {
+            return Ok(path);
+        }
+        evidence(&format!(
+            "route_search replan=true from={origin:?} observed={observed:?}"
+        ));
+        origin = observed;
+    }
+}
+
+// Keep the search shared with the offline production-bundle regression. Live
+// callers always supply the connection service above, including error propagation.
+async fn reach_route_serviced(
+    world: &BundleWorld,
+    from: TilePos,
+    goal: impl Fn(TilePos) -> bool,
+    mut service: impl AsyncFnMut() -> TestResult,
+) -> TestResult<Result<Vec<StepDirection>, ReachFailure>> {
+    let mut queue = VecDeque::from([from]);
+    let mut parents = BTreeMap::from([(from, None)]);
+    let mut expanded = 0usize;
+    while let Some(at) = queue.pop_front() {
+        if goal(at) {
+            let mut path = Vec::new();
+            let mut cursor = at;
+            while let Some(Some((previous, direction))) = parents.get(&cursor) {
+                path.push(*direction);
+                cursor = *previous;
+            }
+            path.reverse();
+            return Ok(Ok(path));
+        }
+        if parents.len() > REACH_SEARCH_NODES {
+            break;
+        }
+        expanded += 1;
+        if expanded.is_multiple_of(REACH_CHUNK) {
+            service().await?;
+        }
+        for direction in [
+            StepDirection::North,
+            StepDirection::East,
+            StepDirection::South,
+            StepDirection::West,
+        ] {
+            let Some(next) = destination(world, at, direction) else {
+                continue;
+            };
+            if parents.contains_key(&next) {
+                continue;
+            }
+            parents.insert(next, Some((at, direction)));
+            queue.push_back(next);
+        }
+    }
+    let mut low = from;
+    let mut high = from;
+    for at in parents.keys() {
+        low.x = low.x.min(at.x);
+        low.y = low.y.min(at.y);
+        low.floor = low.floor.min(at.floor);
+        high.x = high.x.max(at.x);
+        high.y = high.y.max(at.y);
+        high.floor = high.floor.max(at.floor);
+    }
+    Ok(Err(ReachFailure {
+        searched: parents.len(),
+        component: (low, high),
+    }))
+}
+
+const REACH_SEARCH_NODES: usize = 3_000_000;
+const REACH_CHUNK: usize = 20_000;
+
 /// Like `route` without its 160-tile and two-floor window: it searches the whole bundle (stairs,
 /// ladders and floor changes included) up to `REACH_SEARCH_NODES` tiles. The search yields to the
 /// connection every `REACH_CHUNK` expansions so liveness is served and the harness sees progress.
@@ -4632,15 +4827,26 @@ pub(super) async fn journeys(
     if map.header.bundle_digest != world.base().digest() || map.tiles.is_empty() {
         return Err("town join served a different or empty World bundle".into());
     }
-    // Resume from the profile journey's saved cell and travel normally to town.
-    let from = tile(client.world_spatial().actor_position)?;
-    evidence(&format!(
-        "world_fixture role=core phase=return_to_town from={from:?} to={TOWN:?}"
-    ));
-    let back = route(world, from, |at| at == TOWN).ok_or_else(|| {
-        format!("required core has no return route to town: from={from:?} to={TOWN:?}")
-    })?;
-    walk(&mut client, world, &back).await?;
+    // M04 can leave this Character at its Newhaven home temple after death.
+    // First reach the nearest authored safe tile in the current component.
+    let at = return_to_protection_zone(&mut client, world).await?;
+    match reach_route(&mut client, world, at, |at| at == TOWN).await? {
+        Ok(back) => {
+            evidence(&format!("profile_return goal=fixture_town at={at:?}"));
+            walk(&mut client, world, &back).await?;
+        }
+        Err(failure) => {
+            let detail = home_temple_return(at, failure);
+            evidence(&detail);
+            // character_core's step/relogin phase plans from TOWN. Do not run it
+            // (or its dependent town phases) against a different island.
+            evidence(&format!(
+                "e2e_all scenario=M01.step-relogin status=FAIL seconds=0 evidence={detail} cause=precondition root=profile_return/fixture-town"
+            ));
+            provisioning::e2ef1_logout_for_return(&mut client).await?;
+            return Err(detail.into());
+        }
+    }
     client = character_core(client, clients, world).await?;
     client = include!("full_e2ef3_registration.rs");
     client = floor_journey(client, clients, world).await?;
@@ -5011,10 +5217,27 @@ async fn travel_to_spawn(
 }
 
 pub(crate) fn smoke() -> TestResult {
+    smoke_with(Some(&[(126, 125), (126, 126), (127, 127)]), |_| Ok(()))
+}
+
+fn smoke_with(
+    regions: Option<&[(u16, u16)]>,
+    check: impl FnOnce(&BundleWorld) -> TestResult,
+) -> TestResult {
     use oteryn_world_bundle_compiler::{bundle::BuildClass, compile, source};
     let started = std::time::Instant::now();
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let project = source::project_regions(&root, &[(126, 125), (126, 126), (127, 127)])?;
+    let mut project = match regions {
+        Some(regions) => source::project_regions(&root, regions)?,
+        None => source::project(&root)?,
+    };
+    if regions.is_some() {
+        project.families.subareas.select_default_town(8, regions)?;
+        project
+            .families
+            .subareas
+            .validate_default_town_tile(&project.regions)?;
+    }
     let (registry, palette) = source::registry(&root, &project)?;
     let identity = serde_json::from_slice(&std::fs::read(
         root.join("content/world/pins/oteryn.identity.json"),
@@ -5040,12 +5263,14 @@ pub(crate) fn smoke() -> TestResult {
         .map(|byte| format!("{byte:02x}"))
         .collect::<String>()
         .into();
-    let world = load_world(
+    // This smoke may select a different bundle from other tests in this process.
+    let world = boot_world(
         compiled.bytes,
         &pin,
         WorldId::decode(&v7(1, 2))?,
         ChannelId::decode(&v7(1, 3))?,
     )?;
+    let world = &world;
     assert!(
         world
             .base()
@@ -5068,6 +5293,7 @@ pub(crate) fn smoke() -> TestResult {
         route(world, landing, |at| at == TOWN).is_some(),
         "town floor-change route must have a return path"
     );
+    check(world)?;
     let rats: Vec<_> = project
         .families
         .spawns
@@ -5216,6 +5442,164 @@ fn qualification_nbroute_retries_only_stationary_rejections_with_a_bound() {
             assert_eq!(town_route_retry_delay(disposition, false, attempt), None);
         }
     }
+}
+
+#[cfg(test)]
+#[test]
+fn qualification_profile_return_reaches_home_temple_after_m04_respawn() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            smoke_with(None, |world| {
+                let from = TilePos {
+                    x: 32536,
+                    y: 32514,
+                    floor: -7,
+                };
+                assert!(route(world, from, |at| at == TOWN).is_none());
+                let runtime = tokio::runtime::Builder::new_current_thread().build()?;
+                let path = runtime
+                    .block_on(reach_route_serviced(
+                        world,
+                        from,
+                        |at| return_protection_zone(world, at),
+                        async || {
+                            tokio::task::yield_now().await;
+                            Ok(())
+                        },
+                    ))?
+                    .map_err(|failure| format!("profile return unreachable: {failure}"))?;
+                let mut at = from;
+                for direction in &path {
+                    at = destination(world, at, *direction).ok_or("invalid profile return step")?;
+                }
+                assert!(return_protection_zone(world, at));
+                assert!(
+                    world
+                        .base()
+                        .tile(at.x, at.y, at.floor)
+                        .is_some_and(|tile| tile.protection_zone())
+                );
+                // BFS must stop at the nearest PZ, including an already safe respawn.
+                assert!(path.is_empty() || !return_protection_zone(world, from));
+                let disconnected = runtime
+                    .block_on(reach_route_serviced(
+                        world,
+                        at,
+                        |at| at == TOWN,
+                        async || Ok(()),
+                    ))?
+                    .err()
+                    .ok_or("Newhaven unexpectedly has a walking route to the fixture town")?;
+                let detail = home_temple_return(at, disconnected);
+                assert!(detail.contains("profile_return goal=home_temple"));
+                assert!(detail.contains("fixture_town=unreachable"));
+                assert!(detail.contains("searched=") && detail.contains("component="));
+                evidence(&format!("{detail} path_length={}", path.len()));
+                let town = runtime
+                    .block_on(reach_route_serviced(
+                        world,
+                        TOWN,
+                        |at| return_protection_zone(world, at),
+                        async || Ok(()),
+                    ))?
+                    .map_err(|failure| {
+                        format!("fixture town lost its protection zone: {failure}")
+                    })?;
+                assert!(town.is_empty());
+                // A search that lasts a chunk must propagate a failed liveness service.
+                let mut services = 0;
+                let refused = runtime.block_on(reach_route_serviced(
+                    world,
+                    TOWN,
+                    |_| false,
+                    async || {
+                        services += 1;
+                        Err("route service failed".into())
+                    },
+                ));
+                assert_eq!(services, 1);
+                assert_eq!(
+                    refused
+                        .err()
+                        .ok_or("liveness error was swallowed")?
+                        .to_string(),
+                    "route service failed"
+                );
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "profile return test thread failed")??;
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn qualification_fixture_hometown_follows_fixture_start() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            smoke_with(Some(&[(126, 125), (126, 126), (127, 127)]), |world| {
+                let temple = fixture_home_town(world)?
+                    .temple
+                    .ok_or("fixture temple absent")?;
+                assert_eq!(fixture_home_town(world)?.town_id, Some(8));
+                assert_eq!(
+                    fixture_home_town(world)?.town_id,
+                    world.base().subareas.default_town
+                );
+                let temple = TilePos {
+                    x: temple.x,
+                    y: temple.y,
+                    floor: temple.floor,
+                };
+                assert!(return_protection_zone(world, temple));
+                assert!(route(world, temple, |at| at == TOWN).is_some());
+                let target = world
+                    .facts()
+                    .doors()
+                    .keys()
+                    .find_map(|key| {
+                        let (at, ordinal) = crate::map::view::placement_of(key)?;
+                        let appearance = world
+                            .base()
+                            .tile(at.x, at.y, at.floor)?
+                            .appearance(ordinal)?;
+                        if !retry_door(appearance, world.facts().action_at(key)) {
+                            return None;
+                        }
+                        let path = route(world, TOWN, |next| {
+                            next.floor == at.floor
+                                && next.x.abs_diff(at.x).max(next.y.abs_diff(at.y)) == 3
+                        })?;
+                        Some((at, appearance, path.len()))
+                    })
+                    .ok_or("fixture bundle has no reachable plain far-USE door")?;
+                evidence(&format!(
+                    "fixture_world_targets far_use={target:?} default_town={:?}",
+                    world.base().subareas.default_town
+                ));
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "fixture hometown test thread failed")??;
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn qualification_retry_door_excludes_quest_storage() {
+    for appearance in [1642, 1644, 1660, 1662, 1674, 1676, 1689, 1698] {
+        assert!(!retry_door(appearance, Some(41719)));
+        assert!(!retry_door(appearance, None));
+    }
+    assert!(retry_door(2177, None));
+    assert!(retry_door(2179, None));
+    assert!(!retry_door(2177, Some(101)));
 }
 
 #[cfg(test)]

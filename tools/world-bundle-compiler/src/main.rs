@@ -109,6 +109,7 @@ fn run_compile(
     out: &Path,
     class: &str,
     regions: Option<&[(u16, u16)]>,
+    default_town: Option<u32>,
 ) -> Result<Value, Error> {
     let build_class = match class {
         "production" => BuildClass::Production,
@@ -122,10 +123,25 @@ fn run_compile(
             "region selection is non-production only".into(),
         ));
     }
-    let project = match regions {
+    let mut project = match regions {
         Some(regions) => oteryn_world_bundle_compiler::source::project_regions(root, regions)?,
         None => project(root)?,
     };
+    if let Some(town) = default_town {
+        if regions.is_none() {
+            return Err(Error::Format(
+                "fixture hometown requires region selection".into(),
+            ));
+        }
+        project
+            .families
+            .subareas
+            .select_default_town(town, regions)?;
+        project
+            .families
+            .subareas
+            .validate_default_town_tile(&project.regions)?;
+    }
     let (registry, palette) = registry(root, &project)?;
     let input = Input {
         regions: &project.regions,
@@ -520,8 +536,11 @@ fn main() -> ExitCode {
             Path::new(out),
             class,
             None,
+            None,
         ),
-        [_, command, root, identity, out, regions] if command == "compile-regions" => {
+        [_, command, root, identity, out, regions, towns @ ..]
+            if command == "compile-regions" && towns.len() <= 1 =>
+        {
             let parsed = regions
                 .split(';')
                 .map(|entry| {
@@ -543,6 +562,13 @@ fn main() -> ExitCode {
                     Path::new(out),
                     "non-production",
                     Some(&regions),
+                    towns
+                        .first()
+                        .map(|town| {
+                            town.parse()
+                                .map_err(|_| Error::Format("fixture town id".into()))
+                        })
+                        .transpose()?,
                 )
             })
         }
@@ -567,6 +593,8 @@ fn main() -> ExitCode {
                 "usage: oteryn-world-bundle-compiler parity <repository root>\n       \
                  oteryn-world-bundle-compiler compile <repository root> <identity.json> <out> \
                  <production|non-production>\n       \
+                 oteryn-world-bundle-compiler compile-regions <repository root> <identity.json> <out> \
+                 <x,y;x,y> [fixture town id]\n       \
                  oteryn-world-bundle-compiler derive-identity <repository root> <world slug>\n       \
                  oteryn-world-bundle-compiler pin-check <repository root> <out directory>\n       \
                  oteryn-world-bundle-compiler pin-refresh <repository root>"
