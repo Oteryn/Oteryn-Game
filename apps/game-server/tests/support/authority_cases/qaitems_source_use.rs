@@ -13,8 +13,6 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 type TestResult<T = ()> = fixture::TestResult<T>;
-#[path = "engnpc2_paint_transport/world.rs"]
-mod world;
 
 #[derive(Clone, Copy)]
 struct Case {
@@ -24,7 +22,6 @@ struct Case {
     unique: u16,
     appearance: u16,
     item: u16,
-    source: &'static [u8],
 }
 #[test]
 fn qaitems_boots_source_use_inventory_and_replay() -> TestResult {
@@ -40,10 +37,6 @@ fn qaitems_boots_source_use_inventory_and_replay() -> TestResult {
             unique: 6284,
             appearance: 2472,
             item: 9019,
-            source: include_bytes!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../../content/world/placements/region-z15-x127-y122.b3"
-            )),
         },
     )
 }
@@ -61,10 +54,6 @@ fn qaitems_hammer_source_use_inventory_and_replay() -> TestResult {
             unique: 6078,
             appearance: 2472,
             item: 3208,
-            source: include_bytes!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../../content/world/placements/region-z08-x128-y125.b3"
-            )),
         },
     )
 }
@@ -82,10 +71,6 @@ fn qaitems_lottery_source_use_inventory_and_replay() -> TestResult {
             unique: 6250,
             appearance: 2469,
             item: 5956,
-            source: include_bytes!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../../content/world/placements/region-z11-x128-y124.b3"
-            )),
         },
     )
 }
@@ -103,10 +88,6 @@ fn qaitems_poem_source_use_inventory_and_replay() -> TestResult {
             unique: 6251,
             appearance: 2472,
             item: 347,
-            source: include_bytes!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../../content/world/placements/region-z07-x127-y127.b3"
-            )),
         },
     )
 }
@@ -143,42 +124,10 @@ async fn exercise(
             .current_session_at(session)
             .await?;
     let (x, y, z) = case.position;
-    let region = oteryn_world_bundle_compiler::b3::decode_region(
-        case.source,
-        oteryn_world_bundle::bundle::TILE_LIMITS,
-        &mut oteryn_world_bundle::sector::Budget {
-            tiles: 65536,
-            entries: 1_000_000,
-        },
-    )?;
-    let tile = region
-        .sectors
-        .iter()
-        .flat_map(|(_, _, tiles)| tiles)
-        .find(|tile| (tile.x, tile.y) == (x, y))
-        .ok_or("source chest tile")?;
-    assert_eq!(
-        tile.items
-            .iter()
-            .filter(|item| item.attrs.unique == Some(case.unique))
-            .count(),
-        1
-    );
+    // Match the existing catalogue harness: preserve source identity in a
+    // minimal reachable scene; the merged World does not retain donor UIDs.
+    let scene = source_scene(case, world, channel)?;
     let start = (x - 1, y);
-    let scene = world::native_scene(
-        native,
-        vec![world::NativeCrop {
-            bytes: case.source,
-            region: (z, x / 256, y / 256),
-            bounds: (x - 2, y - 2, x + 2, y + 2),
-            start,
-            expected: vec![],
-        }],
-        &[],
-        &[case.appearance],
-        world,
-        channel,
-    )?;
     let cells = scene
         .movement_cells(pin.qualified_room().movement_cells())
         .map_err(debug)?;
@@ -412,4 +361,89 @@ async fn exercise(
     );
     assert_eq!(h.count("game_reward_claim_mint_receipts").await?, 1);
     Ok(())
+}
+
+fn source_scene(
+    case: Case,
+    world: crate::foundation::WorldId,
+    channel: crate::foundation::ChannelId,
+) -> TestResult<oteryn_gameplay_world::map::boot::BundleWorld> {
+    use oteryn_gameplay_world::map;
+    use oteryn_world_bundle::{bundle, sector};
+    let (bytes, mut pins) = map::boot::tests::bundle();
+    let mut data = bundle::read(&bytes)?;
+    data.manifest.palette.truncate(1);
+    data.manifest.palette.push(bundle::PaletteEntry {
+        key: format!("oteryn:terrain.tibia.i{}", case.appearance),
+        family: bundle::Family::Terrain,
+        id: 1,
+        terrain: Some(bundle::Terrain {
+            kind: bundle::TerrainKind::Common,
+            walkable: None,
+            ground_speed: None,
+            blocks_projectile: None,
+        }),
+    });
+    let (x, y, z) = case.position;
+    let floor = -i8::try_from(z)?;
+    data.manifest.world = bundle::Extent {
+        min_x: x - 2,
+        min_y: y,
+        max_x: x + 1,
+        max_y: y + 1,
+        floors: vec![floor],
+    };
+    let mut grouped = std::collections::BTreeMap::<(u16, u16), Vec<sector::Tile>>::new();
+    for tx in x - 2..=x {
+        let mut items = vec![sector::Item {
+            palette: 0,
+            depth: 0,
+            attrs: Default::default(),
+        }];
+        if tx == x {
+            items.push(sector::Item {
+                palette: 1,
+                depth: 0,
+                attrs: sector::Attrs {
+                    unique: Some(case.unique),
+                    ..Default::default()
+                },
+            });
+        }
+        grouped
+            .entry((y / 32, tx / 32))
+            .or_default()
+            .push(sector::Tile {
+                x: tx,
+                y,
+                flags: 0,
+                house: 0,
+                zones: vec![],
+                items,
+            });
+    }
+    let sectors = grouped
+        .into_iter()
+        .map(|((sy, sx), tiles)| bundle::Sector {
+            floor,
+            sx,
+            sy,
+            tiles,
+        })
+        .collect::<Vec<_>>();
+    let bytes = oteryn_world_bundle::writer::write(&data.manifest, &sectors, &Default::default())?;
+    pins.digest = bundle::read(&bytes)?.digest;
+    let base = map::load(&bytes, &pins).map_err(debug)?;
+    map::boot::boot(
+        &bytes,
+        &map::boot::BootPins {
+            map_revision: map::overlay::map_revision(&base),
+            bundle: pins,
+            start: map::overlay::TilePos { x: x - 1, y, floor },
+        },
+        world,
+        channel,
+        |_| None,
+    )
+    .map_err(|e| debug(e).into())
 }
