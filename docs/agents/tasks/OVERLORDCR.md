@@ -26,7 +26,7 @@ Four source-death rules share `oteryn:quest-progress/quest/u8_2/elemental_sphere
 | governance validator and unit tests | Passed; 135 unit tests |
 | supplemental authority PostgreSQL proof | Passed: 1 test, 0 failures, 138.002037182 seconds |
 | full dispatch lethal-path PostgreSQL cases | Not executed: two compiler OOM failures, including clean single-job retry |
-| dispatch clippy, all targets/all features, warnings denied | Running with one job |
+| dispatch clippy, all targets/all features, warnings denied | Passed with one job |
 | touched server authority-target clippy | Pending |
 | focused catalogue validation | Pending |
 | pin/lock verification | Pending |
@@ -35,3 +35,5 @@ Four source-death rules share `oteryn:quest-progress/quest/u8_2/elemental_sphere
 PG command: `cargo test --locked -p oteryn-game-server --test character_authority_postgres overlordcr -- --nocapture`. Passed `overlordcr_quest_owner_rejects_non_damage_and_replays_all_four_flags_postgres`; marker `OVERLORDCR_OWNER_PG_EXECUTED duration=138.002037182s`. It verifies all four mappings, non-damage/non-overlord rejection, duplicate receipt replay and a distinct later overlord preserving the shared flag.
 
 Full production lethal-path regressions remain intact in mounted dispatch tests: two damaging Characters, nearby observer, non-overlord death, duplicate projection/settlement, all four mappings. Both attempted runs failed before test execution with `error: could not compile `oteryn-gameplay-dispatch` (lib test)` and `(signal: 9, SIGKILL: kill)`. Retried after `cargo clean -p oteryn-gameplay-dispatch` with `CARGO_BUILD_JOBS=1`. The repository PG workflow documents extra swap for this target; this container has no swap or administrative capabilities. No tests were skipped, loosened or removed to obtain the supplemental proof.
+
+Passed: `cargo clippy --locked -p oteryn-gameplay-dispatch --all-targets --all-features --quiet -- -D warnings` (exit 0). This checks the full authored dispatch test code as well as production code. Existing vendor warnings remain dependency diagnostics.
