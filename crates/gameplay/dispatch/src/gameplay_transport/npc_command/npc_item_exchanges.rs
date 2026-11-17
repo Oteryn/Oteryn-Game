@@ -296,6 +296,9 @@ pub(super) async fn talk(
         backpack,
     };
     let result = if recipe.npc == "oteryn:npc.uzgod" {
+        let Some(catalogue) = admission.quest_catalogue.as_deref() else {
+            return Some(rejected());
+        };
         admission
             .root
             .exchange_obsidian_knife(
@@ -304,6 +307,7 @@ pub(super) async fn talk(
                 fence,
                 request,
                 &NativeItemWeights(native),
+                catalogue,
             )
             .await
     } else if recipe.npc == "oteryn:npc.seymour" {
@@ -331,6 +335,11 @@ pub(super) async fn talk(
     };
     match result {
         Ok(_) => {
+            if recipe.npc == "oteryn:npc.uzgod" {
+                admission
+                    .refresh_quest_session(command.game_session_id, false)
+                    .await;
+            }
             let mut outcome =
                 quest_dialogue::apply(admission, actor, command, intent.clone(), step).await;
             // The transaction committed even if the conversation ended before publication.

@@ -83,6 +83,7 @@ pub use hireling::{HirelingPackageSelection, HirelingTradeSelection};
 
 #[derive(Default)]
 struct TradeCommitOptions<'a> {
+    obsidian_knife_quest: Option<obsidian_knife::QuestPin>,
     sell_all: bool,
     hireling: Option<hireling::Extra>,
     weights: Option<&'a dyn super::item_transfer::ItemWeightLookup>,
@@ -799,6 +800,7 @@ impl DurabilityRoot {
         options: TradeCommitOptions<'_>,
     ) -> Result<NpcTradeOutcome> {
         let TradeCommitOptions {
+            obsidian_knife_quest,
             sell_all,
             hireling,
             weights,
@@ -1034,6 +1036,11 @@ impl DurabilityRoot {
                         house_key.as_deref(),
                     )
                     .await?;
+                    if let Some(pin) = &obsidian_knife_quest
+                        && !obsidian_knife::complete(&mut tx, fence.character_id, &request, &binding, pin).await?
+                    {
+                        return Ok(Err(NpcTradeError::CapacityExceeded));
+                    }
                     if let Some(source)=&hireling
                         && let Err(error)=source.apply_materialized(&mut tx,world_id,&request,plan.item_instance_id).await {return Ok(Err(error));}
                     grant_missing(

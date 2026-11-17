@@ -91,6 +91,9 @@ fn pick_exchange_atomic_confirmation_refusal_and_replay() -> TestResult {
 
 #[test]
 fn obsidian_knife_uzgod_atomic_exchange_cooldown_and_replay() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     execute(&KNIFE_CASE, false)
 }
 
@@ -373,6 +376,19 @@ fn scenario(case: &ExchangeCase, filled: bool) -> TestResult {
             (CommandStatus::DuplicateReplay, replies[2].1.clone())
         );
         assert_eq!(counts(&h, case).await?, (case.after, 1, 1, 1));
+        if case.npc == KNIFE_CASE.npc {
+            let completed: bool = sqlx::query_scalar(
+                "SELECT EXISTS (SELECT 1 FROM game_character_quest_states \
+                 WHERE character_id=encode($1,'hex')::uuid \
+                 AND quest_key='oteryn:quest.obsidian_knife_quest' \
+                 AND completed_character_revision IS NOT NULL)",
+            )
+            .bind(admitted.item_fence.ok_or("item fence")?.character_id.as_bytes().as_slice())
+            .fetch_one(&h.pool)
+            .await?;
+            assert!(completed, "Uzgod's exchange must complete the quest");
+        }
+
         assert_eq!(
             remaining_inputs(&h, case).await?,
             case.expected_inputs
