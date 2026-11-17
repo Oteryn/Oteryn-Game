@@ -28,7 +28,7 @@ BEGIN
             OR capture_row.creature_key IS DISTINCT FROM 'oteryn:creature.tainted_soul'
             OR NOT EXISTS (
                 SELECT 1
-                FROM game_quest_callback_carried(capture_row.character_id,capture_row.world_id) c
+                FROM game_quest_callback_carried(capture_row.character_id,capture_row.world_id,capture_row.source_item) c
                 JOIN game_item_instances i ON i.item_instance_id=c.item
                 WHERE i.item_instance_id=capture_row.source_item AND i.lifecycle=1
                     AND i.definition_family='Item' AND i.world_id=capture_row.world_id
@@ -57,6 +57,29 @@ BEGIN
     END IF;
     RETURN NULL;
 END $$;
+DO $migration$
+DECLARE
+    definition TEXT;
+    anchor TEXT := $anchor$    IF jsonb_typeof(NEW.plan->'take') IS DISTINCT FROM 'array'$anchor$;
+BEGIN
+    definition := pg_get_functiondef('game_quest_carried_use_complete()'::regprocedure);
+    IF (length(definition) - length(replace(definition, anchor, ''))) <> length(anchor) THEN
+        RAISE EXCEPTION 'unexpected carried tool receipt proof';
+    END IF;
+    EXECUTE replace(definition, anchor, $arm$    IF NEW.transition_key='oteryn:quest-reward/tainted-soul-redemption' THEN
+        IF NEW.created_xact_id<>pg_current_xact_id()
+            OR NEW.plan->'capture_creature' IS DISTINCT FROM 'true'::jsonb
+            OR NEW.plan->'take' IS DISTINCT FROM '[]'::jsonb
+            OR NEW.plan->'give' IS DISTINCT FROM 'null'::jsonb THEN
+            RAISE EXCEPTION 'redemption must retain its carried tool' USING ERRCODE='23514';
+        END IF;
+        -- The deferred capture guard verifies the exact selected talisman and receipt.
+        RETURN NULL;
+    END IF;
+$arm$ || anchor);
+    EXECUTE format('ALTER FUNCTION game_quest_creature_capture_complete() SET search_path=pg_catalog,%I,pg_temp',current_schema());
+END
+$migration$;
 REVOKE ALL ON FUNCTION game_quest_creature_capture_complete() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION game_quest_creature_capture_complete() TO oteryn_game_runtime;
 GRANT EXECUTE ON FUNCTION game_quest_creature_capture_complete() TO oteryn_game_control;
