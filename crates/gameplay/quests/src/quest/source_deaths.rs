@@ -284,8 +284,10 @@ mod tower_defence_tests {
 
     #[test]
     fn qtowerdef_top_experience_uses_awarded_xp_and_selects_one_winner() {
+        assert!(tracks_top_experience("oteryn:creature.goblin_leader"));
         let principal = [1; 16];
         let second = [2; 16];
+        let third = [3; 16];
         assert_eq!(
             top_experience([(principal, 25, true), (second, 50, false)]),
             Some(second)
@@ -293,6 +295,10 @@ mod tower_defence_tests {
         assert_eq!(
             top_experience([(second, 50, false), (principal, 50, true)]),
             Some(principal)
+        );
+        assert_eq!(
+            top_experience([(third, 50, false), (second, 50, false)]),
+            Some(second)
         );
         assert_eq!(
             top_experience([(principal, 0, true), (second, 0, false)]),

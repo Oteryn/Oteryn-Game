@@ -106,8 +106,13 @@ pub(super) async fn exercise(
     let awards: Vec<(Vec<u8>, i64)> = sqlx::query_as(
         "SELECT uuid_send(character_id), xp_awarded FROM game_party_kill_xp_members ORDER BY xp_awarded DESC",
     ).fetch_all(&h.pool).await?;
+    let damage_principal: Vec<u8> =
+        sqlx::query_scalar("SELECT uuid_send(principal_id) FROM game_party_kill_xp_receipts")
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(damage_principal, principal_id.as_bytes().to_vec());
     assert_eq!(awards.len(), 2);
-    assert_eq!(awards[0].0, winner_id.as_bytes());
+    assert_eq!(awards[0].0.as_slice(), winner_id.as_bytes());
     assert!(awards[0].1 > 0);
     assert_eq!(awards[1], (principal_id.as_bytes().to_vec(), 0));
     assert_eq!(stage(h, *principal_id).await?, 2);
