@@ -84,6 +84,21 @@ pub fn empty_amphora_push_quantity(key: &str, facts: PickupFacts) -> Result<u32,
     Ok(1)
 }
 
+/// The native empty barrel is a single Ground-only map container.
+pub fn empty_barrel_push_quantity(key: &str, facts: PickupFacts) -> Result<u32, Ineligible> {
+    if key != "oteryn:item.tibia.i2523" {
+        return Err(Ineligible::NotPickupable);
+    }
+    if facts.quantity != 1 {
+        return Err(Ineligible::Quantity);
+    }
+    eligibility(PickupFacts {
+        pickupable: true,
+        ..facts
+    })?;
+    Ok(1)
+}
+
 /// A map source is materialized whole; a partial or different requested count is unsupported.
 pub fn whole_quantity_requested(quantity: u32, requested: Option<u32>) -> bool {
     (1..=crate::item_transfer::GAMEITEM01_STACK_QUANTITY_MAX).contains(&quantity)

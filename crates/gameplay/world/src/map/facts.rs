@@ -1287,7 +1287,7 @@ impl MapFacts for BundleFacts {
         depths: &[u8],
         definition: NonZeroU32,
     ) -> bool {
-        self.empty_amphora_pushable(pos, ordinal, id, depths, definition)
+        self.empty_vessel_pushable(pos, ordinal, id, depths, definition)
     }
 
     fn phase_tile(&self, pos: TilePos) -> Result<Option<view::ComposedTile>, view::ViewError> {
@@ -1385,7 +1385,7 @@ impl MapFacts for PinnedFacts<'_> {
         definition: NonZeroU32,
     ) -> bool {
         self.facts
-            .empty_amphora_pushable(pos, ordinal, id, depths, definition)
+            .empty_vessel_pushable(pos, ordinal, id, depths, definition)
     }
 
     fn phase_tile(&self, pos: TilePos) -> Result<Option<view::ComposedTile>, view::ViewError> {

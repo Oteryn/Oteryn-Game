@@ -145,7 +145,7 @@ pub(super) async fn move_map_item(
             .pickup_entry(pos, ordinal, id)
             .or_else(|reason| {
                 if matches!(destination, LoopDestination::Ground(_)) {
-                    at.map.facts.empty_amphora_push_entry(
+                    at.map.facts.empty_vessel_push_entry(
                         pos,
                         ordinal,
                         id,

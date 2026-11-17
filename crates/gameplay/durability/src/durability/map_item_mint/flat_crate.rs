@@ -1,4 +1,4 @@
-//! One empty crate on a flat immutable map tile; no nested-map expansion.
+//! One supported empty container on a flat immutable map tile; no nested-map expansion.
 use super::super::item_transfer::ItemStackClass;
 use super::{ItemDefinitionFacts, MapItemPlacement};
 
@@ -7,11 +7,16 @@ pub struct FlatMapCrateProof {
     bundle: [u8; 32],
     placement: u64,
 }
-fn native_crate(item: &ItemDefinitionFacts) -> bool {
+fn native_flat_container(item: &ItemDefinitionFacts) -> bool {
     item.definition.family == "Item"
-        && item.definition.production_key == "oteryn:item.tibia.i2471"
+        && matches!(
+            (
+                item.definition.production_key.as_str(),
+                item.container_capacity
+            ),
+            ("oteryn:item.tibia.i2471", Some(15)) | ("oteryn:item.tibia.i2523", Some(25))
+        )
         && item.definition.revision_ref == "definition-r1"
-        && item.container_capacity == Some(15)
         && !item.container_slot_equip_pattern
         && item.stack == ItemStackClass::NonStackable
 }
@@ -25,7 +30,7 @@ impl FlatMapCrateProof {
         depths: &[u8],
     ) -> Option<Self> {
         let at = MapItemPlacement::of_key(placement)?;
-        (native_crate(item)
+        (native_flat_container(item)
             && !depths.is_empty()
             && depths.len() <= 64
             && usize::from(at.ordinal) < depths.len()
@@ -38,7 +43,7 @@ impl FlatMapCrateProof {
         bundle: [u8; 32],
         placement: u64,
     ) -> bool {
-        native_crate(item) && self.bundle == bundle && self.placement == placement
+        native_flat_container(item) && self.bundle == bundle && self.placement == placement
     }
     pub(super) fn append_binding(&self, bytes: &mut Vec<u8>) {
         bytes.extend_from_slice(b"oteryn:flat-map-crate/v1:");

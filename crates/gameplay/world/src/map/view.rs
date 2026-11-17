@@ -77,10 +77,10 @@ pub trait MapFacts {
     }
 
     fn base_entry(&self, pos: TilePos, ordinal: u8, id: u32) -> Option<EntryFacts>;
-    /// The current native generation's qualified Ground-only amphora definition.
+    /// The current native generation's qualified Ground-only vessel definitions.
     /// A static map alone grants no additional move handles.
-    fn ground_push_definition(&self) -> Option<NonZeroU32> {
-        None
+    fn ground_push_definitions(&self) -> [Option<NonZeroU32>; 2] {
+        [None; 2]
     }
     /// Qualify the immutable empty source against that admitted definition.
     fn base_ground_pushable(
@@ -283,15 +283,19 @@ pub fn compose_into(
                 facts.house_tile(pos),
             );
             let movable = movable
-                || facts.ground_push_definition().is_some_and(|definition| {
-                    entry.definition == MapDefinition::Item(definition)
-                        && !entry.bound
-                        && !contents
-                        && !facts.house_tile(pos)
-                        && placement_key(pos, ordinal)
-                            .is_some_and(|key| facts.object_revision(key) == 0)
-                        && facts.base_ground_pushable(pos, ordinal, *id, depths, definition)
-                });
+                || facts
+                    .ground_push_definitions()
+                    .into_iter()
+                    .flatten()
+                    .any(|definition| {
+                        entry.definition == MapDefinition::Item(definition)
+                            && !entry.bound
+                            && !contents
+                            && !facts.house_tile(pos)
+                            && placement_key(pos, ordinal)
+                                .is_some_and(|key| facts.object_revision(key) == 0)
+                            && facts.base_ground_pushable(pos, ordinal, *id, depths, definition)
+                    });
             let openable_source =
                 openable_source && matches!(entry.definition, MapDefinition::Item(_));
             out.push(ComposedEntry {

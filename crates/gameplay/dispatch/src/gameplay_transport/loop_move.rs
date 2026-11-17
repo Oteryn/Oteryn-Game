@@ -203,7 +203,7 @@ pub struct LoopGroundOverlay {
     source_plain_corpses: HashSet<[u8; 16]>,
     field_pin: ([u8; 32], [u8; 32], u64),
     taken_sources: std::collections::BTreeSet<u64>,
-    ground_push_definition: Option<NonZeroU32>,
+    ground_push_definitions: [Option<NonZeroU32>; 2],
 }
 
 impl LoopGroundOverlay {
@@ -215,7 +215,10 @@ impl LoopGroundOverlay {
         mut items: Vec<crate::durability::item_loop_move::LoopGroundItem>,
         native: Option<&crate::content::native_gameplay::NativeGameplayState>,
     ) -> Self {
-        let ground_push_definition = native
+        let ground_push_definitions = [
+            ("oteryn:item.tibia.i2523", Some(25)),
+            ("oteryn:item.tibia.i2904", None),
+        ].map(|(key, capacity)| native
             .filter(|native| {
                 native.source_digest() == field_pin.0
                     && matches!(scope, crate::foundation::RuntimeScopeRefV1::Channel { .. })
@@ -224,7 +227,6 @@ impl LoopGroundOverlay {
                 use crate::content::ReferenceItemField;
                 use crate::durability::item_transfer::ItemStackClass;
 
-                let key = "oteryn:item.tibia.i2904";
                 let revision = index.revision(key)?;
                 let definition = TypedDefinitionRef {
                     family: "Item".into(),
@@ -240,13 +242,13 @@ impl LoopGroundOverlay {
                     .ok()?;
                 let record = native.item_policy(key, revision)?.record();
                 (matches!(facts.stack, ItemStackClass::NonStackable)
-                    && facts.container_capacity.is_none()
+                    && facts.container_capacity == capacity
                     && matches!(&record.semantics.physical, ReferenceItemField::Known(physical)
-                        if physical.pickupable == ReferenceItemField::Known(false))
+                        if physical.pickupable == ReferenceItemField::Known(false) && physical.movable == ReferenceItemField::Known(true))
                     && native.item_index()?.definition_ref("Item", key, revision)
                         == Some(reference))
                 .then_some(reference)
-            });
+            }));
         items.sort_by_key(|item| item.stack_ordinal);
         let revision = map_revision(&base);
         let field_revision = sha256_revision(Sha256::digest(revision.as_bytes()).into());
@@ -387,7 +389,7 @@ impl LoopGroundOverlay {
             source_plain_corpses,
             field_pin,
             taken_sources: Default::default(),
-            ground_push_definition,
+            ground_push_definitions,
         }
     }
 
@@ -428,7 +430,7 @@ impl LoopGroundOverlay {
         LoopGroundFacts {
             inner,
             ground: &self.facts,
-            ground_push_definition: self.ground_push_definition,
+            ground_push_definitions: self.ground_push_definitions,
         }
     }
 }
@@ -437,12 +439,12 @@ impl LoopGroundOverlay {
 pub struct LoopGroundFacts<'a, F> {
     inner: &'a F,
     ground: &'a HashMap<[u8; 16], EntryFacts>,
-    ground_push_definition: Option<NonZeroU32>,
+    ground_push_definitions: [Option<NonZeroU32>; 2],
 }
 
 impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
-    fn ground_push_definition(&self) -> Option<NonZeroU32> {
-        self.ground_push_definition
+    fn ground_push_definitions(&self) -> [Option<NonZeroU32>; 2] {
+        self.ground_push_definitions
     }
 
     fn base_ground_pushable(
@@ -453,7 +455,7 @@ impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
         depths: &[u8],
         definition: NonZeroU32,
     ) -> bool {
-        self.ground_push_definition == Some(definition)
+        self.ground_push_definitions.contains(&Some(definition))
             && self
                 .inner
                 .base_ground_pushable(pos, ordinal, id, depths, definition)
@@ -1675,7 +1677,7 @@ mod tests {
         let projection = LoopGroundFacts {
             inner: &pinned,
             ground: &ground,
-            ground_push_definition: None,
+            ground_push_definitions: [None; 2],
         };
         let entries = projection.movement_items(pos);
         assert_eq!(entries, facts.movement_items(pos));
@@ -1695,7 +1697,7 @@ mod tests {
         let current = LoopGroundFacts {
             inner: &facts,
             ground: &ground,
-            ground_push_definition: None,
+            ground_push_definitions: [None; 2],
         };
         assert!(current.movement_items(pos).is_empty());
         assert_eq!(

@@ -1,11 +1,13 @@
-//! Qualification of one empty, flat, unbound native map amphora for a Ground push.
+//! Qualification of empty, flat, unbound native map vessels for a Ground push.
 use super::{BundleFacts, Family, MapDefinition, MapFacts, TilePos, pickup, placement_key};
-use oteryn_gameplay_items::map_pickup::{PickupFacts, empty_amphora_push_quantity};
+use oteryn_gameplay_items::map_pickup::{
+    PickupFacts, empty_amphora_push_quantity, empty_barrel_push_quantity,
+};
 use std::num::NonZeroU32;
 
 impl BundleFacts {
     /// Map projection reuses the move owner's exact immutable source qualification.
-    pub(super) fn empty_amphora_pushable(
+    pub(super) fn empty_vessel_pushable(
         &self,
         pos: TilePos,
         ordinal: u8,
@@ -13,19 +15,23 @@ impl BundleFacts {
         depths: &[u8],
         definition: NonZeroU32,
     ) -> bool {
-        self.empty_amphora_push_entry(pos, ordinal, id, depths, "oteryn:item.tibia.i2904")
-            .is_ok_and(|entry| {
-                self.palette
-                    .get(entry.palette as usize)
-                    .is_some_and(|palette| {
-                        palette.facts.definition == MapDefinition::Item(definition)
+        ["oteryn:item.tibia.i2904", "oteryn:item.tibia.i2523"]
+            .into_iter()
+            .any(|key| {
+                self.empty_vessel_push_entry(pos, ordinal, id, depths, key)
+                    .is_ok_and(|entry| {
+                        self.palette
+                            .get(entry.palette as usize)
+                            .is_some_and(|palette| {
+                                palette.facts.definition == MapDefinition::Item(definition)
+                            })
                     })
             })
     }
 
     /// The dispatcher supplies the current B3 tile depths and resolved native item key.
     /// Inventory pickup continues to use `pickup_entry`, which refuses this source.
-    pub fn empty_amphora_push_entry(
+    pub fn empty_vessel_push_entry(
         &self,
         pos: TilePos,
         ordinal: u8,
@@ -50,12 +56,16 @@ impl BundleFacts {
             .palette
             .get(placement.palette as usize)
             .ok_or(missing)?;
-        if palette.family != Family::Item || palette.id != id || palette.facts.appearance_id != 2904
-        {
+        if palette.family != Family::Item || palette.id != id {
             return Err(pickup::Ineligible::NotPickupable);
         }
         let attrs = &placement.attrs;
-        let quantity = empty_amphora_push_quantity(
+        let qualify = match palette.facts.appearance_id {
+            2523 => empty_barrel_push_quantity,
+            2904 => empty_amphora_push_quantity,
+            _ => return Err(pickup::Ineligible::NotPickupable),
+        };
+        let quantity = qualify(
             key,
             PickupFacts {
                 pickupable: palette.facts.pickupable,
