@@ -475,7 +475,7 @@ pub trait Decider: Send {
     fn next_retained_create_receipt(
         &mut self,
         _after: Option<&str>,
-    ) -> impl Future<Output = Result<Option<(String, Vec<u8>)>, ()>> + Send {
+    ) -> impl Future<Output = Result<Option<(String, Vec<u8>)>, SourceError>> + Send {
         async { Ok(None) }
     }
 
@@ -1052,7 +1052,7 @@ pub async fn run_account_closure_publications<C: ReportClock, S: CommandSource, 
                     }
                 }
                 Ok(None) => creates_drained = true,
-                Err(()) => {}
+                Err(_) => {}
             }
         }
 

@@ -29,7 +29,7 @@ set -Eeuo pipefail
 umask 077
 
 # Platform main carrying U1 (>= 71bbe6c) and the native-only gateway config (Oteryn-Platform #1472).
-readonly PLATFORM_SHA=3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
+readonly PLATFORM_SHA=6d04b52a16145723eedb0c56640ad052dbd26e94
 readonly TOPOLOGY_REVISION=login-local-v1
 readonly ACCOUNT_ID=01934f10-7c00-7000-8000-0000000000a1
 readonly ACCOUNT_EMAIL=login-local@example.invalid
@@ -742,7 +742,7 @@ await_log "event=readiness .*ready=true" 60
 evidence "node assigned=operator report=ReportScopeAssignmentV1 assignment_epoch=1 readiness=true runtime_status=configured"
 
 # Character from a real Platform intent; Platform verifies ownership from the projection feed (mode 33a off).
-php_exec '$id=Illuminate\Support\Facades\DB::table("identities")->where("account_id","'"$ACCOUNT_ID"'")->value("id"); $code=Illuminate\Support\Facades\Artisan::call("game-auth:character-bootstrap-intent:issue",["--identity-id"=>(string)$id,"--operation-id"=>"'"$INTENT_OPERATION"'","--target-world-id"=>"'"$WORLD_ID"'","--requested-name"=>"'"$INTENT_NAME"'","--requested-sex"=>"Female","--profile-revision"=>"'"${INTERPRETATION[0]}"'","--ruleset-revision"=>"'"${INTERPRETATION[1]}"'","--content-revision"=>"'"${INTERPRETATION[2]}"'","--starter-template-revision"=>"'"${INTERPRETATION[3]}"'"]); fwrite(STDERR, Illuminate\Support\Facades\Artisan::output()); exit($code);'
+php_exec '$id=Illuminate\Support\Facades\DB::table("identities")->where("account_id","'"$ACCOUNT_ID"'")->value("id"); $code=Illuminate\Support\Facades\Artisan::call("game-auth:character-bootstrap-intent:issue",["--identity-id"=>(string)$id,"--operation-id"=>"'"$INTENT_OPERATION"'","--target-world-id"=>"'"$WORLD_ID"'","--requested-name"=>"'"$INTENT_NAME"'","--requested-sex"=>"Female","--requested-vocation"=>"Knight","--profile-revision"=>"'"${INTERPRETATION[0]}"'","--ruleset-revision"=>"'"${INTERPRETATION[1]}"'","--content-revision"=>"'"${INTERPRETATION[2]}"'","--starter-template-revision"=>"'"${INTERPRETATION[3]}"'"]); fwrite(STDERR, Illuminate\Support\Facades\Artisan::output()); exit($code);'
 ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$INTENT_OPERATION"
 CHARACTER_ID="$(echo 'SELECT character_id FROM game_character_roots LIMIT 1' | psql_admin oteryn_login_local)"
 [[ "$CHARACTER_ID" =~ ^[0-9a-f-]{36}$ ]] || { echo "character not created"; exit 1; }

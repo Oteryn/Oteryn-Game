@@ -7,6 +7,22 @@ fn character_creation_vocation_and_sex_persist_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    run_creation_case(admin, false)
+}
+
+#[test]
+fn retained_create_v1_receipt_recovers_after_publish_failure_and_intent_404_postgres() -> TestResult
+{
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_creation_case(admin, true)
+}
+
+#[path = "character_creation_vocation/receipt_recovery.rs"]
+mod receipt_recovery;
+
+fn run_creation_case(admin: String, reconcile: bool) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || -> Result<(), String> {
@@ -16,7 +32,7 @@ fn character_creation_vocation_and_sex_persist_postgres() -> TestResult {
                     .build()?
                     .block_on(async {
                         let db = Database::create(admin, "creation_vocation").await?;
-                        let result = exercise(&db).await;
+                        let result = exercise(&db, reconcile).await;
                         db.cleanup().await?;
                         if result.is_ok() {
                             eprintln!("CREATION_VOCATION_PG_EXECUTED create=5 bootstrap=1");
@@ -31,7 +47,7 @@ fn character_creation_vocation_and_sex_persist_postgres() -> TestResult {
         .map_err(Into::into)
 }
 
-async fn exercise(db: &Database) -> TestResult {
+async fn exercise(db: &Database, reconcile: bool) -> TestResult {
     let root = DurabilityRoot::connect_test_runtime(&db.url)?;
     assert!(root.maintain_ready_once().await?);
     let pool = sqlx::PgPool::connect(&db.url).await?;
@@ -94,6 +110,9 @@ async fn exercise(db: &Database) -> TestResult {
             return Err(format!("create failed: {decision:?}").into());
         };
         assert_eq!(result_code, "CHAR_CMD_OK");
+        if reconcile && i == 0 {
+            receipt_recovery::exercise(&root, &authority, &node, receipt).await?;
+        }
         let receipt: serde_json::Value = serde_json::from_slice(receipt)?;
         assert_eq!(receipt["contract_version"], 1);
         let character = receipt["character_id"]

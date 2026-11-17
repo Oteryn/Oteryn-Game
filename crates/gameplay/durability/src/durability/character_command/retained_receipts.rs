@@ -14,7 +14,7 @@ impl DurabilityRoot {
         if !source_authority_valid(source) || after.is_some_and(|id| !uuid_v7(id)) {
             return Err(DurabilityError::InvalidStoredState);
         }
-        let recovery = authority.record_for(self)?;
+        let recovery = authority.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
         let proof = proof.clone();
         let source = source.to_owned();
         let after = after.map(str::to_owned);
