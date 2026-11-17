@@ -254,13 +254,9 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
             &npc_model,
             &[NPC],
         )));
-    owner.states.chat.admit_as(
-        session,
-        "Weekday witness",
-        Some(id(fixture::CHARACTER)),
-        crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
-    );
-    owner.states.chat.set_npc_service(session);
+    owner.chat_admit(actor, session).await;
+    assert!(owner.states.chat.knows(session), "fixture chat admission");
+    owner.npc_session_open(session).await;
 
     // Monday 05:59 CEST is still Sunday on the server-save calendar.
     let before_save: i64 = sqlx::query_scalar(
