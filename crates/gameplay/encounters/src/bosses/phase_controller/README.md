@@ -46,3 +46,12 @@ The donor explicitly labels phase duration, cooldown, deadline and health
 scaling as unconfirmed. CWARLOCK retains those values, rather than claiming
 independent Global verification. PG scenarios are mounted in dispatch's
 `postgres_tests/cwarlock.rs` and enter through production lever USE and tick.
+
+Focused CWARLOCK verification uses
+`cargo test --locked -p oteryn-gameplay-dispatch --lib cwarlock_ -- --nocapture --test-threads=1`.
+Supply `OTERYN_TEST_POSTGRES_ADMIN_URL`: each of the five PostgreSQL cases must
+print `CWARLOCK_PG_EXECUTED` with a nontrivial duration. Without that variable,
+those cases intentionally return successfully for route-less lanes and provide
+no database evidence. The additional literal wave-clock assertion runs in
+both lanes. `cargo test --locked -p oteryn-gameplay-quests --lib cults` also
+checks that registering Court Warlock preserves the established phase schema.
