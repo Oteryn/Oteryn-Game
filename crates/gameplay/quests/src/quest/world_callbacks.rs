@@ -792,6 +792,20 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(native_callbacks);
     callbacks.extend(parse(
         r#"{"schema":1,"callbacks":[{
+            "key":"oteryn:quest-callback/deeplings-coral-crate",
+            "quest":"oteryn:quest.deeplings_worldchange",
+            "trigger":"use",
+            "selector":{"action":28572,"appearance":14163},
+            "reversible":false,
+            "passages":[],
+            "storage":[{"track":"oteryn:quest-progress/deeplings_world_change/crystal","minimum":11,"maximum":11,"set":12}],
+            "effects":{"item_reward":{"item":"oteryn:item.tibia.i14165","count":1}},
+            "offerings":[],
+            "return_on_failure":false,
+            "failure_message":"Sorry, not possible.",
+            "success_message":"Yeah.",
+            "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_coral.lua:11-21"]
+        },{
             "key":"oteryn:quest-callback/deeplings-ramp-1106",
             "quest":"oteryn:quest.deeplings_worldchange",
             "trigger":"use",
@@ -3309,6 +3323,31 @@ mod srvenc_live_requirements_tests {
 
 #[cfg(test)]
 mod deepling_ramp_tests {
+    #[test]
+    fn crystal_coral_crate_is_granted_at_eleven() -> Result<(), String> {
+        let callbacks = super::load()?;
+        let crate_source = callbacks
+            .iter()
+            .find(|callback| callback.key == "oteryn:quest-callback/deeplings-coral-crate")
+            .ok_or("missing Coral Mine crate source")?;
+        assert_eq!(crate_source.selector.action, Some(28572));
+        assert_eq!(crate_source.selector.appearance, Some(14163));
+        let [phase] = crate_source.storage.as_slice() else {
+            return Err("expected one Crystal progress guard".into());
+        };
+        assert_eq!((phase.minimum, phase.maximum, phase.set), (11, 11, 12));
+        let reward = crate_source
+            .effects
+            .item_reward
+            .as_ref()
+            .ok_or("missing crate reward")?;
+        assert_eq!(
+            (reward.item.as_str(), reward.count),
+            ("oteryn:item.tibia.i14165", 1)
+        );
+        Ok(())
+    }
+
     #[test]
     fn crystal_coral_ramp_requires_one_crate_and_crystal_twelve() -> Result<(), String> {
         let callbacks = super::load()?;
