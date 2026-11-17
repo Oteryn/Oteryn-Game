@@ -367,7 +367,7 @@ fn brainout_ground_output_schema_rejects_unbound_or_mixed_outputs() -> TestResul
     Ok(())
 }
 
-fn bundle_map<'a>(
+pub(super) fn bundle_map<'a>(
     owner: &'a ComposedFreshAdmission<'_, '_, '_>,
 ) -> TestResult<&'a map::boot::BundleMap> {
     use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;

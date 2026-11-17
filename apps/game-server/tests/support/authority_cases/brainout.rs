@@ -19,8 +19,22 @@ type TestResult<T = ()> = fixture::TestResult<T>;
 // Reuse every assertion; this mount changes only the fixture's crate boundary.
 #[path = "../../../../../crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/brainout.rs"]
 mod cases;
-#[path = "engnpc2_paint_transport/world.rs"]
-mod world;
+mod kill_reward_e2e {
+    pub(super) mod scenario_thread {
+        pub fn run(
+            name: &str,
+            body: impl FnOnce() -> super::super::TestResult + Send + 'static,
+        ) -> super::super::TestResult {
+            std::thread::Builder::new()
+                .name(name.into())
+                .stack_size(256 << 20)
+                .spawn(move || body().map_err(|e| e.to_string()))?
+                .join()
+                .map_err(|_| "brain authority transport thread failed")??;
+            Ok(())
+        }
+    }
+}
 mod l6_world_pickups {
     pub(super) use super::world::{ExpectedTile, NativeCrop};
     pub(super) fn native_scene(
@@ -36,22 +50,6 @@ mod l6_world_pickups {
             crate::foundation::WorldId::decode(&super::id(42)).map_err(super::debug)?,
             crate::foundation::ChannelId::decode(&super::id(43)).map_err(super::debug)?,
         )
-    }
-}
-mod kill_reward_e2e {
-    pub(super) mod scenario_thread {
-        pub fn run(
-            name: &str,
-            body: impl FnOnce() -> super::super::TestResult + Send + 'static,
-        ) -> super::super::TestResult {
-            std::thread::Builder::new()
-                .name(name.into())
-                .stack_size(256 << 20)
-                .spawn(move || body().map_err(|e| e.to_string()))?
-                .join()
-                .map_err(|_| "brain authority transport thread failed")??;
-            Ok(())
-        }
     }
 }
 mod quest_world_callbacks {
@@ -314,6 +312,9 @@ mod quest_world_callbacks {
         result
     }
 }
+
+#[path = "engnpc2_paint_transport/world.rs"]
+mod world;
 
 fn scenario(name: &str, _trigger: Position, lever: bool) -> TestResult {
     assert!(!lever);
