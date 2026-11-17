@@ -466,7 +466,7 @@ async fn ground_item(
     assert!(matches!(
         owner
             .root
-            .commit_item_mint(&permit, owner.character, owner.holder, &mut mint)
+            .commit_corpse_mint(&permit, owner.character, owner.holder, &mut mint, id(41))
             .await
             .map_err(debug)?,
         ItemMintOutcome::Committed(_)

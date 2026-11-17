@@ -460,7 +460,13 @@ async fn ground_item(
     let permit = owner.spell_lane_permit().await.ok_or("permit")?;
     let result = owner
         .root
-        .commit_item_mint(&permit, owner.character, owner.holder, &mut mint)
+        .commit_corpse_mint(
+            &permit,
+            owner.character,
+            owner.holder,
+            &mut mint,
+            super::fixture::id(41),
+        )
         .await
         .map_err(debug)?;
     assert!(matches!(result, ItemMintOutcome::Committed(_)));
