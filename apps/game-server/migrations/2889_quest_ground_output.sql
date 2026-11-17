@@ -44,7 +44,8 @@ BEGIN
     WHERE (c.character_id,c.cause_id,c.cause_ordinal,c.transition_key)=(NEW.character_id,NEW.cause_id,NEW.cause_ordinal,NEW.transition_key)
       AND c.location_kind='ground' AND c.replacement IS NULL AND c.created_xact_id=pg_current_xact_id()
       AND c.before_item->>'definition_production_key'=offering->>'item'
-      AND c.quantity=(offering->>'count')::int
+      AND c.quantity=(c.before_item->>'quantity')::int AND c.quantity BETWEEN 1 AND 100
+      AND (offering->>'count')::int=1
       AND c.before_ground->>'spatial_position'='\x'||encode(int4send((offering->'position'->>'x')::int)
          ||int4send((offering->'position'->>'y')::int)||int2send((offering->'position'->>'floor')::smallint),'hex');
    IF input.item_instance_id IS NULL THEN RAISE EXCEPTION 'Ground output lacks its exact input' USING ERRCODE='23514'; END IF;

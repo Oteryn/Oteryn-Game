@@ -45,7 +45,7 @@ pub struct ItemDisguiseRequirement {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
-    /// One portable output created on its source-authored Ground tile.
+    /// One portable Ground output, consuming each named source offering as a whole item.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ground_output: Option<GroundOutput>,
     /// Distinct carried definitions consumed atomically by the Quest receipt owner.
@@ -413,6 +413,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || !callback.has_state_writes()
             || callback.offerings.is_empty()
             || callback.offerings.len() > 8
+            || callback
+                .offerings
+                .iter()
+                .any(|offering| offering.count != 1)
             || callback.reversible
             || callback.item_on_target.is_some()
             || callback.item_reward().is_some()

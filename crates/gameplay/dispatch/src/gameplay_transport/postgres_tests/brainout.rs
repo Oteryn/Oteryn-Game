@@ -57,6 +57,14 @@ fn brainout_ground_reward_east_control_postgres() -> TestResult {
     assert!(!admin.is_empty());
     run("brainout-east")
 }
+#[test]
+fn brainout_ground_reward_whole_stacks_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty());
+    run("brainout-stacks")
+}
 fn run(name: &'static str) -> TestResult {
     let started = std::time::Instant::now();
     let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
@@ -233,8 +241,13 @@ pub(super) async fn exercise(
         .await?;
         oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(|e| debug(e).into())
     };
-    let first = &callback.offerings[0];
-    let second = &callback.offerings[1];
+    let mut offerings = callback.offerings.clone();
+    if name.ends_with("-stacks") {
+        offerings[0].count = 3;
+        offerings[1].count = 2;
+    }
+    let first = &offerings[0];
+    let second = &offerings[1];
     super::quest_world_callbacks::input_item(owner, fence.item_fence(), first, 8701, false).await?;
     owner.states.loop_ground.invalidate();
     assert_eq!(
@@ -378,7 +391,7 @@ fn brainout_ground_output_schema_rejects_unbound_or_mixed_outputs() -> TestResul
         validate(value.clone())?,
         "unmodified production plan passes the public binding validator"
     );
-    for case in 0..4 {
+    for case in 0..5 {
         let mut invalid = value.clone();
         match case {
             0 => invalid["effects"]["ground_output"]["count"] = 0.into(),
@@ -387,7 +400,8 @@ fn brainout_ground_output_schema_rejects_unbound_or_mixed_outputs() -> TestResul
                 invalid["effects"]["item_reward"] =
                     serde_json::json!({"item":"oteryn:item.tibia.i3031","count":1,"contents":[]})
             }
-            _ => invalid["effects"]["ground_output"]["position"]["floor"] = 1.into(),
+            3 => invalid["effects"]["ground_output"]["position"]["floor"] = 1.into(),
+            _ => invalid["offerings"][0]["count"] = 2.into(),
         }
         assert!(!validate(invalid)?, "invalid Ground output case {case}");
     }

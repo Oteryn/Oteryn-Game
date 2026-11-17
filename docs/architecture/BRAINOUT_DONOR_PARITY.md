@@ -88,3 +88,9 @@ The real-USE diagnostic confirmed SourceOfferingMissing for one input, and the
 two-input refusal came from `native.item_policy` returning None for 19078.
 Temporary diagnostic prints were removed. Wrong quest state passed against PG
 in 33.74 seconds; the public schema acceptance/rejection test also passed.
+
+Whole-stack parity: Crystal `src/lua/functions/items/item_functions.cpp:275-279`
+defaults `item:remove()` to count -1. Ground output therefore reuses the existing
+whole-stack offering debit, bounded to 100 units; the new PG stacked-input case
+uses stacks of three and two and retains all success/replay assertions. The schema
+rejects partial-unit offering declarations for this deliberately small primitive.
