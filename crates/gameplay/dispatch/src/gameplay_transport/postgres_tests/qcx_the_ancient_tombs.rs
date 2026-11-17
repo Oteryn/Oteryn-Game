@@ -262,8 +262,11 @@ macro_rules! region {
 }
 
 type Sarcophagus = ((u16, u16, u8), u16, &'static [u8]);
-const SARCOPHAGI: [Sarcophagus; 2] = [
+const SARCOPHAGI: [Sarcophagus; 5] = [
+    ((33126, 32589, 15), 3222, region!("15-x129-y127")),
+    ((33174, 32932, 15), 3223, region!("15-x129-y128")),
     ((33182, 32712, 14), 3224, region!("14-x129-y127")),
+    ((33349, 32825, 14), 3226, region!("14-x130-y128")),
     ((33041, 32772, 14), 3227, region!("14-x129-y128")),
 ];
 
@@ -311,6 +314,7 @@ async fn claim_parts(
     use oteryn_protocol_oteryn::world_object::{
         UseDisposition, WorldObjectTarget, decode_use_result, encode_use_intent,
     };
+    let mut failures = Vec::new();
     for (point @ (x, y, _), id, _) in SARCOPHAGI {
         let position = approach(point);
         let key = oteryn_world_bundle::bundle::placement_key(position.floor, x, y, 1)
@@ -351,15 +355,17 @@ async fn claim_parts(
             })
             .map_err(debug)?;
             let result = wire(owner, admitted, ordinal, 2, payload).await?;
-            assert_eq!(
-                decode_use_result(&result).map_err(debug)?,
-                expected,
-                "sarcophagus reward {id}"
-            );
+            let actual = decode_use_result(&result).map_err(debug)?;
             let quantity: i64 = sqlx::query_scalar("SELECT coalesce(sum(i.quantity),0)::bigint FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.lifecycle=1 AND i.definition_production_key=$1")
                 .bind(format!("oteryn:item.tibia.i{id}")).fetch_one(&h.pool).await?;
-            assert_eq!(quantity, 1, "part {id} is granted once");
+            if actual != expected || quantity != 1 {
+                failures.push((id, expected, actual, quantity));
+            }
         }
     }
+    assert!(
+        failures.is_empty(),
+        "claim mismatches (item, expected result, actual result, quantity): {failures:?}"
+    );
     Ok(())
 }
