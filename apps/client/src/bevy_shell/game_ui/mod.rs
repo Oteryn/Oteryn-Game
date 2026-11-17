@@ -20,7 +20,9 @@ mod forge;
 pub(super) mod highscores;
 mod hotkeys;
 mod hud;
-mod hud_panes;
+#[path = "hud/art.rs"]
+pub(in crate::bevy_shell) mod art;
+pub(in crate::bevy_shell) mod hud_panes;
 mod imbuement_tracker;
 mod imbuing;
 mod install;
@@ -92,6 +94,26 @@ pub(super) struct WorldRegion;
 #[derive(Component)]
 pub(in crate::bevy_shell) struct ToolbarRegion;
 
+/// The sidebar columns and panes the widget chrome docks into.
+#[derive(Resource, Clone, Copy)]
+pub(super) struct Sidebar {
+    /// The optional left sidebar and the optional second right sidebar (hidden by default).
+    pub left: Entity,
+    pub extra: Entity,
+    /// The fixed upper part of the right sidebar: minimap, status, inventory, control buttons.
+    pub panel: Entity,
+    /// The dockable widget pane of each column, top to bottom, ending in a fill pane.
+    pub left_widgets: Entity,
+    pub extra_widgets: Entity,
+    pub right_widgets: Entity,
+    /// The content of the analytics selector widget.
+    pub analytics: Entity,
+}
+/// Tibia Global sidebar width; the sidebar cannot be resized.
+pub(super) const SIDEBAR_WIDTH: f32 = 176.;
+/// Tibia Global panel pane margins (PanelPane.qml): horizontal 6, vertical 4.
+pub(super) const PANEL_MARGIN: [f32; 2] = [6., 4.];
+
 pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     let root = commands
         .spawn((
@@ -101,35 +123,37 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
                 position_type: PositionType::Absolute,
                 width: percent(100.),
                 height: percent(100.),
-                flex_direction: FlexDirection::Column,
                 display: Display::None,
                 ..default()
             },
             GlobalZIndex(0),
         ))
         .id();
+    // The status widget of the right sidebar: hitpoints and mana.
     let vitals = commands
         .spawn(Node {
             width: percent(100.),
-            min_height: px(28.),
             flex_shrink: 0.,
+            flex_direction: FlexDirection::Column,
             ..default()
         })
         .id();
-    let middle = commands
-        .spawn(Node {
-            width: percent(100.),
-            flex_grow: 1.,
-            min_height: px(0.),
-            ..default()
-        })
-        .id();
+    // Left sidebar | centre | right sidebars, every column the full window height.
     let main = commands
         .spawn(Node {
             flex_grow: 1.,
             min_width: px(0.),
             min_height: px(0.),
+            height: percent(100.),
             flex_direction: FlexDirection::Column,
+            ..default()
+        })
+        .id();
+    let map_row = commands
+        .spawn(Node {
+            width: percent(100.),
+            min_height: px(0.),
+            flex_grow: 1.,
             ..default()
         })
         .id();
@@ -137,7 +161,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         .spawn((
             WorldRegion,
             Node {
-                width: percent(100.),
+                min_width: px(0.),
                 min_height: px(0.),
                 flex_grow: 1.,
                 overflow: Overflow::clip(),
@@ -175,38 +199,69 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
             },
         ))
         .id();
-    let panels = commands
-        .spawn((
-            Node {
-                width: px(176.),
-                min_width: px(176.),
-                max_width: percent(30.),
-                height: percent(100.),
-                flex_shrink: 0.,
-                flex_direction: FlexDirection::Column,
-                overflow: Overflow::scroll_y(),
-                ..default()
-            },
-            bevy::ui_widgets::ScrollArea,
-            BackgroundColor(Color::srgb(0.18, 0.18, 0.18)),
-        ))
+    let column = |commands: &mut Commands, shown: bool| {
+        commands
+            .spawn((
+                hud_panes::Column,
+                Node {
+                    width: px(SIDEBAR_WIDTH),
+                    min_width: px(SIDEBAR_WIDTH),
+                    max_width: px(SIDEBAR_WIDTH),
+                    height: percent(100.),
+                    flex_shrink: 0.,
+                    flex_direction: FlexDirection::Column,
+                    display: if shown { Display::Flex } else { Display::None },
+                    ..default()
+                },
+                BackgroundColor(Color::srgb(0.18, 0.18, 0.18)),
+            ))
+            .id()
+    };
+    let left = column(&mut commands, false);
+    let extra = column(&mut commands, false);
+    let right = column(&mut commands, true);
+    let panel = commands
+        .spawn(Node {
+            width: percent(100.),
+            flex_shrink: 0.,
+            flex_direction: FlexDirection::Column,
+            padding: UiRect::axes(px(PANEL_MARGIN[0] / 3.), px(PANEL_MARGIN[1] / 2.)),
+            row_gap: px(PANEL_MARGIN[1] / 2.),
+            ..default()
+        })
         .id();
-    let inventory = commands
-        .spawn((
-            Node {
-                width: px(176.),
-                min_width: px(176.),
-                max_width: percent(30.),
-                height: percent(100.),
-                flex_shrink: 0.,
-                flex_direction: FlexDirection::Column,
-                overflow: Overflow::scroll_y(),
-                ..default()
-            },
-            bevy::ui_widgets::ScrollArea,
-            BackgroundColor(Color::srgb(0.18, 0.18, 0.18)),
-        ))
-        .id();
+    let widget_pane = |commands: &mut Commands| {
+        let pane = commands
+            .spawn((
+                hud_panes::WidgetPane,
+                Node {
+                    width: percent(100.),
+                    min_height: px(0.),
+                    flex_grow: 1.,
+                    flex_direction: FlexDirection::Column,
+                    overflow: Overflow::scroll_y(),
+                    ..default()
+                },
+                bevy::ui_widgets::ScrollArea,
+            ))
+            .id();
+        let fill = commands
+            .spawn((
+                hud_panes::FillPane,
+                Node {
+                    width: percent(100.),
+                    min_height: px(0.),
+                    flex_grow: 1.,
+                    ..default()
+                },
+            ))
+            .id();
+        commands.entity(pane).add_child(fill);
+        pane
+    };
+    let left_widgets = widget_pane(&mut commands);
+    let extra_widgets = widget_pane(&mut commands);
+    let right_widgets = widget_pane(&mut commands);
     let toolbar = commands
         .spawn((
             ToolbarRegion,
@@ -230,26 +285,44 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     let skills = region(&mut commands);
     let vip = region(&mut commands);
     let analyzers = region(&mut commands);
-    let console_splitter = layout::spawn(&mut commands, chat, true, "console");
-    let panels_splitter = layout::spawn(&mut commands, panels, false, "sidebar.panels");
-    let inventory_splitter = layout::spawn(&mut commands, inventory, false, "sidebar.inventory");
-    commands.entity(root).add_children(&[vitals, middle]);
-    commands.entity(middle).add_children(&[
-        main,
-        panels_splitter,
-        panels,
-        inventory_splitter,
-        inventory,
-    ]);
+    let analytics = region(&mut commands);
+    let console_splitter = layout::spawn(&mut commands, chat, "console");
+    let arrows = |commands: &mut Commands, side: hud_panes::Side| {
+        hud_panes::arrows(commands, &skins, side)
+    };
+    let left_arrows = arrows(&mut commands, hud_panes::Side::Left);
+    let right_arrows = arrows(&mut commands, hud_panes::Side::Right);
+    commands
+        .entity(root)
+        .add_children(&[left, main, extra, right]);
     commands
         .entity(main)
-        .add_children(&[world, bars, console_splitter, chat]);
+        .add_children(&[map_row, bars, console_splitter, chat]);
     commands
-        .entity(panels)
-        .add_children(&[battle, party_dock, skills, vip, analyzers]);
+        .entity(map_row)
+        .add_children(&[left_arrows, world, right_arrows]);
+    commands.entity(left).add_child(left_widgets);
+    commands.entity(extra).add_child(extra_widgets);
+    commands.entity(right).add_children(&[panel, right_widgets]);
     commands
-        .entity(inventory)
-        .add_children(&[toolbar, minimap, equipment, trade_dock, containers]);
+        .entity(panel)
+        .add_children(&[minimap, vitals, equipment, toolbar]);
+    // Tibia sidebars.json: battleList, container, skills and vip open in this order; party,
+    // trackers, analysers and trade dock below them and stay empty until opened.
+    let mut docked = Vec::new();
+    for (widget, content) in [
+        (hud_panes::Widget::BattleList, battle),
+        (hud_panes::Widget::Containers, containers),
+        (hud_panes::Widget::Skills, skills),
+        (hud_panes::Widget::Vip, vip),
+        (hud_panes::Widget::AnalyticsSelector, analytics),
+    ] {
+        docked.push(hud_panes::frame(&mut commands, &skins, widget, content));
+    }
+    docked.extend([party_dock, trade_dock, analyzers]);
+    commands
+        .entity(right_widgets)
+        .insert_children(0, &docked);
     commands.insert_resource(GameRegions {
         vitals,
         minimap,
@@ -262,6 +335,15 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         chat,
         bars,
         world,
+    });
+    commands.insert_resource(Sidebar {
+        left,
+        extra,
+        panel,
+        left_widgets,
+        extra_widgets,
+        right_widgets,
+        analytics,
     });
 }
 fn region(commands: &mut Commands) -> Entity {

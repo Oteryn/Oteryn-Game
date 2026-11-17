@@ -51,13 +51,16 @@ fn keys(app: &mut App) -> Result<Vec<String>, Box<dyn std::error::Error>> {
         let children = app
             .world()
             .get::<Children>(*icon)
-            .ok_or("icon label missing")?;
+            .ok_or("icon art missing")?;
         assert!(
             children.iter().any(|entity| app
                 .world()
-                .get::<Text>(entity)
-                .is_some_and(|text| !text.0.is_empty())),
-            "icon has visible text"
+                .get::<crate::bevy_shell::game_ui::art::ArtSlot>(entity)
+                .is_some_and(|slot| slot.key.starts_with("condition-"))
+                && app.world().get::<Node>(entity).is_some_and(|node| {
+                    (node.width, node.height) == (px(9.), px(9.))
+                })),
+            "each state is a 9x9 condition art slot"
         );
     }
     Ok(app

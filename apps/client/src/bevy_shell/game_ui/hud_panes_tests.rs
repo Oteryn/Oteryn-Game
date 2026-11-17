@@ -1,17 +1,13 @@
 use super::*;
 use crate::{
     bevy_shell::owner::{ActivePlay, Phase},
-    play::{HudPane, PlayView, play_channel},
+    play::{PlayView, play_channel},
 };
 use bevy::{
     asset::AssetPlugin,
     camera::NormalizedRenderTarget,
-    picking::{
-        backend::HitData,
-        events::Pointer,
-        pointer::{Location, PointerId},
-    },
-    window::WindowRef,
+    picking::{events::Pointer, pointer::Location},
+    window::{PrimaryWindow, WindowRef},
 };
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
@@ -29,23 +25,6 @@ fn playing_app(preferences: std::path::PathBuf) -> Result<App, Box<dyn std::erro
         link,
     });
     app.insert_non_send(host);
-    let mut regions = Vec::new();
-    for _ in 0..11 {
-        regions.push(app.world_mut().spawn(Node::default()).id());
-    }
-    app.insert_resource(super::super::GameRegions {
-        vitals: regions[0],
-        minimap: regions[1],
-        equipment: regions[2],
-        containers: regions[3],
-        battle: regions[4],
-        skills: regions[5],
-        vip: regions[6],
-        analyzers: regions[7],
-        chat: regions[8],
-        bars: regions[9],
-        world: regions[10],
-    });
     app.world_mut().spawn((
         Window {
             focused: true,
@@ -54,12 +33,25 @@ fn playing_app(preferences: std::path::PathBuf) -> Result<App, Box<dyn std::erro
         },
         PrimaryWindow,
     ));
-    app.add_systems(Startup, crate::bevy_shell::ui::setup);
+    app.add_systems(
+        Startup,
+        (crate::bevy_shell::ui::setup, super::super::setup).chain(),
+    );
     install(&mut app);
+    app.update();
+    let mut roots = app
+        .world_mut()
+        .query_filtered::<&mut Node, With<super::super::GameRoot>>();
+    for mut root in roots.iter_mut(app.world_mut()) {
+        root.display = Display::Flex;
+    }
     app.update();
     Ok(app)
 }
-fn entity_with<C: Component + Copy>(
+fn preferences(name: &str) -> std::path::PathBuf {
+    std::env::temp_dir().join(format!("oteryn-widgets-{name}-{}.json", std::process::id()))
+}
+fn entity_with<C: Component>(
     app: &mut App,
     found: impl Fn(&C) -> bool,
 ) -> Result<Entity, Box<dyn std::error::Error>> {
@@ -68,17 +60,33 @@ fn entity_with<C: Component + Copy>(
         .iter(app.world())
         .find(|(_, component)| found(component))
         .map(|(entity, _)| entity)
-        .ok_or_else(|| "HUD pane entity missing".into())
+        .ok_or_else(|| "widget entity missing".into())
 }
-fn click(app: &mut App, command: PaneCommand) -> TestResult {
-    let entity = entity_with::<PaneCommand>(app, |candidate| *candidate == command)?;
+fn activate(app: &mut App, entity: Entity) {
     app.world_mut().trigger(Activate { entity });
     app.update();
-    Ok(())
+    app.update();
 }
-fn pane_node(app: &mut App, panel: HudPanel) -> Result<Node, Box<dyn std::error::Error>> {
-    let entity = entity_with::<Pane>(app, |pane| pane.0 == panel)?;
-    Ok(app.world().get::<Node>(entity).ok_or("pane node")?.clone())
+fn frame_node(app: &mut App, widget: Widget) -> Result<Node, Box<dyn std::error::Error>> {
+    let entity = entity_with::<WidgetFrame>(app, |frame| frame.0 == widget)?;
+    Ok(app.world().get::<Node>(entity).ok_or("frame node")?.clone())
+}
+/// The widgets of a pane in display order, with whether each is shown.
+fn pane(app: &mut App, pane: Entity) -> Result<Vec<(Widget, bool)>, Box<dyn std::error::Error>> {
+    let children: Vec<Entity> = app
+        .world()
+        .get::<Children>(pane)
+        .ok_or("pane children")?
+        .iter()
+        .collect();
+    Ok(children
+        .into_iter()
+        .filter_map(|child| {
+            let frame = app.world().get::<WidgetFrame>(child)?;
+            let node = app.world().get::<Node>(child)?;
+            Some((frame.0, node.display == Display::Flex))
+        })
+        .collect())
 }
 fn pointer(app: &mut App) -> Result<Pointer, Box<dyn std::error::Error>> {
     let window = app
@@ -98,319 +106,239 @@ fn pointer(app: &mut App) -> Result<Pointer, Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn hud_panes_show_dock_and_drag_then_come_back_after_a_restart() -> TestResult {
-    let path = std::env::temp_dir().join(format!(
-        "oteryn-hud-panes-{}/preferences.json",
-        std::process::id()
-    ));
-    if let Some(directory) = path.parent() {
-        std::fs::create_dir_all(directory)?;
-    }
+fn one_fixed_right_sidebar_holds_the_panel_then_the_default_widgets() -> TestResult {
+    let path = preferences("default");
     let _ = std::fs::remove_file(&path);
     let mut app = playing_app(path.clone())?;
+    let sidebar = *app.world().resource::<super::super::Sidebar>();
+    let regions = app.world().resource::<super::super::GameRegions>();
+    let panel_order = [
+        regions.minimap,
+        regions.vitals,
+        regions.equipment,
+    ];
+    let panel: Vec<Entity> = app
+        .world()
+        .get::<Children>(sidebar.panel)
+        .ok_or("panel children")?
+        .iter()
+        .collect();
+    assert_eq!(panel[..3], panel_order);
+    assert!(
+        app.world()
+            .get::<super::super::ToolbarRegion>(panel[3])
+            .is_some(),
+        "the control buttons close the fixed panel"
+    );
+    for (column, shown) in [(sidebar.left, false), (sidebar.extra, false)] {
+        let node = app.world().get::<Node>(column).ok_or("column")?;
+        assert_eq!(node.display == Display::Flex, shown);
+    }
+    let mut columns = app
+        .world_mut()
+        .query_filtered::<&Node, With<Column>>();
+    for node in columns.iter(app.world()) {
+        assert_eq!(
+            (node.width, node.min_width, node.max_width, node.height),
+            (px(176.), px(176.), px(176.), percent(100.))
+        );
+    }
+    // battleList, container, skills and vip in Tibia order; the VIP panel itself is closed
+    // by the default settings until it is opened, and the analytics selector stays closed.
+    let widgets = pane(&mut app, sidebar.right_widgets)?;
     assert_eq!(
-        pane_node(&mut app, HudPanel::Combat)?.display,
+        widgets,
+        [
+            (Widget::BattleList, true),
+            (Widget::Containers, true),
+            (Widget::Skills, true),
+            (Widget::Vip, false),
+            (Widget::AnalyticsSelector, false),
+        ]
+    );
+    let state = app.world().resource::<SidebarWidgets>();
+    assert!(state.entry(Widget::Vip).is_some_and(|entry| entry.open));
+    let titles: Vec<&str> = Widget::ALL.iter().map(|widget| widget.title()).collect();
+    assert_eq!(
+        titles,
+        ["Battle List", "Containers", "Skills", "VIP", "Analytics Selector"]
+    );
+    let _ = std::fs::remove_file(path);
+    Ok(())
+}
+
+#[test]
+fn title_buttons_minimise_to_the_header_and_close_the_widget() -> TestResult {
+    let path = preferences("chrome");
+    let _ = std::fs::remove_file(&path);
+    let mut app = playing_app(path.clone())?;
+    let minimise = entity_with::<TitleButton>(&mut app, |button| {
+        *button == TitleButton::Minimise(Widget::Skills)
+    })?;
+    activate(&mut app, minimise);
+    assert_eq!(frame_node(&mut app, Widget::Skills)?.height, px(MINIMISED));
+    let body = entity_with::<Body>(&mut app, |body| body.0 == Widget::Skills)?;
+    assert_eq!(
+        app.world().get::<Node>(body).ok_or("body")?.display,
         Display::None
     );
-
-    click(&mut app, PaneCommand::Toggle(HudPanel::Combat))?;
-    let combat = pane_node(&mut app, HudPanel::Combat)?;
-    assert_eq!(combat.display, Display::Flex);
-    // Docked left below the Status pane docked on top (8 + 100 + 4).
-    assert_eq!((combat.left, combat.top), (px(8.), px(112.)));
-    let shown = {
-        let owner = app.world().non_send::<HostOwner>();
-        owner.play.as_ref().ok_or("play")?.view.combat_status()
-    };
-    let body = entity_with::<PaneText>(&mut app, |text| text.0 == HudPanel::Combat)?;
-    assert_eq!(app.world().get::<Text>(body).ok_or("combat text")?.0, shown);
-
-    click(
-        &mut app,
-        PaneCommand::Dock(HudPanel::Combat, HudDock::Right),
-    )?;
-    let right = pane_node(&mut app, HudPanel::Combat)?;
-    assert_eq!(right.left, px(1280. - 240. - 8.));
-
-    let bar = entity_with::<TitleBar>(&mut app, |bar| bar.panel == HudPanel::Combat)?;
-    let pointer = pointer(&mut app)?;
-    app.world_mut().trigger(PointerDragStart {
-        entity: bar,
-        pointer: pointer.clone(),
-        button: PointerButton::Primary,
-        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
-    });
-    let distance = Vec2::new(300. - (1280. - 240. - 8.), 200.);
-    app.world_mut().trigger(PointerDrag {
-        entity: bar,
-        pointer: pointer.clone(),
-        button: PointerButton::Primary,
-        distance,
-        delta: distance,
-    });
-    app.update();
-    let dragged = pane_node(&mut app, HudPanel::Combat)?;
-    assert_eq!((dragged.left, dragged.top), (px(300.), px(312.)));
-    app.world_mut().trigger(PointerDragEnd {
-        entity: bar,
-        pointer,
-        button: PointerButton::Primary,
-        distance,
-    });
-    app.update();
-    let expected = HudPane {
-        dock: HudDock::Floating,
-        bounds: [300, 312, 240, 120],
-        visible: true,
-    };
-    let dropped = pane_node(&mut app, HudPanel::Combat)?;
-    assert_eq!((dropped.left, dropped.top), (px(300.), px(312.)));
-
-    // A new session reads the saved layout back from the preference file.
-    let restarted = HostOwner::new(Some(path.clone()))?;
+    activate(&mut app, minimise);
+    assert_eq!(frame_node(&mut app, Widget::Skills)?.height, Val::Auto);
     assert_eq!(
-        restarted
+        app.world().get::<Node>(body).ok_or("body")?.height,
+        px(200.)
+    );
+    let close = entity_with::<TitleButton>(&mut app, |button| {
+        *button == TitleButton::Close(Widget::Skills)
+    })?;
+    activate(&mut app, close);
+    assert_eq!(frame_node(&mut app, Widget::Skills)?.display, Display::None);
+    assert!(
+        app.world_mut()
+            .resource_mut::<SidebarWidgets>()
+            .toggle(Widget::Skills)
+    );
+    app.update();
+    assert_eq!(frame_node(&mut app, Widget::Skills)?.display, Display::Flex);
+    // Closing the battle list goes through the saved panel setting.
+    let close = entity_with::<TitleButton>(&mut app, |button| {
+        *button == TitleButton::Close(Widget::BattleList)
+    })?;
+    activate(&mut app, close);
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
             .settings
             .preferences
-            .effective_hud_layout()
-            .pane(HudPanel::Combat),
-        &expected
+            .panel_visible("battle")
     );
-    let mut again = playing_app(path.clone())?;
-    {
-        let mut owner = again.world_mut().non_send_mut::<HostOwner>();
-        let preferences = owner.settings.preferences.clone();
-        owner
-            .play
-            .as_mut()
-            .ok_or("play")?
-            .view
-            .set_preferences(preferences)?;
-    }
-    again.update();
-    let restored = pane_node(&mut again, HudPanel::Combat)?;
     assert_eq!(
-        (restored.display, restored.left, restored.top),
-        (Display::Flex, px(300.), px(312.))
-    );
-
-    click(&mut again, PaneCommand::Hide(HudPanel::Combat))?;
-    assert_eq!(
-        pane_node(&mut again, HudPanel::Combat)?.display,
+        frame_node(&mut app, Widget::BattleList)?.display,
         Display::None
     );
-    let _ = std::fs::remove_file(&path);
-    Ok(())
-}
-
-fn temp_preferences(name: &str) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
-    let directory = std::env::temp_dir().join(format!("oteryn-{name}-{}", std::process::id()));
-    std::fs::create_dir_all(&directory)?;
-    let path = directory.join("preferences.json");
-    let _ = std::fs::remove_file(&path);
-    Ok(path)
-}
-fn layout_pane(app: &App, panel: HudPanel) -> Result<HudPane, Box<dyn std::error::Error>> {
-    let owner = app.world().non_send::<HostOwner>();
-    Ok(owner
-        .play
-        .as_ref()
-        .ok_or("play")?
-        .view
-        .preferences()
-        .effective_hud_layout()
-        .pane(panel)
-        .clone())
-}
-fn drag_bar(app: &mut App, panel: HudPanel, distance: Vec2, end: bool) -> TestResult {
-    let bar = entity_with::<TitleBar>(app, |bar| bar.panel == panel)?;
-    let pointer = pointer(app)?;
-    app.world_mut().trigger(PointerDrag {
-        entity: bar,
-        pointer: pointer.clone(),
-        button: PointerButton::Primary,
-        distance,
-        delta: distance,
-    });
-    app.update();
-    if end {
-        app.world_mut().trigger(PointerDragEnd {
-            entity: bar,
-            pointer,
-            button: PointerButton::Primary,
-            distance,
-        });
-        app.update();
-    }
-    Ok(())
-}
-fn start_drag(app: &mut App, panel: HudPanel) -> TestResult {
-    let bar = entity_with::<TitleBar>(app, |bar| bar.panel == panel)?;
-    let pointer = pointer(app)?;
-    app.world_mut().trigger(PointerDragStart {
-        entity: bar,
-        pointer,
-        button: PointerButton::Primary,
-        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
-    });
+    let _ = std::fs::remove_file(path);
     Ok(())
 }
 
 #[test]
-fn fresh_login_status_pane_leaves_the_vitals_and_pane_toggle_strip_uncovered() -> TestResult {
-    let path = temp_preferences("hud-panes-header")?;
+fn sidebar_arrows_add_a_sidebar_and_removing_it_returns_its_widgets() -> TestResult {
+    let path = preferences("arrows");
+    let _ = std::fs::remove_file(&path);
     let mut app = playing_app(path.clone())?;
-    // The laid-out header (vitals and the pane-toggle strip) is 60 UI units tall.
-    let vitals = app.world().resource::<super::super::GameRegions>().vitals;
-    app.world_mut().entity_mut(vitals).insert(ComputedNode {
-        size: Vec2::new(1280., 60.),
-        inverse_scale_factor: 1.,
+    let sidebar = *app.world().resource::<super::super::Sidebar>();
+    let add_left = entity_with::<SidebarArrow>(&mut app, |arrow| {
+        *arrow
+            == SidebarArrow {
+                side: Side::Left,
+                add: true,
+            }
+    })?;
+    activate(&mut app, add_left);
+    assert_eq!(
+        app.world().get::<Node>(sidebar.left).ok_or("left")?.display,
+        Display::Flex
+    );
+    app.world_mut().resource_mut::<SidebarWidgets>().place(
+        Widget::Skills,
+        Dock::Left,
+        None,
+    );
+    app.update();
+    app.update();
+    assert_eq!(
+        pane(&mut app, sidebar.left_widgets)?,
+        [(Widget::Skills, true)]
+    );
+    let remove_left = entity_with::<SidebarArrow>(&mut app, |arrow| {
+        *arrow
+            == SidebarArrow {
+                side: Side::Left,
+                add: false,
+            }
+    })?;
+    activate(&mut app, remove_left);
+    assert_eq!(
+        app.world().get::<Node>(sidebar.left).ok_or("left")?.display,
+        Display::None
+    );
+    assert_eq!(pane(&mut app, sidebar.left_widgets)?, []);
+    assert_eq!(
+        pane(&mut app, sidebar.right_widgets)?
+            .into_iter()
+            .map(|(widget, _)| widget)
+            .collect::<Vec<_>>(),
+        [
+            Widget::BattleList,
+            Widget::Containers,
+            Widget::Vip,
+            Widget::AnalyticsSelector,
+            Widget::Skills,
+        ]
+    );
+    let _ = std::fs::remove_file(path);
+    Ok(())
+}
+
+#[test]
+fn widgets_reorder_before_another_widget_or_at_the_end_of_a_dock() {
+    let mut state = SidebarWidgets::default();
+    state.place(Widget::Vip, Dock::Right, Some(Widget::BattleList));
+    state.place(Widget::BattleList, Dock::Extra, None);
+    state.place(Widget::Skills, Dock::Extra, Some(Widget::BattleList));
+    let order: Vec<_> = state
+        .entries
+        .iter()
+        .map(|entry| (entry.widget, entry.dock))
+        .collect();
+    assert_eq!(
+        order,
+        [
+            (Widget::Vip, Dock::Right),
+            (Widget::Containers, Dock::Right),
+            (Widget::AnalyticsSelector, Dock::Right),
+            (Widget::Skills, Dock::Extra),
+            (Widget::BattleList, Dock::Extra),
+        ]
+    );
+    state.set_open(Widget::Vip, false);
+    assert!(!state.entry(Widget::Vip).is_some_and(|entry| entry.open));
+    assert!(state.toggle(Widget::Vip));
+}
+
+#[test]
+fn the_bottom_edge_resizes_the_content_within_bounds() -> TestResult {
+    let path = preferences("resize");
+    let _ = std::fs::remove_file(&path);
+    let mut app = playing_app(path.clone())?;
+    let body = entity_with::<Body>(&mut app, |body| body.0 == Widget::BattleList)?;
+    app.world_mut().entity_mut(body).insert(ComputedNode {
+        size: Vec2::new(160., 150.),
+        inverse_scale_factor: 0.5,
         ..default()
     });
-    app.update();
-    let status = pane_node(&mut app, HudPanel::Resources)?;
-    assert_eq!(
-        status.display,
-        Display::Flex,
-        "Status shows on a fresh login"
-    );
-    assert_eq!((status.left, status.top), (px(8.), px(68.)));
-
-    // A pane dragged up onto the header stops below it; dropped there it docks first on
-    // top, still below the header, and the Status pane moves down under it.
-    click(&mut app, PaneCommand::Toggle(HudPanel::Combat))?;
-    assert_eq!(pane_node(&mut app, HudPanel::Combat)?.top, px(172.));
-    start_drag(&mut app, HudPanel::Combat)?;
-    drag_bar(&mut app, HudPanel::Combat, Vec2::new(300., -400.), false)?;
-    assert_eq!(pane_node(&mut app, HudPanel::Combat)?.top, px(60.));
-    drag_bar(&mut app, HudPanel::Combat, Vec2::new(300., -400.), true)?;
-    assert_eq!(layout_pane(&app, HudPanel::Combat)?.dock, HudDock::Top);
-    assert_eq!(pane_node(&mut app, HudPanel::Combat)?.top, px(68.));
-    assert_eq!(pane_node(&mut app, HudPanel::Resources)?.top, px(192.));
-    let _ = std::fs::remove_file(&path);
-    Ok(())
-}
-
-#[test]
-fn interface_scale_from_options_is_applied_once_to_docked_and_dragged_panes() -> TestResult {
-    let path = temp_preferences("hud-panes-scale")?;
-    let mut app = playing_app(path.clone())?;
-    // Options at 150%, applied through the options draft; the shell keeps Bevy's UiScale
-    // in step with it.
-    {
-        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
-        owner.open_graphics();
-        owner.edit_preferences(|preferences| preferences.interface_scale = 150);
-        owner.apply(true);
-        // The shell hands the applied preferences to the play view every frame.
-        let HostOwner { play, settings, .. } = &mut *owner;
-        let play = play.as_mut().ok_or("play")?;
-        settings.capture(&mut play.view)?;
-        assert_eq!(play.view.preferences().interface_scale, 150);
-    }
-    app.insert_resource(UiScale(1.5));
-    click(&mut app, PaneCommand::Toggle(HudPanel::Combat))?;
-    click(
-        &mut app,
-        PaneCommand::Dock(HudPanel::Combat, HudDock::Right),
-    )?;
-    let combat = pane_node(&mut app, HudPanel::Combat)?;
-    // Rendered: 360 px wide, 8 px from the right edge of the 1280 px window.
-    assert_eq!(
-        (combat.left, combat.top, combat.width, combat.height),
-        (px(608.), px(108.), px(240.), px(120.))
-    );
-
-    start_drag(&mut app, HudPanel::Combat)?;
-    drag_bar(&mut app, HudPanel::Combat, Vec2::new(-600., 300.), false)?;
-    let dragged = pane_node(&mut app, HudPanel::Combat)?;
-    assert_eq!((dragged.left, dragged.top), (px(208.), px(308.)));
-    drag_bar(&mut app, HudPanel::Combat, Vec2::new(-600., 300.), true)?;
-    assert_eq!(
-        layout_pane(&app, HudPanel::Combat)?,
-        HudPane {
-            dock: HudDock::Floating,
-            bounds: [208, 308, 240, 120],
-            visible: true,
-        }
-    );
-    let dropped = pane_node(&mut app, HudPanel::Combat)?;
-    assert_eq!(
-        (dropped.left, dropped.top, dropped.width),
-        (px(208.), px(308.), px(240.))
-    );
-    let _ = std::fs::remove_file(&path);
-    Ok(())
-}
-
-#[test]
-fn cancelled_or_stale_title_bar_drags_end_without_freezing_the_pane() -> TestResult {
-    let path = temp_preferences("hud-panes-cancel")?;
-    let mut app = playing_app(path.clone())?;
-    click(&mut app, PaneCommand::Toggle(HudPanel::Combat))?;
-
-    // A touch drag the platform cancels: no drag end ever arrives.
-    start_drag(&mut app, HudPanel::Combat)?;
-    drag_bar(&mut app, HudPanel::Combat, Vec2::new(400., 100.), false)?;
-    let bar = entity_with::<TitleBar>(&mut app, |bar| bar.panel == HudPanel::Combat)?;
+    let handle = entity_with::<Resize>(&mut app, |handle| handle.widget == Widget::BattleList)?;
     let pointer = pointer(&mut app)?;
-    app.world_mut().trigger(PointerCancel {
-        entity: bar,
-        pointer,
-        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+    let hit = bevy::picking::backend::HitData::new(Entity::PLACEHOLDER, 0., None, None);
+    app.world_mut().trigger(PointerDragStart {
+        entity: handle,
+        pointer: pointer.clone(),
+        button: PointerButton::Primary,
+        hit: hit.clone(),
     });
-    app.update();
-    let restored = pane_node(&mut app, HudPanel::Combat)?;
-    assert_eq!((restored.left, restored.top), (px(8.), px(112.)));
-    click(&mut app, PaneCommand::Hide(HudPanel::Combat))?;
-    assert_eq!(
-        pane_node(&mut app, HudPanel::Combat)?.display,
-        Display::None,
-        "Hide still reaches a pane whose drag was cancelled"
-    );
-
-    // The window is resized under a running drag: it neither moves nor saves the pane.
-    click(&mut app, PaneCommand::Toggle(HudPanel::Combat))?;
-    start_drag(&mut app, HudPanel::Combat)?;
-    app.world_mut()
-        .query_filtered::<&mut Window, With<PrimaryWindow>>()
-        .single_mut(app.world_mut())?
-        .resolution = (1024, 700).into();
-    drag_bar(&mut app, HudPanel::Combat, Vec2::new(400., 100.), true)?;
-    let kept = pane_node(&mut app, HudPanel::Combat)?;
-    assert_eq!((kept.left, kept.top), (px(8.), px(112.)));
-    assert_eq!(layout_pane(&app, HudPanel::Combat)?.dock, HudDock::Left);
-
-    // A modal opened over a running drag ends it the same way.
-    start_drag(&mut app, HudPanel::Combat)?;
-    app.world_mut()
-        .spawn((super::super::GameModal, Node::default(), GlobalZIndex(1000)));
-    app.update();
-    drag_bar(&mut app, HudPanel::Combat, Vec2::new(400., 100.), true)?;
-    assert_eq!(layout_pane(&app, HudPanel::Combat)?.dock, HudDock::Left);
-    let _ = std::fs::remove_file(&path);
-    Ok(())
-}
-
-#[test]
-fn a_title_bar_drag_ends_when_its_pointer_is_released_without_a_drag_end() -> TestResult {
-    let path = temp_preferences("hud-panes-release")?;
-    let mut app = playing_app(path.clone())?;
-    click(&mut app, PaneCommand::Toggle(HudPanel::Combat))?;
-    app.init_resource::<bevy::picking::pointer::PointerMap>();
-    let held = app
-        .world_mut()
-        .spawn((
-            PointerId::Mouse,
-            bevy::picking::pointer::PointerPressState::default(),
-        ))
-        .id();
-    start_drag(&mut app, HudPanel::Combat)?;
-    drag_bar(&mut app, HudPanel::Combat, Vec2::new(400., 100.), false)?;
-    let restored = pane_node(&mut app, HudPanel::Combat)?;
-    assert_eq!((restored.left, restored.top), (px(8.), px(112.)));
-    assert_eq!(layout_pane(&app, HudPanel::Combat)?.dock, HudDock::Left);
-    app.world_mut().despawn(held);
-    let _ = std::fs::remove_file(&path);
+    for (distance, height) in [(25., 100.), (-1000., MIN_CONTENT), (1000., 600.)] {
+        app.world_mut().trigger(PointerDrag {
+            entity: handle,
+            pointer: pointer.clone(),
+            button: PointerButton::Primary,
+            distance: Vec2::new(0., distance),
+            delta: Vec2::ZERO,
+        });
+        app.update();
+        assert_eq!(
+            app.world().get::<Node>(body).ok_or("body")?.height,
+            px(height)
+        );
+    }
+    let _ = std::fs::remove_file(path);
     Ok(())
 }

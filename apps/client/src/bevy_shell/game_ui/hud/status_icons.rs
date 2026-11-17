@@ -1,4 +1,5 @@
-//! Read-only status row from the admitted play link's confirmed view models.
+//! The states bar of the status widget: one 9x9 condition icon per active state (Tibia
+//! Global StatesBar), read from the admitted play link's confirmed view models.
 use super::{HostOwner, Skins, source};
 use bevy::prelude::*;
 use oteryn_client_ui::condition_status::icon_key;
@@ -24,6 +25,24 @@ impl Icon {
 #[derive(Component, Default)]
 pub(super) struct StatusRow(Vec<Icon>);
 
+/// The size of one condition icon.
+const ICON: f32 = 9.;
+/// The art slot key of a condition: `condition-` and the lowercase key with every other
+/// character turned into a dash.
+fn slot_key(key: &str) -> String {
+    let slug: String = key
+        .chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() {
+                c.to_ascii_lowercase()
+            } else {
+                '-'
+            }
+        })
+        .collect();
+    format!("condition-{}", slug.trim_matches('-'))
+}
+
 pub(super) fn setup(commands: &mut Commands, vitals: Entity) {
     let row = commands
         .spawn((
@@ -31,11 +50,13 @@ pub(super) fn setup(commands: &mut Commands, vitals: Entity) {
             StatusRow::default(),
             Node {
                 width: percent(100.),
+                min_height: px(13.),
                 display: Display::None,
                 flex_wrap: FlexWrap::Wrap,
-                column_gap: px(4.),
+                align_items: AlignItems::Center,
+                column_gap: px(2.),
                 row_gap: px(2.),
-                padding: UiRect::all(px(2.)),
+                padding: UiRect::horizontal(px(2.)),
                 ..default()
             },
             Pickable::IGNORE,
@@ -187,21 +208,21 @@ pub(super) fn project(
                 Name::new(icon.key.clone()),
                 Node {
                     align_items: AlignItems::Center,
-                    column_gap: px(2.),
-                    padding: UiRect::axes(px(3.), px(2.)),
+                    column_gap: px(1.),
                     ..default()
                 },
-                BackgroundColor(Color::srgb_u8(35, 35, 40)),
                 Pickable::IGNORE,
             ))
             .id();
-        let label = commands
-            .spawn(source::text(
-                icon.label.as_str(),
-                source::font(skins.font.clone(), false),
-            ))
-            .id();
-        commands.entity(container).add_child(label);
+        let fallback: String = icon.label.chars().take(2).collect();
+        let slot = super::super::art::spawn(
+            &mut commands,
+            &skins.font,
+            slot_key(&icon.key),
+            &fallback,
+            Vec2::splat(ICON),
+        );
+        commands.entity(container).add_child(slot);
         if icon.count > 1 {
             let badge = commands
                 .spawn((
