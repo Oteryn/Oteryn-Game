@@ -20,6 +20,13 @@ EXPECTED = (
     ((32573, 32121, 7), 2772, "unique", 30034),
 )
 
+EXPECTED += tuple(
+    (position, item, "action", 25018)
+    for position in ((31973, 32905, 11), (31973, 32905, 10),
+                     (32009, 32928, 9), (32009, 32928, 10))
+    for item in (104, 19387)
+)
+
 
 class QuestStartupBindingsTests(unittest.TestCase):
     def outputs(self):
@@ -70,6 +77,7 @@ class QuestStartupBindingsTests(unittest.TestCase):
             "data-global/startup/tables/teleport.lua": "TeleportAction = {[50022] = {{itemId=1720,itemPos={{x=32968,y=32630,z=7}}},{itemId=1949,itemPos={{x=32968,y=32629,z=7},{x=32967,y=32630,z=8}}}}}",
             "data-global/startup/tables/door_level.lua": "LevelDoorAction = {[1070] = {itemId=false,itemPos={{x=33190,y=31684,z=14},{x=33195,y=31684,z=14}}}}",
             "data-global/startup/tables/lever.lua": "LeverUnique = {[30034] = {itemId=2772,itemPos={x=32573,y=32121,z=7}}}",
+            "data-global/startup/tables/item.lua": "ItemAction = {[25018] = {{itemId=false,itemPos={{x=31973,y=32905,z=11},{x=31973,y=32905,z=10},{x=32009,y=32928,z=9},{x=32009,y=32928,z=10}}}}}",
             "data/libs/tables/doors.lua": "LevelDoorTable = {{closedDoor=5102,openDoor=5103}}",
         }
         with tempfile.TemporaryDirectory() as temporary:

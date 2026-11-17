@@ -811,6 +811,7 @@ def main() -> int:
     if args.no_stage and unresolved_worktree_paths():
         raise SystemExit("--no-stage requires a conflict-free worktree")
     conflicted = resolve_conflicts() if args.resolve and not args.no_stage else []
+    run(["python3", "tools/content-schema/quest-authoring/action_marker_bindings.py"])
     run(["python3", "tools/content-schema/quest-authoring/arena_completion.py"])
     run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     run(["python3", "tools/content-schema/world-authoring/quest_chest_bindings.py", "--apply"])

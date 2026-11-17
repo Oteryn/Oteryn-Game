@@ -151,6 +151,18 @@ pub(super) fn compiled_region(
     start: crate::map::overlay::TilePos,
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    compiled_region_action_control(minimum, maximum, start, native, None)
+}
+
+/// A negative dispatcher case changes one existing source AID after compilation.
+/// The ordinary path retains the compiled bytes verbatim.
+pub(super) fn compiled_region_action_control(
+    minimum: crate::map::overlay::TilePos,
+    maximum: crate::map::overlay::TilePos,
+    start: crate::map::overlay::TilePos,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    action_control: Option<(crate::map::overlay::TilePos, u16)>,
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle_compiler::{compile, project};
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
     if minimum.x / 256 != maximum.x / 256
@@ -193,13 +205,40 @@ pub(super) fn compiled_region(
                 || !(minimum.y..=maximum.y).contains(&d.y)),
         "unresolved source quest geometry"
     );
-    let pins = crate::map::BundlePins {
-        digest: compiled.digest,
-        ..pins
+    let (bytes, digest) = if let Some((at, action)) = action_control {
+        let mut data = bundle::read(&compiled.bytes)?;
+        let tile = data
+            .sectors
+            .iter_mut()
+            .filter(|sector| sector.floor == at.floor)
+            .flat_map(|sector| &mut sector.tiles)
+            .find(|tile| tile.x == at.x && tile.y == at.y)
+            .ok_or("source action control tile")?;
+        let mut markers = tile
+            .items
+            .iter_mut()
+            .filter(|item| item.attrs.action == Some(25018));
+        let marker = markers.next().ok_or("missing source AID 25018")?;
+        assert!(
+            markers.next().is_none(),
+            "control changes exactly one source AID"
+        );
+        marker.attrs.action = Some(action);
+        let bytes = oteryn_world_bundle::writer::write_with_npcs(
+            &data.manifest,
+            &data.sectors,
+            &data.spawns,
+            &data.npcs,
+        )?;
+        let digest = bundle::read(&bytes)?.digest;
+        (bytes, digest)
+    } else {
+        (compiled.bytes, compiled.digest)
     };
-    let base = crate::map::load(&compiled.bytes, &pins).map_err(debug)?;
+    let pins = crate::map::BundlePins { digest, ..pins };
+    let base = crate::map::load(&bytes, &pins).map_err(debug)?;
     crate::map::boot::boot(
-        &compiled.bytes,
+        &bytes,
         &crate::map::boot::BootPins {
             map_revision: crate::map::overlay::map_revision(&base),
             bundle: pins,

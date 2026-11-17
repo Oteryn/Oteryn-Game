@@ -21,11 +21,111 @@
       "sha256": "41e560708ca123dd7aba34b1e54adf73b843e61fe3eb72fa33ad380a92282a7e"
     },
     {
+      "path": "data-global/startup/tables/item.lua",
+      "sha256": "7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    },
+    {
       "path": "data/libs/tables/doors.lua",
       "sha256": "6b22b5c4c213ef5a3f18fab43ea61acca7be227c06eb99bbc25d1a8d3e75112c"
     }
   ],
   "bindings": [
+    {
+      "position": [
+        31973,
+        32905,
+        10
+      ],
+      "item": 104,
+      "attribute": "action",
+      "action": 25018,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 2022
+    },
+    {
+      "position": [
+        31973,
+        32905,
+        10
+      ],
+      "item": 19387,
+      "attribute": "action",
+      "action": 25018,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 2022
+    },
+    {
+      "position": [
+        31973,
+        32905,
+        11
+      ],
+      "item": 104,
+      "attribute": "action",
+      "action": 25018,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 2022
+    },
+    {
+      "position": [
+        31973,
+        32905,
+        11
+      ],
+      "item": 19387,
+      "attribute": "action",
+      "action": 25018,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 2022
+    },
+    {
+      "position": [
+        32009,
+        32928,
+        9
+      ],
+      "item": 104,
+      "attribute": "action",
+      "action": 25018,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 2022
+    },
+    {
+      "position": [
+        32009,
+        32928,
+        9
+      ],
+      "item": 19387,
+      "attribute": "action",
+      "action": 25018,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 2022
+    },
+    {
+      "position": [
+        32009,
+        32928,
+        10
+      ],
+      "item": 104,
+      "attribute": "action",
+      "action": 25018,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 2022
+    },
+    {
+      "position": [
+        32009,
+        32928,
+        10
+      ],
+      "item": 19387,
+      "attribute": "action",
+      "action": 25018,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 2022
+    },
     {
       "position": [
         32573,

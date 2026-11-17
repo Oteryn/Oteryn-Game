@@ -2,7 +2,7 @@
 use super::*;
 
 pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> TestResult {
-    scenario_case(name, trigger, lever_fixture, None)
+    scenario_case(name, trigger, lever_fixture, None, None)
 }
 
 #[allow(
@@ -14,7 +14,15 @@ pub(crate) fn stateless_scenario(
     trigger: Position,
     expected_destination: Position,
 ) -> TestResult {
-    scenario_case(name, trigger, false, Some(expected_destination))
+    scenario_case(name, trigger, false, Some(expected_destination), None)
+}
+
+pub(crate) fn cursed_stairs_scenario(
+    name: &str,
+    trigger: Position,
+    action_control: Option<u16>,
+) -> TestResult {
+    scenario_case(name, trigger, false, None, Some(action_control))
 }
 
 fn scenario_case(
@@ -22,6 +30,7 @@ fn scenario_case(
     trigger: Position,
     lever_fixture: bool,
     stateless_destination: Option<Position>,
+    cursed_stairs_qualification: Option<Option<u16>>,
 ) -> TestResult {
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
@@ -76,7 +85,9 @@ fn scenario_case(
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
-    let native_crop = m03_use
+    let cursed_stairs = name.starts_with("crystal-stairs-");
+    let native_crop = cursed_stairs
+        || m03_use
         || engenc_asura
         || m49
         || qm03
@@ -346,7 +357,9 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if m03_use {
+    let mut callback = if name.starts_with("actmark-") {
+        super::super::actmark::callback()?
+    } else if m03_use {
         super::super::qengine_m03_use::callback()?
     } else if engenc_asura {
         super::super::engenc_asura_dispatch::callback(name)?
@@ -640,7 +653,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if name == "authored-wrath-crystals" {
+    let world = if name.starts_with("actmark-") {
+        super::super::actmark::world(&callback, trigger, name)?
+    } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::world()?
     } else if name == "nx6-wayfarer" {
         super::super::questpc8_wrath_source_dragon::world()?
@@ -1019,7 +1034,18 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if m03_use {
+        let world = if let Some(action_control) = cursed_stairs_qualification {
+            super::super::cursed_crystal_stairs::world(
+                &callback,
+                generation.native_gameplay().ok_or("native stairs")?,
+                action_control,
+            )?
+        } else if cursed_stairs {
+            super::super::actmark::native_world(
+                &callback,
+                generation.native_gameplay().ok_or("native stairs")?,
+            )?
+        } else if m03_use {
             super::super::qengine_m03_use::world(
                 generation
                     .native_gameplay()
@@ -1854,7 +1880,18 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if m03_use {
+        if let Some(action_control) = cursed_stairs_qualification {
+            Box::pin(super::super::cursed_crystal_stairs::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                &callback,
+                action_control,
+            ))
+            .await?;
+        } else if m03_use {
             Box::pin(super::super::qengine_m03_use::exercise(
                 &mut owner,
                 &mut admitted,
@@ -2863,6 +2900,14 @@ fn scenario_case(
                 trigger,
             ))
             .await?;
+        } else if name.starts_with("actmark-") {
+            Box::pin(super::super::actmark::exercise(
+                &owner,
+                &mut admitted,
+                name,
+                deps.actor,
+            ))
+            .await?;
         } else if let Some(expected_destination) = stateless_destination {
             Box::pin(super::stateless::exercise(
                 &owner,
@@ -3265,7 +3310,19 @@ fn scenario_case(
             let step = oteryn_protocol_oteryn::world_spatial::encode_step_intent(
                 oteryn_protocol_oteryn::world_spatial::StepDirection::East,
             );
+            let saved = || {
+                h.root
+                    .read_character_quest_state(&authority, fence.character_id)
+            };
+            let receipts = || {
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_quest_receipts")
+                    .fetch_one(&h.pool)
+            };
+            let initial = saved().await.map_err(debug)?;
+            let initial_receipts = receipts().await?;
             wire(&owner, &mut admitted, 1, 1, step.clone()).await?;
+            assert_eq!(saved().await.map_err(debug)?, initial);
+            assert_eq!(receipts().await?, initial_receipts);
             assert!(owner.states.chat.drain(admitted.game_session_id).iter().any(|line|
                 matches!(line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == "Finish the visitor mission first.")));
             assert_eq!(
@@ -3314,7 +3371,8 @@ fn scenario_case(
                 .clock_origin
                 .checked_sub(std::time::Duration::from_secs(2))
                 .ok_or("clock")?;
-            wire(&owner, &mut admitted, 2, 1, step).await?;
+            let before_shortcut = receipts().await?;
+            wire(&owner, &mut admitted, 2, 1, step.clone()).await?;
             assert_eq!(
                 deps.runtime
                     .lock()
@@ -3330,6 +3388,22 @@ fn scenario_case(
                 .await
                 .map_err(debug)?;
             assert_eq!(copy.tracks().get(&callback.storage[0].track), Some(&5));
+            assert_eq!(receipts().await?, before_shortcut + 1);
+
+            // Redelivery of the successful STEP must not execute a second transition.
+            wire(&owner, &mut admitted, 2, 1, step).await?;
+            assert_eq!(saved().await.map_err(debug)?, copy);
+            assert_eq!(receipts().await?, before_shortcut + 1);
+            assert_eq!(
+                deps.runtime
+                    .lock()
+                    .await
+                    .read_actor_position(deps.actor)
+                    .map_err(debug)?
+                    .position(),
+                local(callback.teleport.ok_or("teleport")?)
+            );
+            eprintln!("LIQUID_BLACK_SHORTCUT POSTGRES_CASE_COMPLETED replay_checked");
         } else {
             let key =
                 oteryn_world_bundle::bundle::placement_key(trigger.floor, trigger.x, trigger.y, 1)

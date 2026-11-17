@@ -55,6 +55,27 @@ def capture(source):
                         "line": field["line"],
                     }
                 )
+    # ACTMARK: donor ItemAction stamps ground/top items when itemId is false.
+    # Import only the four stair branches accepted by this native handler.
+    path = "data-global/startup/tables/item.lua"
+    raw = (source / path).read_bytes()
+    sources.append({"path": path, "sha256": hashlib.sha256(raw).hexdigest()})
+    fields = lua_tables.assignments(raw.decode(), {"ItemAction"})["ItemAction"]["fields"]
+    (field,) = [field for field in fields if field["key"] == 25018]
+    groups = lua_tables.as_python(field["value"])
+    stairs = {(31973, 32905, 11), (31973, 32905, 10),
+              (32009, 32928, 9), (32009, 32928, 10)}
+    positions = {tuple(p[k] for k in "xyz") for group in groups
+                 if group["itemId"] is False for p in group["itemPos"]}
+    if not stairs <= positions:
+        raise ValueError("Cursed Crystal source stair positions changed")
+    for position in sorted(stairs):
+        # Both literal appearances are verified against the compiled source tiles
+        # by overlay_region; no item or guessed ordinal is created.
+        for item in (104, 19387):
+            rows.append({"position": list(position), "item": item,
+                         "attribute": "action", "action": 25018,
+                         "source": path, "line": field["line"]})
     path = "data/libs/tables/doors.lua"
     raw = (source / path).read_bytes()
     sources.append({"path": path, "sha256": hashlib.sha256(raw).hexdigest()})
@@ -125,14 +146,18 @@ def overlay_outputs(outputs, *, require_all=False, supplied_by=None):
             bindings = [
                 row for row in document["bindings"] if row["attribute"] == attribute
             ]
-            raw, rows = doors.overlay_region(
-                raw,
-                index["palette"],
-                {"bindings": bindings},
-                attribute=attribute,
-                item_ids={r["item"] for r in bindings},
-            )
-            imported.extend(rows)
+            # The source may stamp ground and a top item at the same position.
+            # The door overlay owns one binding per tile, so pass each exact item
+            # separately rather than silently replacing one position's row.
+            for item in sorted({row["item"] for row in bindings}):
+                raw, rows = doors.overlay_region(
+                    raw,
+                    index["palette"],
+                    {"bindings": [row for row in bindings if row["item"] == item]},
+                    attribute=attribute,
+                    item_ids={item},
+                )
+                imported.extend(rows)
         outputs[path] = raw
         region["sha256"] = hashlib.sha256(raw).hexdigest()
         byte_delta += len(raw) - len(original)

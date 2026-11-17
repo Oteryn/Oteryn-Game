@@ -1095,7 +1095,12 @@ fn world_cells(
             sector::Item {
                 palette: 0,
                 depth: 0,
-                attrs: Default::default(),
+                attrs: sector::Attrs {
+                    action: ((floor, x, y) == (trigger.floor, trigger.x, trigger.y)
+                        && callback.selector.action == Some(25018))
+                    .then_some(25018),
+                    ..Default::default()
+                },
             },
         );
         sectors
@@ -1245,9 +1250,9 @@ mod scenario;
 mod stateless;
 #[path = "quest_world_callbacks/unnatural_selection.rs"]
 mod unnatural_selection;
-pub(super) use scenario::scenario;
 #[allow(
     unused_imports,
     reason = "per-quest stateless PG cases are independently picked after the common harness"
 )]
 pub(super) use scenario::stateless_scenario;
+pub(super) use scenario::{cursed_stairs_scenario, scenario};

@@ -97,7 +97,7 @@ def main():
     root = args.root.resolve()
     here = root / 'tools/content-schema/quest-authoring'
     packet = here / 'samples/migration/quest-source-packet.json'
-    scripts = ['verify_quest_schema.py', 'validate_quest_content.py',
+    scripts = ['action_marker_bindings.py', 'verify_quest_schema.py', 'validate_quest_content.py',
                'refresh_quest_source_checks.py', 'quest_catalogue_authoring.py',
                'quest_completion_matrix.py', 'collect_claim_candidates.py', 'use_trigger_candidates.py', 'quest_tree_authoring.py', 'bundle_authoring.py', 'source_text_authoring.py',
                'build_wiki_source_schema.py', 'wiki_source_inventory.py', 'wiki_source_supplements.py', 'wiki_all_source_inventory.py', 'quest_rollout_authoring.py', 'wiki_requirement_interpretations.py', 'source_facts_authoring.py', 'authored_quest_authoring.py', 'quest_completion_authoring.py', 'quest_binding_authoring.py', 'quest_donor_source_authoring.py', 'quest_state_lowering.py', 'source_lowered_binding_plan.py']
@@ -113,6 +113,7 @@ def main():
     if missing:
         parser.error('required Quest check inputs missing: ' + ', '.join(missing))
     commands = [
+        ['action_marker_bindings.py', '--check'],
         ['first_dragon_activity.py', '--check'],
         ['verify_quest_schema.py'],
         ['questpc2_live_eligibility.py', '--check'],
