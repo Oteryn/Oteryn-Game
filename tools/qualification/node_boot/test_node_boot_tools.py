@@ -129,6 +129,7 @@ class ReuseTests(unittest.TestCase):
             ADMIN_URL='postgresql://x:y@127.0.0.1:15433/oteryn_node_boot'
             FRESH_SEED_HEX=00; RECOVERY_SEED_HEX=11; MAP_REVISION=digest; NODE_PID=4242
             NODE_CLOCK_FEATURES=(--features qualification-clock)
+            NODE_SPAWN_FEATURES=(--features qualification-spawn)
             NODE_GAMEPLAY_ENV=("OTERYN_NATIVE_GAMEPLAY_MANIFEST=/srv/a b/m.json")
             PG_OBS="$WORK/postgres"
             ''') + function('save_reuse_state') + '\nsave_reuse_state\necho "kept=$STACK_KEPT"\n'
@@ -178,7 +179,7 @@ class SeamPassThroughTests(unittest.TestCase):
                 set -Eeuo pipefail
                 PATH={temp}:$PATH
                 sleep() {{ :; }}
-                NODE_BOOT_SPELLS=0; NODE_BOOT_WORLD=0; NODE_GAMEPLAY_ENV=(); NODE_CLOCK_FEATURES=()
+                NODE_BOOT_SPELLS=0; NODE_BOOT_WORLD=0; NODE_GAMEPLAY_ENV=(); NODE_CLOCK_FEATURES=(); NODE_SPAWN_FEATURES=()
                 BASE=/srv/x; WP5_PKI=/x; ADMIN_URL=u; WORLD_ID=w; CHANNEL_ID=c; WP5_PORT=1
                 ACCOUNT_ID=a; SECOND_ACCOUNT_ID=b; FRESH_KEY_ID=f; FRESH_SEED_HEX=s
                 RECOVERY_KEY_ID=r; RECOVERY_SEED_HEX=t
