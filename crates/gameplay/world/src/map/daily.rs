@@ -6,9 +6,12 @@ use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
+pub(super) mod awash;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DailyMap {
     pub seed: [u8; 32],
+    pub phases: BTreeMap<&'static str, bool>,
     pub fungus: bool,
     pub grimvale_full_moon: bool,
     /// Reset-selected map Items appended to existing non-House source tiles.
@@ -112,6 +115,11 @@ impl Projection {
                 }
             }
         }
+        for tile in awash::tiles(&manifest, daily.phases.get("awash").copied()) {
+            for appearance in tile.entries {
+                needed.entry(*appearance).or_insert(None);
+            }
+        }
         for (appearance, terrain) in needed {
             if manifest
                 .palette
@@ -184,11 +192,11 @@ fn source_layer(town: &str) -> Result<Layer, Error> {
 }
 
 fn layers(manifest: &Manifest, daily: &DailyMap) -> Result<BTreeMap<u32, Sector>, Error> {
+    let mut out = awash::sectors(manifest, daily.phases.get("awash").copied())?;
     let Some(town) = daily.trader else {
-        return Ok(BTreeMap::new());
+        return Ok(out);
     };
     let layer = source_layer(town)?;
-    let mut out = BTreeMap::<u32, Sector>::new();
     for tile in layer.tiles {
         let (x, y, z) = tile.position;
         if x < manifest.world.min_x

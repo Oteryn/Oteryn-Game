@@ -193,6 +193,23 @@ impl DurabilityRoot {
         })).await
     }
 
+    /// State for map projection, bound to the epoch being booted.
+    pub async fn world_change_phase(
+        &self,
+        world: WorldId,
+        epoch: u64,
+        key: &'static str,
+    ) -> Result<Option<bool>, DurabilityError> {
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            let phase = sqlx::query_scalar("SELECT active FROM game_world_change_states WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric AND change_key=$3")
+                .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind(key)
+                .fetch_optional(&mut *tx).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(phase)
+        })).await
+    }
+
     /// Advisory read for dialogue and travel previews; mutation owners recheck in transaction.
     pub async fn world_change_active(
         &self,

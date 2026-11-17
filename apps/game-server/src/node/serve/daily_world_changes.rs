@@ -46,6 +46,7 @@ fn map_changes(world: WorldId, changes: &DailyWorldChanges) -> crate::map::daily
     hash.update(changes.reset_epoch.to_be_bytes());
     crate::map::daily::DailyMap {
         seed: hash.finalize().into(),
+        phases: Default::default(),
         fungus: changes.their_masters_voice,
         grimvale_full_moon: changes.grimvale_full_moon,
         items: changes.items().collect(),
@@ -53,15 +54,27 @@ fn map_changes(world: WorldId, changes: &DailyWorldChanges) -> crate::map::daily
     }
 }
 
+#[cfg(test)]
 pub(super) fn prepare_map(
     checked: crate::map::boot::CheckedBundle,
     world: WorldId,
     changes: &DailyWorldChanges,
 ) -> crate::map::boot::CheckedBundle {
+    prepare_map_with_awash(checked, world, changes, None)
+}
+
+pub(super) fn prepare_map_with_awash(
+    checked: crate::map::boot::CheckedBundle,
+    world: WorldId,
+    changes: &DailyWorldChanges,
+    awash: Option<bool>,
+) -> crate::map::boot::CheckedBundle {
     if changes.reset_epoch == 0 {
         return checked;
     }
-    checked.with_daily_map(map_changes(world, changes))
+    let mut map = map_changes(world, changes);
+    map.phases.extend(awash.map(|active| ("awash", active)));
+    checked.with_daily_map(map)
 }
 
 /// Places the day's NPCs the loaded catalogue admits; one that cannot stand is logged.

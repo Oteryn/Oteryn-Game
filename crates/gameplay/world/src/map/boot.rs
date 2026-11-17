@@ -689,7 +689,8 @@ impl BundleWorld {
             sources.retain(|(points, _)| !points.is_empty());
         }
         if let Some(daily) = &self.daily {
-            sources.extend(super::daily::grimvale_spawns(self, daily, profile)?);
+            sources.extend(super::daily::grimvale_spawns(self, daily, &profile)?);
+            super::daily::awash::project_spawns(self, daily, &profile, &mut sources)?;
         }
         Some(sources)
     }
@@ -1880,6 +1881,7 @@ pub mod tests {
             .with_daily_map(super::super::daily::DailyMap {
                 seed: [7; 32],
                 fungus: true,
+                phases: Default::default(),
                 grimvale_full_moon: false,
                 items: Vec::new(),
                 trader: None,

@@ -224,6 +224,7 @@ fn scenario(before: u16, yields: bool, source: Option<ThawingSource>) -> TestRes
                 checked.with_daily_map(crate::map::daily::DailyMap {
                     seed: [0; 32],
                     fungus: false,
+                    phases: Default::default(),
                     grimvale_full_moon: false,
                     items: vec![(13842, (target_pos.x, target_pos.y, -target_pos.floor))],
                     trader: None,

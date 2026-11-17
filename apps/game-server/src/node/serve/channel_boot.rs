@@ -89,11 +89,19 @@ pub(super) async fn prepare_channel(
         daily.grimvale_full_moon = occurrence.grimvale_full_moon;
         daily.their_masters_voice = occurrence.their_masters_voice;
     }
+    let awash = if bundle.is_some() && reset_epoch != 0 {
+        root.world_change_phase(material.world, reset_epoch, "awash")
+            .await
+            .map_err(|_| BootError::Readiness("Awash phase"))?
+    } else {
+        None
+    };
     let bundle = bundle
         .map(|checked| {
             let checked = daily_world_changes::bind_layers(checked, &daily)
                 .map_err(BootError::WorldBundle)?;
-            let checked = daily_world_changes::prepare_map(checked, material.world, &daily);
+            let checked =
+                daily_world_changes::prepare_map_with_awash(checked, material.world, &daily, awash);
             boot_bundle_world(checked, material.world, material.channel, gameplay)
         })
         .transpose()?;
