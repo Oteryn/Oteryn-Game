@@ -133,6 +133,20 @@ fn project(
             && !panel.model.pending_acl_read
             && panel.model.acl_snapshot.is_some()
     });
+    let retain = |index: usize| {
+        projected.as_ref().is_some_and(|panel| {
+            state.activity_revision == panel.activity_revision
+                && (same_house || !matches!(index, 2 | 4 | 6))
+                && !(acl_loaded && matches!(index, 2 | 4 | 5 | 6))
+                && panel.fields[index] == state.fields[index]
+        })
+    };
+    if fields.iter().any(|(field, text)| {
+        retain(field.0) && (text.pending_paste.is_some() || !text.pending_edits.is_empty())
+    }) {
+        return;
+    }
+    let retained: [bool; 7] = std::array::from_fn(retain);
     state.redraw = false;
     if let Some(root) = state.root.take() {
         if focus.get().is_some_and(|entity| fields.contains(entity)) {
@@ -170,10 +184,7 @@ fn project(
     let mut editors = panel.fields.clone();
     if rebuilding {
         for (field, text) in &fields {
-            if (same_house || !matches!(field.0, 2 | 4 | 6))
-                && !(acl_loaded && matches!(field.0, 2 | 4 | 5 | 6))
-                && panel.fields[field.0] == state.fields[field.0]
-            {
+            if retained[field.0] {
                 editors[field.0] = text.value().to_string();
             }
         }

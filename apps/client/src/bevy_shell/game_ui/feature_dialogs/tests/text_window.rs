@@ -638,6 +638,10 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
             .query::<(&super::super::houses::Field, &mut EditableText)>()
             .iter_mut(app.world_mut())
         {
+            if field.0 == 4 {
+                text.pending_paste =
+                    Some(bevy::clipboard::ClipboardRead::Pending(Default::default()));
+            }
             if matches!(field.0, 2 | 4 | 6) {
                 text.editor_mut().set_text("new draft");
             }
@@ -664,6 +668,9 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
             .iter(app.world())
         {
             if matches!(field.0, 2 | 4 | 6) {
+                if field.0 == 4 {
+                    assert!(text.pending_paste.is_some());
+                }
                 assert_eq!(text.value(), "new draft");
             }
         }
