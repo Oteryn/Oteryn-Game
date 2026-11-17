@@ -449,7 +449,11 @@ async fn ground_item(
         )
         .await
         .map_err(debug)?;
-    let permit = owner.spell_lane.acquire().await.map_err(debug)?;
+    let permit = owner
+        .spell_lane
+        .acquire()
+        .await
+        .map_err(|_| "spell lane unresolved".to_owned())?;
     assert!(matches!(
         owner
             .root
