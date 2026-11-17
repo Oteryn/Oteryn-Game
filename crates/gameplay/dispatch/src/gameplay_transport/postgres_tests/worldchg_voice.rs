@@ -47,7 +47,7 @@ fn scenario(admin: String, gobbles: i64, expected_stage: u8) -> TestResult {
             sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint")
                 .fetch_one(&h.pool)
                 .await?;
-        let deadline = now + 60_000;
+        let deadline = now + 3_600_000;
         let kind = CounterKind::TheirMastersVoice;
         let mut state = CounterState::new(kind, epoch, false);
         state.stage = 3;
@@ -61,7 +61,7 @@ fn scenario(admin: String, gobbles: i64, expected_stage: u8) -> TestResult {
         .await?;
         sqlx::query("INSERT INTO game_world_change_personal_counters(world_id,change_key,character_id,counter,period_deadline_ms) VALUES(encode($1,'hex')::uuid,'their_masters_voice',encode($2,'hex')::uuid,$3::bigint,$4)")
             .bind(world.as_bytes().as_slice()).bind(character.as_bytes().as_slice()).bind(gobbles).bind(deadline).execute(&h.pool).await?;
-        sqlx::query("INSERT INTO game_terrain_tool_transforms(world_id,channel_id,placement,reset_epoch,map_revision,content_generation,state_item_id,object_revision,decay_states,decay_delays,decay_at_unix_ms) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,'map-1',$5,12065,1,ARRAY[12059]::bigint[],ARRAY[60000]::bigint[],$6)")
+        sqlx::query("INSERT INTO game_terrain_tool_transforms(world_id,channel_id,placement,reset_epoch,map_revision,content_generation,state_item_id,object_revision,decay_states,decay_delays,decay_at_unix_ms) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,'map-1',$5,12065,1,ARRAY[12059]::bigint[],ARRAY[3600000]::bigint[],$6)")
             .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
             .bind(placement()?).bind(i64::try_from(epoch)?).bind([7u8; 32].as_slice())
             .bind(deadline).execute(&h.pool).await?;
