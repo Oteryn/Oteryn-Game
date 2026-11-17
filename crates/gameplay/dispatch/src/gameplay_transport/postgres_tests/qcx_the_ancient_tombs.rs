@@ -38,6 +38,31 @@ fn ashmunrah_north_table_enchants_helmet() -> TestResult {
     super::l6_floor_native::run("l6-floor-assembly-native-ruby-stack")
 }
 
+#[test]
+fn morguthis_boss_forcefield_accepts_pass() -> TestResult {
+    super::l6_tomb_native::l6_tomb_native_present_3950_uses_source_branch()
+}
+
+#[test]
+fn thalas_boss_forcefield_accepts_pass() -> TestResult {
+    super::l6_tomb_native::l6_tomb_native_present_3951_uses_source_branch()
+}
+
+#[test]
+fn mahrdis_boss_forcefield_accepts_pass() -> TestResult {
+    super::l6_tomb_native::l6_tomb_native_present_3952_uses_source_branch()
+}
+
+#[test]
+fn rahemos_boss_forcefield_accepts_pass() -> TestResult {
+    super::l6_tomb_other_native::l6_tomb_other_native_present_3954_uses_source_branch()
+}
+
+#[test]
+fn dipthrah_boss_forcefield_accepts_pass() -> TestResult {
+    super::l6_tomb_other_native::l6_tomb_other_native_present_3955_uses_source_branch()
+}
+
 fn run(name: &'static str, rewards: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
