@@ -238,7 +238,14 @@ pub(super) async fn exercise(
             2,
             payload(revision)?,
         ))
-        .await?;
+        .await;
+        if let Err(error) = &reply {
+            eprintln!(
+                "Brain USE command {command} failed: {error}; durable counts={:?}",
+                counts(h).await
+            );
+        }
+        let reply = reply?;
         oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(|e| debug(e).into())
     };
     let mut offerings = callback.offerings.clone();
