@@ -48,7 +48,10 @@ const LANTERN: Case = Case {
 
 #[test]
 fn qaitems_lantern_inventory() -> f::TestResult {
-    postgres_case(LANTERN)
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    postgres_case(LANTERN, admin)
 }
 
 const LOTTERY_TEXT: &str = "Damn you Thais! Damn you TBI! I am no longer an agent or a noble but a black knight. A dark avenger that will have his revenge!";
@@ -92,6 +95,10 @@ fn content_case(case: Case) -> f::TestResult {
     );
     if case.tag == "lottery" {
         assert_eq!(
+            item["definition"]["semantics"]["presentation"]["value"]["name"]["value"],
+            "lottery ticket"
+        );
+        assert_eq!(
             claim["native_contents"]["placements"][0]["root"]["key"],
             case.item
         );
@@ -108,10 +115,7 @@ fn content_case(case: Case) -> f::TestResult {
     }
     Ok(())
 }
-fn postgres_case(case: Case) -> f::TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
+fn postgres_case(case: Case, admin: String) -> f::TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || -> Result<(), String> {
@@ -150,7 +154,10 @@ macro_rules! cases {
         }
         #[test]
         fn $pg() -> f::TestResult {
-            postgres_case($case)
+            let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+                return Ok(());
+            };
+            postgres_case($case, admin)
         }
     };
 }
