@@ -438,14 +438,14 @@ fn engenc_native_hit_is_atomic_fenced_and_replay_safe_postgres() -> fixture::Tes
         .map_err(Into::into)
 }
 
-type NativeHitRuntime = (
+pub(super) type NativeHitRuntime = (
     foundation::ChannelRuntimeV1,
     foundation::ExactActorRef,
     foundation::ExactActorRef,
     foundation::CommandRef,
 );
 
-fn native_hit_runtime(lease_generation: u64) -> fixture::TestResult<NativeHitRuntime> {
+pub(super) fn native_hit_runtime(lease_generation: u64) -> fixture::TestResult<NativeHitRuntime> {
     let fence = fixture::fence(1)?;
     let foundation::RuntimeScopeRefV1::Channel {
         world_id,

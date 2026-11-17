@@ -85,3 +85,50 @@ fn engenc_child_of_destiny_binds_all_chosen_stages() -> Result<(), String> {
     );
     Ok(())
 }
+
+/// CHILDDEST: the production objectives credit only the Party Skeleton from the
+/// authored source; another target or source never matches.
+#[test]
+fn childdest_training_objectives_refuse_wrong_target_or_source() -> Result<(), String> {
+    let production = crate::quest::loader::load_embedded_quest_state("childdest")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = production.catalogue();
+    let skeleton = "oteryn:creature.party_skeleton";
+    let counter = crate::quest::native_kills::counter_for(
+        catalogue,
+        "oteryn:quest-transition/native-kills/engenc-child-s2",
+    )
+    .ok_or("Party Skeleton counter")?;
+    assert_eq!(counter.creature, skeleton);
+    assert!(crate::quest::native_kills::tracks_creature_for(
+        catalogue, skeleton
+    ));
+    let objective = |stage: &str| {
+        hits::objective_for(
+            catalogue,
+            &format!("oteryn:quest-transition/native-hits/engenc-child-{stage}"),
+        )
+        .map(|(_, objective)| objective)
+        .ok_or(format!("{stage} objective"))
+    };
+    let (spear, rune) = (objective("s3")?, objective("s4")?);
+    let (spear_item, rune_item) = ("oteryn:item.tibia.i17110", "oteryn:item.tibia.i17512");
+    let missile = Some("candidate:spell/rune/lightest_magic_missile_rune");
+    assert!(spear.matches(skeleton, spear_item, None));
+    assert!(rune.matches(skeleton, rune_item, missile));
+    for creature in ["oteryn:creature.rat", "oteryn:creature.skeleton"] {
+        assert!(!spear.matches(creature, spear_item, None), "{creature}");
+        assert!(!rune.matches(creature, rune_item, missile), "{creature}");
+    }
+    assert!(!spear.matches(skeleton, "oteryn:item.tibia.i3277", None));
+    assert!(!spear.matches(skeleton, rune_item, missile));
+    assert!(!spear.matches(skeleton, spear_item, missile));
+    assert!(!rune.matches(skeleton, spear_item, None));
+    assert!(!rune.matches(skeleton, rune_item, None));
+    assert!(!rune.matches(
+        skeleton,
+        rune_item,
+        Some("candidate:spell/rune/light_magic_missile_rune")
+    ));
+    Ok(())
+}
