@@ -103,7 +103,7 @@ ordinary custody owner facts. The atomic/replay PG case subsequently passed.
 | Clippy, durability | Passed: final all-target check with warnings denied after the custody fix |
 | Clippy, dispatch | Passed: final all-target/all-feature check with warnings denied; cross-mount error formatter fixed without allowances |
 | Clippy, server | Passed: final all-target check with warnings denied; one shared World fixture module, no lint allowances |
-| Full World regeneration | Passed with all default checks; World pin unchanged; idempotency rerun in progress |
+| Full World regeneration | Passed with all default checks; second full regeneration left no diff; World pin unchanged |
 | No-URL guards and public schema | Passed: 6 filtered tests in 0.11 seconds without the admin URL |
 | Full focused PG suite | Passed: 6 tests, including 5 real PG cases, in 198.58 seconds; all requested assertions plus east control and whole stacks |
 | Quest source-cohort loader | Passed: focused owner-scope test in 9.66 seconds |
