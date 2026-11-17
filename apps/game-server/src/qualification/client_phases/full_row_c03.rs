@@ -544,7 +544,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let refusal = client.session_mut().attack_target(Some(&me)).await?;
     client.service_liveness(Duration::from_millis(300)).await?;
     let self_damage: Vec<_> = client.take_events().iter().fold(Vec::new(), |mut seen, e| {
-        collect(e, &mut seen);
+        collect(e, me, &mut seen);
         seen
     }).into_iter().filter(|s| s.1 == me && s.2 == Some(me)).collect();
     let inventory = client.inventory().cloned();
