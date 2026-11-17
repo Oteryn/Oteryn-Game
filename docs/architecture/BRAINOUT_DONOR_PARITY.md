@@ -55,7 +55,10 @@ The new participant lives on the existing reward/item custody owner:
 Migration 2889 proves the linked input/output receipts in both directions and
 preserves the predecessor MINT and Ground guard arms. Ground outputs use whole
 source items, bounded to 100 units each; partial-unit declarations are rejected.
-There is no backpack allocation or carried-capacity branch.
+The participant uses the existing ordinary inventory/Ground custody facts and
+D82 stack bounds. Opaque unrelated semantic groups remain opaque; explicit
+instance-state contracts retain their specialized owners. There is no backpack
+allocation or carried-capacity branch.
 
 Both real control bindings, the two ingredients, storage gates and literal text
 are in `content/quests/world-callbacks/gravedigger-brain.json:5` and `:90`.
