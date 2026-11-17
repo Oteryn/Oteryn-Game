@@ -97,6 +97,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// them is settled by the release's own saves, as for a closed client whose deadline just
     /// ended.
     pub(super) async fn logout_session(&self, admitted: AdmittedSession) -> LogoutReply {
+        self.logout_session_as(admitted, false).await
+    }
+
+    /// `channel_switch`: the release is the safe exit of a voluntary Channel switch (chsw) and
+    /// keeps the Party membership for the fresh admission into the target Channel.
+    pub(super) async fn logout_session_as(
+        &self,
+        admitted: AdmittedSession,
+        channel_switch: bool,
+    ) -> LogoutReply {
         let Ok(_foreground) = self.root.foreground_demand() else {
             operator_event("event=logout_busy stage=foreground_demand");
             return LogoutReply::Result(LogoutResult::Busy);
@@ -114,7 +124,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             operator_event("event=logout_busy stage=activity_scope");
             return LogoutReply::Result(LogoutResult::Busy);
         }
-        self.release_logout(admitted, actor, controller).await
+        self.release_logout(admitted, actor, controller, channel_switch)
+            .await
     }
 
     pub(super) async fn logout_preflight(
@@ -284,9 +295,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         actor: ExactActorRef,
         controller: ControllerBinding,
+        channel_switch: bool,
     ) -> LogoutReply {
         let session = admitted.game_session_id;
         let store = FreshAdmissionStore::from_root(self.root.clone());
+        let store = if channel_switch {
+            store.with_channel_switch()
+        } else {
+            store
+        };
         let release = TerminalRelease::Logout(controller.transport);
         // Nothing is fenced yet when no transition id can be minted.
         let Ok(token) = release.fence(&mut *self.runtime.lock().await) else {

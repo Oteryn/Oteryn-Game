@@ -168,6 +168,28 @@ fn channel_switch_guard_classifies_admissions_and_enforces_the_cooldown() -> Tes
                     assert_eq!(code(admit(pool, 9, CHANNEL_B).await).as_deref(), Some("OTH02"));
                     assert_eq!(preflight(pool, None).await?, (0, Some("COMBAT".into()), true));
                     assert_eq!(guard(pool).await?, Some((channel_text(CHANNEL_A), 2, false)));
+                    // Migration 2859: a held Party membership survives a refused admission and
+                    // is taken back by the committed admission into the target Channel.
+                    let mut party = pool.begin().await?;
+                    sqlx::query("INSERT INTO game_parties(party_id,world_id,leader_character_id,revision,next_seq) VALUES($1::uuid,$2::uuid,$3::uuid,1,2)")
+                        .bind(hex(id(CHANNEL_B + 10))).bind(hex(id(WORLD))).bind(hex(id(CHARACTER)))
+                        .execute(&mut *party).await?;
+                    sqlx::query("INSERT INTO game_party_members(character_id,party_id,seq,presence_state) VALUES($1::uuid,$2::uuid,1,3)")
+                        .bind(hex(id(CHARACTER))).bind(hex(id(CHANNEL_B + 10)))
+                        .execute(&mut *party).await?;
+                    sqlx::query("INSERT INTO game_channel_switch_party_holds VALUES($1::uuid,game_channel_switch_now_ms()+game_channel_switch_party_hold_ms())")
+                        .bind(hex(id(CHARACTER)))
+                        .execute(&mut *party).await?;
+                    party.commit().await?;
+                    let held = || async {
+                        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_channel_switch_party_holds")
+                            .fetch_one(pool)
+                            .await
+                    };
+                    assert_eq!(code(admit(pool, 10, CHANNEL_B).await).as_deref(), Some("OTH02"));
+                    assert_eq!(held().await?, 1, "a refused admission keeps the hold");
+                    admit(pool, 11, CHANNEL_A).await?;
+                    assert_eq!(held().await?, 0, "the admission takes the hold back");
                     Ok(())
                 }
                 .await;

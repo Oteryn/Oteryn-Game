@@ -157,7 +157,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if status != SwitchStatus::READY {
             return refuse(status);
         }
-        let reply = self.logout_session(admitted).await;
+        let reply = self.logout_session_as(admitted, true).await;
         match (reply, logout_lock(reply)) {
             (LogoutReply::Unknown, _) => Some(ChannelSwitchOutcome::Unknown),
             (_, Some(lock)) => refuse(status_of(lock)),

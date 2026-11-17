@@ -56,3 +56,11 @@ the first admission in a World sets the baseline, the same Channel is not a swit
 Channel inside the cooldown or with a lock the database can prove (logout block, a skull into a
 Channel that is not Open PvP) is refused, and a refused or failed admission uses no cooldown. A
 retry of the same admission cannot advance the guard twice.
+
+## Party across the switch
+
+The terminal release of an accepted `CHANNEL_SWITCH_REQUEST` keeps the Character in its Party and
+holds the membership for two minutes (migration 2859). The committed admission into the World
+takes the hold back; a refused admission leaves it. An expired hold without a current session
+leaves the Party through the World Party expiry drain, as an ordinary logout would. Party chat,
+Guild chat and private messages use the World relay and reach every Channel of the World.

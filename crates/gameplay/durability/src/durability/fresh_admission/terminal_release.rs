@@ -85,8 +85,13 @@ impl FreshAdmissionStore {
                 super::super::character_last_position::release_terminal_house_entry(&mut tx, node,
                     session_id, current.current_character_lease().character_id(), decided_at).await?;
             }
-            super::super::world_party::remove_terminal_member_in_transaction(&mut tx, session_id)
-                .await.map_err(|_| DurabilityError::Unavailable)?;
+            if store.channel_switch {
+                super::super::world_party::hold_terminal_member_in_transaction(&mut tx, session_id)
+                    .await.map_err(|_| DurabilityError::Unavailable)?;
+            } else {
+                super::super::world_party::remove_terminal_member_in_transaction(&mut tx, session_id)
+                    .await.map_err(|_| DurabilityError::Unavailable)?;
+            }
             sqlx::query("UPDATE game_durability_reconnect_attempts SET state = 4 WHERE game_session_id = encode($1,'hex')::uuid AND state IN (1,5)")
                 .bind(session_id.as_bytes().as_slice()).execute(&mut *tx).await?;
             store.guards.persist_locked(&mut tx, successors, &rows, &encoded_successors).await?;

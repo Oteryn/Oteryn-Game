@@ -10,7 +10,7 @@ contract: docs/architecture/GAME-CHANNEL-01_CHANNEL_PRODUCT_POLICY_CONTRACT.md
 branch: claude/happy-davinci-ijz3wy-chsw
 pr: null
 numbers:
-  migrations: [2858]          # 2859-2860 reserved, unused
+  migrations: [2858, 2859]    # 2860 reserved, unused
   capabilities: [512]         # 513 reserved, unused
   commands: [6247, 6248]
 merge_authority: CP_ONLY
@@ -32,6 +32,9 @@ merge_authority: CP_ONLY
   only; the recommended Channel keeps the current type; a move to Open PvP warns.
 - World Chat is shared by every Channel of a World and never reaches another World; Local Chat
   stays in its Channel.
+- Social views are Channel-aware within one World: Party chat, Guild chat and private messages
+  reach any Channel of the World; the Party and its chat survive a switch; shared experience,
+  loot and Party spells still need the same Channel; VIP, Party and Guild rows show the Channel.
 
 ## Gap list and state
 
@@ -43,6 +46,9 @@ merge_authority: CP_ONLY
 | 4 | protocol-oteryn command and server flow | capability 512, commands 6247/6248, `docs/contracts/protocol-oteryn/v1/channel-switch-v1.md` |
 | 5 | Client window, ping, selection-screen columns | window model in `crates/client-ui/src/features/0512-channel-switch/`; Bevy shell wiring, ping probe and selection-screen columns open |
 | 6 | E2E with two Channels | open |
+| 7 | Party, Guild and private chat across Channels of a World | World-keyed relay; test `party_guild_and_private_lines_cross_channels_of_a_world_and_never_another_world` |
+| 8 | Party survives a switch | `apps/game-server/migrations/2859_channel_switch_party_hold.sql`; switch release holds the membership (`world_party::hold_terminal_member_in_transaction`), admission takes it back, an expired hold leaves through the World Party drain |
+| 9 | Channel shown in VIP, Party and Guild rows; live update on a switch | open: Party snapshots already carry `presence_channel_id`; the wire field (capability 513) and client columns are not done |
 
 ## Platform fields needed
 
@@ -56,8 +62,9 @@ Channel is stored in `game_channel_pvp_types` (migration 2858).
 
 - `cargo test -p oteryn-protocol-oteryn --lib`
 - `cargo test -p oteryn-gameplay-durability --lib channel_switch`
-- `cargo test -p oteryn-gameplay-dispatch --lib -- channel_switch chat_relay`
+- `cargo test -p oteryn-gameplay-dispatch --lib -- channel_switch chat_relay` (with PostgreSQL 18.6
+  this includes `postgres_tests::channel_switch_party`)
 - `cargo test -p oteryn-client-ui --lib channel_switch`
 - PostgreSQL 18.6: `cargo test -p oteryn-game-server --test character_authority_postgres channel_switch_guard`
   and the dispatch chat relay case `world_chat_reaches_another_channel_of_the_world_and_never_another_world`
-  (CI PostgreSQL legs; no PostgreSQL 18.6 was available in the authoring session).
+  (run locally on PostgreSQL 18.6 in Docker, `postgres:18.6-bookworm`).

@@ -344,6 +344,9 @@ pub struct FreshAdmissionStore {
     /// OFFLINE0: revalidated in the same physical terminal-release transaction.
     training_logout: Option<std::sync::Arc<dyn TerminalReleaseParticipant>>,
     journal_catalogue: Option<std::sync::Arc<super::journal::LogoutCatalogue>>,
+    /// chsw: the release is the safe exit of a voluntary Channel switch; the Party membership is
+    /// held for the fresh admission into the target Channel instead of removed.
+    channel_switch: bool,
 }
 
 /// OFFLINE0: a terminal-release participant owned outside the shared core (LOOP-TRAIN-1's
@@ -462,6 +465,15 @@ impl FreshAdmissionStore {
         Self { journal_catalogue: Some(std::sync::Arc::new(catalogue)), ..self.clone() }
     }
 
+    /// chsw: the terminal release of a voluntary Channel switch keeps the Party membership.
+    #[must_use]
+    pub fn with_channel_switch(&self) -> Self {
+        Self {
+            channel_switch: true,
+            ..self.clone()
+        }
+    }
+
     /// OFFLINE0 participant: the final build marker commits with the terminal release.
     #[must_use]
     pub fn with_training_logout(
@@ -504,6 +516,7 @@ impl FreshAdmissionStore {
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
             training_logout: None,
             journal_catalogue: None,
+            channel_switch: false,
             final_position: None,
             final_house: None,
             house_release_node: None,
@@ -2155,6 +2168,7 @@ impl FreshAdmissionStore {
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
             training_logout: None,
             journal_catalogue: None,
+            channel_switch: false,
             final_position: None,
             final_house: None,
             house_release_node: None,

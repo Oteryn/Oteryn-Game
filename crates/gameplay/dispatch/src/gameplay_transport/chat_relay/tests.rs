@@ -790,3 +790,156 @@ async fn first_of<T>(
 ) -> Option<T> {
     first(primary, other).await
 }
+
+/// A session of `chat` bound for Party and Guild chat on `channel` of `world`, as the composed
+/// admission binds it (`connection/authority/composed.rs`).
+fn bind_social(
+    chat: &ChatRuntime,
+    session: GameSessionId,
+    world: [u8; 16],
+    channel: [u8; 16],
+    character: [u8; 16],
+) -> Result<(), Box<dyn Error>> {
+    use crate::foundation::{ChannelId, ConnectionGeneration, ExactActorRef, WorldId};
+    let world_id = WorldId::decode(&world)?;
+    let channel_id = ChannelId::decode(&channel)?;
+    let continuity = super::super::connection::SessionContinuity::FRESH;
+    let admitted = super::super::connection::AdmittedSession {
+        game_session_id: session,
+        world_id,
+        channel_id,
+        runtime_actor: Some(ExactActorRef::transport_fixture(world_id, channel_id)),
+        first_entry: super::super::connection::FirstEntryOutcome::Positioned,
+        controller: None,
+        item_fence: Some(
+            crate::durability::item_transfer::CurrentCharacterItemFence {
+                character_id: crate::domain::CharacterId::from_bytes(character)
+                    .map_err(|error| format!("{error:?}"))?,
+                game_session_id: session,
+                connection_generation: ConnectionGeneration::new(continuity.connection_generation)?,
+                character_lease_generation: 1,
+                runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(world_id, channel_id),
+                scope_ownership_generation: crate::foundation::ScopeOwnershipGeneration::new(1)?,
+            },
+        ),
+        continuity,
+    };
+    chat.party.bind(admitted);
+    chat.guild.bind(admitted);
+    Ok(())
+}
+
+/// chsw (owner, 2026-11-17): Party chat, Guild chat and private messages reach a player on any
+/// Channel of the same World and never another World. The relay is keyed by the World only, and
+/// the egress custody reads Party and Guild membership per World
+/// (`world_party::read_chat_membership_in_transaction`, `guild::read_current_guild_chat_data`).
+#[test]
+fn party_guild_and_private_lines_cross_channels_of_a_world_and_never_another_world() -> TestResult {
+    run_postgres_test(async {
+        let (database, url) = relay_database("chat_relay_social_channels", &all_pinned()).await?;
+        let mut other_world = WORLD;
+        other_world[15] ^= 0x01;
+        let (aela, bryn, cato) = (session_of(0x76), session_of(0x77), session_of(0x78));
+        let bryn_character = character(0x37);
+        let channel_a = node_in(WORLD, &url, aela, "Aela", character(0x36));
+        let channel_b = node_in(WORLD, &url, bryn, "Bryn", bryn_character);
+        let elsewhere = node_in(other_world, &url, cato, "Cato", bryn_character);
+        let mut channel_one = character(0x41);
+        let mut channel_three = character(0x43);
+        channel_one[0] = 0x01;
+        channel_three[0] = 0x01;
+        bind_social(&channel_b, bryn, WORLD, channel_three, bryn_character)?;
+        bind_social(&elsewhere, cato, other_world, channel_one, bryn_character)?;
+        let party_id = character(0x51);
+        let guild_id = crate::domain::guild::GuildId::from_bytes(character(0x52))
+            .map_err(|error| format!("{error:?}"))?;
+        let shutdown = CancellationToken::new();
+        let listeners = async {
+            let window = || Some(ReplayWindow::starting_at(0));
+            let _ = first_of(
+                relay_of(&channel_a).run_from(window(), &channel_a, &shutdown),
+                async {
+                    let _ = first_of(
+                        relay_of(&channel_b).run_from(window(), &channel_b, &shutdown),
+                        async {
+                            let _ = relay_of(&elsewhere)
+                                .run_from(window(), &elsewhere, &shutdown)
+                                .await;
+                        },
+                    )
+                    .await;
+                },
+            )
+            .await;
+        };
+        let exchange = async {
+            assert!(
+                wait_for(10, || [&channel_a, &channel_b, &elsewhere]
+                    .iter()
+                    .all(|chat| relay_of(chat).is_ready()))
+                .await,
+                "every relay listens"
+            );
+            let recipient =
+                oteryn_protocol_oteryn::CharacterId::decode(&bryn_character).expect("id");
+            for (destination, text) in [
+                (RelayDestination::Party { party_id }, "party on channel one"),
+                (
+                    RelayDestination::Guild {
+                        guild_id,
+                        rank: crate::domain::guild::GuildRank::VICE,
+                    },
+                    "guild on channel one",
+                ),
+                (RelayDestination::Private { recipient }, "whisper across"),
+            ] {
+                relay_of(&channel_a)
+                    .send(
+                        destination,
+                        CharacterName::parse("Aela").expect("name"),
+                        ChatText::parse(text).expect("text"),
+                    )
+                    .await
+                    .expect("sent");
+            }
+            let mut heard = Vec::new();
+            assert!(
+                wait_for(10, || {
+                    heard.extend(channel_b.drain(bryn));
+                    heard.len() >= 3
+                })
+                .await,
+                "another Channel of the World hears Party, Guild and private lines: {heard:?}"
+            );
+            let texts: Vec<String> = heard
+                .iter()
+                .map(|line| match line {
+                    ChatLine::Party { text, .. }
+                    | ChatLine::Private { text, .. }
+                    | ChatLine::Room { text, .. } => text.clone(),
+                    other => format!("{other:?}"),
+                })
+                .collect();
+            for text in [
+                "party on channel one",
+                "guild on channel one",
+                "whisper across",
+            ] {
+                assert!(
+                    texts.iter().any(|heard| heard.contains(text)),
+                    "{text} missing from {texts:?}"
+                );
+            }
+            assert!(
+                elsewhere.drain(cato).is_empty(),
+                "no Party, Guild or private line reaches another World"
+            );
+        };
+        let finished = first_of(Box::pin(exchange), Box::pin(listeners)).await;
+        shutdown.cancel();
+        drop((channel_a, channel_b, elsewhere));
+        database.cleanup().await?;
+        finished.ok_or("the relays stopped")?;
+        Ok(())
+    })
+}
