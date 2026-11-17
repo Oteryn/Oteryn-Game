@@ -128,14 +128,20 @@ fn muriel_failure_reply_is_shown_on_refused_callback() -> TestResult {
                 Ok::<(), Box<dyn std::error::Error>>(())
             };
             tokio::select! {
-                outcome = &mut response => return Err(format!("NPC replied before the writer reached PostgreSQL: {outcome:?}").into()),
+                outcome = &mut response => return Err(format!(
+                    "NPC replied before the writer reached PostgreSQL: {:?}, unknown={}",
+                    outcome.disposition, outcome.unknown,
+                ).into()),
                 result = tokio::time::timeout(Duration::from_secs(5), advance) => result??,
             }
             let outcome = response.await;
             assert!(!outcome.unknown);
             assert!(!outcome.inventory_changed);
             if stale {
-                assert!(outcome.conversation.is_none(), "{outcome:?}");
+                assert!(
+                    outcome.conversation.is_none(),
+                    "the reopened conversation received the old reply"
+                );
             } else {
                 assert_eq!(outcome.disposition, NpcIntentDisposition::Rejected);
                 assert_eq!(
