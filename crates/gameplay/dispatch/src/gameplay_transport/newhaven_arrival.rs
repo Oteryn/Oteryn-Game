@@ -304,12 +304,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if consumed == crate::durability::npc_travel::ArrivalConsume::Consumed {
             self.track_respawned(session, actor, &placed, current);
         }
-        let mut holds = self.states.newhaven_travel.holds.lock().ok()?;
-        let held = holds.get_mut(&session)?;
-        held.slot
-            .consume_outcome(frozen.arrival.occurrence, ConsumeReplay::Complete)
-            .ok()?;
-        holds.remove(&session);
+        drop(slot);
+        let refresh_postman = {
+            let mut holds = self.states.newhaven_travel.holds.lock().ok()?;
+            let held = holds.get_mut(&session)?;
+            held.slot
+                .consume_outcome(frozen.arrival.occurrence, ConsumeReplay::Complete)
+                .ok()?;
+            let refresh_postman = matches!(
+                &held.route,
+                newhaven_travel::Departure::Paid(request) if request.has_postman_arrival_rule()
+            );
+            holds.remove(&session);
+            refresh_postman
+        };
+        if refresh_postman {
+            Box::pin(self.refresh_quest_session(session, false)).await;
+        }
         Some(true)
     }
 }

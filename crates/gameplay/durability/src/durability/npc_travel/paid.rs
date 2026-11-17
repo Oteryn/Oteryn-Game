@@ -52,6 +52,18 @@ pub struct PaidTravelRequest {
     pub fee: FeeBurnRequest,
 }
 
+impl PaidTravelRequest {
+    /// Whether the admitted route can advance the Postman mission on placement.
+    #[must_use]
+    pub fn has_postman_arrival_rule(&self) -> bool {
+        super::super::quest_state::postman_travel::leg(&format!(
+            "{}/{}",
+            self.route.service, self.route.route.key
+        ))
+        .is_some()
+    }
+}
+
 async fn quote(
     tx: &mut Type2Transaction<'_>,
     fence: CurrentCharacterGameplayFence,

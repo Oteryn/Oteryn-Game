@@ -6,7 +6,7 @@ use oteryn_gameplay_quests::quest::{QuestComparison, QuestEffect, QuestEffectKin
 const QUEST: &str = "oteryn:quest.the_postman_missions_quest";
 const TRACK: &str = "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01";
 
-fn leg(route: &str) -> Option<&'static str> {
+pub(in crate::durability) fn leg(route: &str) -> Option<&'static str> {
     // Crystal 201189f8, data-global/npc: captain_bluebear.lua:70-73,
     // uzon.lua:80-83, captain_seahorse.lua:60-63, brodrosch.lua:125-128.
     match route {
