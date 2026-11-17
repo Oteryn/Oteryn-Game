@@ -823,6 +823,7 @@ async fn wardrobe(
         carried_item: None,
         carried_exchange: false,
         requires_completed_quests: vec![],
+        requires_weekdays: None,
         carried_target: None,
         peer_requires: None,
         corpse_target: None,

@@ -284,6 +284,9 @@ pub struct RewardCallback {
     pub requires_premium: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub minimum_level: Option<u32>,
+    /// ISO weekdays on the Europe/Berlin server-save calendar.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub requires_weekdays: Option<Vec<u8>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires_completed_quests: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -331,6 +334,13 @@ pub struct RewardCallback {
 }
 
 impl RewardCallback {
+    /// The caller converts authoritative time to Berlin wall-clock seconds.
+    pub fn weekday_holds(&self, berlin_seconds: i64) -> bool {
+        self.requires_weekdays
+            .as_deref()
+            .is_none_or(|days| state_ops::weekday_holds(days, berlin_seconds))
+    }
+
     /// Syntax-only reset shape. Current save authority is resolved by the writer;
     /// the catalogue separately validates owned tracks and their initial values.
     pub(crate) fn is_save_restart_only(&self) -> bool {
@@ -732,6 +742,13 @@ fn validate_document_with_capacity(
         }
     }
     for c in &document.callbacks {
+        if let Some(days) = &c.requires_weekdays
+            && (days.is_empty()
+                || days.iter().any(|day| !(1..=7).contains(day))
+                || days.iter().collect::<BTreeSet<_>>().len() != days.len())
+        {
+            return Err(format!("invalid reward callback weekdays {}", c.key));
+        }
         if c.requirements.as_ref().is_some_and(|r| !r.valid())
             || c.give.as_ref().is_some_and(|g| !g.valid())
         {
@@ -1091,6 +1108,7 @@ fn validate_document_with_capacity(
 /// Optional binding of newly gated admission/value terms; absent legacy gates keep old hashes.
 pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, String> {
     if callback.minimum_level.is_none()
+        && callback.requires_weekdays.is_none()
         && callback.inventory.is_empty()
         && callback.world_claim.is_none()
         && callback.peer_requires.is_none()

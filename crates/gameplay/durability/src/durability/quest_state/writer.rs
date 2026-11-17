@@ -1781,6 +1781,20 @@ impl DurabilityRoot {
                         let configured = clock.load(std::sync::atomic::Ordering::Acquire);
                         if configured >= 0 { configured } else { now }
                     });
+                    if let Some(callback) = &reward_callback
+                        && callback.requires_weekdays.is_some()
+                    {
+                        let berlin_seconds: i64 = sqlx::query_scalar(
+                            "SELECT extract(epoch FROM (to_timestamp($1::bigint::double precision) AT TIME ZONE 'Europe/Berlin'))::bigint",
+                        )
+                        .bind(now)
+                        .fetch_one(&mut *tx)
+                        .await?;
+                        if !callback.weekday_holds(berlin_seconds) {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
                     if let Some(super::QuestSourceAction::SoulWar(input))=&source_action
                         && let super::soul_war_source::SoulWarSourceAction::Step(step)=input.as_ref() {
                         step.observe_spite_clock(stored.get(oteryn_gameplay_quests::quest::soul_war::source_items::SPITE_FIRE).copied().unwrap_or(0),now);

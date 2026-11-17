@@ -787,6 +787,18 @@
           "type": "boolean",
           "default": false
         },
+        "requires_weekdays": {
+          "description": "ISO weekdays on the Europe/Berlin calendar, turning over at the 06:00 server save.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 7,
+          "uniqueItems": true,
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          }
+        },
         "requires_completed_quests": {
           "type": "array",
           "minItems": 1,

@@ -129,11 +129,32 @@ impl StateOperation {
     }
 }
 
+/// Test against local Berlin wall-clock seconds on the server-save calendar.
+pub(super) fn weekday_holds(days: &[u8], berlin_seconds: i64) -> bool {
+    let civil_day = berlin_seconds.div_euclid(86_400);
+    let before_save = berlin_seconds.rem_euclid(86_400) < 6 * 3_600;
+    // The civil Unix epoch was Thursday (ISO weekday 4).
+    let weekday = (civil_day + 3 - i64::from(before_save)).rem_euclid(7) + 1;
+    days.iter().any(|&day| i64::from(day) == weekday)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::quest::{QuestRefusal, QuestStateCatalogue, QuestTrack, QuestTransition};
     use std::collections::BTreeMap;
+
+    #[test]
+    fn callback_weekdays_turn_over_at_berlin_server_save() {
+        // Local wall-clock seconds since Thursday, 1970-01-01.
+        let monday_at_save = 4 * 86_400 + 6 * 3_600;
+        let days = [1, 3];
+        assert!(!weekday_holds(&days, monday_at_save - 60));
+        assert!(weekday_holds(&days, monday_at_save));
+        assert!(weekday_holds(&days, monday_at_save + 86_400 - 60));
+        assert!(!weekday_holds(&days, monday_at_save + 86_400));
+        assert!(weekday_holds(&days, monday_at_save + 2 * 86_400));
+    }
 
     #[test]
     fn operations_use_checked_native_arithmetic_and_the_transaction_clock() -> Result<(), String> {
