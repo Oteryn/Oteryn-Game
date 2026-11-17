@@ -13,7 +13,9 @@ use std::time::Duration;
 use tokio::io::DuplexStream;
 
 fn cell(x: u8, y: u8) -> Vec<u8> {
-    vec![10, 6, 8, x * 2, 16, y * 2, 24, 13]
+    // A generic bundle_view is not a pinned activity source room, so its wire
+    // floor stays the legacy +7 (zigzag 14), as wire_position projects it.
+    vec![10, 6, 8, x * 2, 16, y * 2, 24, 14]
 }
 
 async fn position(

@@ -27,17 +27,8 @@ pub fn reply() -> Vec<String> {
     ].into_iter().map(str::to_owned).collect()
 }
 
-pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
-    for key in [MISSION, DOOR] {
-        if catalogue
-            .track(key)
-            .is_none_or(|track| track.quest != QUEST)
-        {
-            return Err(format!("Kesar source track {key}"));
-        }
-    }
-    let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
-    transitions.push(QuestTransition {
+pub(super) fn transition() -> QuestTransition {
+    QuestTransition {
         world_change: None,
         key: COMPLETE.into(),
         quest: QUEST.into(),
@@ -55,7 +46,20 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
         ],
         completes: true,
         experience: None,
-    });
+    }
+}
+
+pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
+    for key in [MISSION, DOOR] {
+        if catalogue
+            .track(key)
+            .is_none_or(|track| track.quest != QUEST)
+        {
+            return Err(format!("Kesar source track {key}"));
+        }
+    }
+    let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
+    transitions.push(transition());
     QuestStateCatalogue::new(
         catalogue.content_revision,
         catalogue.tracks.into_values().collect(),

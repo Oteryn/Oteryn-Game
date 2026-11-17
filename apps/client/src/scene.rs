@@ -38,6 +38,7 @@ struct ActorDraw {
 
 #[derive(Debug, Clone)]
 pub struct Scene {
+    drome_hazards: Vec<drome_hazards::GroundWarning>,
     actor_clocks: actor_motion::ActorClocks,
     minimap: bool,
     #[cfg(bevy_shell)]
@@ -72,6 +73,7 @@ pub struct Scene {
     own_identity: Option<[u8; 16]>,
     own_draws: Option<Vec<Draw>>,
     actor_draws: Vec<ActorDraw>,
+    object_draws: Vec<(oteryn_session::ActorPosition, u32, Vec<Draw>)>,
     pub(crate) floor_visuals: Vec<(i16, Vec<oteryn_renderer::QuadInstance>, u8)>,
     names: Vec<(TileCoord, appearance_cache::NameLabel)>,
     name_entities: Vec<oteryn_session::EntityRef>,
@@ -128,6 +130,7 @@ impl Scene {
             }])
             .collect();
         let mut scene = Self {
+            drome_hazards: Vec::new(),
             minimap: false,
             #[cfg(bevy_shell)]
             minimap_quads: 0..0,
@@ -158,6 +161,7 @@ impl Scene {
             own_identity: None,
             own_draws: None,
             actor_draws: Vec::new(),
+            object_draws: Vec::new(),
             actor_clocks: actor_motion::ActorClocks::default(),
             floor_visuals: Vec::new(),
             names: Vec::new(),
@@ -280,6 +284,7 @@ impl Scene {
         #[cfg(not(bevy_shell))]
         let _ = floor_quads;
         let atlas = self.atlas();
+        self.draw_drome_hazards(&mut sprites, atlas)?;
         let mut player_quads: Vec<_> = player_quads.into_iter().collect();
         for (index, (tile, label)) in self.names.iter().enumerate() {
             let [dx, dy] = self
@@ -400,3 +405,10 @@ mod visual_scene;
 
 #[path = "features/0019-world-light/scene.rs"]
 pub(crate) mod floor_lighting;
+
+#[path = "features/0170-arena/scene.rs"]
+mod drome_hazards;
+pub(crate) use drome_hazards::GroundWarning;
+
+#[path = "features/0451-personal-map-marks/scene.rs"]
+mod personal_map_marks;

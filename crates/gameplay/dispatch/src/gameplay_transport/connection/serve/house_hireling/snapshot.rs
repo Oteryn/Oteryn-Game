@@ -191,6 +191,8 @@ impl State {
             &mut payloads,
         )
         .await?;
+        super::super::native_cues::snapshot_observations(authority, actor, admitted, &mut payloads)
+            .await?;
         Ok((
             Self {
                 spell_catalog,
@@ -202,6 +204,11 @@ impl State {
                 visibility,
                 appearances,
                 spatial_revision,
+                movement_effect_revision: authority
+                    .observe_current_actor_movement_effects(actor, admitted.game_session_id, 0)
+                    .await
+                    .last()
+                    .map_or(0, |entry| entry.0),
                 npc_shown: None,
                 npc_active,
                 stash_rows: None,

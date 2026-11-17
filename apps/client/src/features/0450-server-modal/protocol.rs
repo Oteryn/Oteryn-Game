@@ -46,6 +46,12 @@ impl Driver {
         self.panel.input = selected;
         self
     }
+    pub(in crate::play) fn reset_scope(&mut self, selected: bool) {
+        // Closing the source receiver also closes its native window and queued answers.
+        // A query interrupted by the handoff must not leave Pending::Query set forever.
+        *self = Self::new(selected);
+        self.next_query = Instant::now() + Duration::from_secs(5);
+    }
     #[must_use]
     pub(in crate::play) fn with_defaults(mut self, selected: bool) -> Self {
         self.panel.defaults = selected;

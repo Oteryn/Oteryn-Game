@@ -6,6 +6,9 @@ type CurrentPlayerPeriodicSource<'a> =
 
 use super::runtime_actor_companion::{CompanionSnapshot, CompanionState};
 use super::*;
+#[path = "runtime_actor_periodic/health_events.rs"]
+mod health_events;
+use health_events::PeriodicHealthEvents;
 use oteryn_gameplay_foundation::foundation::RuntimeWorkStamp;
 use oteryn_gameplay_foundation::foundation::condition::{ConditionTick, TickFacts, TickKind};
 
@@ -22,16 +25,18 @@ pub struct CreatureFieldEntry {
 #[derive(Debug)]
 pub struct PreparedCreaturePeriodicTurn {
     impacts: Vec<CreaturePeriodicImpact>,
+    health_events: PeriodicHealthEvents,
     before: CompanionSnapshot,
     original_slot: Slot,
+    damage_contributors: Box<DamageContributors>,
     after: CompanionState,
     conditions_after: super::runtime_actor_conditions::ActorConditionState,
     health_after: i64,
-    contributors_after: Box<DamageContributors>,
     stamp: RuntimeWorkStamp,
     ticks: Vec<ConditionTick<ExactActorRef>>,
     next_ordinal: u64,
     lethal_committed: Option<Box<super::runtime_actor_conditions::CreatureCommitState>>,
+    native_death: Option<super::native_source_death::SourceCreatureDeathNotice>,
 }
 #[derive(Debug)]
 pub struct CreaturePeriodicReceipt {
@@ -160,7 +165,7 @@ impl ChannelRuntimeV1 {
         now_us: u64,
         facts: TickFacts,
     ) -> Result<PreparedCreaturePeriodicTurn, CarrierError> {
-        self.stage_creature_periodic_turn_inner(actor, now_us, facts, None)
+        self.stage_creature_periodic_turn_inner(actor, now_us, facts, None, &[])
     }
     /// Source snapshots/PlayerSpellState reads are acquired and committed in
     /// one locked Channel-owner call. This is not a detached damage capability.
@@ -171,8 +176,34 @@ impl ChannelRuntimeV1 {
         facts: TickFacts,
         player_source: &mut CurrentPlayerPeriodicSource<'_>,
     ) -> Result<CreaturePeriodicReceipt, CarrierError> {
-        let prepared =
-            self.stage_creature_periodic_turn_inner(actor, now_us, facts, Some(player_source))?;
+        let prepared = self.stage_creature_periodic_turn_inner(
+            actor,
+            now_us,
+            facts,
+            Some(player_source),
+            &[],
+        )?;
+        self.commit_creature_periodic_turn(prepared)
+    }
+
+    /// Same periodic owner with current all-role source-name observations. The
+    /// opaque observations carry no damage or HP authority and are revalidated
+    /// against the actual target and physical cohort before publication.
+    pub fn apply_creature_periodic_turn_with_sources_and_health_observations(
+        &mut self,
+        actor: ExactActorRef,
+        now_us: u64,
+        facts: TickFacts,
+        player_source: &mut CurrentPlayerPeriodicSource<'_>,
+        observations: &[super::native_health_change::NativeHealthChangeObservation],
+    ) -> Result<CreaturePeriodicReceipt, CarrierError> {
+        let prepared = self.stage_creature_periodic_turn_inner(
+            actor,
+            now_us,
+            facts,
+            Some(player_source),
+            observations,
+        )?;
         self.commit_creature_periodic_turn(prepared)
     }
 
@@ -182,16 +213,13 @@ impl ChannelRuntimeV1 {
         now_us: u64,
         facts: TickFacts,
         mut player_source: Option<&mut CurrentPlayerPeriodicSource<'_>>,
+        observations: &[super::native_health_change::NativeHealthChangeObservation],
     ) -> Result<PreparedCreaturePeriodicTurn, CarrierError> {
         if self.actor_spell_reserved(actor) {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
         let before = self.companion_snapshot(actor)?;
-        if self
-            .companion_policy(&before.state.policy.definition_key)?
-            .as_ref()
-            != before.state.policy.as_ref()
-        {
+        if !self.accepts_source_derived_companion_policy(&before)? {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
         if self
@@ -234,7 +262,9 @@ impl ChannelRuntimeV1 {
         let mut total = 0i64;
         let mut had_damage = false;
         let mut health_after = before.health;
-        for tick in &ticks {
+        let mut health_events = PeriodicHealthEvents::new(self, actor, stamp, observations)?;
+        let mut current_type = before.clone();
+        for (tick_index, tick) in ticks.iter().enumerate() {
             match tick.kind {
                 TickKind::Damage {
                     amount,
@@ -315,8 +345,8 @@ impl ChannelRuntimeV1 {
                             let TickKind::Damage { element, .. } = tick.kind else {
                                 return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
                             };
-                            if before.state.policy.flags.attackable {
-                                healing = before.state.policy.damage_healing(
+                            if current_type.state.policy.flags.attackable {
+                                healing = current_type.state.policy.damage_healing(
                                     periodic_element_key(element),
                                     i64::from(amount),
                                 )?;
@@ -367,18 +397,12 @@ impl ChannelRuntimeV1 {
                         _ => 100,
                     };
                     let damage = finish_condition_tick_with_received(
-                        &before,
+                        &current_type,
                         &attributed,
                         adjusted,
                         now_us,
                         Some(received),
                     )?;
-                    had_damage |= damage > 0;
-                    if damage > 0 {
-                        after.conditions.remove_type(
-                            oteryn_gameplay_domain::domain::condition::ConditionType::Invisible,
-                        );
-                    }
                     // Source combatBlockHit heals before residual damage; each
                     // real tick caps independently, and lethal never resurrects.
                     let healing = if let Some(tag) = soulpit {
@@ -390,6 +414,24 @@ impl ChannelRuntimeV1 {
                     health_after = health_after
                         .saturating_add(healing)
                         .min(before.maximum_health);
+                    let damage = health_events.apply(
+                        self,
+                        actor,
+                        &mut after,
+                        &mut health_after,
+                        before.maximum_health,
+                        tick,
+                        tick_index,
+                        damage,
+                        now_us,
+                    )?;
+                    current_type.state.policy = after.policy.clone();
+                    had_damage |= damage > 0;
+                    if damage > 0 {
+                        after.conditions.remove_type(
+                            oteryn_gameplay_domain::domain::condition::ConditionType::Invisible,
+                        );
+                    }
                     let healed = health_after.saturating_sub(health_before_healing);
                     let damage = if let Some(tag) = soulpit {
                         tag.incoming_health_change(damage, health_after, before.maximum_health)?
@@ -432,11 +474,23 @@ impl ChannelRuntimeV1 {
                     amount,
                     refused: false,
                 } => {
-                    let damage = if before.state.policy.flags.attackable {
+                    let damage = if current_type.state.policy.flags.attackable {
                         i64::from(amount)
                     } else {
                         0
                     };
+                    let damage = health_events.apply(
+                        self,
+                        actor,
+                        &mut after,
+                        &mut health_after,
+                        before.maximum_health,
+                        tick,
+                        tick_index,
+                        damage,
+                        now_us,
+                    )?;
+                    current_type.state.policy = after.policy.clone();
                     let damage = if let Some(tag) = soulpit {
                         tag.incoming_health_change(damage, health_after, before.maximum_health)?
                     } else {
@@ -505,6 +559,59 @@ impl ChannelRuntimeV1 {
         }
         let original_slot = self.carrier.slots[index].clone();
         let ordinal = committed.next_ordinal;
+        // One attribution successor: lineage and summon-master ticks were recorded
+        // above; this pass adds the bound-session fence and Soul War source players.
+        let mut damage_contributors = contributors_after;
+        // Attribution is prepared with the same HP/store successor. No new
+        // input command is consumed by a condition tick; the existing source
+        // stream convention seeds only a zero high-water when none exists.
+        damage_contributors
+            .entries
+            .try_reserve(
+                COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX
+                    .saturating_sub(damage_contributors.entries.len()),
+            )
+            .map_err(|_| CarrierError::CommitAllocationFailed)?;
+        for impact in impacts.iter().filter(|impact| impact.damage > 0) {
+            let Some(source) = impact.source else {
+                continue;
+            };
+            let Ok(source_index) = self.carrier.validate_ref(&self.continuity, source.0) else {
+                continue;
+            };
+            let Slot::Occupied {
+                game_session_id: Some(session),
+                generation,
+                ..
+            } = &self.carrier.slots[source_index]
+            else {
+                continue;
+            };
+            if *generation != source.0.actor_local_generation.0 {
+                continue;
+            }
+            let lease = self.bound_attacker_lease(source, *session)?;
+            let previous = damage_contributors.high_water(lease.character_id());
+            if previous.is_some_and(|mark| {
+                mark.0 > lease.generation() || (mark.0 == lease.generation() && mark.1 != *session)
+            }) {
+                return Err(CarrierError::SupersededAttackerSession);
+            }
+            let context = self.carrier.soul_war_health_context(
+                &self.continuity,
+                Some(source),
+                None,
+                Some(now_us / 1_000),
+                super::soul_war_player_source::SoulWarPlayerSourceOrigin::Condition,
+                self.content_pin(),
+            )?;
+            damage_contributors.record_source_player(
+                lease.character_id(),
+                impact.damage,
+                Some(&context),
+                Some(now_us / 1_000),
+            );
+        }
         let next_ordinal = if had_damage {
             ordinal.checked_add(1).ok_or(
                 oteryn_gameplay_domain::domain::carrier_values::CarrierError::CapacityArithmeticOverflow,
@@ -560,18 +667,42 @@ impl ChannelRuntimeV1 {
         } else {
             None
         };
+        let native_death = if matches!(&original_slot, Slot::CreatureOccupied { spell_combat, .. }
+            if spell_combat.native_death_events.is_some()
+                && !spell_combat.source_death_completed
+                && !spell_combat.restored_splinter_death.as_ref().is_some_and(|original|
+                    original.current_for(self) && original.projection(before.actor).is_some()))
+        {
+            // The lethal receipt is the last entry of the prepared committed ledger.
+            lethal_committed
+                .as_ref()
+                .and_then(|committed| committed.entries.last())
+                .map(|record| {
+                    ChannelActorCarrier::native_death_notice_for_record(
+                        before.actor,
+                        record,
+                        Some(now_us / 1_000),
+                        Some(now_us),
+                    )
+                })
+                .transpose()?
+        } else {
+            None
+        };
         Ok(PreparedCreaturePeriodicTurn {
+            damage_contributors,
             impacts,
+            health_events,
             before,
             original_slot,
             after,
             conditions_after,
             health_after,
-            contributors_after,
             stamp,
             ticks,
             next_ordinal,
             lethal_committed,
+            native_death,
         })
     }
     fn record_periodic_contributor(
@@ -649,6 +780,9 @@ impl ChannelRuntimeV1 {
         {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
+        if let Some(observation) = &prepared.health_events.native {
+            self.validate_native_health_change_observation(observation)?;
+        }
         if let Some(master) = prepared.before.state.master {
             self.carrier
                 .player_slot_index(&self.continuity, master.actor.0, master.session)?;
@@ -659,10 +793,16 @@ impl ChannelRuntimeV1 {
         if self.carrier.slots.get(index) != Some(&prepared.original_slot) {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
+        self.carrier
+            .reserve_cloak_blood_capacity(&prepared.health_events.blood)?;
+        self.carrier
+            .reserve_native_death_capacity(prepared.native_death.as_slice())?;
         let Slot::CreatureOccupied {
             health,
             companion,
             committed,
+            spell_combat,
+            target_identity,
             damage_contributors,
             ..
         } = &mut self.carrier.slots[index]
@@ -675,13 +815,19 @@ impl ChannelRuntimeV1 {
             *committed = next_committed;
         }
         committed.next_ordinal = prepared.next_ordinal;
+        *damage_contributors = prepared.damage_contributors;
         *health = prepared.health_after;
         committed.conditions = prepared.conditions_after;
         if prepared.health_after == 0 {
             committed.conditions.die();
         }
+        let blood = prepared
+            .health_events
+            .install(spell_combat, committed, target_identity);
         *companion = Some(next);
-        *damage_contributors = prepared.contributors_after;
+        self.carrier.install_cloak_blood_events(blood);
+        self.carrier
+            .install_native_death_events(prepared.native_death);
         Ok(CreaturePeriodicReceipt {
             impacts: prepared.impacts,
             actor: prepared.before.actor,
@@ -913,6 +1059,108 @@ mod tests {
             .unwrap();
         runtime.compare_companion_state(&before, after).unwrap();
     }
+    fn retired_dot_source(reused: bool) {
+        let (mut runtime, source, session) = owner();
+        let character = CharacterId::decode(&id(9)).unwrap();
+        runtime
+            .bind_attacker_lease(source, session, CharacterLease::new(character, 1).unwrap())
+            .unwrap();
+        let creature = runtime
+            .admit_pinned_monster_lab_creature(
+                MovementLocalPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 0,
+                },
+                "creature:rat",
+                812,
+            )
+            .unwrap();
+        runtime
+            .install_creature_policy(creature, "creature:rat")
+            .unwrap();
+        let before = runtime.companion_snapshot(creature).unwrap();
+        let mut after = before.state.clone();
+        let definition = ConditionDefinition::new(
+            "test.retired-source.dot",
+            1,
+            ConditionValues::DamageOverTime {
+                element: DotElement::Fire,
+                total_min: 10,
+                total_max: 10,
+                per_tick: 10,
+                interval_ms: 1000,
+                delayed: true,
+            },
+        )
+        .unwrap();
+        let root = GameplayDecisionRoot::from_bytes([7; 32]);
+        after
+            .conditions
+            .apply(
+                &definition,
+                Some(source),
+                ConditionSourceKind::Field,
+                &[],
+                &ApplicationFacts {
+                    now: 0,
+                    base_speed: 220,
+                    mana_shield_capacity: 0,
+                    target_reentry_protected: false,
+                    source_reentry_protected: false,
+                    target_is_player: false,
+                    decision_root: &root,
+                    occurrence: DecisionOccurrenceId::from_bytes([5; 16]),
+                },
+            )
+            .unwrap();
+        runtime.compare_companion_state(&before, after).unwrap();
+        runtime.remove_test_actor(source).unwrap();
+        if reused {
+            let session = GameSessionId::decode(&id(10)).unwrap();
+            let reservation = runtime.reserve_fresh_session(session).unwrap();
+            let replacement = runtime.commit_fresh_session(reservation).unwrap();
+            runtime
+                .initialize_first_entry_position(replacement)
+                .unwrap();
+            runtime
+                .bind_attacker_lease(
+                    replacement,
+                    session,
+                    CharacterLease::new(CharacterId::decode(&id(11)).unwrap(), 1).unwrap(),
+                )
+                .unwrap();
+            assert_eq!(replacement.0.actor_local_id, source.0.actor_local_id);
+            assert_ne!(replacement, source);
+            let context = runtime
+                .carrier
+                .soul_war_health_context(
+                    &runtime.continuity,
+                    Some(source),
+                    None,
+                    Some(1_000),
+                    super::super::soul_war_player_source::SoulWarPlayerSourceOrigin::Condition,
+                    runtime.content_pin(),
+                )
+                .unwrap();
+            assert!(matches!(
+                context.kind,
+                super::super::soul_war_health::HealthSourceKind::Null
+            ));
+            assert!(context.actor.is_none());
+        }
+        let prepared = runtime
+            .stage_creature_periodic_turn(creature, 1_000_000, TickFacts::default())
+            .unwrap();
+        let receipt = runtime.commit_creature_periodic_turn(prepared).unwrap();
+        assert_eq!(receipt.health_before - receipt.health_after, 10);
+        assert_eq!(receipt.impacts.len(), 1);
+    }
+    #[test]
+    fn review9_dot_survives_reused_source_slot() {
+        retired_dot_source(true);
+    }
+
     #[test]
     fn periodic_damage_dispels_native_and_companion_invisibility_for_dot_and_agony() {
         use super::super::runtime_actor_conditions::{ActorConditionTransition, ConditionSource};

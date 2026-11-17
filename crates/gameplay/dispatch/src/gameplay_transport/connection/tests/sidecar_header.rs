@@ -60,6 +60,7 @@ impl FreshAdmissionAuthority for RelocatingAuthority {
             content_generation: own.content_generation,
             observer: identity,
             entities: vec![ChannelEntity {
+                source_icons: Default::default(),
                 motion: None,
                 display_name: None,
                 health_percent: 100,

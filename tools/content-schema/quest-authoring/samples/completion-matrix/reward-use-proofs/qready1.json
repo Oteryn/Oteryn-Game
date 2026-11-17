@@ -2,54 +2,54 @@
   "schema": "OTERYN_QUEST_REWARD_USE_PROOF/v1",
   "runtime_path": "bundle_chest::use_bundle_chest -> reward_claim_mint",
   "test_file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qready1_reward_claims.rs",
-  "test_sha256": "7108431e788fc972a7e6b854b52fe474a9a67f572ab5480d6957b6a75a44cd45",
+  "test_sha256": "bdace6be38771f43e9f4136f6bdb7d934dcfdebb784a93873e1b67738ae3859e",
   "cases": [
     {
       "wiki_title": "Adorned UH Rune Quest",
       "claim_key": "oteryn:reward-claim.kv.adoreduh",
       "test": "qready1_adorned_uh_rune_quest_exact_reward_once",
       "marker": "qready1_adorned_uh_rune_quest",
-      "duration_seconds": 33.437807171,
-      "claim_sha256": "d09a072629eb24739a5945a442dc08e10c4adf0f0a9c0a7ab10daab057312225"
+      "duration_seconds": 53.775189195,
+      "claim_sha256": "1cf44426831bb4d6fe5a66bd4cf3f83714ecb9c9517e76e2ba9ece689c055612"
     },
     {
       "wiki_title": "Barbarian Axe Quest",
       "claim_key": "oteryn:reward-claim.kv.barbarianaxe1",
       "test": "qready1_barbarian_axe_quest_exact_reward_once",
       "marker": "qready1_barbarian_axe_quest",
-      "duration_seconds": 79.165838976,
-      "claim_sha256": "af5a4ec158f04bbaedf5822f5d1ebacc4be2df6ba90be80704d78065094a0a9a"
+      "duration_seconds": 107.646100636,
+      "claim_sha256": "04c6692cc40324c3681bbb756b5a725f4a47e7345b2aeb93bb2b881e20fdb036"
     },
     {
       "wiki_title": "Battle Axe Quest",
       "claim_key": "oteryn:reward-claim.kv.battleaxe",
       "test": "qready1_battle_axe_quest_exact_reward_once",
       "marker": "qready1_battle_axe_quest",
-      "duration_seconds": 42.892749718,
-      "claim_sha256": "6d4fd69a57d26b2870de7546acc4de6b3314969ceb8802983d731f7a52d45299"
+      "duration_seconds": 53.825489353,
+      "claim_sha256": "acf101e7a5b4af6cf302199c18e009d3d4f29946874ab83ef7bfb10dcb850211"
     },
     {
       "wiki_title": "Blood Herb Quest",
       "claim_key": "oteryn:reward-claim.kv.bloodherb",
       "test": "qready1_blood_herb_quest_exact_reward_once",
       "marker": "qready1_blood_herb_quest",
-      "duration_seconds": 53.065261418,
-      "claim_sha256": "b85bd2e0452c5ab13fc14aa958d60d4ba41e12cb1dcfa98ced6da2ea26c1aa13"
+      "duration_seconds": 53.587419874,
+      "claim_sha256": "a49771c67335a953726480d67064a7d3b6433179fcd3ca74f300300192d023ea"
     },
     {
       "wiki_title": "Captain Iglues Treasure Quest",
       "claim_key": "oteryn:reward-claim.kv.captain_iglues",
       "test": "qready1_captain_iglues_treasure_quest_exact_reward_once",
       "marker": "qready1_captain_iglues_treasure_quest",
-      "duration_seconds": 51.376134649,
-      "claim_sha256": "1064567bfd5739e0ad2a90a52a997cadff6e62dcf1c05004a2b81fcee17c8ea1"
+      "duration_seconds": 53.49399973,
+      "claim_sha256": "6e1734553823a69c63ba4ce7d23f4620201d8b417c38962dbfbd12554b66c1eb"
     },
     {
       "wiki_title": "Circle Room Quest",
       "claim_key": "oteryn:reward-claim.kv.circleroom1",
       "test": "qready1_circle_room_quest_exact_reward_once",
       "marker": "qready1_circle_room_quest",
-      "duration_seconds": 103.013167145,
+      "duration_seconds": 108.752516591,
       "claim_sha256": "d2b9b8527ef00f7bd58055223118fb387195929239aba1c1559f5f40a25b2205"
     },
     {
@@ -57,7 +57,7 @@
       "claim_key": "oteryn:reward-claim.kv.circleroom2",
       "test": "qready1_circle_room_quest_exact_reward_once",
       "marker": "qready1_circle_room_quest",
-      "duration_seconds": 103.013167145,
+      "duration_seconds": 108.752516591,
       "claim_sha256": "42bf3cd7596a0e66a131c020681ea34e732d9a576ebb3d3d6eed5c4d8f8547d1"
     },
     {
@@ -65,7 +65,7 @@
       "claim_key": "oteryn:reward-claim.kv.combatknife",
       "test": "qready1_combat_knife_quest_exact_reward_once",
       "marker": "qready1_combat_knife_quest",
-      "duration_seconds": 48.90991857,
+      "duration_seconds": 54.553891258,
       "claim_sha256": "c805575eef34676f7bee22c4e62768e9ccd7b0c8e40d4ae7064fcf59ad7c5cd4"
     },
     {
@@ -73,7 +73,7 @@
       "claim_key": "oteryn:reward-claim.kv.crusaderhelmet",
       "test": "qready1_crusader_helmet_quest_exact_reward_once",
       "marker": "qready1_crusader_helmet_quest",
-      "duration_seconds": 53.090985961,
+      "duration_seconds": 53.670214041,
       "claim_sha256": "44d19edd1b19e9d757ba8c4dd7b841abd528c08be79ed644b320bb6ae24a83d5"
     },
     {
@@ -81,7 +81,7 @@
       "claim_key": "oteryn:reward-claim.kv.crystalwand1",
       "test": "qready1_crystal_wand_quest_exact_reward_once",
       "marker": "qready1_crystal_wand_quest",
-      "duration_seconds": 93.697069932,
+      "duration_seconds": 106.82372705,
       "claim_sha256": "8bca4877a44231d01b7f65bcdc668f945a19764c014c42749d13edf8d3eb905d"
     },
     {
@@ -89,7 +89,7 @@
       "claim_key": "oteryn:reward-claim.kv.crystalwand2",
       "test": "qready1_crystal_wand_quest_exact_reward_once",
       "marker": "qready1_crystal_wand_quest",
-      "duration_seconds": 93.697069932,
+      "duration_seconds": 106.82372705,
       "claim_sha256": "7d289db34c2b33e46ca270148ecab74902c9e922008695bff8ae1fc8fd1f7ac7"
     },
     {
@@ -97,7 +97,7 @@
       "claim_key": "oteryn:reward-claim.quest.u8_5.darashia_dragon",
       "test": "qready1_darashia_dragon_quest_exact_reward_once",
       "marker": "qready1_darashia_dragon_quest",
-      "duration_seconds": 48.912486771,
+      "duration_seconds": 53.31969513,
       "claim_sha256": "13cf6528c57937f8a2c1f1c8f7bc8301e4e09e4a9d091c47a359924d977795c2"
     },
     {
@@ -105,7 +105,7 @@
       "claim_key": "oteryn:reward-claim.kv.darkarmor",
       "test": "qready1_dark_armor_quest_exact_reward_once",
       "marker": "qready1_dark_armor_quest",
-      "duration_seconds": 44.77581783,
+      "duration_seconds": 53.419555834,
       "claim_sha256": "44838b1f980244027b458915e8341254903bb61efe9e8e9e672384b79d945bdb"
     },
     {
@@ -113,7 +113,7 @@
       "claim_key": "oteryn:reward-claim.kv.demonaring1",
       "test": "qready1_demona_ring_quest_exact_reward_once",
       "marker": "qready1_demona_ring_quest",
-      "duration_seconds": 87.258606229,
+      "duration_seconds": 106.525138519,
       "claim_sha256": "09c108357bf1687d8ed18dff122618223682e7a3ebc51fb45246d4b1ebf9c211"
     },
     {
@@ -121,7 +121,7 @@
       "claim_key": "oteryn:reward-claim.kv.demonaring2",
       "test": "qready1_demona_ring_quest_exact_reward_once",
       "marker": "qready1_demona_ring_quest",
-      "duration_seconds": 87.258606229,
+      "duration_seconds": 106.525138519,
       "claim_sha256": "f39ee4d9247c76cb12ab6b3a1fc461847a9e9eb167dee92c414ee55ebc35ba35"
     },
     {
@@ -129,7 +129,7 @@
       "claim_key": "oteryn:reward-claim.kv.doublehero1",
       "test": "qready1_double_hero_quest_exact_reward_once",
       "marker": "qready1_double_hero_quest",
-      "duration_seconds": 87.138667859,
+      "duration_seconds": 106.443570874,
       "claim_sha256": "ce52e01cb2b70edc666c6da22654fdd9978351804fd0c7afe103534988679e2a"
     },
     {
@@ -137,7 +137,7 @@
       "claim_key": "oteryn:reward-claim.kv.doublehero2",
       "test": "qready1_double_hero_quest_exact_reward_once",
       "marker": "qready1_double_hero_quest",
-      "duration_seconds": 87.138667859,
+      "duration_seconds": 106.443570874,
       "claim_sha256": "805b95ce8413519f90c0c2a881641891cc06689a47ed32b8a817c6c9f050c055"
     },
     {
@@ -145,7 +145,7 @@
       "claim_key": "oteryn:reward-claim.kv.doublet",
       "test": "qready1_doublet_quest_exact_reward_once",
       "marker": "qready1_doublet_quest",
-      "duration_seconds": 42.303808946,
+      "duration_seconds": 90.070205723,
       "claim_sha256": "9097d873d75ffa0217b1f22e4df4e228b2706d1d3b4e4c57c334247a528c4c61"
     },
     {
@@ -153,7 +153,7 @@
       "claim_key": "oteryn:reward-claim.quest.u7_5.elephant_tusk",
       "test": "qready1_elephant_tusk_quest_exact_reward_once",
       "marker": "qready1_elephant_tusk_quest",
-      "duration_seconds": 34.673748276,
+      "duration_seconds": 54.433860773,
       "claim_sha256": "ab02a81ddac65ccf7a909aa794d37ef9886aaad0b29415f071fc6d871b275a4a"
     },
     {
@@ -161,7 +161,7 @@
       "claim_key": "oteryn:reward-claim.kv.explorerbrooch",
       "test": "qready1_explorer_brooch_quest_exact_reward_once",
       "marker": "qready1_explorer_brooch_quest",
-      "duration_seconds": 31.885356519,
+      "duration_seconds": 54.489932347,
       "claim_sha256": "aebe6403c2fbc5c0493b67333f992a10bc9076790188ad053845f4256f6fdaf3"
     },
     {
@@ -169,7 +169,7 @@
       "claim_key": "oteryn:reward-claim.kv.griffinshield1",
       "test": "qready1_griffin_shield_quest_exact_reward_once",
       "marker": "qready1_griffin_shield_quest",
-      "duration_seconds": 96.513529954,
+      "duration_seconds": 157.673938771,
       "claim_sha256": "4dcd8ab99e00bcc4fdc21a6366ee16460377602b7448ce3d92cc78a1589dd793"
     },
     {
@@ -177,7 +177,7 @@
       "claim_key": "oteryn:reward-claim.kv.griffinshield2",
       "test": "qready1_griffin_shield_quest_exact_reward_once",
       "marker": "qready1_griffin_shield_quest",
-      "duration_seconds": 96.513529954,
+      "duration_seconds": 157.673938771,
       "claim_sha256": "66b86ce1d1eb9545a035dfbd69a962ca5271c25af5a219e0bc78d66d8ef3573a"
     },
     {
@@ -185,8 +185,24 @@
       "claim_key": "oteryn:reward-claim.kv.griffinshield3",
       "test": "qready1_griffin_shield_quest_exact_reward_once",
       "marker": "qready1_griffin_shield_quest",
-      "duration_seconds": 96.513529954,
+      "duration_seconds": 157.673938771,
       "claim_sha256": "f2b7df056fb401c72af94dca4923a722301c0c6cc95ed1f84ebaa3c539a12240"
     }
-  ]
+  ],
+  "completion_owner_rebind": {
+    "scope": "Retained reward USE evidence only; no fresh PG run or completion qualification",
+    "owner": "M35 mint-only claim sets",
+    "claims": [
+      {
+        "claim_key": "oteryn:reward-claim.kv.circleroom1",
+        "previous_claim_sha256": "65f817878649cde60e668a5a44f46a7682dedb5e7df997454dd19d2575da5090",
+        "removed_legacy_transition": "oteryn:quest-transition/kv/circleroom1/chest"
+      },
+      {
+        "claim_key": "oteryn:reward-claim.kv.circleroom2",
+        "previous_claim_sha256": "8c2b5716a5d4370664be4963f4ea3a9482d42eef7f62499dbd4bc249a969746c",
+        "removed_legacy_transition": "oteryn:quest-transition/kv/circleroom2/chest"
+      }
+    ]
+  }
 }

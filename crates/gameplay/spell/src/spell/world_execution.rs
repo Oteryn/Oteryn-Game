@@ -126,7 +126,8 @@ fn qualified_static_owner<'owner>(
 fn tile(
     room: &crate::content::QualifiedNativeEntryRoom,
     position: MovementLocalPosition,
-) -> Result<Option<&crate::content::QualifiedSpellTile>, WorldRelocationError> {
+) -> Result<Option<std::borrow::Cow<'_, crate::content::QualifiedSpellTile>>, WorldRelocationError>
+{
     crate::native_world_read::tile::<crate::world_runtime::WorldRuntimeError>(room, position)
         .map_err(WorldRelocationError::from)
 }
@@ -137,7 +138,10 @@ async fn tile_in_transaction<'owner>(
     room: &'owner crate::content::QualifiedNativeEntryRoom,
     runtime: &ChannelRuntimeV1,
     position: MovementLocalPosition,
-) -> Result<Option<&'owner crate::content::QualifiedSpellTile>, WorldRelocationError> {
+) -> Result<
+    Option<std::borrow::Cow<'owner, crate::content::QualifiedSpellTile>>,
+    WorldRelocationError,
+> {
     crate::native_world_read::tile_in_transaction::<crate::world_runtime::WorldRuntimeError>(
         tx, authority, room, runtime, position,
     )
@@ -553,7 +557,7 @@ pub async fn prepare_relocation<'owner, 'database>(
         rope,
         collision,
         static_owner.blocks_movement(destination),
-        target,
+        &target,
         &items.items,
         rope && runtime
             .position_occupied_by_other(actor, destination)
@@ -959,6 +963,8 @@ mod tests {
         };
         let target = QualifiedSpellTile::from_bundle(Some((103, 100)), vec![2454], flags, None);
         let mut items = vec![DurableTileItem {
+            native_map_origin: false,
+            environment_field_origin: false,
             item_instance_id: [1; 16],
             definition: crate::durability::item_mint::TypedDefinitionRef {
                 family: "Item".into(),

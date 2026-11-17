@@ -109,6 +109,10 @@ fn scenario(canonical: bool) -> TestResult {
             tx.commit().await?;
         }
 
+        let combat_room = activation_pin.qualified_room().bundle_view(
+            cells.clone(), activation_pin.frame_binding().digest(), world.map_revision_digest(),
+            crate::content::NativeEntryStart { x: 1, y: 0, floor: 7 },
+        ).ok_or("Cyclopedia combat room")?;
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -166,6 +170,7 @@ fn scenario(canonical: bool) -> TestResult {
             );
         let mut owner = deps.owner(&h, &authority);
         owner.movement_cells = (&cells).into();
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&combat_room));
         owner.active_generation = Some(generation);
         owner.premium_coordinator = Some(&premium);
         deps.initialize(&owner).await;
@@ -430,6 +435,7 @@ fn scenario(canonical: bool) -> TestResult {
             drop(owner);
             drop(authority);
             drop(seal);
+            verify_receipt_chain_recovery(&h).await?;
             h.cleanup().await?;
             eprintln!("POSTGRES_CASE_COMPLETED WORLD_SRC W12 canonical_conversion");
             return Ok(());
@@ -491,6 +497,7 @@ fn scenario(canonical: bool) -> TestResult {
             .expect("W02: isolated fixture state")
             .command_ingress = commands;
         owner.movement_cells = (&cells).into();
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&combat_room));
         owner.active_generation = Some(generation);
         owner.premium_coordinator = Some(&premium);
         let (status, replay) =
@@ -649,6 +656,7 @@ fn scenario(canonical: bool) -> TestResult {
             .expect("W02: isolated fixture state")
             .command_ingress = commands;
         owner.movement_cells = (&cells).into();
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&combat_room));
         owner.active_generation = Some(generation);
         owner.premium_coordinator = Some(&premium);
         assert_eq!(
@@ -964,8 +972,167 @@ fn scenario(canonical: bool) -> TestResult {
         drop(owner);
         drop(authority);
         drop(seal);
+        verify_receipt_chain_recovery(&h).await?;
         h.cleanup().await?;
         eprintln!("POSTGRES_CASE_COMPLETED WORLD_SRC W12 donations_and_dispatch");
         Ok(())
     })
+}
+
+/// Reopen from the real dispatch history, then change one retained-history invariant at a time.
+async fn verify_receipt_chain_recovery(h: &Harness) -> TestResult {
+    use crate::durability::DurabilityError;
+    use crate::durability::character_authority::CharacterAuthorityError;
+
+    let character = id(41);
+    let (occurrence, receipt): (String, serde_json::Value) = sqlx::query_as(
+        "SELECT r.occurrence::text,to_jsonb(r) FROM game_character_cyclopedia_receipts r \
+         WHERE r.character_id=encode($1,'hex')::uuid AND r.committed_character_revision IS NOT NULL \
+         ORDER BY r.committed_character_revision LIMIT 1",
+    )
+    .bind(character.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    let before: serde_json::Value = sqlx::query_scalar(
+        "SELECT jsonb_build_object('root',to_jsonb(r),'progression',to_jsonb(s)) \
+         FROM game_character_roots r JOIN game_character_progression_state s USING(character_id) \
+         WHERE r.character_id=encode($1,'hex')::uuid",
+    )
+    .bind(character.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    super::maintain_ready(&h.root).await?;
+    drop(
+        h.root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?,
+    );
+
+    // Model one lost immutable receipt in a restored store. Root and current state stay intact.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    assert_eq!(
+        sqlx::query("DELETE FROM game_character_cyclopedia_receipts WHERE occurrence=$1::uuid")
+            .bind(&occurrence)
+            .execute(&mut *tx)
+            .await?
+            .rows_affected(),
+        1
+    );
+    tx.commit().await?;
+    super::maintain_ready(&h.root).await?;
+    assert!(
+        matches!(
+            h.root.open_character_authority(&seal).await,
+            Err(CharacterAuthorityError::Unavailable(
+                DurabilityError::Unavailable
+            ))
+        ),
+        "recovery must refuse a missing committed Cyclopedia receipt"
+    );
+
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    assert_eq!(
+        sqlx::query(
+            "INSERT INTO game_character_cyclopedia_receipts \
+             SELECT * FROM jsonb_populate_record(NULL::game_character_cyclopedia_receipts,$1)",
+        )
+        .bind(&receipt)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected(),
+        1
+    );
+    tx.commit().await?;
+    super::maintain_ready(&h.root).await?;
+    drop(
+        h.root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?,
+    );
+
+    // A second receipt family cannot explain the same global revision. The copied common
+    // fields remain exact; only cardinality changes, without changing the root or progression.
+    let duplicate = id(251);
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    assert_eq!(
+        sqlx::query(
+            "INSERT INTO game_character_prey_receipts( \
+             character_id,occurrence,request_sha256,result,wildcards_spent,fee_gold_units, \
+             original_character_revision,committed_character_revision,level_before,level_after, \
+             experience_before,experience_after,profile_revision,ruleset_revision,content_revision, \
+             simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision) \
+             SELECT character_id,encode($2,'hex')::uuid,binding,result,0,0, \
+             original_character_revision,committed_character_revision,level_before,level_after, \
+             experience_before,experience_after,profile_revision,ruleset_revision,content_revision, \
+             simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision \
+             FROM game_character_cyclopedia_receipts WHERE occurrence=$1::uuid",
+        )
+        .bind(&occurrence)
+        .bind(duplicate.as_slice())
+        .execute(&mut *tx)
+        .await?
+        .rows_affected(),
+        1
+    );
+    tx.commit().await?;
+    super::maintain_ready(&h.root).await?;
+    assert!(
+        matches!(
+            h.root.open_character_authority(&seal).await,
+            Err(CharacterAuthorityError::Unavailable(
+                DurabilityError::Unavailable
+            ))
+        ),
+        "recovery must refuse two receipt families at the same Character revision"
+    );
+
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    assert_eq!(
+        sqlx::query(
+            "DELETE FROM game_character_prey_receipts \
+             WHERE character_id=encode($1,'hex')::uuid AND occurrence=encode($2,'hex')::uuid",
+        )
+        .bind(character.as_slice())
+        .bind(duplicate.as_slice())
+        .execute(&mut *tx)
+        .await?
+        .rows_affected(),
+        1
+    );
+    tx.commit().await?;
+    super::maintain_ready(&h.root).await?;
+    drop(
+        h.root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?,
+    );
+    let after: serde_json::Value = sqlx::query_scalar(
+        "SELECT jsonb_build_object('root',to_jsonb(r),'progression',to_jsonb(s)) \
+         FROM game_character_roots r JOIN game_character_progression_state s USING(character_id) \
+         WHERE r.character_id=encode($1,'hex')::uuid",
+    )
+    .bind(character.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(
+        before, after,
+        "recovery checks cannot rewrite Character state"
+    );
+    Ok(())
 }

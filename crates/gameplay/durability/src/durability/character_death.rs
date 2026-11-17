@@ -2800,4 +2800,6 @@ mod death_build_postgres {
             Ok(())
         })
     }
+    include!("character_death/m51_pit_death_tests.rs");
+
 }

@@ -346,19 +346,19 @@ mod tests {
             repeat: false,
         };
         assert_eq!(
-            arrow_step(&[key(KeyCode::ARROW_LEFT, ButtonState::Pressed)]),
+            arrow_step(&[key(KeyCode::ARROW_LEFT, ButtonState::Pressed)], false),
             Some(StepDir::West)
         );
         assert_eq!(
-            arrow_step(&[key(KeyCode::ARROW_UP, ButtonState::Pressed)]),
+            arrow_step(&[key(KeyCode::ARROW_UP, ButtonState::Pressed)], false),
             Some(StepDir::North)
         );
         assert_eq!(
-            arrow_step(&[key(KeyCode::ARROW_UP, ButtonState::Released)]),
+            arrow_step(&[key(KeyCode::ARROW_UP, ButtonState::Released)], false),
             None
         );
         assert_eq!(
-            arrow_step(&[key(KeyCode::KEY_W, ButtonState::Pressed)]),
+            arrow_step(&[key(KeyCode::KEY_W, ButtonState::Pressed)], false),
             None
         );
     }

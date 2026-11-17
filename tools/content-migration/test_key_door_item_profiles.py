@@ -17,7 +17,8 @@ class KeyDoorProfileTests(unittest.TestCase):
                                   (1632, 'DOOR', True), (1633, 'DOOR', False), (1646, 'DOOR', True),
                                   (1647, 'DOOR', False), (1648, 'DOOR', True),
                                   (1649, 'DOOR', False), (2967, 'KEY', False),
-                                  (2968, 'KEY', False), (5102, 'DOOR', True),
+                                  (2968, 'KEY', False), (5097, 'DOOR', True),
+                                  (6248, 'DOOR', True), (5102, 'DOOR', True),
                                   (5103, 'DOOR', False), (6264, 'DOOR', True),
                                   (6265, 'DOOR', False)]:
             with self.subTest(item=item):

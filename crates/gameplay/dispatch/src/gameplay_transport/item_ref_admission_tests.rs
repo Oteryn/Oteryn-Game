@@ -223,6 +223,7 @@ fn a_bound_corpse_is_a_domain_1_object_named_by_the_pinned_index() {
     assert_eq!(
         corpse.kind,
         VisibleKind::Corpse {
+            native_appearance_id: None,
             item_definition_ref: index
                 .definition_ref("Item", CORPSE_KEY, "definition-r1")
                 .unwrap()

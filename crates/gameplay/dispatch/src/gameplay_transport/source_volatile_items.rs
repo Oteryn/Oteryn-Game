@@ -156,6 +156,7 @@ impl SourceVolatileProjection {
                 Some(ChannelEntity {
                     motion: None,
                     display_name: None,
+                    source_icons: oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
                     health_percent: 100,
                     direction: StepDirection::South,
                     kind: VisibleKind::GroundItem {
@@ -314,6 +315,8 @@ mod tests {
         let mut entities = vec![ChannelEntity {
             motion: None,
             display_name: None,
+            source_icons:
+                oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
             health_percent: 100,
             direction: StepDirection::South,
             kind: VisibleKind::Player,

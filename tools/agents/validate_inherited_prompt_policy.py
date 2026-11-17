@@ -154,6 +154,98 @@ def _same_repository_ref(value: object) -> bool:
     )
 
 
+PULL_FILES_API_LIMIT = 3000
+ACTIVE_TASK_PREFIX = "docs/agents/tasks/active/"
+
+
+def _git_tree_entries(tree_sha: str) -> dict[str, tuple[str, str, str]]:
+    """Read one complete, nonrecursive Git tree with its exact entry modes."""
+    payload = _request(f"https://api.github.com/repos/{PROVIDER}/git/trees/{tree_sha}")
+    if (
+        not isinstance(payload, dict)
+        or payload.get("sha") != tree_sha
+        or payload.get("truncated") is not False
+        or not isinstance(payload.get("tree"), list)
+    ):
+        raise ValueError("invalid or truncated GitHub active-task tree response")
+    modes = {
+        "040000": "tree",
+        "100644": "blob",
+        "100755": "blob",
+        "120000": "blob",
+        "160000": "commit",
+    }
+    entries: dict[str, tuple[str, str, str]] = {}
+    for item in payload["tree"]:
+        if not isinstance(item, dict):
+            raise ValueError("invalid GitHub active-task tree entry")
+        path, mode, kind, oid = (
+            item.get("path"), item.get("mode"), item.get("type"), item.get("sha")
+        )
+        if (
+            not _valid_repository_path(path)
+            or len(PurePosixPath(path).parts) != 1
+            or not isinstance(mode, str)
+            or mode not in modes
+            or modes[mode] != kind
+            or not isinstance(oid, str)
+            or SHA_RE.fullmatch(oid) is None
+            or path in entries
+        ):
+            raise ValueError("invalid or duplicate GitHub active-task tree entry")
+        entries[path] = (mode, kind, oid)
+    return entries
+
+
+def _active_task_directory(ref: str) -> dict[str, tuple[str, str, str]]:
+    """Map immediate regular task packets to their mode, type and blob SHA."""
+    commit = _request(f"https://api.github.com/repos/{PROVIDER}/git/commits/{ref}")
+    root = commit.get("tree") if isinstance(commit, dict) else None
+    tree_sha = root.get("sha") if isinstance(root, dict) else None
+    if (
+        not isinstance(commit, dict)
+        or commit.get("sha") != ref
+        or not isinstance(tree_sha, str)
+        or SHA_RE.fullmatch(tree_sha) is None
+    ):
+        raise ValueError("invalid GitHub active-task commit response")
+    for component in ACTIVE_TASK_PREFIX.rstrip("/").split("/"):
+        entry = _git_tree_entries(tree_sha).get(component)
+        if entry is None or entry[:2] != ("040000", "tree"):
+            raise ValueError("active-task directory ancestor is absent or nonregular")
+        tree_sha = entry[2]
+    listing = _git_tree_entries(tree_sha)
+    if len(listing) >= 1000:
+        raise ValueError("active-task directory listing exceeded the bounded size")
+    packets: dict[str, tuple[str, str, str]] = {}
+    for name, entry in listing.items():
+        if entry[:2] == ("040000", "tree") and not name.endswith(".md"):
+            # The consumer uses glob("*.md"), never a recursive task walk.
+            continue
+        if entry[0] not in {"100644", "100755"} or entry[1] != "blob":
+            raise ValueError("active-task directory contains a nonregular entry")
+        if name.endswith(".md") and name != "README.md":
+            packets[ACTIVE_TASK_PREFIX + name] = entry
+    return packets
+
+
+def _active_task_paths_by_tree(base: str, head: str) -> set[str]:
+    """Active task packets a PR adds, removes or changes, from merge base to head."""
+    compare = _request(f"https://api.github.com/repos/{PROVIDER}/compare/{base}...{head}")
+    if not isinstance(compare, dict) or not isinstance(compare.get("merge_base_commit"), dict):
+        raise ValueError("invalid GitHub compare response")
+    merge_base = compare["merge_base_commit"].get("sha")
+    if not isinstance(merge_base, str) or SHA_RE.fullmatch(merge_base) is None:
+        raise ValueError("invalid GitHub merge-base SHA")
+    before = _active_task_directory(merge_base)
+    after = _active_task_directory(head)
+    return {
+        path
+        for path in before.keys() | after.keys()
+        if before.get(path) != after.get(path)
+    }
+
+
 def _pull_request_active_task_paths(
     number: int,
     expected_head: str,
@@ -191,12 +283,18 @@ def _pull_request_active_task_paths(
         raise ValueError("pull request head moved during live-state candidate validation")
     if not isinstance(base, str) or SHA_RE.fullmatch(base) is None:
         raise ValueError("live pull request base SHA is invalid")
-    if type(changed_files) is not int or changed_files < 0 or changed_files > 3000:
+    if type(changed_files) is not int or changed_files < 0:
         raise ValueError("invalid pull request changed-files count")
 
     items: list[dict] = []
+    tree_selected: set[str] | None = None
+    if changed_files > PULL_FILES_API_LIMIT:
+        # The pull-files listing stops at 3000 entries, so a larger PR is
+        # scoped by comparing the active task directory at the merge base and
+        # at the head instead. Same selection: added, removed or changed packets.
+        tree_selected = _active_task_paths_by_tree(base, head)
     page = 1
-    while len(items) < changed_files:
+    while tree_selected is None and len(items) < changed_files:
         batch = _request(
             f"https://api.github.com/repos/{PROVIDER}/pulls/{number}/files"
             f"?per_page=100&page={page}"
@@ -204,13 +302,13 @@ def _pull_request_active_task_paths(
         if not isinstance(batch, list) or not all(isinstance(item, dict) for item in batch):
             raise ValueError("invalid GitHub pull-files response")
         items.extend(batch)
-        if len(batch) < 100:
+        if len(batch) < 100 or len(items) >= changed_files:
             break
         page += 1
         if page > 30:
             raise ValueError("pull request file enumeration exceeded bounded pagination")
 
-    if len(items) != changed_files:
+    if tree_selected is None and len(items) != changed_files:
         raise ValueError("pull request file enumeration is incomplete")
 
     pull_after = _request(pr_url)
@@ -228,7 +326,10 @@ def _pull_request_active_task_paths(
     ):
         raise ValueError("pull request moved during live-state candidate validation")
 
-    prefix = "docs/agents/tasks/active/"
+    if tree_selected is not None:
+        return tree_selected
+
+    prefix = ACTIVE_TASK_PREFIX
     selected: set[str] = set()
     seen_filenames: set[str] = set()
     for item in items:

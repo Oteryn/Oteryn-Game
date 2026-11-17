@@ -53,7 +53,10 @@ impl Mailbox {
         }
     }
     pub(in crate::play) fn world_input_blocked(&self) -> bool {
-        self.death.dead || self.death.awaiting_acknowledgement() || self.death_reset_commands
+        self.death.dead
+            || self.death.awaiting_acknowledgement()
+            || self.death_reset_commands
+            || self.scope_pending
     }
 
     fn cancel_death_gameplay_requests(&mut self) {
@@ -159,66 +162,74 @@ impl Outbox {
         }
     }
     /// Discard pending world actions on death, even if respawn arrived before the next poll.
+    #[cfg(test)]
     pub(in crate::play) fn death_command(
         &self,
         commands: &mut UnboundedReceiver<PlayCommand>,
     ) -> Result<PlayCommand, TryRecvError> {
         let mut mailbox = lock(&self.0);
-        if mailbox.activity_reset_commands {
-            while commands.try_recv().is_ok() {}
-            mailbox.cancel_activity_requests();
-            mailbox.death.pending = false;
-            mailbox.death.refresh = mailbox.death.selected;
-            mailbox.activity_reset_commands = false;
-        }
-        let blocked = mailbox.world_input_blocked();
-        if mailbox.death.selected
-            && mailbox.death.refresh
-            && !mailbox.death.dead
-            && !mailbox.death.pending
-        {
-            mailbox.death.refresh = false;
-            mailbox.death.pending = true;
-            mailbox.death.query_death = mailbox.death.deaths;
-            return Ok(PlayCommand::Feature(
-                oteryn_client_runtime::raw_feature::FeatureCommand {
-                    capability: 382,
-                    kind: 664,
-                    payload: Vec::new(),
-                },
-            ));
-        }
-        loop {
-            let command = match commands.try_recv() {
-                Ok(command) => command,
-                Err(error) => {
-                    mailbox.death_reset_commands = false;
-                    return Err(error);
-                }
-            };
-            let world_input = matches!(
-                command,
-                PlayCommand::Step(_)
-                    | PlayCommand::TargetWalk(_)
-                    | PlayCommand::Combat(_)
-                    | PlayCommand::DailyReward(_)
-                    | PlayCommand::Battle(_)
-                    | PlayCommand::MoveItem(_)
-                    | PlayCommand::MoveContents(_)
-                    | PlayCommand::MoveContainerContents(_)
-                    | PlayCommand::BrowseFieldMove(_)
-                    | PlayCommand::WorldContext(_)
-                    | PlayCommand::MovementSpeech(_)
-            );
-            let movement_control = matches!(&command, PlayCommand::ServerMechanic(request) if matches!(request.capability, 64 | 82));
-            if !blocked || !(world_input || movement_control) {
-                return Ok(command);
+        receive_command(&mut mailbox, commands)
+    }
+}
+
+pub(in crate::play) fn receive_command(
+    mailbox: &mut Mailbox,
+    commands: &mut UnboundedReceiver<PlayCommand>,
+) -> Result<PlayCommand, TryRecvError> {
+    if mailbox.activity_reset_commands {
+        while commands.try_recv().is_ok() {}
+        mailbox.cancel_activity_requests();
+        mailbox.death.pending = false;
+        mailbox.death.refresh = mailbox.death.selected;
+        mailbox.activity_reset_commands = false;
+    }
+    let blocked = mailbox.world_input_blocked();
+    if mailbox.death.selected
+        && mailbox.death.refresh
+        && !mailbox.death.dead
+        && !mailbox.death.pending
+    {
+        mailbox.death.refresh = false;
+        mailbox.death.pending = true;
+        mailbox.death.query_death = mailbox.death.deaths;
+        return Ok(PlayCommand::Feature(
+            oteryn_client_runtime::raw_feature::FeatureCommand {
+                capability: 382,
+                kind: 664,
+                payload: Vec::new(),
+            },
+        ));
+    }
+    loop {
+        let command = match commands.try_recv() {
+            Ok(command) => command,
+            Err(error) => {
+                mailbox.death_reset_commands = false;
+                return Err(error);
             }
-            if matches!(command, PlayCommand::MovementSpeech(_)) {
-                mailbox.chat_public.pending = false;
-            }
-            mailbox.cancel_death_gameplay_requests();
+        };
+        let world_input = matches!(
+            command,
+            PlayCommand::Step(_)
+                | PlayCommand::TargetWalk(_)
+                | PlayCommand::Combat(_)
+                | PlayCommand::DailyReward(_)
+                | PlayCommand::Battle(_)
+                | PlayCommand::MoveItem(_)
+                | PlayCommand::MoveContents(_)
+                | PlayCommand::MoveContainerContents(_)
+                | PlayCommand::BrowseFieldMove(_)
+                | PlayCommand::WorldContext(_)
+                | PlayCommand::MovementSpeech(_)
+        );
+        let movement_control = matches!(&command, PlayCommand::ServerMechanic(request) if matches!(request.capability, 64 | 82));
+        if !blocked || !(world_input || movement_control) {
+            return Ok(command);
         }
+        if matches!(command, PlayCommand::MovementSpeech(_)) {
+            mailbox.chat_public.pending = false;
+        }
+        mailbox.cancel_death_gameplay_requests();
     }
 }
 

@@ -289,7 +289,10 @@ impl HostOwner {
         }
         play.view.cursor_spell_input(&routed);
         if !play.view.diagonal_movement_input(&play.link, &routed)
-            && let Some(direction) = crate::input::arrow_step(&routed)
+            && let Some(direction) = play
+                .link
+                .diagonal_input(&routed)
+                .or_else(|| crate::input::arrow_step(&routed, false))
         {
             play.view.arrow(direction);
         }

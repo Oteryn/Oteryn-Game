@@ -24,7 +24,8 @@ use oteryn_protocol_oteryn::boss_encounter::{
     self as wire, BossActivityRefusal, BossActivityReply,
 };
 use oteryn_protocol_oteryn::{
-    ClientCommandValue, decode_command_result, decode_snapshot_chunk, encode_client_command,
+    ClientCommandValue, decode_command_result, decode_snapshot_chunk,
+    encode_client_command_for_session,
 };
 use tokio::io::AsyncWriteExt;
 
@@ -46,6 +47,8 @@ mod instance_corpse;
 mod nonreward;
 #[path = "boss_activity/offline_death.rs"]
 mod offline_death;
+#[path = "boss_activity/primal.rs"]
+mod primal;
 #[path = "boss_activity/recovery.rs"]
 mod recovery;
 #[path = "boss_activity/rewards.rs"]
@@ -62,6 +65,7 @@ enum Case {
     SecurityLost,
     Entry,
     Difficulty,
+    EssenceUse,
     AwardContinuity,
     EndgameReceipts,
     Rewards,
@@ -100,6 +104,11 @@ fn revocation_activity_lost_forced_termination_postgres() -> TestResult {
 #[test]
 fn boss_activity_postgres_tagged_instance_primal_receipt_replay_and_scope_fences() -> TestResult {
     run_scenario(Case::EndgameReceipts)
+}
+
+#[test]
+fn srx3_rotten_essence_activity_scope_real_handoff_postgres() -> TestResult {
+    run_scenario(Case::EssenceUse)
 }
 
 #[test]
@@ -237,6 +246,12 @@ fn boss_difficulty_postgres_unlock_start_native_victory_and_phosphorus_record() 
     run_scenario(Case::Difficulty)
 }
 
+const ENDGAME_PROGRESSION_WITHOUT_PERSONAL_LOOT: &[&str] = &[
+    "oteryn:creature.goshnar_s_spite",
+    "oteryn:creature.goshnar_s_megalomania_green",
+    "oteryn:creature.bakragore",
+];
+
 #[test]
 fn endgame_progression_fixture_keeps_corpse_without_personal_loot() -> TestResult {
     // Pure content activation: this regression test never opens PostgreSQL.
@@ -247,12 +262,13 @@ fn endgame_progression_fixture_keeps_corpse_without_personal_loot() -> TestResul
             .active()
             .and_then(|active| active.native_gameplay())
             .ok_or("native fixture")?;
-        let creature = "oteryn:creature.goshnar_s_spite";
-        assert!(matches!(
-            native.reward_table().row(creature),
-            Err(crate::content::creature_reward::NoSettlementReason::LootTableMissing)
-        ));
-        assert!(native.reward_table().reward_boss_corpse(creature).is_some());
+        for creature in ENDGAME_PROGRESSION_WITHOUT_PERSONAL_LOOT {
+            assert!(matches!(
+                native.reward_table().row(creature),
+                Err(crate::content::creature_reward::NoSettlementReason::LootTableMissing)
+            ));
+            assert!(native.reward_table().reward_boss_corpse(creature).is_some());
+        }
         assert!(
             native
                 .reward_table()
@@ -264,8 +280,10 @@ fn endgame_progression_fixture_keeps_corpse_without_personal_loot() -> TestResul
 }
 
 // Keep this negative progression fixture without personal-loot admission even
-// after the production source independently admits Goshnar's Spite. Retain the
-// exact native policy, XP and corpse; only its private-loot table is absent.
+// after production independently admits these reward bosses. Crystal 201189f8
+// goshnar's_megalomania_green.lua:51,75 and bakragore.lua:51,82 declare rewardBoss
+// and loot, so their admitted personal rewards are independent of quest XP.
+// Retain every native policy, XP and corpse; omit only these private-loot tables.
 fn endgame_progression_generation(
     world: crate::foundation::WorldId,
 ) -> TestResult<super::quest_catalogue_chests::CatalogueActivation> {
@@ -277,27 +295,30 @@ fn endgame_progression_generation(
         .ok_or("production loot section")?;
     let mut loot: serde_json::Value = serde_json::from_slice(&section.bytes)?;
     let bindings = loot["creature_loot"].as_array().ok_or("creature loot")?;
-    let excluded = bindings
-        .iter()
-        .find(|row| row["creature"]["key"] == "oteryn:creature.goshnar_s_spite")
-        .ok_or("Spite source binding")?["loot"]
-        .clone();
-    assert!(
-        excluded.is_object(),
-        "production personal loot is independently admitted"
-    );
-    assert_eq!(
-        bindings
+    let mut excluded = Vec::new();
+    for creature in ENDGAME_PROGRESSION_WITHOUT_PERSONAL_LOOT {
+        let identity = bindings
             .iter()
-            .filter(|row| row["loot"] == excluded)
-            .count(),
-        1,
-        "exclude only Spite's private loot"
-    );
+            .find(|row| row["creature"]["key"] == *creature)
+            .ok_or("endgame source binding")?["loot"]
+            .clone();
+        assert!(
+            identity.is_object(),
+            "production personal loot is independently admitted"
+        );
+        assert_eq!(
+            bindings.iter().filter(|row| row["loot"] == identity).count(),
+            1,
+            "exclude only this boss's private loot"
+        );
+        excluded.push(identity);
+    }
     let tables = loot["tables"].as_array_mut().ok_or("loot tables")?;
-    let before = tables.len();
-    tables.retain(|table| table["identity"] != excluded);
-    assert_eq!(tables.len() + 1, before, "one exact private table removed");
+    for identity in excluded {
+        let before = tables.len();
+        tables.retain(|table| table["identity"] != identity);
+        assert_eq!(tables.len() + 1, before, "one exact private table removed");
+    }
     section.bytes = serde_json::to_vec(&loot)?;
     section.sha256 = Sha256::digest(&section.bytes)
         .iter()
@@ -307,6 +328,9 @@ fn endgame_progression_generation(
 }
 
 fn scenario(case: Case) -> TestResult {
+    if case == Case::PrimalDefeat {
+        return run(async |admin| primal::scenario(admin).await);
+    }
     let difficulty = case == Case::Difficulty;
     let case = if difficulty {
         Case::NonRewardDefeat
@@ -351,6 +375,9 @@ fn scenario(case: Case) -> TestResult {
         let _security_clock = if let Some(now) = security_now {
             Some(super::preadmission::FrozenAdmissionClock::install(&h, now).await?)
         } else { None };
+        if case == Case::EssenceUse {
+            super::item_look::seed_main_backpack(&h, &[("oteryn:item.tibia.i43501", 2)]).await?;
+        }
         let evidence = super::house_transfer::RecoverySource::start_at(&h, security_now.map(u64::try_from).transpose()?).await?;
         super::house_transfer::prepare_owned_session(&h).await?;
         let world = fixture::fence(1)?.runtime_scope.world_id();
@@ -389,6 +416,13 @@ fn scenario(case: Case) -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.evidence = &evidence.evidence;
         owner.active_generation = controller.active();
+        if case == Case::EssenceUse {
+            let lowered =
+                oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                    .map_err(debug)?;
+            owner.quest_catalogue = Some(std::sync::Arc::new(lowered.catalogue().clone()));
+        }
+
         owner.rooms = SeamRooms::new(Some(&deps.room), Some(&deps.room));
         let endgame_creature = match case {
             Case::SoulWarEntry | Case::SoulWarDefeat | Case::SoulWarLateDefeat => {
@@ -605,22 +639,44 @@ fn scenario(case: Case) -> TestResult {
                     )
             })
             .ok_or("a second actual qualified walkable cell")?;
-        runtime
-            .install_companion_policies(
-                crate::foundation::CompiledCreaturePolicies::from_active_artifact(
-                    pin.server_artifact_digest(),
-                    vec![policy.clone()],
+        if endgame_creature.is_some() {
+            use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+
+            // Native bosses require their source health/death callbacks as well
+            // as the base policy; a one-row fixture drops that admission proof.
+            owner
+                .active_generation
+                .and_then(|generation| generation.native_gameplay())
+                .ok_or("native endgame generation")?
+                .install_companion_policies(&mut runtime)
+                .map_err(debug)?;
+        } else {
+            runtime
+                .install_companion_policies(
+                    crate::foundation::CompiledCreaturePolicies::from_active_artifact(
+                        pin.server_artifact_digest(),
+                        vec![policy.clone()],
+                    )
+                    .map_err(debug)?,
                 )
-                .map_err(debug)?,
-            )
-            .map_err(debug)?;
+                .map_err(debug)?;
+        }
         runtime
             .realize_native_qualification_spawn(pin, &policy.definition_key, boss_cell)
             .map_err(debug)?;
-        sqlx::query("INSERT INTO game_boss_room_catalogue(boss_key,content_revision,boss_creature_key,minimum_players,maximum_players,minimum_level,cooldown_seconds,time_limit_seconds,lever_positions,room_template_key,reward_key,enabled,template_revision,entry_positions,exit_position,boss_position,after_kill_seconds) VALUES($1,'content-1',$2,1,1,1,20,$8,$3,$4,'fixture:reward',true,'fixture-r1',$5,$6,$7,1)")
+        // Native endgame identities retain the same retry policy as production admission.
+        // Other isolated fixture bosses keep their short fixture cooldown.
+        let cooldown_seconds = i64::try_from(
+            oteryn_gameplay_encounters::bosses::endgame_entry::Encounter::from_boss_key(
+                &policy.definition_key,
+            )
+            .and_then(oteryn_gameplay_encounters::bosses::endgame_entry::source_entry_policy)
+            .map_or(20, |source| source.retry_seconds),
+        )?;
+        sqlx::query("INSERT INTO game_boss_room_catalogue(boss_key,content_revision,boss_creature_key,minimum_players,maximum_players,minimum_level,cooldown_seconds,time_limit_seconds,lever_positions,room_template_key,reward_key,enabled,template_revision,entry_positions,exit_position,boss_position,after_kill_seconds) VALUES($1,'content-1',$2,1,1,1,$9,$8,$3,$4,'fixture:reward',true,'fixture-r1',$5,$6,$7,1)")
             .bind(&boss_key).bind(&policy.definition_key).bind(serde_json::json!([cell_json(source_cell)]))
             .bind(TEMPLATE).bind(serde_json::json!([cell_json(entry)]))
-            .bind(cell_json(source_cell)).bind(cell_json(boss_cell)).bind(if late || matches!(case, Case::Entry | Case::OfflineDeathDeadline) { 1_i32 } else if case == Case::NonRewardDefeat { 5 } else { 900 }).execute(&h.pool).await?;
+            .bind(cell_json(source_cell)).bind(cell_json(boss_cell)).bind(if late || matches!(case, Case::Entry | Case::OfflineDeathDeadline) { 1_i32 } else if case == Case::NonRewardDefeat { 5 } else { 900 }).bind(cooldown_seconds).execute(&h.pool).await?;
 
         if !difficulty {
             let (_, refused, switch) = exchange(&owner, &mut admitted, &boss_key, false).await?;
@@ -834,6 +890,10 @@ fn scenario(case: Case) -> TestResult {
             boss_key = canonical;
         }
         let attack_continuity = if case == Case::Entry {
+            assert!(
+                owner.admit_hazard(admitted).await,
+                "source durable hazard projection"
+            );
             Some(state_continuity::prepare_attack(&owner, admitted).await?)
         } else {
             None
@@ -901,6 +961,17 @@ fn scenario(case: Case) -> TestResult {
             .map_err(|_| "resolve Instance owner")?
             .ok_or("owner actually changed")?;
         let next_actor = admitted.runtime_actor.ok_or("destination actor")?;
+        if case == Case::Entry {
+            assert_eq!(
+                destination
+                    .runtime
+                    .lock()
+                    .await
+                    .hazard_level(next_actor, admitted.game_session_id),
+                Some(1),
+                "the actual Instance session must reload the durable hazard selection"
+            );
+        }
         assert!(
             destination
                 .refresh_pvp_locks(next_actor, admitted.game_session_id)
@@ -1002,6 +1073,16 @@ fn scenario(case: Case) -> TestResult {
             }
             Case::EndgameReceipts => {
                 endgame_receipts::assert_receipts(&h, &destination, admitted).await?
+            }
+            Case::EssenceUse => {
+                super::srx3_rotten_essence::assert_scoped_use(
+                    &h,
+                    &destination,
+                    admitted,
+                    next_actor,
+                    None,
+                )
+                .await?;
             }
             Case::Difficulty => return Err("normalized difficulty case".into()),
             Case::Entry => {
@@ -1163,12 +1244,49 @@ pub(super) async fn exchange(
     .await
 }
 
+pub(super) async fn exchange_capture(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    boss: &str,
+    expect_switch: bool,
+    capture: &mut Vec<Vec<u8>>,
+) -> TestResult<(u64, BossActivityReply, Option<ActivityScopeSnapshot>)> {
+    exchange_command_capture(
+        owner,
+        admitted,
+        boss,
+        expect_switch,
+        wire::COMMAND_TYPE_BOSS_LEVER,
+        capture,
+    )
+    .await
+}
+
 pub(super) async fn exchange_command(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     boss: &str,
     expect_switch: bool,
     command_type: u32,
+) -> TestResult<(u64, BossActivityReply, Option<ActivityScopeSnapshot>)> {
+    exchange_command_capture(
+        owner,
+        admitted,
+        boss,
+        expect_switch,
+        command_type,
+        &mut Vec::new(),
+    )
+    .await
+}
+
+pub(super) async fn exchange_command_capture(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    boss: &str,
+    expect_switch: bool,
+    command_type: u32,
+    capture: &mut Vec<Vec<u8>>,
 ) -> TestResult<(u64, BossActivityReply, Option<ActivityScopeSnapshot>)> {
     let before = *admitted;
     let id = before.continuity.next_command_id;
@@ -1184,6 +1302,7 @@ pub(super) async fn exchange_command(
     let driving = async {
         loop {
             let frame = read_frame(&mut client).await?;
+            capture.push(frame.clone());
             let envelope = decode_wire_envelope(&frame).map_err(debug)?;
             if frames.len() == 16 {
                 frames.pop_front();
@@ -1200,13 +1319,14 @@ pub(super) async fn exchange_command(
         stage = "write boss command";
         write_frame(
             &mut client,
-            &encode_client_command(
+            &encode_client_command_for_session(
                 before.continuity.connection_generation,
                 &ClientCommandValue {
                     command_id: id,
                     command_type,
                     payload: &body,
                 },
+                before.game_session_id.as_bytes(),
             )
             .map_err(debug)?,
         )
@@ -1217,6 +1337,7 @@ pub(super) async fn exchange_command(
         let mut commits_after_barrier = 0;
         loop {
             let frame = read_frame(&mut client).await?;
+            capture.push(frame.clone());
             let envelope = decode_wire_envelope(&frame).map_err(debug)?;
             if frames.len() == 16 {
                 frames.pop_front();
@@ -1302,4 +1423,42 @@ pub(super) async fn exchange_command(
         )
         .into()
     })
+}
+
+pub(super) async fn capture_current_snapshot(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    capture: &mut Vec<Vec<u8>>,
+) -> TestResult {
+    let before = *admitted;
+    let (mut server, mut client) = tokio::io::duplex(16384);
+    let serving = async {
+        let ended = serve_admitted(&mut server, before, owner, IDLE_LIVENESS).await;
+        drop(server);
+        ended
+    };
+    let driving = async {
+        loop {
+            let frame = read_frame(&mut client).await?;
+            let complete = decode_wire_envelope(&frame).map_err(debug)?.message_type()
+                == MessageType::SnapshotCommit;
+            capture.push(frame);
+            if complete {
+                break;
+            }
+        }
+        client.shutdown().await?;
+        Ok(())
+    };
+    let (ended, result): (_, TestResult) = tokio::time::timeout(
+        std::time::Duration::from_secs(10),
+        fixture::join_two(serving, driving),
+    )
+    .await?;
+    match ended {
+        ConnectionEnd::AdmittedThenDisconnected(next)
+        | ConnectionEnd::AdmittedThenClosed(next, _) => *admitted = next,
+        _ => return Err("actual source observation stream did not retain admission".into()),
+    }
+    result
 }

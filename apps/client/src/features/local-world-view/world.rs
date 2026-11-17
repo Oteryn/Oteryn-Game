@@ -54,6 +54,8 @@ impl World {
         let mut sheets = SpriteSheets::new(store, catalog);
         let origin = map.header.origin;
         let mut entries = Vec::new();
+        #[cfg(test)]
+        let mut native_resolved_items = Vec::new();
         let mut item_lights = Vec::new();
         let mut minimap_colors = BTreeMap::new();
         for tile in map
@@ -102,6 +104,13 @@ impl World {
                     index.resolve_frames(&sheets, u32::from(item.appearance_id), placement)
                     && let Some(resolved) = frames.first()
                 {
+                    #[cfg(test)]
+                    if !resolved.cells.is_empty()
+                        && let oteryn_session::world_map::MapDefinition::Item(reference) =
+                            item.definition
+                    {
+                        native_resolved_items.push((tile.position, reference.get()));
+                    }
                     let layer = if resolved.ground {
                         0
                     } else if resolved.ground_border {
@@ -209,6 +218,8 @@ impl World {
         });
         let mut world = Self {
             effects: Default::default(),
+            #[cfg(test)]
+            native_resolved_items,
             item_lights,
             minimap_colors,
             center: (origin.x, origin.y, origin.floor),

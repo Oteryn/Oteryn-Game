@@ -322,6 +322,8 @@ include!("native_content.rs");
 #[path = "full_e2ef1.rs"]
 mod provisioning;
 include!("quest_journal.rs");
+#[path = "spatial_basis.rs"]
+mod spatial_basis;
 #[path = "starter_inventory.rs"]
 mod starter_inventory;
 #[path = "verdict.rs"]
@@ -3209,6 +3211,7 @@ async fn shop_journey(
     npcs: &oteryn_world_bundle::npc::Table,
     clients: &SeamClients<'_>,
 ) -> TestResult<()> {
+    let basis = spatial_basis::current(client)?;
     let Some(npc) = npcs.npcs.iter().find(|npc| npc.key == "oteryn:npc.sam") else {
         evidence(
             "mechanic=npc_shop skipped=authored_shop_npc_missing content_id=oteryn:npc.sam source=content/npcs/definitions/index.json:1",
@@ -3236,7 +3239,7 @@ async fn shop_journey(
                     && npc.placements.iter().any(|placement| {
                         entity.position.x == i32::from(placement.x)
                             && entity.position.y == i32::from(placement.y)
-                            && entity.position.floor == -i16::from(placement.floor)
+                            && entity.position.floor == basis.floor(placement.floor)
                     })
             })
         })

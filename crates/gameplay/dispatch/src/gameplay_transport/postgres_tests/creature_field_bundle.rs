@@ -54,7 +54,9 @@ async fn exercise(harness: &Harness) -> TestResult {
     owner.active_generation = Some(active);
     owner.movement_cells = deps.room.movement_cells().into();
     let permit = owner.spell_lane_permit().await.ok_or("field lane")?;
+    let health_names = owner.read_native_health_names(&permit).await.map_err(debug)?;
     let mut runtime = deps.runtime.lock().await;
+    let native_health_names = owner.seal_native_health_names(&runtime, health_names).map_err(debug)?;
     let objects = deps.door.lock().await;
     let states = owner.states.spell_states.lock().await;
     // TEST_PARAMETERS: an existing residual Drown condition distinguishes PZ suppression
@@ -122,6 +124,7 @@ async fn exercise(harness: &Harness) -> TestResult {
         actors,
         &mismatch,
         &mut source_context,
+        &native_health_names,
     );
     let pass = owner.root.try_issue_semantic_pass().map_err(debug)?;
     pass.run_with_context(&mut context, |holder, deadline, context| {
@@ -137,6 +140,7 @@ async fn exercise(harness: &Harness) -> TestResult {
                 actors,
                 mismatch,
                 source_context,
+                native_health_names,
             ) = context;
             let mut tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(
                 holder, deadline,
@@ -184,7 +188,7 @@ async fn exercise(harness: &Harness) -> TestResult {
             );
             for now in [1_000_000, 2_000_000] {
                 owner
-                    .tick_creature_fields(&mut map, runtime, states, native, now)
+                    .tick_creature_fields(&mut map, runtime, states, native, now, native_health_names)
                     .await?;
                 assert!(map.validate_transaction(runtime).await);
                 for (ordinal, actor) in actors.iter().enumerate() {

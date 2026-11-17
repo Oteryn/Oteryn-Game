@@ -130,6 +130,9 @@ impl FreshAdmissionAuthority for Owners {
             observer: own,
             entities: vec![
                 ChannelEntity {
+                    source_icons:
+                        oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(
+                        ),
                     motion: None,
                     display_name: None,
                     health_percent: 100,
@@ -141,6 +144,9 @@ impl FreshAdmissionAuthority for Owners {
                     revision: 0,
                 },
                 ChannelEntity {
+                    source_icons:
+                        oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(
+                        ),
                     motion: None,
                     display_name: None,
                     health_percent: 100,

@@ -331,6 +331,9 @@ mod visual_sprites;
 #[path = "boss_area.rs"]
 mod boss_area;
 
+#[path = "native_missile_merged.rs"]
+mod native_missile_merged;
+
 #[test]
 fn ground_floor_presentation_wire_events_reach_native_scene() -> Result<(), Box<dyn std::error::Error>> {
     let (link, _commands, outbox) = crate::play::play_channel();

@@ -1,7 +1,7 @@
 //! Reward-boss combat/reward dispatch for resilience-adjusted participation.
 
 pub use oteryn_gameplay_encounter_rules::boss::{
-    BossParticipation, ParticipationError, REWARD_FAIR_SHARE_THRESHOLD_PERCENT, RewardParticipation,
+    BossParticipation, ParticipationError, RewardParticipation,
 };
 use oteryn_gameplay_encounter_rules::boss::{reward_eligibility, reward_participation};
 
@@ -67,8 +67,8 @@ impl BossResilienceOwner {
     }
 }
 
-/// Settles one boss kill: applies each owner's resilience, then the damage gate and the
-/// fair-share threshold across every participant. `None` means no reward.
+/// Settles one boss kill using the shared Crystal nonzero-contribution eligibility.
+/// Each owner's supplied resilience is applied first. `None` means no contribution.
 pub fn settle_rewards(
     owners: &[BossResilienceOwner],
 ) -> Result<Vec<Option<RewardParticipation>>, ParticipationError> {
@@ -89,7 +89,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn settlement_drops_single_hit_leech() -> Result<(), ParticipationError> {
+    // Crystal 201189f data/scripts/systems/reward_chest.lua:54-69.
+    fn crystal_settlement_keeps_nonzero_single_hit() -> Result<(), ParticipationError> {
         let mut owners = Vec::new();
         for (dealt, received) in [(400_000, 300_000), (500_000, 100_000), (1, 0)] {
             let mut owner = BossResilienceOwner::new(25)?;
@@ -103,7 +104,7 @@ mod tests {
         let settled = settle_rewards(&owners)?;
         assert_eq!(
             settled.iter().map(Option::is_some).collect::<Vec<_>>(),
-            vec![true, true, false]
+            vec![true, true, true]
         );
         assert_eq!(
             settled.first(),
@@ -117,7 +118,7 @@ mod tests {
     }
 
     #[test]
-    fn combat_and_reward_dispatch_apply_resilience_and_require_damage()
+    fn combat_and_reward_dispatch_apply_resilience_and_keep_support()
     -> Result<(), ParticipationError> {
         let mut participant = BossResilienceOwner::new(25)?;
         assert_eq!(
@@ -145,7 +146,11 @@ mod tests {
         }))?;
         assert_eq!(
             support_only.dispatch(BossDispatch::Reward),
-            Ok(BossDispatchOutcome::Reward(None))
+            Ok(BossDispatchOutcome::Reward(Some(RewardParticipation {
+                damage_dealt: 0,
+                damage_received: 300,
+                healing_others: 150
+            })))
         );
         Ok(())
     }

@@ -54,7 +54,19 @@ pub fn apply_result(panel: &mut ArenaPanel, result: &GatedCommandResult) -> bool
             .map(|rows| panel.challenges = rows)
             .is_ok(),
         Intent::Action(ArenaAction::Drome(_)) => DromeReply::decode(&result.payload)
-            .map(|reply| panel.drome = Some(reply))
+            .and_then(|reply| {
+                oteryn_client_runtime::arena::decode_drome_hazards(&result.payload)
+                    .map(|hazards| (reply, hazards))
+            })
+            .map(|(reply, hazards)| {
+                if panel.hazards != hazards {
+                    panel.hazards_received_at =
+                        (!hazards.entries.is_empty()).then(std::time::Instant::now);
+                    panel.hazards = hazards;
+                }
+                panel.refreshed_at = Some(std::time::Instant::now());
+                panel.drome = Some(reply);
+            })
             .is_ok(),
         Intent::Action(_) => arena::decode_match_result(&result.payload)
             .map(|reply| panel.result = Some(reply))

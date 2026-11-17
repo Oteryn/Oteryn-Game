@@ -101,8 +101,17 @@ impl Scene {
                             && self.visible.iter().any(|v| {
                                 v.tile == tile
                                     && ((v.kind == TargetKind::Object
+                                        && !v.item.is_some_and(|item| {
+                                            self.object_draws.iter().any(
+                                                |(position, reference, _)| {
+                                                    position.x == tile.x
+                                                        && position.y == tile.y
+                                                        && *reference == item.definition()
+                                                },
+                                            )
+                                        })
                                         && (v.glyph || v.item.is_none()))
-                                        || (v.glyph && !has_actor))
+                                        || (v.glyph && v.kind != TargetKind::Object && !has_actor))
                             });
                         marker
                             .then_some(Draw {
@@ -110,6 +119,14 @@ impl Scene {
                                 offset: [0, 0],
                             })
                             .into_iter()
+                            .chain(
+                                self.object_draws
+                                    .iter()
+                                    .filter(|(position, _, _)| {
+                                        position.x == tile.x && position.y == tile.y
+                                    })
+                                    .flat_map(|(_, _, draws)| draws.iter().copied()),
+                            )
                             .chain(
                                 self.actor_draws
                                     .iter()

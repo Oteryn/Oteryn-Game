@@ -20,12 +20,12 @@ use crate::native_admission_source::character_commands::{
     CREATE_COMMAND, Decision, ISSUER_AUTHORITY, Input, account_deletion_command, command_valid,
     counter, source_authority_valid, uuid_v7,
 };
+pub mod account_deletion;
+
 use oteryn_gameplay_characters::character_authority_audit::{
     EVENT_SCHEMA_REVISION, EVENT_TYPE_CHARACTER_AUTHORITY_BOOTSTRAPPED, RETENTION_PROFILE,
     encode_bootstrap,
 };
-pub mod account_deletion;
-
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use sqlx::Row;

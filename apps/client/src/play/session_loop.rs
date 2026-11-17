@@ -14,6 +14,58 @@ use tokio::sync::mpsc::UnboundedReceiver;
 const IDLE_SLICE: Duration = Duration::from_millis(20);
 
 pub use super::stepper::Stepper;
+
+fn publish_scope_transition<T: Stepper>(
+    error: &oteryn_session::SessionError,
+    session: &mut T,
+    outbox: &Outbox,
+    held: &mut Vec<oteryn_session::WorldSpatialEntity>,
+    modal: &mut super::feature_0450_server_modal::protocol::Driver,
+) -> bool {
+    if !matches!(
+        error,
+        oteryn_session::SessionError::ScopeChanged
+            | oteryn_session::SessionError::ActivityScopeChanged
+    ) {
+        return false;
+    }
+    // Publish the destination and discard unsent source actions through the
+    // same scope barrier, whether a command or an automatic query saw it.
+    // Dropping the source driver closes its answer channel, including native dialogs.
+    modal.reset_scope(session.feature_selected(450));
+    *modal = std::mem::replace(
+        modal,
+        super::feature_0450_server_modal::protocol::Driver::new(false),
+    )
+    .with_defaults(session.feature_selected(505))
+    .with_input(session.feature_selected(
+        oteryn_session::property_services::server_modal::input::CAPABILITY_SERVER_MODAL_INPUT_V1,
+    ))
+    .with_outbox(outbox);
+    {
+        let mut mailbox = super::mailbox::lock(&outbox.0);
+        mailbox.cancel_activity_requests();
+        mailbox.reset_server_message_namespace();
+        mailbox.activity_reset_commands = true;
+    }
+    outbox.hud_stamina_initialize(session.feature_selected(199));
+    publish(session, outbox, held);
+    true
+}
+
+fn initialize<T: Stepper>(
+    session: &T,
+    outbox: &Outbox,
+) -> Result<(), oteryn_session::SessionError> {
+    super::session_initialize::initialize(session, outbox)?;
+    outbox.cast_control_initialize(session.server_mechanic_selected(290));
+    outbox.cast_consent_initialize(session.server_mechanic_selected(292));
+    outbox.cast_chat_initialize(
+        session.server_mechanic_selected(290) && session.server_mechanic_selected(291),
+    );
+    Ok(())
+}
+
 /// Initializes the live map, sends commands and services session liveness.
 pub async fn run_session<T: Stepper>(
     session: T,
@@ -32,13 +84,23 @@ pub async fn run_session<T: Stepper>(
 
 pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
     mut session: T,
-    mut commands: UnboundedReceiver<PlayCommand>,
+    commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
     mut modal: super::feature_0450_server_modal::protocol::Driver,
 ) {
     modal = modal.with_outbox(&outbox);
     outbox.performance_reset();
-    if outbox.session_cancelled() || !session_initialize::initialize(&session, &outbox) {
+    let personal_marks_selected = session.feature_selected(451);
+    if personal_marks_selected {
+        outbox.personal_map_marks_initialize();
+    }
+    let commands = std::sync::Arc::new(std::sync::Mutex::new(commands));
+    outbox.scope_receiver(&commands);
+    if outbox.session_cancelled() {
+        return;
+    }
+    if let Err(error) = initialize(&session, &outbox) {
+        outbox.end(public_class(&error));
         return;
     }
     if let Some(command) = outbox.returner_initial_request() {
@@ -48,6 +110,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
         }
     }
     let mut held = Vec::new();
+    let mut personal_marks_refresh = std::time::Instant::now();
     for command in outbox.server_info_initial_commands() {
         let Some(query) = oteryn_session::server_info::Query::decode(&command.payload) else {
             continue;
@@ -55,7 +118,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
         match session.feature(&command).await {
             Ok(result) => outbox.server_info_result(&query, &result),
             Err(error) => {
-                if recover_handoff(&error, &mut session, &outbox, &mut held, &mut modal) {
+                if publish_scope_transition(&error, &mut session, &outbox, &mut held, &mut modal) {
                     break;
                 }
                 outbox.end(public_class(&error));
@@ -75,12 +138,46 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             }
             Ok(None) => {}
             Err(error) => {
-                if recover_handoff(&error, &mut session, &outbox, &mut held, &mut modal) {
+                if publish_scope_transition(&error, &mut session, &outbox, &mut held, &mut modal) {
                     continue;
                 }
                 outbox.end(public_class(&error));
                 return;
             }
+        }
+        if personal_marks_selected && std::time::Instant::now() >= personal_marks_refresh {
+            let command = oteryn_client_ui::personal_map_marks::request();
+            match session.feature(&command).await {
+                Ok(result) => {
+                    if let Err(error) = outbox.personal_map_marks_result(&result) {
+                        outbox.end(public_class(&error));
+                        return;
+                    }
+                    publish(&mut session, &outbox, &mut held);
+                }
+                Err(error) => {
+                    if publish_scope_transition(
+                        &error,
+                        &mut session,
+                        &outbox,
+                        &mut held,
+                        &mut modal,
+                    ) {
+                        personal_marks_refresh = std::time::Instant::now() + Duration::from_secs(5);
+                        continue;
+                    }
+                    outbox.end(public_class(&error));
+                    return;
+                }
+            }
+            personal_marks_refresh = std::time::Instant::now() + Duration::from_secs(5);
+        }
+
+        if outbox.scope_needs_initialize()
+            && let Err(error) = initialize(&session, &outbox)
+        {
+            outbox.end(public_class(&error));
+            return;
         }
         if let Some(command) = outbox.server_info_quest_observation_command() {
             match session.feature(&command).await {
@@ -88,7 +185,13 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                     outbox.server_info_result(&oteryn_session::server_info::Query::Quests, &result)
                 }
                 Err(error) => {
-                    if recover_handoff(&error, &mut session, &outbox, &mut held, &mut modal) {
+                    if publish_scope_transition(
+                        &error,
+                        &mut session,
+                        &outbox,
+                        &mut held,
+                        &mut modal,
+                    ) {
                         continue;
                     }
                     outbox.end(public_class(&error));
@@ -101,7 +204,13 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             match session.server_mechanic(&command).await {
                 Ok(result) => outbox.highscores_result(&result),
                 Err(error) => {
-                    if recover_handoff(&error, &mut session, &outbox, &mut held, &mut modal) {
+                    if publish_scope_transition(
+                        &error,
+                        &mut session,
+                        &outbox,
+                        &mut held,
+                        &mut modal,
+                    ) {
                         continue;
                     }
                     outbox.end(public_class(&error));
@@ -111,7 +220,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             publish(&mut session, &outbox, &mut held);
         }
         let ended = super::feature_0014_container_tree::protocol::dispatch! {
-            outbox.death_command(&mut commands), session, outbox, held, publish;
+            outbox.scope_command(&commands), session, outbox, held, publish;
             Ok(PlayCommand::HudStamina) => match session.feature(&super::resource_hud::stamina_command()).await {
                 Ok(result) => {
                     outbox.hud_stamina_result(&result);
@@ -185,7 +294,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                                 let query=oteryn_session::server_info::Query::decode(&info_command.payload);
                                 match session.feature(&info_command).await {
                                     Ok(info_result)=>if let Some(query)=query {outbox.server_info_result(&query,&info_result);},
-                                    Err(error)=>{if recover_handoff(&error,&mut session,&outbox,&mut held,&mut modal) {break;}outbox.end(public_class(&error));return;}
+                                    Err(error)=>{if publish_scope_transition(&error,&mut session,&outbox,&mut held,&mut modal) {break;}outbox.end(public_class(&error));return;}
                                 }
                             }
                         },
@@ -269,7 +378,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                     if let Some(info_command)=outbox.server_info_command(query.clone()) {
                         match session.feature(&info_command).await {
                             Ok(info_result)=>outbox.server_info_result(&query,&info_result),
-                            Err(error)=>{if recover_handoff(&error,&mut session,&outbox,&mut held,&mut modal) {continue;}outbox.end(public_class(&error));return;}
+                            Err(error)=>{if publish_scope_transition(&error,&mut session,&outbox,&mut held,&mut modal) {continue;}outbox.end(public_class(&error));return;}
                         }
                     }
                     publish(&mut session, &outbox, &mut held);
@@ -494,43 +603,10 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 Err(error) => error,
             },
         };
-        if recover_handoff(&ended, &mut session, &outbox, &mut held, &mut modal) {
+        if publish_scope_transition(&ended, &mut session, &outbox, &mut held, &mut modal) {
             continue;
         }
         outbox.end(public_class(&ended));
         return;
     }
 }
-
-fn recover_handoff<T: Stepper>(
-    error: &oteryn_session::SessionError,
-    session: &mut T,
-    outbox: &Outbox,
-    held: &mut Vec<oteryn_session::WorldSpatialEntity>,
-    modal: &mut super::feature_0450_server_modal::protocol::Driver,
-) -> bool {
-    if !matches!(error, oteryn_session::SessionError::ActivityScopeChanged) {
-        return false;
-    }
-    // Dropping the source driver closes its answer channel, including native dialogs.
-    *modal = super::feature_0450_server_modal::protocol::Driver::new(
-        session.feature_selected(450),
-    )
-    .with_defaults(session.feature_selected(505))
-    .with_input(session.feature_selected(
-        oteryn_session::property_services::server_modal::input::CAPABILITY_SERVER_MODAL_INPUT_V1,
-    ))
-    .with_outbox(outbox);
-    {
-        let mut mailbox = super::mailbox::lock(&outbox.0);
-        mailbox.cancel_activity_requests();
-        mailbox.reset_server_message_namespace();
-        mailbox.activity_reset_commands = true;
-    }
-    outbox.hud_stamina_initialize(session.feature_selected(199));
-    publish(session, outbox, held);
-    true
-}
-
-#[path = "session_initialize.rs"]
-mod session_initialize;

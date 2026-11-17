@@ -181,6 +181,9 @@ mod catalogue;
 #[path = "slots.rs"]
 mod slots;
 
+#[path = "actual_capture.rs"]
+mod actual_capture;
+
 #[test]
 fn boss_catalogue_next_rejects_changed_filters() -> Result<(), Error> {
     use crate::play::mailbox::lock;

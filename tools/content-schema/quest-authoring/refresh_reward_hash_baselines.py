@@ -17,8 +17,10 @@ def main():
     start = source.index('    fn published_ungated_quest_hash_baseline()')
     end = source.index('    #[test]', start)
     baseline = source[start:end]
-    pattern = re.compile(r'("(oteryn:quest\.[^"]+)",\s*")[0-9a-f]{64}("\s*,)')
+    pattern = re.compile(r'("(oteryn:quest\.[^"]+)",\s*(?://[^\n]*\n\s*)*")[0-9a-f]{64}("\s*,)')
     keys = [match[2] for match in pattern.finditer(baseline)]
+    # The Citizen assertion deliberately checks its fixed published predecessor.
+    keys = [key for key in keys if key != "oteryn:quest.outfit_and_addon_quests"]
     if not keys or len(set(keys)) != len(keys):
         raise ValueError('missing or ambiguous reward hash baseline declarations')
     hashes = json.loads(subprocess.check_output([
@@ -27,7 +29,7 @@ def main():
     ], cwd=ROOT, text=True))
     if set(hashes) != set(keys) or any(not re.fullmatch('[0-9a-f]{64}', h) for h in hashes.values()):
         raise ValueError('canonical loader returned invalid quest hashes')
-    refreshed = pattern.sub(lambda m: m[1] + hashes[m[2]] + m[3], baseline)
+    refreshed = pattern.sub(lambda m: m[1] + hashes[m[2]] + m[3] if m[2] in hashes else m[0], baseline)
     if args.check and refreshed != baseline:
         raise ValueError('stale reward hash baselines')
     if not args.check:

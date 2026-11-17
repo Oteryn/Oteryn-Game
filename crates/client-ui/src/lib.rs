@@ -399,6 +399,12 @@ pub mod support_intake;
 #[path = "features/0499-item-appearance/protocol.rs"]
 pub mod item_appearance;
 
+#[path = "features/0372-native-creature-icons/mod.rs"]
+pub mod native_creature_icons;
+
+#[path = "features/0451-personal-map-marks/mod.rs"]
+pub mod personal_map_marks;
+
 #[path = "features/0505-server-modal-defaults/protocol.rs"]
 pub mod server_modal_defaults;
 

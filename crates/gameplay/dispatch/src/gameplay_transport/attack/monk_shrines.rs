@@ -95,6 +95,8 @@ mod tests {
         let sessions = Mutex::new(HashMap::from([(
             session,
             QuestSession {
+                map_marks: Vec::new(),
+                map_marks_world: None,
                 copy: Some(copy),
                 experience_deferred: false,
                 version: 1,

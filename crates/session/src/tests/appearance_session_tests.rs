@@ -1,5 +1,6 @@
 mod appearance_fixture;
 mod item_dictionary_tests;
+mod native_icons;
 use super::*;
 use oteryn_protocol_oteryn::appearance;
 const GOLDEN: &[u8] = include_bytes!(concat!(

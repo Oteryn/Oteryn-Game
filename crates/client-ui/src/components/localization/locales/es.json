@@ -50,6 +50,7 @@
  "Protection details are unavailable for this death.": "Los detalles de protección de esta muerte no están disponibles.",
  "You are dead.\n{}\n{}\nExact experience, skill and item losses are unavailable.": "Has muerto.\n{}\n{}\nLas pérdidas exactas de experiencia, habilidades y objetos no están disponibles.",
  "Appearance changes are unavailable: the server has not supplied the required outfit data": "No se puede cambiar la apariencia: el servidor no ha enviado los datos de atuendo necesarios",
+ "Preparation": "Preparación",
  "lesser": "menores",
  "greater": "mayores",
  "Reshape mod": "Remodelar mod.",

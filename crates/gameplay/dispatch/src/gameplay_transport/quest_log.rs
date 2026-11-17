@@ -128,6 +128,7 @@ impl QuestLogLines {
 /// The session copy as the Channel owner holds it, with the content it is projected against.
 #[derive(Clone)]
 pub struct QuestLogSource {
+    pub map_marks: Vec<oteryn_protocol_oteryn::quest_log::QuestMapMark>,
     pub content: QuestLogLines,
     pub copy: Arc<dyn QuestLogFacts + Send + Sync>,
     /// Changes whenever the copy changes (each applied receipt and each reload).
@@ -181,6 +182,7 @@ pub struct QuestLogState {
     version: Option<u64>,
     /// The payload last sent.
     sent: Vec<u8>,
+    include_map_marks: bool,
 }
 
 fn line(projected: ProjectedLine) -> QuestLine {
@@ -205,12 +207,18 @@ fn project(
     source: Option<&QuestLogSource>,
     view: Option<RequestedView>,
     tracked: &[u32],
+    include_map_marks: bool,
 ) -> QuestLog {
     let Some(source) = source else {
         return QuestLog::default();
     };
     let (content, copy) = (&*source.content.0, &*source.copy);
     QuestLog {
+        map_marks: if include_map_marks {
+            source.map_marks.clone()
+        } else {
+            Vec::new()
+        },
         view: match view {
             None => None,
             Some(RequestedView::List) => Some(QuestLogView::List(
@@ -241,11 +249,17 @@ fn advance(revision: &mut u64) -> Result<u64, QuestLogFault> {
 
 impl QuestLogState {
     /// Independent tracker polling must not steal the visible quest line.
-    pub fn list_only(observation: QuestLogObservation) -> Option<Vec<u8>> {
+    pub fn list_only(observation: QuestLogObservation, include_map_marks: bool) -> Option<Vec<u8>> {
         let QuestLogObservation::Changed(source) = observation else {
             return None;
         };
-        encode_quest_log(&project(Some(&source), Some(RequestedView::List), &[])).ok()
+        encode_quest_log(&project(
+            Some(&source),
+            Some(RequestedView::List),
+            &[],
+            include_map_marks,
+        ))
+        .ok()
     }
 
     /// The domain 16 snapshot of a new connection: no view, the carried tracked quests, above
@@ -253,6 +267,7 @@ impl QuestLogState {
     pub fn snapshot(
         continuity: &mut QuestLogContinuity,
         observation: QuestLogObservation,
+        include_map_marks: bool,
     ) -> Result<(Self, QuestLogDomain), QuestLogFault> {
         let source = match observation {
             QuestLogObservation::Changed(source) => Some(source),
@@ -262,6 +277,7 @@ impl QuestLogState {
             source.as_ref(),
             None,
             continuity.tracked.as_slice(),
+            include_map_marks,
         ))
         .map_err(|_| QuestLogFault)?;
         let to = advance(&mut continuity.revision)?;
@@ -269,6 +285,7 @@ impl QuestLogState {
             view: None,
             version: source.map(|source| source.version),
             sent: payload.clone(),
+            include_map_marks,
         };
         Ok((state, QuestLogDomain { to, payload }))
     }
@@ -310,7 +327,13 @@ impl QuestLogState {
                 (self.view, TrackedQuests::new(quest_indexes)?)
             }
         };
-        let payload = encode_quest_log(&project(Some(&source), view, tracked.as_slice())).ok()?;
+        let payload = encode_quest_log(&project(
+            Some(&source),
+            view,
+            tracked.as_slice(),
+            self.include_map_marks,
+        ))
+        .ok()?;
         self.view = view;
         self.version = Some(source.version);
         continuity.tracked = tracked;
@@ -331,6 +354,7 @@ impl QuestLogState {
             Some(&source),
             self.view,
             continuity.tracked.as_slice(),
+            self.include_map_marks,
         ))
         .map_err(|_| QuestLogFault)?;
         if payload == self.sent {

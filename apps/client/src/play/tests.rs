@@ -344,6 +344,9 @@ include!(concat!(env!("OUT_DIR"), "/play_feature_tests.rs"));
 #[path = "tests_additional.rs"]
 mod additional;
 
+#[path = "tests_marker_scope.rs"]
+mod marker_scope;
+
 #[test]
 fn owner_drop_stops_session_with_auxiliary_sender_alive() -> Result<(), String> {
     on_session_test_thread(|| {
