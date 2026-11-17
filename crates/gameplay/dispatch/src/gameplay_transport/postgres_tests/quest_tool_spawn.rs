@@ -63,7 +63,7 @@ fn item_on_map_use_commits_progress_and_spawns_once_without_relocation_postgres(
                         "/../../../content/world/placements/region-z07-x129-y123.b3"
                     )),
                     region: (7, 129, 123),
-                    bounds: (33209, 31669, 33212, 31672),
+                    bounds: (33210, 31670, 33212, 31672),
                     start,
                     expected: vec![super::l6_world_pickups::ExpectedTile {
                         position: (GRAVE.x, GRAVE.y),
