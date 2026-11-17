@@ -36,8 +36,34 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut damaged = false;
     let mut last_position = target.position;
+    // Diagnostics for a missing corpse: when the target left view and when the actor jumped.
+    let started = tokio::time::Instant::now();
+    let start_actor = client.world_spatial().actor_position;
+    let (mut target_gone_after, mut actor_jump) = (None, None);
     let corpse = loop {
         client.service_liveness(Duration::from_millis(100)).await?;
+        let actor = client.world_spatial().actor_position;
+        if actor_jump.is_none()
+            && (actor.floor != start_actor.floor
+                || actor
+                    .x
+                    .abs_diff(start_actor.x)
+                    .max(actor.y.abs_diff(start_actor.y))
+                    > 8)
+        {
+            actor_jump = Some((
+                started.elapsed().as_secs_f32(),
+                actor,
+                client.actor_vitals().copied(),
+            ));
+        }
+        if target_gone_after.is_none()
+            && client
+                .world_entities()
+                .is_some_and(|entities| entities.get(&target.entity).is_none())
+        {
+            target_gone_after = Some(started.elapsed().as_secs_f32());
+        }
         for event in client.take_events() {
             if let oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta) = event {
                 if let Some(updated) = delta
@@ -66,11 +92,20 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
             let still_visible = client
                 .world_entities()
                 .and_then(|entities| entities.get(&target.entity).copied());
+            let corpses: Vec<_> = client
+                .world_entities()
+                .into_iter()
+                .flat_map(|entities| entities.iter())
+                .filter(|entry| entry.kind == EntityKind::Corpse)
+                .map(|entry| entry.position)
+                .take(6)
+                .collect();
             return Err(format!(
-                "hunt produced no corpse before deadline; target={:?} at={:?} damaged={damaged} last_position={last_position:?} still_visible={still_visible:?} actor={:?}",
+                "hunt produced no corpse before deadline; target={:?} at={:?} damaged={damaged} last_position={last_position:?} still_visible={still_visible:?} actor={:?} start_actor={start_actor:?} target_gone_after_s={target_gone_after:?} actor_jump={actor_jump:?} vitals={:?} corpses={corpses:?}",
                 target.display_name,
                 target.position,
-                client.world_spatial().actor_position
+                client.world_spatial().actor_position,
+                client.actor_vitals()
             )
             .into());
         }
