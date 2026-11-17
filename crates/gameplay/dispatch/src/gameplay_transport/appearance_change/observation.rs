@@ -54,7 +54,9 @@ pub(in crate::gameplay_transport) async fn observe_result(
     }
     entities.sort_unstable();
     if entities.windows(2).any(|p| p[0] == p[1]) {
-        operator_event("event=appearance_observation_failed class=visibility reason=duplicate_entity");
+        operator_event(
+            "event=appearance_observation_failed class=visibility reason=duplicate_entity",
+        );
         return Err(ObservationError::Unavailable);
     }
     let _foreground = admission.root.foreground_demand().map_err(|_| {
@@ -433,7 +435,8 @@ async fn observe_once(
                     note_none(
                         runtime.actor_staff_visibility(*actor).ok(),
                         "visibility reason=staff_visibility_missing",
-                    )?.2,
+                    )?
+                    .2,
                 ),
                 "revision",
             )?,
