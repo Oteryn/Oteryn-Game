@@ -6,6 +6,8 @@ use oteryn_protocol_oteryn::server_modal::input::{
 use oteryn_protocol_oteryn::server_modal::{CAPABILITY_SERVER_MODAL_V1, Dialog};
 #[path = "server_modal/owner.rs"]
 mod owner;
+#[path = "server_modal/reading.rs"]
+mod reading;
 #[path = "server_modal/rules.rs"]
 mod rules;
 #[path = "server_modal/store.rs"]
@@ -149,6 +151,14 @@ macro_rules! authority_methods {
         ) -> impl std::future::Future<Output = Option<$crate::gameplay_transport::connection::UseOutcome>> {
             async { None }
         }
+        fn server_modal_read_book(
+            &self,
+            _admitted: $crate::gameplay_transport::AdmittedSession,
+            _item: [u8; 16],
+            _definition: std::num::NonZeroU32,
+        ) -> impl std::future::Future<Output = Option<$crate::gameplay_transport::connection::UseOutcome>> {
+            async { None }
+        }
     };
 }
 pub(super) use authority_methods;
@@ -176,6 +186,14 @@ macro_rules! composed_methods {
             resolved: Option<$crate::gameplay_transport::item_view::ItemKey>,
         ) -> Option<connection::UseOutcome> {
             self.offer_bed_modal(admitted, target, resolved).await
+        }
+        async fn server_modal_read_book(
+            &self,
+            admitted: connection::AdmittedSession,
+            item: [u8; 16],
+            definition: std::num::NonZeroU32,
+        ) -> Option<connection::UseOutcome> {
+            self.offer_carried_book(admitted, item, definition).await
         }
     };
 }

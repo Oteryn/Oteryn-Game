@@ -99,12 +99,19 @@ fn scenario() -> TestResult {
 
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
-        admitted.item_fence = item_fence_of(
-            FreshAdmissionStore::from_root(h.root.clone())
-                .current_session_at(admitted.game_session_id)
-                .await?
-                .0,
-        );
+        let (current, _) = FreshAdmissionStore::from_root(h.root.clone())
+            .current_session_at(admitted.game_session_id)
+            .await?;
+        deps.runtime
+            .lock()
+            .await
+            .bind_attacker_lease(
+                deps.actor,
+                admitted.game_session_id,
+                current.current_character_lease(),
+            )
+            .map_err(debug)?;
+        admitted.item_fence = item_fence_of(current);
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 15, 450])
                 .ok_or("item use and server modal capabilities")?;
@@ -182,8 +189,15 @@ fn scenario() -> TestResult {
             drop(client);
             Ok::<_, Box<dyn std::error::Error>>(())
         };
-        let (result, _) = tokio::join!(playing, serving);
+        let (result, end) = tokio::time::timeout(std::time::Duration::from_secs(30), async {
+            tokio::join!(playing, serving)
+        })
+        .await?;
         result?;
+        assert!(matches!(
+            end,
+            crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenDisconnected(_)
+        ));
         drop(owner);
         drop(authority);
         drop(seal);

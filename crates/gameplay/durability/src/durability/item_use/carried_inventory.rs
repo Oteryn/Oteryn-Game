@@ -128,6 +128,34 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
     ) -> Result<ItemUseInventory> {
+        self.read_item_use_snapshot(authority, node, fence, None)
+            .await
+            .map(|(inventory, _)| inventory)
+    }
+
+    /// Read the exact carried book instance under the same Character lock as its custody.
+    /// An outer `None` means the selected instance or definition is no longer carried.
+    /// An inner `None` means the current book is empty.
+    pub async fn read_carried_book(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        instance: [u8; 16],
+        definition: TypedDefinitionRef,
+    ) -> Result<Option<Option<String>>> {
+        self.read_item_use_snapshot(authority, node, fence, Some((instance, definition)))
+            .await
+            .map(|(_, text)| text)
+    }
+
+    async fn read_item_use_snapshot(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        book: Option<([u8; 16], TypedDefinitionRef)>,
+    ) -> Result<(ItemUseInventory, Option<Option<String>>)> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemUseError::AuthorityRejected)?;
@@ -153,8 +181,23 @@ impl DurabilityRoot {
                     .await;
                     match inventory {
                         Ok(inventory) => {
+                            let text = if let Some((book, definition)) = book
+                                && inventory.backpack.iter().flat_map(|bag| &bag.entries)
+                                    .chain(inventory.nested.iter().map(|(_, entry)| entry))
+                                    .any(|entry| entry.item.item_instance_id == book
+                                        && entry.item.definition == definition)
+                            {
+                                Some(sqlx::query_scalar(
+                                    "SELECT text FROM game_item_texts WHERE item_instance_id=encode($1,'hex')::uuid",
+                                )
+                                .bind(book.as_slice())
+                                .fetch_optional(&mut *tx)
+                                .await?)
+                            } else {
+                                None
+                            };
                             commit_semantic_transaction(tx, deadline).await?;
-                            Ok(Ok(inventory))
+                            Ok(Ok((inventory, text)))
                         }
                         Err(ItemUseError::Unavailable(error)) => Err(error),
                         Err(error) => Ok(Err(error)),

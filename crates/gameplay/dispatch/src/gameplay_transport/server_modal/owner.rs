@@ -227,6 +227,24 @@ impl ModalHub {
     }
 
     /// A proved refusal performed no mutation, so the player may correct or cancel it.
+    /// Store a read-only dialog for the existing modal poll. Preserve any dialog
+    /// already awaiting its answer or its first query.
+    pub(super) fn queue_reading(&self, root: Root, dialog: Dialog) -> Option<()> {
+        if root.1 == 0 || !dialog.valid() {
+            return None;
+        }
+        let mut state = self.state.lock().ok()?;
+        if !state.entries.contains_key(&root) && state.entries.len() >= 256 {
+            return None;
+        }
+        let entry = state.entries.entry(root).or_default();
+        if entry.pending.is_some() || entry.notification.is_some() {
+            return None;
+        }
+        entry.notification = Some(dialog);
+        Some(())
+    }
+
     pub(super) fn refused_rule(&self, root: Root, answer: Answer) -> Option<()> {
         let mut state = self.state.lock().ok()?;
         let entry = state.entries.get_mut(&root)?;
