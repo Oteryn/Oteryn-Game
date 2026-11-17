@@ -28,8 +28,6 @@ const QB_OUTFIT_NPCS: &[(&str, u16, u16, u8)] = &[
 const QB2_OUTFIT_NPCS: &[(&str, u16, u16, u8)] = &[
     // Druid Outfits Quest (A Majestic Warwolf, Ceiron, Ustan).
     ("oteryn:npc.a_majestic_warwolf", 33355, 31991, 8),
-    // Decaying Defender Outfits.
-    ("oteryn:npc.bloodshade_rotten", 34069, 31982, 14),
     // To Outfox a Fox Quest.
     ("oteryn:npc.budrik", 32525, 31905, 8),
     ("oteryn:npc.ceiron", 32665, 31717, 7),

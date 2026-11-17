@@ -160,11 +160,11 @@ fn qb_crystal_warlord_and_soil_guardian_hand_ins_are_placed_and_stories_complete
     super::qengine_rewards::scenario("qengine-rewards-l9-soil-guardian-story")
 }
 
-/// The accessory stories themselves run in `soul_war` and `rotten_blood_progression`.
+/// The accessory story itself runs in `soul_war`. Bloodshade (Decaying Defender) is not
+/// placed: its donor floor item 21017 has no item definition, so the cell has no ground.
 #[test]
-fn qb_revenant_and_decaying_defender_hand_ins_are_placed() -> TestResult {
-    hand_ins_are_placed("revenant", &["oteryn:npc.flickering_soul"])?;
-    hand_ins_are_placed("decaying", &["oteryn:npc.bloodshade_rotten"])
+fn qb_revenant_hand_in_is_placed() -> TestResult {
+    hand_ins_are_placed("revenant", &["oteryn:npc.flickering_soul"])
 }
 
 #[test]

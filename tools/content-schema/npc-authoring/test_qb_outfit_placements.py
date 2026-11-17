@@ -20,7 +20,6 @@ QB_CELLS = {
     "oteryn:npc.zoltan": (33266, 31847, 4),
     # QB-2
     "oteryn:npc.a_majestic_warwolf": (33355, 31991, 8),
-    "oteryn:npc.bloodshade_rotten": (34069, 31982, 14),
     "oteryn:npc.budrik": (32525, 31905, 8),
     "oteryn:npc.ceiron": (32665, 31717, 7),
     "oteryn:npc.eruaran": (33618, 32372, 5),

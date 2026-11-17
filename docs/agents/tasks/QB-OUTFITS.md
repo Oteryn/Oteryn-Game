@@ -71,7 +71,7 @@ at its single agreeing promotion-candidate cell, as in QB-1. One Eyed Joe
 | Brotherhood / Nightmare Outfits | `Brotherhood_Outfits`, `Nightmare_Outfits` | The Bone Master 32793,32225,14; The Dream Master 32844,32228,14 |
 | Cave Explorer Outfits | `Cave_Explorer_Outfits` | Gnommander 32248,32604,8 |
 | Crystal Warlord / Soil Guardian Outfits | `Crystal_Warlord_Outfits`, `Soil_Guardian_Outfits` | Gnomally 32795,31746,10 |
-| Decaying Defender / Revenant Outfits | `Decaying_Defender_Outfits`, `Revenant_Outfits` | Bloodshade (Rotten) 34069,31982,14; Flickering Soul 33621,31419,10 |
+| Revenant Outfits | `Revenant_Outfits` | Flickering Soul 33621,31419,10 |
 | Dream Warden / Dream Warrior Outfits | `Dream_Warden_Outfits`, `Dream_Warrior_Outfits` | Eruaran 33618,32372,5; Vanys 33685,32180,8 |
 | Druid Outfits | `Druid_Outfits_Quest/Spoiler` | A Majestic Warwolf 33355,31991,8; Ceiron 32665,31717,7; Ustan 32580,32757,6 |
 | Knight Outfits | `Knight_Outfits_Quest/Spoiler` | Gregor 32406,32201,6 |
@@ -105,6 +105,11 @@ waits and run the whole story (`qengine-rewards-qb-citizen-story`,
 `qengine-rewards-qb-warrior-story`) on PostgreSQL in CI.
 
 Known global-parity gaps (later batches or the server lane):
+
+- Decaying Defender: Bloodshade (Rotten)'s donor cell 34069,31982,14 and its
+  neighbours lie on item 21017-family floor that has no item definition. The
+  compiler therefore holds the cell as `NoGround`, so Bloodshade stays unplaced
+  until the Rotten Blood floor items are imported (world/items lane).
 
 - Sandra's lottery (100 empty vials for a random winning ticket) needs a
   random-outcome NPC exchange.
