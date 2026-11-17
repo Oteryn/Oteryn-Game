@@ -690,3 +690,42 @@ fn sandra_lottery_bonus_topics_match_donor_enrollment_flow() -> super::TestResul
     }
     Ok(())
 }
+
+#[test]
+fn sandra_lottery_donor_entry_keywords_match_entire_message() -> super::TestResult {
+    use oteryn_gameplay_quests::quest::npc_rules::{
+        NpcInventorySnapshot, NpcRuleCatalog, NpcRuleInput, NpcRuleTrigger,
+    };
+    use std::collections::BTreeMap;
+    let source = NpcRuleCatalog::from_json_documents(&[include_str!(
+        "../../../../../../content/dialogues/quest-rules-supplemental/sandra-lottery.json"
+    )])?;
+    let inventory = NpcInventorySnapshot::default();
+    let outfits = BTreeMap::new();
+    for value in [0, 1] {
+        let tracks = BTreeMap::from([(
+            "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt".into(),
+            value,
+        )]);
+        for message in ["a vial", "ticket please", "bonus system", "deposit vials"] {
+            let plan = source.plan_item_exchange(&NpcRuleInput {
+                npc: "oteryn:npc.sandra",
+                trigger: NpcRuleTrigger::Say,
+                message,
+                player_name: None,
+                topic: 0,
+                tracks: &tracks,
+                inventory: &inventory,
+                now_epoch_seconds: 0,
+                calendar_month: 1,
+                premium_current: false,
+                level: 1,
+                vocation: "oteryn:vocation.none",
+                sex: 0,
+                outfits: &outfits,
+            })?;
+            assert!(plan.is_none(), "donor requires an exact entry keyword");
+        }
+    }
+    Ok(())
+}
