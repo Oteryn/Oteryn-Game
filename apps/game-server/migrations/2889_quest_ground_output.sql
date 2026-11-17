@@ -76,6 +76,10 @@ BEGIN
    OR g.scope_kind<>1 OR g.instance_id IS NOT NULL OR g.stack_ordinal IS NULL
    OR NOT EXISTS(SELECT 1 FROM game_character_quest_receipts q WHERE (q.character_id,q.cause_id,q.cause_ordinal,q.transition_key)
        =(r.character_id,r.cause_id,r.cause_ordinal,r.transition_key) AND q.cause_kind='use' AND q.created_xact_id=pg_current_xact_id())
+   OR EXISTS(SELECT 1 FROM game_item_container_entries WHERE item_instance_id=r.item_instance_id)
+   OR EXISTS(SELECT 1 FROM game_item_container_slots WHERE item_instance_id=r.item_instance_id)
+   OR EXISTS(SELECT 1 FROM game_item_nested_entries WHERE item_instance_id=r.item_instance_id)
+   OR EXISTS(SELECT 1 FROM game_item_corpse_container_entries WHERE item_instance_id=r.item_instance_id)
    OR (SELECT count(*) FROM game_item_instances WHERE minted_transaction_id=r.transaction_id)<>1
    OR (SELECT count(*) FROM game_item_audit_outbox WHERE transaction_id=r.transaction_id)<>1
    OR NOT EXISTS(SELECT 1 FROM game_item_audit_outbox o WHERE o.transaction_id=r.transaction_id AND o.event_id=r.event_id
