@@ -130,6 +130,17 @@ pub(super) async fn exercise(
         2,
         "current mirror reset publishes once"
     );
+    let spectator_position = crate::foundation::MovementLocalPosition {
+        x: 32963,
+        y: 31458,
+        floor: 2,
+    };
+    let monster_spectator = owner
+        .runtime
+        .lock()
+        .await
+        .admit_pinned_test_creature(spectator_position)
+        .map_err(super::fixture::debug)?;
     let restored = object_target(
         owner,
         TilePos {
@@ -159,5 +170,51 @@ pub(super) async fn exercise(
             .get("oteryn:quest-progress/crystalserver/quest/u8_4/blood_brothers/mirror_counter"),
         Some(&0)
     );
+    assert_eq!(
+        use_target(owner, admitted, 3, &restored).await?,
+        UseDisposition::Committed,
+        "replay returns the original committed result"
+    );
+    let runtime = owner.runtime.lock().await;
+    let destination = crate::foundation::MovementLocalPosition {
+        x: 32967,
+        y: 31459,
+        floor: 1,
+    };
+    assert_eq!(
+        runtime
+            .read_actor_position(admitted.runtime_actor.ok_or("actor")?)
+            .map_err(super::fixture::debug)?
+            .position(),
+        destination
+    );
+    assert_eq!(
+        runtime
+            .read_actor_position(monster_spectator)
+            .map_err(super::fixture::debug)?
+            .position(),
+        spectator_position,
+        "monster spectators must remain in the source room"
+    );
+    let census = runtime
+        .positioned_melee_census()
+        .map_err(super::fixture::debug)?;
+    for (identity, expected) in [
+        ("oteryn:creature.lersatio", 1),
+        ("oteryn:creature.vampire", 2),
+    ] {
+        assert_eq!(
+            census
+                .iter()
+                .filter(|(actor, at, session)| {
+                    session.is_none()
+                        && at.position().floor == 1
+                        && runtime.matches_live_creature_identity(*actor, identity.as_bytes())
+                })
+                .count(),
+            expected,
+            "one donor cohort even after command replay"
+        );
+    }
     Ok(())
 }
