@@ -1,5 +1,5 @@
 //! M09: two independent source-room caches, never one invented multi-item chest.
-use super::fixture::{Harness, debug};
+use super::fixture::{Harness, debug, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::foundation::{CharacterId, CharacterLease};
 use crate::map::view::MapFacts;
@@ -88,6 +88,18 @@ pub(super) async fn exercise(
         oteryn_protocol_oteryn::world_object::decode_use_result(&first).map_err(debug)?,
         UseDisposition::Committed
     );
+    // Lane qc: the telescope chest closes the Treasure Hunt quest log; the ingots do not.
+    let completed: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_character_quest_states WHERE \
+         character_id=encode($1,'hex')::uuid AND quest_key=$2 \
+         AND completed_character_revision IS NOT NULL)",
+    )
+    .bind(id(41).as_slice())
+    .bind(&callback.quest)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(completed, callback.completes);
+    assert_eq!(callback.completes, callback.key.ends_with("telescope"));
     let reward = callback.effects.item_reward.as_ref().ok_or("reward")?;
     let received: Vec<(String, i64)> = sqlx::query_as("SELECT definition_production_key,sum(quantity)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key IN ('oteryn:item.tibia.i9616','oteryn:item.tibia.i9058') GROUP BY definition_production_key ORDER BY definition_production_key")
         .fetch_all(&h.pool).await?;
