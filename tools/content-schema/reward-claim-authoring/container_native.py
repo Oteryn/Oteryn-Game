@@ -35,11 +35,14 @@ MEDUSA_HOLD = [{'category': 'source', 'code': 'SOURCE_WRITTEN_TEXT_CARRIER_UNRES
 # preserve Crystal chest.lua:1447-1456 + Item::CreateItem raw1 for its two vessels.
 FLUID_CHOICES = {
     'oteryn:reward-claim.kv.goblintemple2': (
-        [6119], {2: (2874, 9)}, 'WIKI_MILK_OVERRIDES_DONOR_WATER'),
+        [6119], {2: (2874, 9)}, 'WIKI_MILK_OVERRIDES_DONOR_WATER',
+        'canary:reward-claim/kv/goblintemple2'),
     'oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine': (
-        [6197, 6198, 6199, 6200], {1: (2874, 2)}, 'WIKI_WINE_OVERRIDES_DONOR_WATER'),
+        [6197, 6198, 6199, 6200], {1: (2874, 2)}, 'WIKI_WINE_OVERRIDES_DONOR_WATER',
+        'canary:reward-claim/quest/u7_9/dreamers_challenge/chests_wine'),
     'oteryn:reward-claim.kv.present_box': (
-        [6113], {0: (2882, 1), 2: (2881, 1)}, 'CRYSTAL_PRESENT_WATER_SUBTYPES'),
+        [6113], {0: (2882, 1), 2: (2881, 1)}, 'CRYSTAL_PRESENT_WATER_SUBTYPES',
+        'canary:reward-claim/kv/present_box'),
 }
 # These Item profiles already have native charged-instance custody. The
 # historical canonical hold predates that owner. Scope the admission to these
@@ -279,14 +282,15 @@ def derive(definition, items, stack_problem):
     difference = None
     fluid_choice = FLUID_CHOICES.get(definition['identity']['key'])
     if fluid_choice is not None:
-        uids, fills, selected = fluid_choice
+        uids, fills, selected, pilot_key = fluid_choice
         actual = [[u['unique_id'] for u in p['source_binding']['legacy_unique_ids']
                    if u['server'] == 'crystalserver'] for p in definition['placements']]
         holds = [{'category': 'item', 'code': 'ITEM_SEMANTICS_MISSING',
                   'item': f'oteryn:item.tibia.i{number}', 'placement_index': index,
                   'reason': 'waiting', 'reward_field': 'items', 'reward_index': child}
                  for index in range(len(uids)) for child, (number, _) in fills.items()]
-        if (actual != [[uid] for uid in uids] or definition.get('data_holds') not in ([], holds)
+        if (definition.get('provenance', {}).get('pilot_key') != pilot_key
+                or actual != [[uid] for uid in uids] or definition.get('data_holds') not in ([], holds)
                 or definition.get('source_variant', {}).get('source_data') != {
                     'missing': [], 'status': 'COMPLETE'}):
             return None
