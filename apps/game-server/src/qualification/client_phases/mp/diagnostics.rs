@@ -1,4 +1,4 @@
-//! Non-secret role and stage context shared by MP evidence and its focused tests.
+// Non-secret role and stage context shared by MP evidence and its focused tests.
 use std::net::SocketAddr;
 
 pub(super) fn role_context(

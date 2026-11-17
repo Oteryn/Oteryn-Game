@@ -220,7 +220,13 @@ async fn pump_at(bots: &mut [Bot<'_, '_>], stage: &str) -> TestResult<Vec<Vec<Se
             TestResult::Ok(client.take_events())
         }
         .await;
-        events.push(bot.contextualize(stage, result)?);
+        let result = bot.contextualize(stage, result);
+        if result.is_err() {
+            // Liveness errors poison the session just like failed command exchanges.
+            // Preserve the diagnostic before dropping it; cleanup must prove durable release.
+            bot.session = None;
+        }
+        events.push(result?);
     }
     Ok(events)
 }

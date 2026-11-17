@@ -1,7 +1,8 @@
 //! Runner diagnostics must identify the exact bot, endpoint, and reconnect stage.
 use std::net::SocketAddr;
-#[path = "../../qualification/client_phases/mp/diagnostics.rs"]
-mod diagnostics;
+mod diagnostics {
+    include!("../../qualification/client_phases/mp/diagnostics.rs");
+}
 use diagnostics::role_context;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 

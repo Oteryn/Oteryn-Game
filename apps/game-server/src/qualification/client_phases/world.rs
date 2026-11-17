@@ -611,9 +611,11 @@ pub(super) async fn logout_retrying_busy(
     logout_retrying_busy_observed(client, None).await
 }
 
+type LogoutObserver<'a> = dyn FnMut(usize, &str) + 'a;
+
 pub(super) async fn logout_retrying_busy_observed(
     client: &mut oteryn_dev_client::DevClientSession,
-    mut observe: Option<&mut dyn FnMut(usize, &str)>,
+    mut observe: Option<&mut LogoutObserver<'_>>,
 ) -> TestResult<(
     Option<oteryn_protocol_oteryn::logout::LogoutResult>,
     String,
