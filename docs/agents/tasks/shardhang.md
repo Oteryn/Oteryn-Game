@@ -56,3 +56,9 @@ A serial direct run of the fresh client unit-test binary completed with 886
 passed, zero failed in 54.73s. The workspace baseline is still compiling,
 including the dispatch lib-test target. No Nextest test execution timings
 are available yet.
+
+After 34 minutes, local Nextest still had not launched tests. The dispatch
+lib-test rustc process had been running for almost 12 minutes and had
+about 10.7 GiB resident. The cgroup recorded memory pressure with zero OOM
+kills at this point. This is direct evidence that time spent inside the
+nextest command can be substantial before any test starts.
