@@ -1036,7 +1036,7 @@ async fn prepare_player(
         return Ok(());
     }
     let fresh = session.take().ok_or("session absent")?;
-    *session = Some(provisioning::provision(fresh, clients, CORE_CHARACTER).await?);
+    *session = Some(provisioning::provision_fixture(fresh, clients, CORE_CHARACTER).await?);
     Ok(())
 }
 
