@@ -185,9 +185,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 let source = Position { x, y, floor };
                 if member_session.is_some() && spectators.contains(source) {
-                    if members.len() >= 8 {
-                        return UseDisposition::Rejected;
-                    }
                     members.push((
                         oteryn_gameplay_quests::quest::world_callbacks::EncounterPlayer {
                             from: source,

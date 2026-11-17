@@ -175,9 +175,10 @@ pub(super) async fn exercise(
             .map_err(super::fixture::debug)?;
         actor
     };
-    let present = {
+    let mut present = Vec::new();
+    for ordinal in 100..109 {
         let mut runtime = owner.runtime.lock().await;
-        let session = crate::foundation::GameSessionId::decode(&super::fixture::id(100))
+        let session = crate::foundation::GameSessionId::decode(&super::fixture::id(ordinal))
             .map_err(super::fixture::debug)?;
         let reservation = runtime
             .reserve_fresh_session(session)
@@ -200,8 +201,8 @@ pub(super) async fn exercise(
         states
             .initialize(&runtime, actor, session, facts, (0, 0), owner.owner_now())
             .ok_or("spectator player state")?;
-        actor
-    };
+        present.push(actor);
+    }
     let restored = object_target(
         owner,
         TilePos {
@@ -257,14 +258,16 @@ pub(super) async fn exercise(
         spectator_position,
         "monster spectators must remain in the source room"
     );
-    assert_eq!(
-        runtime
-            .read_actor_position(present)
-            .map_err(super::fixture::debug)?
-            .position(),
-        destination,
-        "every player currently in the room transfers, including one sharing a monster tile"
-    );
+    for present in present {
+        assert_eq!(
+            runtime
+                .read_actor_position(present)
+                .map_err(super::fixture::debug)?
+                .position(),
+            destination,
+            "every player currently in the room transfers, including one sharing a monster tile"
+        );
+    }
     assert_eq!(
         runtime
             .read_actor_position(departed)
