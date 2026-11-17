@@ -83,6 +83,17 @@
       "appearance": 2469,
       "unique": 6154,
       "source_line": 1780
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.key.id4502",
+      "position": [
+        32201,
+        31571,
+        10
+      ],
+      "appearance": 2472,
+      "unique": 5008,
+      "source_line": 435
     }
   ],
   "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
