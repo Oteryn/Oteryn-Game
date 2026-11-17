@@ -28,7 +28,7 @@ readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Pac
 # just as the S3-B seam does; progression is initialized from this interpretation.
 # The served readiness.content_revision is this same revision: the quest and Task Board
 # owners refuse a Character whose stored progression content differs from the served one.
-readonly INTERPRETATION=(nb-profile-1 nb-ruleset-1 s3b-content-1 nb-starter-1)
+readonly INTERPRETATION=(nb-profile-1 nb-ruleset-1 s3b-content-1 newhaven-starter-r1)
 readonly COMPOSE_FILE=tools/qualification/wp5_s3a/compose.yml
 readonly COMPOSE_S3B=tools/qualification/wp5_s3b/compose.override.yml
 readonly COMPOSE_OVERLAY=tools/qualification/node_boot/compose.override.yml
@@ -103,7 +103,7 @@ case "$NODE_BOOT_WORLD" in 0|1) ;; *) echo 'NODE_BOOT_RESULT=BLOCKED reason=inva
 # A kept or reused stack is one topology, so it never runs the separate basic pass.
 # The game_platform lifecycle owns one Platform stack, so it never runs the basic pass either.
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "${NODE_BOOT_SKIP_BASIC:-0}" != 1 \
-  && -z "${NODE_BOOT_LIFECYCLE:-}" \
+  && "${NODE_BOOT_LIFECYCLE:-}" == native_reference \
   && "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
   NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
 fi
@@ -1101,13 +1101,14 @@ PY
 }
 
 character_bootstrap() { # §4.5 Characters from real Platform intents
-  local index=0 account operation name failed=0
+  local index=0 account operation name failed=0 vocation="${NODE_BOOT_PROFILE^}"
+  [[ "$NODE_BOOT_PROFILE" != explorer ]] || vocation=Knight
   for account in "${BOOTSTRAP_ACCOUNTS[@]}"; do
     operation="${INTENT_OPERATIONS[$index]}"
     name="${INTENT_NAMES[$index]}"
     index=$((index + 1))
     if ! python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
-      "$WORK" "$account" "$WORLD_ID" "$operation" "${INTERPRETATION[@]}" "$name"; then
+      "$WORK" "$account" "$WORLD_ID" "$operation" "${INTERPRETATION[@]}" "$name" "$vocation"; then
       echo "platform intent issue failed for operation $operation"
       failed=1
       continue

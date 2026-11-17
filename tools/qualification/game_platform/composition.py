@@ -65,14 +65,14 @@ def configure(work, node, base, uid):
     install(temporary, base / "ops/assignment-report.toml", "root", "0644")
 
 
-def bootstrap(work, account, world, operation, revisions, name="Qualification Two"):
+def bootstrap(work, account, world, operation, revisions, name="Qualification Two", vocation="Knight"):
     env = json.loads((work / "portal/secrets/env.json").read_text())
     binary = json.loads((work / "identity.json").read_text())["portal_binary"]
     if len(revisions) != 4:
         raise ValueError("intent_context_missing")
     args = dict(zip(["profileRevision", "rulesetRevision", "contentRevision", "starterTemplateRevision"], revisions))
     args.update(accountId=account, targetWorldId=world, operationId=operation,
-                requestedName=name, requestedSex="Female", requestedVocation="Knight")
+                requestedName=name, requestedSex="Female", requestedVocation=vocation)
     result = subprocess.run([binary, "seed", "bootstrap-intent", json.dumps(args)],
                             env=env, capture_output=True, timeout=20, check=True)
     value = json.loads(result.stdout)

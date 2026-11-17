@@ -5,7 +5,8 @@ All reference shards use the native portal-rs producer pinned by
 `update_platform_pin.py`, including basic, row batches, journey groups and spells.
 They retain the full node-boot seam pipeline; only the separate `game_platform`
 lane takes its identity/gateway-specific completion path. Bootstrap issuance uses
-v4 with explicit Female/Knight creation choices and each bot's requested name.
+v4 with explicit Female sex, the requested qualification vocation, each bot's
+name and the `newhaven-starter-r1` starter interpretation.
 World runs seed all four bot accounts through the real producer CLI. To update
 the producer pins, run `python3 tools/qualification/node_boot/update_platform_pin.py
 /path/to/pinned/platform`; both creation v2 and bootstrap v4 fixtures are required.
