@@ -129,39 +129,35 @@ impl Mailbox {
     pub(super) fn convert_events(&mut self, events: &mut [SessionEvent]) {
         let before = self.wire.frame;
         for event in events.iter_mut() {
-            match event {
-                SessionEvent::ActivityScope(_) => self.reset_wire_frame(),
-                SessionEvent::WorldSpatial(delta) => {
-                    self.wire.observe_wire(delta.value.actor_position);
-                }
-                SessionEvent::WorldSpatialEntities(delta) => {
-                    self.wire.observe_wire(delta.value.actor_position);
-                }
-                SessionEvent::WorldMap(delta) => {
-                    self.wire.observe_origin(delta.value.header.origin)
-                }
-                SessionEvent::WorldMapSnapshot(snapshot) => {
-                    self.wire.observe_origin(snapshot.value.header.origin);
-                }
-                _ => {}
+            if let SessionEvent::ActivityScope(_) = event {
+                self.reset_wire_frame();
+            }
+            if let SessionEvent::WorldSpatial(delta) = event {
+                self.wire.observe_wire(delta.value.actor_position);
+            }
+            if let SessionEvent::WorldSpatialEntities(delta) = event {
+                self.wire.observe_wire(delta.value.actor_position);
+            }
+            if let SessionEvent::WorldMap(delta) = event {
+                self.wire.observe_origin(delta.value.header.origin);
+            }
+            if let SessionEvent::WorldMapSnapshot(snapshot) = event {
+                self.wire.observe_origin(snapshot.value.header.origin);
             }
         }
         let frame = self.wire.frame;
         for event in events.iter_mut() {
-            match event {
-                SessionEvent::WorldSpatial(delta) => {
-                    delta.value.actor_position = frame.to_native(delta.value.actor_position);
-                }
-                SessionEvent::WorldSpatialEntities(delta) => {
-                    delta.value.actor_position = frame.to_native(delta.value.actor_position);
-                    delta
-                        .value
-                        .enter
-                        .iter_mut()
-                        .chain(delta.value.update.iter_mut())
-                        .for_each(|entity| entity_native(frame, entity));
-                }
-                _ => {}
+            if let SessionEvent::WorldSpatial(delta) = event {
+                delta.value.actor_position = frame.to_native(delta.value.actor_position);
+            }
+            if let SessionEvent::WorldSpatialEntities(delta) = event {
+                delta.value.actor_position = frame.to_native(delta.value.actor_position);
+                delta
+                    .value
+                    .enter
+                    .iter_mut()
+                    .chain(delta.value.update.iter_mut())
+                    .for_each(|entity| entity_native(frame, entity));
             }
         }
         if frame != before {

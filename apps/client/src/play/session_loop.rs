@@ -15,43 +15,8 @@ const IDLE_SLICE: Duration = Duration::from_millis(20);
 
 pub use super::stepper::Stepper;
 
-fn publish_scope_transition<T: Stepper>(
-    error: &oteryn_session::SessionError,
-    session: &mut T,
-    outbox: &Outbox,
-    held: &mut Vec<oteryn_session::WorldSpatialEntity>,
-    modal: &mut super::feature_0450_server_modal::protocol::Driver,
-) -> bool {
-    if !matches!(
-        error,
-        oteryn_session::SessionError::ScopeChanged
-            | oteryn_session::SessionError::ActivityScopeChanged
-    ) {
-        return false;
-    }
-    // Publish the destination and discard unsent source actions through the
-    // same scope barrier, whether a command or an automatic query saw it.
-    // Dropping the source driver closes its answer channel, including native dialogs.
-    modal.reset_scope(session.feature_selected(450));
-    *modal = std::mem::replace(
-        modal,
-        super::feature_0450_server_modal::protocol::Driver::new(false),
-    )
-    .with_defaults(session.feature_selected(505))
-    .with_input(session.feature_selected(
-        oteryn_session::property_services::server_modal::input::CAPABILITY_SERVER_MODAL_INPUT_V1,
-    ))
-    .with_outbox(outbox);
-    {
-        let mut mailbox = super::mailbox::lock(&outbox.0);
-        mailbox.cancel_activity_requests();
-        mailbox.reset_server_message_namespace();
-        mailbox.activity_reset_commands = true;
-    }
-    outbox.hud_stamina_initialize(session.feature_selected(199));
-    publish(session, outbox, held);
-    true
-}
+mod scope_transition;
+use scope_transition::publish_scope_transition;
 
 fn initialize<T: Stepper>(
     session: &T,
