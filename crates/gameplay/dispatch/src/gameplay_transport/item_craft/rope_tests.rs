@@ -758,4 +758,19 @@ fn open_hole_ropes_from_directly_below_to_first_available_neighbour() {
         rope_item_landing(TilePos { floor: -15, ..hole }, |_| true),
         None
     );
+    let edge = TilePos { x: 0, y: 0, ..hole };
+    assert_eq!(
+        rope_item_landing(edge, |pos| pos.y == 0),
+        Some((
+            TilePos {
+                floor: below.floor,
+                ..edge
+            },
+            TilePos { x: 1, ..edge }
+        ))
+    );
+    assert_eq!(
+        rope_item_landing(TilePos { floor: 1, ..hole }, |_| true),
+        None
+    );
 }

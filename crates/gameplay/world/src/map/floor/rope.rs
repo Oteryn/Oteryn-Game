@@ -25,7 +25,7 @@ pub fn rope_item_landing(
     let floor = hole
         .floor
         .checked_sub(1)
-        .filter(|floor| i32::from(*floor) >= -MAX_Z)?;
+        .filter(|floor| (-MAX_Z..0).contains(&i32::from(*floor)))?;
     let source = TilePos { floor, ..hole };
     let destination = OFFSETS.iter().find_map(|&(dx, dy)| {
         let tile = TilePos {
