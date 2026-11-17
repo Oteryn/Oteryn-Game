@@ -115,10 +115,10 @@ pub struct ChannelSessionStates {
     pub spell_states: Mutex<actor_spell::ChannelSpellStates>,
     /// NX-1: current-session staff flags and uncertain world-effect receipts.
     pub(super) staff_world: super::staff_tools::WorldTools,
+    pub(super) tainted_soul_expiry: super::cosmetic_item_use::tainted_soul::Expiry,
     /// Per-owner simulation clock control for native timer scenarios, never SQL time.
     #[cfg(test)]
     pub(super) test_owner_time: std::sync::atomic::AtomicU64,
-    pub(super) tainted_soul_expiry: super::cosmetic_item_use::tainted_soul::Expiry,
     pub(super) tibiadrome: super::tibiadrome::Drome,
     pub(super) timed_items: super::timed_item::TimedRuntime,
     /// PAR-P12a: Characters whose level, tracked kill or boss kill may have changed a title
