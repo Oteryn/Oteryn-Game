@@ -349,7 +349,8 @@ pub(super) fn unhandled_confirmation(
     };
     reward_callbacks::offered_for(catalogue).is_ok_and(|callbacks| {
         callbacks.iter().any(|callback| {
-            callback.npc == context.2
+            callback.key != oteryn_gameplay_npc::greeting::ORC_KING_GREETING_TRANSITION
+                && callback.npc == context.2
                 && (callback.topic == topic || requested)
                 && callback.keywords.contains(&text)
         })

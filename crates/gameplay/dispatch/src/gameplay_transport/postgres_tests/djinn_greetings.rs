@@ -238,10 +238,15 @@ fn orc_king_guards_postgres_npc_talk() -> TestResult {
                 .bind(id(41).as_slice()).execute(&h.pool).await?;
             owner.admit_progression_session(&mut admitted).await;
             owner.refresh_quest_session(session, true).await;
-            for command_id in [1, 2] {
-                let result =
-                    super::qengine_rewards::talk(&mut owner, &mut admitted, npc, command_id, "hi")
-                        .await?;
+            for (command_id, greeting) in [(1, "hi"), (2, "hi"), (3, "hail")] {
+                let result = super::qengine_rewards::talk(
+                    &mut owner,
+                    &mut admitted,
+                    npc,
+                    command_id,
+                    greeting,
+                )
+                .await?;
                 assert_eq!(
                     result,
                     NpcIntentDisposition::Ok,
