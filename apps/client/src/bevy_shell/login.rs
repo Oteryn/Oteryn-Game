@@ -137,10 +137,18 @@ impl LoginControl {
 
 pub(super) fn install(app: &mut App) {
     bulletin::install(app);
-    app.add_systems(Update, super::ui::project_art).add_systems(
-        PostUpdate,
-        submission::finish.after(bevy::text::EditableTextSystems),
-    );
+    app.init_resource::<super::ui::window_layout::WindowLayouts>()
+        .add_systems(
+            Update,
+            (super::ui::project_art, super::ui::window_layout::zoom),
+        )
+        .add_systems(
+            PostUpdate,
+            (
+                submission::finish.after(bevy::text::EditableTextSystems),
+                super::ui::window_layout::project.before(bevy::ui::UiSystems::Layout),
+            ),
+        );
 }
 
 fn control_button(

@@ -141,6 +141,7 @@ pub(super) enum Control {
     Cancel,
 }
 pub(super) mod toolbar;
+pub(in crate::bevy_shell) mod window_layout;
 use toolbar::{TOOLBAR, open_toolbar};
 pub(super) use toolbar::{project_manager, project_toolbar};
 impl Control {
@@ -296,21 +297,22 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
             source::frame(skins.frame.clone(), [4., 17., 4., 4.]),
             Name::new("options.window"),
             // Tibia Global options: 685 wide; a 129px category column beside a 470px page.
-            Node {
-                width: px(685.),
-                height: px(534.),
-                max_width: percent(98.),
-                max_height: percent(98.),
-                padding: UiRect {
-                    left: px(14.),
-                    right: px(14.),
-                    top: px(27.),
-                    bottom: px(14.),
+            crate::bevy_shell::ui::window_layout::window(
+                "options",
+                Node {
+                    max_width: percent(98.),
+                    max_height: percent(98.),
+                    padding: UiRect {
+                        left: px(14.),
+                        right: px(14.),
+                        top: px(27.),
+                        bottom: px(14.),
+                    },
+                    flex_direction: FlexDirection::Column,
+                    row_gap: px(8.),
+                    ..default()
                 },
-                flex_direction: FlexDirection::Column,
-                row_gap: px(8.),
-                ..default()
-            },
+            ),
         ))
         .id();
     commands.entity(modal).add_child(panel);

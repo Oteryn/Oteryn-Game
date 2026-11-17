@@ -165,21 +165,23 @@ pub(super) fn project(
                 },
                 source::frame(skin.frame.clone(), [4., 17., 4., 4.]),
                 // Tibia Global character list: 745 wide around a 340px scrolling list.
-                Node {
-                    width: px(745.),
-                    max_width: percent(95.),
-                    max_height: percent(95.),
-                    padding: UiRect {
-                        left: px(16.),
-                        right: px(16.),
-                        top: px(29.),
-                        bottom: px(16.),
+                crate::bevy_shell::ui::window_layout::window(
+                    "selection",
+                    Node {
+                        max_width: percent(95.),
+                        max_height: percent(95.),
+                        padding: UiRect {
+                            left: px(16.),
+                            right: px(16.),
+                            top: px(29.),
+                            bottom: px(16.),
+                        },
+                        flex_direction: FlexDirection::Column,
+                        row_gap: px(5.),
+                        overflow: Overflow::clip(),
+                        ..default()
                     },
-                    flex_direction: FlexDirection::Column,
-                    row_gap: px(5.),
-                    overflow: Overflow::clip(),
-                    ..default()
-                },
+                ),
             ))
             .id();
         commands.entity(root).add_child(panel);
@@ -204,6 +206,7 @@ pub(super) fn project(
                     width: percent(100.),
                     height: px(340.),
                     min_height: px(0.),
+                    flex_grow: 1.,
                     flex_shrink: 1.,
                     flex_direction: FlexDirection::Column,
                     overflow: Overflow::scroll_y(),
@@ -390,13 +393,19 @@ fn line(
     height: f32,
 ) -> Entity {
     let entry = commands
-        .spawn(Node {
-            width: percent(100.),
-            height: px(height),
-            flex_shrink: 0.,
-            align_items: AlignItems::Center,
-            ..default()
-        })
+        .spawn((
+            crate::bevy_shell::ui::window_layout::Scaled {
+                height: Some(height),
+                ..default()
+            },
+            Node {
+                width: percent(100.),
+                height: px(height),
+                flex_shrink: 0.,
+                align_items: AlignItems::Center,
+                ..default()
+            },
+        ))
         .id();
     for (value, width) in cells {
         let cell = commands
@@ -404,6 +413,10 @@ fn line(
             .insert((
                 TextLayout::no_wrap(),
                 bevy::picking::Pickable::IGNORE,
+                crate::bevy_shell::ui::window_layout::Scaled {
+                    width: *width,
+                    ..default()
+                },
                 Node {
                     width: width.map_or(Val::Auto, px),
                     flex_grow: if width.is_none() { 1. } else { 0. },

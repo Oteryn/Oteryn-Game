@@ -16,21 +16,22 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, parent: Entity) -> En
             },
             source::frame(skin.frame.clone(), [4., 17., 4., 4.]),
             // Tibia Global market: 1000 wide over a 600px content area.
-            Node {
-                width: px(1000.),
-                height: px(634.),
-                max_width: percent(96.),
-                max_height: percent(94.),
-                padding: UiRect {
-                    top: px(24.),
-                    bottom: px(10.),
-                    left: px(10.),
-                    right: px(10.),
+            crate::bevy_shell::ui::window_layout::window(
+                "market",
+                Node {
+                    max_width: percent(96.),
+                    max_height: percent(94.),
+                    padding: UiRect {
+                        top: px(24.),
+                        bottom: px(10.),
+                        left: px(10.),
+                        right: px(10.),
+                    },
+                    flex_direction: FlexDirection::Column,
+                    row_gap: px(8.),
+                    ..default()
                 },
-                flex_direction: FlexDirection::Column,
-                row_gap: px(8.),
-                ..default()
-            },
+            ),
         ))
         .id();
     commands.entity(parent).add_child(root);
@@ -303,14 +304,22 @@ fn table_row(commands: &mut Commands, skin: &Skins, parent: Entity, cells: [Stri
         ))
         .id();
     commands.entity(parent).add_child(line);
-    for (value, width) in cells.iter().zip(OFFER_COLUMNS) {
+    for (index, (value, width)) in cells.iter().zip(OFFER_COLUMNS).enumerate() {
+        // The first column fills the width the user gives the window.
+        let fill = index == 0;
         let cell = commands
             .spawn(source::text(value, source::font(skin.font.clone(), false)))
             .insert((
                 TextLayout::no_wrap(),
+                crate::bevy_shell::ui::window_layout::Scaled {
+                    width: Some(width),
+                    ..default()
+                },
                 Node {
                     width: px(width),
-                    flex_shrink: 0.,
+                    flex_grow: if fill { 1. } else { 0. },
+                    flex_shrink: if fill { 1. } else { 0. },
+                    min_width: px(0.),
                     overflow: Overflow::clip(),
                     ..default()
                 },
@@ -353,6 +362,7 @@ fn category_button(
     let icon = commands
         .spawn((
             crate::bevy_shell::ui::ArtSlot::MarketCategory(category.to_owned()),
+            crate::bevy_shell::ui::window_layout::Scaled::square(32.),
             Node {
                 width: px(32.),
                 height: px(32.),

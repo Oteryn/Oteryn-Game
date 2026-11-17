@@ -34,24 +34,26 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
             },
             GlobalZIndex(60),
             source::frame(skin.frame.clone(), [4., 17., 4., 4.]),
-            Node {
-                position_type: PositionType::Absolute,
-                right: px(20.),
-                top: px(60.),
-                width: px(600.),
-                min_height: px(350.),
-                max_width: percent(96.),
-                max_height: percent(90.),
-                padding: UiRect {
-                    top: px(25.),
-                    bottom: px(10.),
-                    left: px(10.),
-                    right: px(10.),
+            crate::bevy_shell::ui::window_layout::window(
+                "npc",
+                Node {
+                    position_type: PositionType::Absolute,
+                    right: px(20.),
+                    top: px(60.),
+
+                    max_width: percent(96.),
+                    max_height: percent(90.),
+                    padding: UiRect {
+                        top: px(25.),
+                        bottom: px(10.),
+                        left: px(10.),
+                        right: px(10.),
+                    },
+                    flex_direction: FlexDirection::Column,
+                    row_gap: px(5.),
+                    ..default()
                 },
-                flex_direction: FlexDirection::Column,
-                row_gap: px(5.),
-                ..default()
-            },
+            ),
         ))
         .id();
     source::dialog_caption(commands, panel, "NPC", skin.font.clone());
@@ -140,6 +142,10 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
     let trade = commands
         .spawn((
             Name::new("npc-shop.trade"),
+            crate::bevy_shell::ui::window_layout::Scaled {
+                width: Some(180.),
+                ..default()
+            },
             Node {
                 width: px(180.),
                 min_width: px(150.),
@@ -250,6 +256,10 @@ pub(super) fn rows(
                 },
                 TabIndex(0),
                 Name::new("npc-shop.offer"),
+                crate::bevy_shell::ui::window_layout::Scaled {
+                    min_height: Some(35.),
+                    ..default()
+                },
                 Node {
                     width: percent(100.),
                     min_height: px(35.),
@@ -271,6 +281,7 @@ pub(super) fn rows(
             .spawn((
                 source::frame(skin.inset.clone(), [1.; 4]),
                 Name::new("Item appearance unavailable"),
+                crate::bevy_shell::ui::window_layout::Scaled::square(32.),
                 Node {
                     width: px(32.),
                     height: px(32.),

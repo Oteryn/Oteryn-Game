@@ -36,20 +36,21 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins) -> Widgets {
             Name::new("cyclopedia.window"),
             source::frame(skin.frame.clone(), [4., 17., 4., 4.]),
             // Tibia Global Cyclopedia: 700 wide, 36px tab bar over a 420px tab page.
-            Node {
-                width: px(700.),
-                height: px(538.),
-                max_width: percent(96.),
-                max_height: percent(94.),
-                padding: UiRect {
-                    top: px(24.),
-                    bottom: px(10.),
-                    left: px(10.),
-                    right: px(10.),
+            crate::bevy_shell::ui::window_layout::window(
+                "cyclopedia",
+                Node {
+                    max_width: percent(96.),
+                    max_height: percent(94.),
+                    padding: UiRect {
+                        top: px(24.),
+                        bottom: px(10.),
+                        left: px(10.),
+                        right: px(10.),
+                    },
+                    flex_direction: FlexDirection::Column,
+                    ..default()
                 },
-                flex_direction: FlexDirection::Column,
-                ..default()
-            },
+            ),
         ))
         .id();
     commands.entity(overlay).add_child(panel);
@@ -83,6 +84,10 @@ pub(super) fn render(
         .spawn((
             Name::new("cyclopedia.tabs"),
             ScrollArea,
+            crate::bevy_shell::ui::window_layout::Scaled {
+                height: Some(36.),
+                ..default()
+            },
             Node {
                 width: percent(100.),
                 height: px(36.),
@@ -101,7 +106,10 @@ pub(super) fn render(
             Node {
                 width: percent(100.),
                 height: px(420.),
-                flex_shrink: 0.,
+                // The page takes what the user gives the window and scrolls below.
+                flex_grow: 1.,
+                flex_shrink: 1.,
+                min_height: px(0.),
                 flex_direction: FlexDirection::Column,
                 row_gap: px(6.),
                 overflow: Overflow::clip(),

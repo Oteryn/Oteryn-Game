@@ -271,10 +271,12 @@ fn npc_dialog_uses_global_geometry_without_help_prose() -> Result {
     app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
         .init_asset::<Image>()
         .init_asset::<Font>()
+        .init_resource::<crate::bevy_shell::ui::window_layout::WindowLayouts>()
         .add_systems(Startup, crate::bevy_shell::ui::setup)
         .add_systems(Update, |mut commands: Commands, skins: Res<Skins>| {
             widgets::build(&mut commands, &skins, 1);
-        });
+        })
+        .add_systems(PostUpdate, crate::bevy_shell::ui::window_layout::project);
     app.update();
     let dialog = app
         .world_mut()
