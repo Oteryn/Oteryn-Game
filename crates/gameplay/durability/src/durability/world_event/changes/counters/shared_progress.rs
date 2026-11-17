@@ -103,19 +103,30 @@ pub(crate) async fn credit_completed(
             },
         );
     }
-    // Legacy Deepling object bindings remain readable for existing quest state.
-    // Only donor-supported Hive task turn-ins can write shared progress here.
-    let (Some(SharedAction::HiveTask(task)), QuestCause::Command(command)) =
-        (shared_world_progress::completed_action(key, changes), cause)
-    else {
-        return Ok(CreditOutcome::Refused);
+    let (command, kind, credit) = match (key, cause) {
+        ("oteryn:quest-callback/deeplings-ramp-1106", QuestCause::Use(command))
+            if changes.iter().any(|change| {
+                change.track == "oteryn:quest-progress/deeplings_world_change/crystal"
+                    && (change.before, change.after) == (12, 13)
+            }) => (command, CounterKind::Deeplings, Credit::StairPathCompleted),
+        (_, QuestCause::Command(command)) => {
+            let Some(SharedAction::HiveTask(task)) =
+                shared_world_progress::completed_action(key, changes)
+            else {
+                return Ok(CreditOutcome::Refused);
+            };
+            (command, CounterKind::HiveBorn, Credit::Task(task))
+        }
+        _ => return Ok(CreditOutcome::Refused),
     };
     let Some(day) = super::super::load(tx, scope.world_id(), epoch).await? else {
         return Ok(CreditOutcome::Refused);
     };
-    let kind = CounterKind::HiveBorn;
     let stage = day.counter_stages[kind.index()];
-    if stage != 3 && stage != if task < 4 { 1 } else { 2 } {
+    if let Credit::Task(task) = credit
+        && stage != 3
+        && stage != if task < 4 { 1 } else { 2 }
+    {
         return Ok(CreditOutcome::Refused);
     }
     let mut occurrence = scope.world_id().as_bytes().to_vec();
@@ -132,7 +143,7 @@ pub(crate) async fn credit_completed(
         &CreditEvent {
             source_kind: 2,
             occurrence,
-            credits: vec![(kind, Credit::Task(task))],
+            credits: vec![(kind, credit)],
             counter_generations: day.counter_generations,
             occurred_at_ms,
             character: Some(character),

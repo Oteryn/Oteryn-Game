@@ -1629,6 +1629,7 @@ impl DurabilityRoot {
                         && oteryn_gameplay_quests::quest::shared_world_progress::records_counter_progress(transition);
                     let shared_counter = if refusal.is_none() && (
                         oteryn_gameplay_quests::quest::shared_world_progress::binding(&request.transition_key).is_some()
+                        || request.transition_key == "oteryn:quest-callback/deeplings-ramp-1106"
                         || oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key).is_some()
                         || hive_progress) {
                         let world=fence.runtime_scope.world_id();
@@ -2039,6 +2040,7 @@ impl DurabilityRoot {
                     }
                     if let Some((epoch,counter_authority)) = &shared_counter
                         && (oteryn_gameplay_quests::quest::shared_world_progress::binding(&request.transition_key).is_some()
+                        || request.transition_key == "oteryn:quest-callback/deeplings-ramp-1106"
                             || oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key).is_some()) {
 
                         let credited=super::super::world_event::changes::counters::shared_progress::credit_completed(
