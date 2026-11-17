@@ -261,15 +261,23 @@ fn activate(
     buttons: Query<&ControlButton>,
     mut owner: NonSendMut<HostOwner>,
     modal: crate::bevy_shell::game_ui::modal::ModalGuard,
+    windows: crate::bevy_shell::ui::window_layout::OpenWindows,
     mut widgets: ResMut<SidebarWidgets>,
     mut manager: ResMut<super::Manager>,
 ) {
-    if !modal.allows(event.entity) || owner.modal_active() || owner.play.is_none() {
+    if owner.modal_active() || owner.play.is_none() {
         return;
     }
     let Ok(button) = buttons.get(event.entity) else {
         return;
     };
+    let beside = matches!(
+        button,
+        ControlButton::Grid(_) | ControlButton::Extra(_) | ControlButton::Store
+    ) && windows.only_windows();
+    if !beside && !modal.allows(event.entity) {
+        return;
+    }
     match *button {
         ControlButton::Store => {
             open_toolbar(&mut owner, Control::Shortcut("store"));
@@ -375,5 +383,42 @@ pub(in crate::bevy_shell) fn project(
             let sorted: Vec<Entity> = order.into_iter().map(|(_, entity)| entity).collect();
             commands.entity(grid).insert_children(0, &sorted);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn market_grid_opens_beside_prey() -> Result<(), Box<dyn std::error::Error>> {
+        let mut owner = HostOwner::new(None)?;
+        let (link, _commands, _outbox) = crate::play::play_channel();
+        owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+            view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+            link,
+        });
+        let mut app = App::new();
+        app.insert_non_send(owner)
+            .init_resource::<SidebarWidgets>()
+            .init_resource::<super::super::Manager>();
+        app.world_mut().spawn((
+            crate::bevy_shell::game_ui::GameModal,
+            crate::bevy_shell::ui::window_layout::WindowLayer("prey"),
+            Node::default(),
+        ));
+        let button = app
+            .world_mut()
+            .spawn((ControlButton::Grid(Control::Market), Node::default()))
+            .observe(activate)
+            .id();
+        app.world_mut().trigger(Activate { entity: button });
+        assert!(
+            app.world()
+                .non_send::<HostOwner>()
+                .play
+                .as_ref()
+                .is_some_and(|play| play.link.market_panel().open)
+        );
+        Ok(())
     }
 }

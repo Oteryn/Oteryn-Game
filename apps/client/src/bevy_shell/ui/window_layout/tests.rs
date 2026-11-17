@@ -458,8 +458,8 @@ fn layouts_load_beside_the_preferences_and_save_once_settled() -> TestResult {
             std::time::Duration::from_millis(300),
         ))
         .init_resource::<WindowLayouts>()
-        .insert_non_send(owner)
-        .add_systems(Update, persist);
+        .insert_non_send(owner);
+    install(&mut app);
     app.update();
     app.update();
     assert_eq!(*app.world().resource::<WindowLayouts>(), saved);
@@ -483,7 +483,96 @@ fn layouts_load_beside_the_preferences_and_save_once_settled() -> TestResult {
         written.0.get("options").map(|layout| layout.offset),
         Some(Vec2::new(12., 34.))
     );
+    app.world_mut()
+        .resource_mut::<WindowLayouts>()
+        .0
+        .get_mut("options")
+        .ok_or("options")?
+        .offset = Vec2::ZERO;
+    app.world_mut().write_message(AppExit::Success);
+    app.update();
+    assert_eq!(WindowLayouts::load(&path)?.0["options"].offset, Vec2::ZERO);
     std::fs::remove_dir_all(&folder)?;
+    Ok(())
+}
+
+fn saved_market(
+    name: &str,
+) -> Result<(App, std::path::PathBuf, WindowLayouts), Box<dyn std::error::Error>> {
+    use crate::bevy_shell::owner::HostOwner;
+    let dir = std::env::temp_dir().join(format!("oteryn-layout-{name}-{}", std::process::id()));
+    std::fs::create_dir_all(&dir)?;
+    let owner = HostOwner::new(Some(dir.join("preferences.json")))?;
+    let path = owner.window_layouts_path().ok_or("layout path")?;
+    let mut saved = WindowLayouts::default();
+    saved.0.get_mut("market").ok_or("market")?.size = Some(Vec2::new(1400., 600.));
+    saved.save(&path)?;
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins).insert_non_send(owner);
+    install(&mut app);
+    Ok((app, path, saved))
+}
+
+#[test]
+fn idle_exit_preserves_another_clients_save() -> TestResult {
+    let (mut app, path, mut saved) = saved_market("idle")?;
+    app.update();
+    app.update();
+    saved.0.get_mut("market").ok_or("market")?.size = Some(Vec2::new(1300., 600.));
+    saved.save(&path)?;
+    app.world_mut().write_message(AppExit::Success);
+    app.update();
+    assert_eq!(WindowLayouts::load(&path)?, saved);
+    std::fs::remove_dir_all(path.parent().ok_or("fixture directory")?)?;
+    Ok(())
+}
+
+#[test]
+fn smoke_exit_preserves_wide_layout() -> TestResult {
+    let (mut app, path, saved) = saved_market("smoke")?;
+    app.world_mut().spawn((
+        Window {
+            resolution: (1024, 768).into(),
+            ..default()
+        },
+        PrimaryWindow,
+    ));
+    app.add_systems(Update, crate::bevy_shell::smoke_exit);
+    for _ in 0..3 {
+        app.update();
+    }
+    assert_eq!(WindowLayouts::load(&path)?, saved);
+    std::fs::remove_dir_all(path.parent().ok_or("fixture directory")?)?;
+    Ok(())
+}
+
+#[test]
+fn exit_after_panel_despawn_saves_resize_anchor() -> TestResult {
+    let (mut app, path, _) = saved_market("anchor")?;
+    app.update();
+    let panel = app.world_mut().spawn(window("market", default())).id();
+    app.update();
+    // The left edge moved 46px. Centered layout already accounts for half.
+    let mut layouts = app.world_mut().resource_mut::<WindowLayouts>();
+    layouts.0.get_mut("market").ok_or("market")?.size = Some(Vec2::new(1354., 600.));
+    app.world_mut()
+        .entity_mut(panel)
+        .insert(resize::ResizeAnchor(Vec2::new(23., 0.)));
+    app.update();
+    assert_eq!(
+        app.world()
+            .get::<UiTransform>(panel)
+            .ok_or("panel")?
+            .translation,
+        Val2::px(23., 0.)
+    );
+    app.world_mut().despawn(panel);
+    app.world_mut().write_message(AppExit::Success);
+    app.update();
+    let market = WindowLayouts::load(&path)?.0["market"];
+    assert_eq!(market.size, Some(Vec2::new(1354., 600.)));
+    assert_eq!(market.offset, Vec2::new(23., 0.));
+    std::fs::remove_dir_all(path.parent().ok_or("fixture directory")?)?;
     Ok(())
 }
 
@@ -559,7 +648,7 @@ mod stacking {
             pointer::{Location, PointerButton, PointerId},
         },
         prelude::*,
-        ui_widgets::Activate,
+        ui_widgets::ButtonPlugin,
     };
 
     /// What each window's own Escape handler does: close only if the modal fence allows it.
@@ -796,29 +885,154 @@ mod stacking {
         app.update();
     }
 
-    fn entry(app: &mut App, label: &str) -> Result<Entity, String> {
-        app.world_mut()
-            .query::<(Entity, &menu::Entry)>()
+    fn menu_layout(app: &mut App) {
+        use bevy::camera::{ComputedCameraValues, RenderTargetInfo};
+
+        app.add_plugins((
+            AssetPlugin::default(),
+            WindowPlugin {
+                primary_window: None,
+                ..default()
+            },
+            bevy::input::InputPlugin,
+            bevy::input_focus::InputFocusPlugin,
+            bevy::transform::TransformPlugin,
+            ImagePlugin::default(),
+            bevy::image::TextureAtlasPlugin,
+            bevy::mesh::MeshPlugin,
+            bevy::camera::CameraPlugin,
+            bevy::text::TextPlugin,
+            bevy::picking::DefaultPickingPlugins,
+            bevy::ui::UiPlugin,
+            ButtonPlugin,
+        ));
+        app.world_mut().spawn((
+            Camera2d,
+            IsDefaultUiCamera,
+            Camera {
+                computed: ComputedCameraValues {
+                    target_info: Some(RenderTargetInfo {
+                        physical_size: UVec2::new(301, 201),
+                        scale_factor: 1.,
+                    }),
+                    ..default()
+                },
+                ..default()
+            },
+        ));
+    }
+
+    fn click_menu_row(app: &mut App, row: usize) -> TestResult {
+        use bevy::{
+            camera::RenderTarget,
+            picking::pointer::{PointerAction, PointerInput},
+            window::PrimaryWindow,
+        };
+        let primary = app
+            .world_mut()
+            .query_filtered::<Entity, With<PrimaryWindow>>()
+            .single(app.world())?;
+        let location = Location {
+            target: RenderTarget::default()
+                .normalize(Some(primary))
+                .ok_or("primary target")?,
+            position: Vec2::new(180., 77. + 22. * row as f32),
+        };
+        for action in [
+            PointerAction::Move { delta: Vec2::ZERO },
+            PointerAction::Press(PointerButton::Primary),
+            PointerAction::Release(PointerButton::Primary),
+        ] {
+            app.world_mut().write_message(PointerInput::new(
+                PointerId::Mouse,
+                location.clone(),
+                action,
+            ));
+            app.update();
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn window_menu_controls_keep_button_geometry() -> TestResult {
+        let mut app = app();
+        app.insert_resource(skins());
+        app.world_mut().spawn((
+            Window {
+                resolution: (301, 201).into(),
+                ..default()
+            },
+            bevy::window::PrimaryWindow,
+        ));
+        let (market, panel) = window(&mut app, "market", 157);
+        show(&mut app, market)?;
+        right_click(&mut app, panel);
+        for node in app
+            .world_mut()
+            .query_filtered::<&Node, With<menu::Entry>>()
             .iter(app.world())
-            .find_map(|(entity, entry)| {
-                matches!(entry, menu::Entry::Zoom(text, _) | menu::Entry::Reset(text) if *text == label)
-                    .then_some(entity)
-            })
-            .ok_or(format!("{label} entry"))
+        {
+            assert_eq!((node.width, node.height), (px(120.), px(20.)));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn window_menu_fits_bottom_right() -> TestResult {
+        let mut app = app();
+        app.insert_resource(skins());
+        app.world_mut().spawn((
+            Window {
+                resolution: (301, 201).into(),
+                ..default()
+            },
+            bevy::window::PrimaryWindow,
+        ));
+        let (market, panel) = window(&mut app, "market", 157);
+        show(&mut app, market)?;
+        right_click(&mut app, panel);
+        let menu_node = app
+            .world_mut()
+            .query_filtered::<&Node, With<menu::WindowMenu>>()
+            .single(app.world())?;
+        assert_eq!((menu_node.left, menu_node.top), (px(173.), px(63.)));
+        app.world_mut()
+            .query::<&mut Window>()
+            .single_mut(app.world_mut())?
+            .resolution
+            .set(250., 180.);
+        app.update();
+        let node = app
+            .world_mut()
+            .query_filtered::<&Node, With<menu::WindowMenu>>()
+            .single(app.world())?;
+        assert_eq!((node.left, node.top), (px(122.), px(42.)));
+        Ok(())
     }
 
     #[test]
     fn the_window_menu_zooms_75_to_200_percent_and_resets_the_layout() -> TestResult {
         let mut app = app();
         app.insert_resource(skins());
+        menu_layout(&mut app);
+        app.world_mut().spawn((
+            Window {
+                resolution: (301, 201).into(),
+                ..default()
+            },
+            bevy::window::PrimaryWindow,
+        ));
         let (market, panel) = window(&mut app, "market", 157);
         show(&mut app, market)?;
 
         right_click(&mut app, panel);
-        let labels: Vec<&str> = app
+        let children = app
             .world_mut()
-            .query::<&menu::Entry>()
-            .iter(app.world())
+            .query_filtered::<&Children, With<menu::WindowMenu>>()
+            .single(app.world())?;
+        let labels: Vec<&str> = children
+            .iter()
+            .filter_map(|child| app.world().get::<menu::Entry>(child))
             .map(|entry| match entry {
                 menu::Entry::Zoom(label, _) | menu::Entry::Reset(label) => *label,
             })
@@ -841,7 +1055,24 @@ mod stacking {
                 .get("market")
                 .map(|layout| layout.zoom)
         };
-        for (label, value) in menu::ZOOMS {
+        let cover = app
+            .world_mut()
+            .spawn((
+                GlobalZIndex(10000),
+                Node {
+                    position_type: PositionType::Absolute,
+                    width: px(301.),
+                    height: px(201.),
+                    ..default()
+                },
+            ))
+            .id();
+        app.update();
+        click_menu_row(&mut app, 0)?;
+        assert_eq!(zoom(&app), Some(1.), "covered row must not activate");
+        app.world_mut().despawn(cover);
+        app.update();
+        for (row, (label, value)) in menu::ZOOMS.into_iter().enumerate() {
             if !app
                 .world_mut()
                 .query::<&menu::WindowMenu>()
@@ -850,9 +1081,7 @@ mod stacking {
             {
                 right_click(&mut app, panel);
             }
-            let button = entry(&mut app, label)?;
-            app.world_mut().trigger(Activate { entity: button });
-            app.update();
+            click_menu_row(&mut app, row)?;
             assert_eq!(zoom(&app), Some(value), "{label}");
             assert_eq!(
                 app.world_mut()
@@ -865,9 +1094,7 @@ mod stacking {
         }
 
         right_click(&mut app, panel);
-        let reset = entry(&mut app, menu::RESET)?;
-        app.world_mut().trigger(Activate { entity: reset });
-        app.update();
+        click_menu_row(&mut app, menu::ZOOMS.len())?;
         assert_eq!(zoom(&app), Some(1.));
 
         right_click(&mut app, panel);
@@ -963,4 +1190,40 @@ mod stacking {
         assert!(!open(&app, prey));
         Ok(())
     }
+}
+
+#[test]
+fn prey_auto_height_fits_remaining_width() -> TestResult {
+    let mut app = app(1600, 900, 1.);
+    // Other windows already fit the smaller viewport, so only the screen changes.
+    for layout in app
+        .world_mut()
+        .resource_mut::<WindowLayouts>()
+        .0
+        .values_mut()
+    {
+        layout.fit(Vec2::new(800., 600.));
+    }
+    let prey = app
+        .world_mut()
+        .spawn(window(
+            "prey",
+            Node {
+                left: percent(8.),
+                ..default()
+            },
+        ))
+        .id();
+    app.update();
+    assert_eq!(app.world().get::<Node>(prey).ok_or("prey")?.width, px(860.));
+    app.world_mut()
+        .query::<&mut Window>()
+        .single_mut(app.world_mut())?
+        .resolution
+        .set(800., 600.);
+    app.update();
+    let node = app.world().get::<Node>(prey).ok_or("prey")?;
+    assert_eq!(node.width, px(736.));
+    assert_eq!(node.height, Val::Auto);
+    Ok(())
 }
