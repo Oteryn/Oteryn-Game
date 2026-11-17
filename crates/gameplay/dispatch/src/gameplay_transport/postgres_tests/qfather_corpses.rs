@@ -8,9 +8,10 @@ use oteryn_protocol_oteryn::world_object::{
 
 #[test]
 fn qfather_plain_use_grants_each_material_from_another_players_kill_once() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    drop(admin);
     let started = std::time::Instant::now();
     super::kill_reward_e2e::scenario_thread::run("qfather-corpses", || {
         super::quest_world_callbacks::scenario(

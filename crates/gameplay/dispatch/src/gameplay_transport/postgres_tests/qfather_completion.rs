@@ -4,9 +4,10 @@ use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
 #[test]
 fn qfather_tereban_grants_eight_thousand_gold_once() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    drop(admin);
     let started = std::time::Instant::now();
     super::kill_reward_e2e::scenario_thread::run("qfather-completion", || {
         super::quest_world_callbacks::scenario(
