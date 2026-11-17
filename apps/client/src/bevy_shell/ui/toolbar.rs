@@ -1,5 +1,5 @@
 //! Gameplay toolbar: the button registry and what each button opens.
-use super::{Control, ShellToolbar, Status};
+use super::{Control, ShellToolbar};
 use crate::bevy_shell::owner::HostOwner;
 use bevy::prelude::*;
 pub(in crate::bevy_shell) mod grid;
@@ -164,16 +164,15 @@ pub(in crate::bevy_shell) fn project_toolbar(
             Entity,
             &mut Node,
             Has<ShellToolbar>,
-            Has<Status>,
             Option<&Control>,
             Option<&ChildOf>,
         ),
-        Or<(With<ShellToolbar>, With<Status>, With<Control>)>,
+        Or<(With<ShellToolbar>, With<Control>)>,
     >,
 ) {
     let playing = owner.play.is_some();
     let mut ordered = Vec::new();
-    for (entity, mut node, toolbar, status, control, parent) in &mut nodes {
+    for (entity, mut node, toolbar, control, parent) in &mut nodes {
         if toolbar {
             if playing {
                 if let Ok(region) = regions.single() {
@@ -228,7 +227,7 @@ pub(in crate::bevy_shell) fn project_toolbar(
             } else {
                 Display::None
             };
-        } else if status || matches!(control, Some(Control::Login | Control::CancelLogin)) {
+        } else if matches!(control, Some(Control::Login | Control::CancelLogin)) {
             node.display = if playing {
                 Display::None
             } else {

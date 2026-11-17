@@ -344,3 +344,164 @@ fn exit_confirmation_fences_login_keyboard_and_native_activate() -> TestResult {
 }
 
 mod text_input;
+
+fn login_app(host: HostOwner) -> App {
+    use bevy::asset::AssetPlugin;
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        .init_asset::<Font>()
+        .init_asset::<Image>()
+        .init_resource::<InputFocus>()
+        .add_message::<bevy::input::keyboard::KeyboardInput>()
+        .insert_non_send(host)
+        .add_systems(Startup, (super::super::ui::setup, setup).chain())
+        .add_systems(Update, (keyboard, project).chain());
+    super::super::game_ui::modal::install(&mut app);
+    app.update();
+    app
+}
+fn named(app: &mut App, name: &str) -> Result<Entity, Box<dyn std::error::Error>> {
+    app.world_mut()
+        .query::<(Entity, &Name)>()
+        .iter(app.world())
+        .find_map(|(entity, candidate)| (candidate.as_str() == name).then_some(entity))
+        .ok_or_else(|| format!("{name} absent").into())
+}
+fn control(app: &mut App, wanted: &str) -> Result<Entity, Box<dyn std::error::Error>> {
+    app.world_mut()
+        .query::<(Entity, &LoginControl)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| (control.id() == wanted).then_some(entity))
+        .ok_or_else(|| format!("{wanted} absent").into())
+}
+/// Button captions directly under `parent`, in order.
+fn captions(app: &mut App, parent: Entity) -> Vec<String> {
+    let world = app.world();
+    world
+        .get::<Children>(parent)
+        .into_iter()
+        .flat_map(|children| children.iter())
+        .filter_map(|button| world.get::<Children>(button))
+        .flat_map(|children| children.iter())
+        .filter_map(|caption| world.get::<Text>(caption).map(|text| text.0.clone()))
+        .collect()
+}
+#[test]
+fn login_window_is_the_280_mask_with_advanced_fields_hidden() -> TestResult {
+    let mut host = HostOwner::new(None)?;
+    host.request_login();
+    let mut app = login_app(host);
+    let window = named(&mut app, "login.window")?;
+    assert_eq!(
+        app.world().get::<Node>(window).ok_or("node")?.width,
+        px(280.)
+    );
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "Login")
+    );
+    let fields = named(&mut app, "login.advanced_fields")?;
+    assert_eq!(
+        app.world().get::<Node>(fields).ok_or("fields")?.display,
+        Display::None
+    );
+    let advanced = control(&mut app, "login.advanced")?;
+    app.world_mut().trigger(Activate { entity: advanced });
+    app.update();
+    assert!(app.world().non_send::<HostOwner>().login.advanced);
+    assert_eq!(
+        app.world().get::<Node>(fields).ok_or("fields")?.display,
+        Display::Flex
+    );
+    // The main row is Login and Cancel; secondary actions sit in the entry top bar.
+    let submit = control(&mut app, "login.submit")?;
+    let footer = app.world().get::<ChildOf>(submit).ok_or("footer")?.parent();
+    assert_eq!(captions(&mut app, footer), ["Login", "Cancel"]);
+    let top = named(&mut app, "login.top_bar")?;
+    assert_eq!(
+        captions(&mut app, top),
+        [
+            "News",
+            "About",
+            "Survey",
+            "Support",
+            "Cookie policy",
+            "Sign out device"
+        ]
+    );
+    assert!(
+        app.world_mut()
+            .query::<&super::super::ui::ArtSlot>()
+            .iter(app.world())
+            .any(|slot| *slot == super::super::ui::ArtSlot::LoginBackground)
+    );
+    Ok(())
+}
+#[test]
+fn login_errors_open_a_titled_message_box_instead_of_dialog_prose() -> TestResult {
+    let mut host = HostOwner::new(None)?;
+    host.request_login();
+    let mut app = login_app(host);
+    let alert = app
+        .world_mut()
+        .query_filtered::<Entity, With<LoginAlert>>()
+        .single(app.world())?;
+    assert_eq!(
+        app.world().get::<Node>(alert).ok_or("alert")?.display,
+        Display::None
+    );
+    let message = app
+        .world()
+        .non_send::<HostOwner>()
+        .login
+        .form
+        .message()
+        .to_owned();
+    assert!(
+        !app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == message),
+        "guidance prose is not printed in the dialog"
+    );
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .login
+        .form
+        .finish(Err(crate::GameplayEntryError::WorldUnavailable));
+    app.update();
+    assert_eq!(
+        app.world().get::<Node>(alert).ok_or("alert")?.display,
+        Display::Flex
+    );
+    let texts: Vec<String> = app
+        .world_mut()
+        .query::<&Text>()
+        .iter(app.world())
+        .map(|text| text.0.clone())
+        .collect();
+    assert!(texts.iter().any(|text| text == "Login Error"));
+    assert!(
+        texts
+            .iter()
+            .any(|text| text.starts_with("World is absent from the Platform directory"))
+    );
+    let ok = control(&mut app, "login.alert.ok")?;
+    app.world_mut().trigger(Activate { entity: ok });
+    app.update();
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .login
+            .form
+            .alert()
+            .is_none()
+    );
+    assert_eq!(
+        app.world().get::<Node>(alert).ok_or("alert")?.display,
+        Display::None
+    );
+    Ok(())
+}

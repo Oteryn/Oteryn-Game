@@ -47,6 +47,7 @@ pub(super) fn project(
     let root = commands
         .spawn((
             GameModal,
+            crate::bevy_shell::ui::window_layout::WindowLayer("prey"),
             GlobalZIndex(158),
             source::frame(skin.frame.clone(), [4., 17., 4., 4.]),
             Node {

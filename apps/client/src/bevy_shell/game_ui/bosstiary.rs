@@ -93,6 +93,7 @@ fn project(
     let root = commands
         .spawn((
             Window,
+            crate::bevy_shell::ui::window_layout::WindowLayer("bosstiary"),
             bevy::ui_widgets::ScrollArea,
             GlobalZIndex(150),
             Node {

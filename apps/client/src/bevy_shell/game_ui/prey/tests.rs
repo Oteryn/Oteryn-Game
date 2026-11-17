@@ -603,3 +603,91 @@ fn prey_wildcard_chooser_only_accepts_selection_slots() -> TestResult {
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn prey_and_bestiary_open_as_stacked_windows_and_a_press_raises_the_back_one() -> TestResult {
+    use crate::bevy_shell::ui::window_layout::{self, ResizeCursor, WindowId, WindowLayer};
+    use bevy::picking::{
+        backend::HitData,
+        events::{Pointer, PointerPress},
+        pointer::{Location, PointerButton, PointerId},
+    };
+    let (mut app, _commands) = fixture()?;
+    {
+        let mut host = app.world_mut().non_send_mut::<HostOwner>();
+        host.phase = crate::bevy_shell::owner::Phase::Playing;
+        host.play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .charm_progression_open();
+    }
+    app.init_resource::<Time<Real>>()
+        .init_resource::<ButtonInput<KeyCode>>()
+        .init_resource::<bevy::input::mouse::AccumulatedMouseScroll>()
+        .init_resource::<bevy::input_focus::InputFocus>();
+    super::super::bestiary::install(&mut app);
+    window_layout::install(&mut app);
+    app.update();
+    app.update();
+
+    let mut windows = Vec::new();
+    for id in ["bestiary", "prey"] {
+        let layer = app
+            .world_mut()
+            .query::<(Entity, &WindowLayer)>()
+            .iter(app.world())
+            .find_map(|(entity, layer)| (layer.0 == id).then_some(entity))
+            .ok_or(format!("{id} layer"))?;
+        let window = app
+            .world_mut()
+            .query::<(Entity, &WindowId)>()
+            .iter(app.world())
+            .find_map(|(entity, window)| (window.0 == id).then_some(entity))
+            .ok_or(format!("{id} window"))?;
+        let grips = app.world().get::<Children>(window).map_or(0, |children| {
+            children
+                .iter()
+                .filter(|child| app.world().get::<ResizeCursor>(*child).is_some())
+                .count()
+        });
+        assert_eq!(grips, 8, "{id} grips");
+        windows.push((layer, window));
+    }
+    let depth = |app: &App, layer: Entity| app.world().get::<GlobalZIndex>(layer).map(|z| z.0);
+    let front = app
+        .world()
+        .resource::<window_layout::WindowStack>()
+        .front()
+        .ok_or("front")?;
+    let (back, back_window) = windows
+        .iter()
+        .copied()
+        .find(|(layer, _)| *layer != front)
+        .ok_or("back")?;
+    assert!(depth(&app, back) < depth(&app, front));
+
+    app.world_mut().trigger(PointerPress {
+        entity: back_window,
+        pointer: Pointer::new(
+            PointerId::Mouse,
+            Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: 1280,
+                    height: 720,
+                },
+                position: Vec2::new(400., 300.),
+            },
+        ),
+        button: PointerButton::Primary,
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        count: 1,
+    });
+    app.update();
+    assert_eq!(
+        app.world().resource::<window_layout::WindowStack>().front(),
+        Some(back)
+    );
+    assert!(depth(&app, back) > depth(&app, front));
+    Ok(())
+}

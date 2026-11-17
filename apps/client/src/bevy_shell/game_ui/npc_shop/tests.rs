@@ -282,6 +282,46 @@ fn npc_shop_explains_backpack_purchase_contract_limit() -> Result {
 }
 
 #[test]
+fn npc_dialog_uses_global_geometry() -> Result {
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .init_resource::<crate::bevy_shell::ui::window_layout::WindowLayouts>()
+        .add_systems(Startup, crate::bevy_shell::ui::setup)
+        .add_systems(Update, |mut commands: Commands, skins: Res<Skins>| {
+            widgets::build(&mut commands, &skins, 1);
+        })
+        .add_systems(PostUpdate, crate::bevy_shell::ui::window_layout::project);
+    app.update();
+    let dialog = app
+        .world_mut()
+        .query::<(&Name, &Node)>()
+        .iter(app.world())
+        .find_map(|(name, node)| (name.as_str() == "npc-shop.dialog").then(|| node.clone()))
+        .ok_or("npc dialog")?;
+    // NpcDialog.qml: width 600, resizable from a 350px minimum height.
+    assert_eq!(
+        (dialog.width, dialog.height, dialog.min_height),
+        (px(600.), Val::Auto, px(350.))
+    );
+    let trade = app
+        .world_mut()
+        .query::<(&Name, &Node)>()
+        .iter(app.world())
+        .find_map(|(name, node)| (name.as_str() == "npc-shop.trade").then_some(node.width))
+        .ok_or("trade addon")?;
+    assert_eq!(trade, px(180.));
+    assert!(
+        !app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "NPC response")
+    );
+    Ok(())
+}
+
+#[test]
 fn npc_shop_decoded_names_and_extended_amounts_reach_rows_and_commands() -> Result {
     let (host, mut commands, outbox) = fixture()?;
     let mut window = host

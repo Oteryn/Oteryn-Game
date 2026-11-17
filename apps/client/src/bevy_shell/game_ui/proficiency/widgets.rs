@@ -17,6 +17,7 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins) -> Widgets {
         .spawn((
             Overlay,
             GameModal,
+            crate::bevy_shell::ui::window_layout::WindowLayer("proficiency"),
             GlobalZIndex(160),
             TabGroup {
                 order: 3,
@@ -30,7 +31,6 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins) -> Widgets {
                 justify_content: JustifyContent::Center,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0., 0., 0., 0.45)),
         ))
         .id();
     let window = commands

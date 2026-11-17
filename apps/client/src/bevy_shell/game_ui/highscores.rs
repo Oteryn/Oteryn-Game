@@ -60,6 +60,7 @@ fn setup(mut commands: Commands) {
     commands.spawn((
         Overlay,
         GameModal,
+        crate::bevy_shell::ui::window_layout::WindowLayer("highscores"),
         GlobalZIndex(158),
         Node {
             display: Display::None,
@@ -70,7 +71,6 @@ fn setup(mut commands: Commands) {
             justify_content: JustifyContent::Center,
             ..default()
         },
-        BackgroundColor(Color::srgba(0., 0., 0., 0.45)),
     ));
 }
 #[allow(clippy::too_many_arguments)] // Projection owns hierarchy, focus and retained session state together.

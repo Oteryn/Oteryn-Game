@@ -772,3 +772,32 @@ fn srvcat_holdings_search_location_and_pages_use_named_server_results() -> TestR
     );
     Ok(())
 }
+
+fn named_node(app: &mut App, name: &str) -> Result<(Entity, Node), Box<dyn std::error::Error>> {
+    app.world_mut()
+        .query::<(Entity, &Name, &Node)>()
+        .iter(app.world())
+        .find_map(|(entity, candidate, node)| {
+            (candidate.as_str() == name).then(|| (entity, node.clone()))
+        })
+        .ok_or_else(|| format!("{name} absent").into())
+}
+#[test]
+fn cyclopedia_window_uses_global_geometry_and_caption() -> TestResult {
+    let (mut app, _, _) = fixture()?;
+    let (_, window) = named_node(&mut app, "cyclopedia.window")?;
+    assert_eq!((window.width, window.height), (px(700.), px(538.)));
+    let (tabs, bar) = named_node(&mut app, "cyclopedia.tabs")?;
+    assert_eq!(bar.height, px(36.));
+    let (_, page) = named_node(&mut app, "cyclopedia.page")?;
+    assert_eq!(page.height, px(420.));
+    assert!(texts(&mut app).iter().any(|text| text == "Cyclopedia"));
+    let active = app
+        .world_mut()
+        .query_filtered::<(&Node, &ChildOf), With<bevy::ui::Checked>>()
+        .iter(app.world())
+        .find_map(|(node, parent)| (parent.parent() == tabs).then_some(node.width))
+        .ok_or("active tab absent")?;
+    assert_eq!(active, px(200.));
+    Ok(())
+}

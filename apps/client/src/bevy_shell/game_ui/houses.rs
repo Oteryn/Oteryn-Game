@@ -321,6 +321,7 @@ pub(super) fn build(
     let root = commands
         .spawn((
             GameModal,
+            crate::bevy_shell::ui::window_layout::WindowLayer("houses"),
             GlobalZIndex(165),
             TabGroup {
                 order: 3,
@@ -334,7 +335,6 @@ pub(super) fn build(
                 justify_content: JustifyContent::Center,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0., 0., 0., 0.55)),
         ))
         .id();
     let panel = commands

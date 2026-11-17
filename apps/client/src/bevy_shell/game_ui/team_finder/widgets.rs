@@ -35,6 +35,7 @@ pub(super) fn build(
     let root = commands
         .spawn((
             GameModal,
+            crate::bevy_shell::ui::window_layout::WindowLayer("team_finder"),
             GlobalZIndex(165),
             TabGroup {
                 order: 2,
@@ -48,7 +49,6 @@ pub(super) fn build(
                 align_items: AlignItems::Center,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0., 0., 0., 0.45)),
         ))
         .id();
     let dialog = commands
