@@ -371,7 +371,7 @@ async fn speak(client: &mut DevClientSession, npc: EntityRef, text: &str) -> Tes
 }
 
 fn npc_actor(
-    client: &DevClientSession,
+    client: &mut DevClientSession,
     npc: &oteryn_world_bundle::npc::Npc,
 ) -> TestResult<EntityRef> {
     let basis = spatial_basis::current(client)?;
@@ -1057,17 +1057,17 @@ async fn trade(
             .ok_or("peer has no leaf for the logout race")?;
         let before_client = inventory_units(client)?;
         let before_peer = inventory_units(&peer)?;
-        let offer = runtime::PlayerTradeCommand::new(Intent::Offer {
+        let offer = runtime::PlayerTradeCommand::new(runtime::player_trade::Intent::Offer {
             partner: own(&peer)?,
             item: item.handle.get(),
         })
         .ok_or("race offer encoding")?;
         let reply = runtime::send(client.session_mut(), &offer).await?;
-        if reply.result != ResultCode::Offered {
+        if reply.result != runtime::player_trade::ResultCode::Offered {
             return Err(format!("race offer: {:?}", reply.result).into());
         }
         let id = reply.state.trade_id.ok_or("race offer has no trade id")?;
-        let counter = runtime::PlayerTradeCommand::new(Intent::Offer {
+        let counter = runtime::PlayerTradeCommand::new(runtime::player_trade::Intent::Offer {
             partner: own(client)?,
             item: peer_item.handle.get(),
         })
@@ -1698,6 +1698,7 @@ async fn logout(
                 if tokio::time::Instant::now() >= deadline {
                     return Err(format!("NOLOGOUT refusal ({reply:?}) never delivered {NO_LOGOUT_MESSAGE:?}").into());
                 }
+                progress();
                 walker.service_liveness(Duration::from_millis(25)).await?;
             }
             row.pass("nologout", "no-logout-tile-refused-with-server-text");
@@ -1792,6 +1793,7 @@ async fn logout(
                 let reconnect: TestResult<_> = async {
                     let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
                     loop {
+                        progress();
                         match connect_character(clients, 0x8d, 0).await {
                             Ok(mut again) => {
                                 let id = again.join_snapshot().game_session_id;
