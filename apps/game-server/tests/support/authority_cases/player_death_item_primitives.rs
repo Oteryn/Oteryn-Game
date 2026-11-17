@@ -2199,6 +2199,10 @@ async fn run_maximum_nested_death_reset(admin: String) -> TestResult {
     use crate::durability::item_decay_retire::DecayRetireError;
     use crate::durability::item_mint_audit::RL08_RETRY_WORK_UNITS_MAX;
     use crate::durability::{DB_PASS_DEADLINE, DurabilityError, SqlxFailureClass};
+    // Independent fixture processes can hit the same deadline together.
+    let retry_jitter = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?
+        .subsec_millis();
     let mut remaining = RL08_RETRY_WORK_UNITS_MAX;
     let retirement_elapsed = loop {
         // The fixture's hundreds of moves and each rolled-back batch leave
@@ -2264,6 +2268,12 @@ async fn run_maximum_nested_death_reset(admin: String) -> TestResult {
             assert_eq!(h.count("game_item_decay_retire_receipts").await?, 0);
             assert_eq!(h.count("game_item_audit_outbox").await?, audits_before);
             eprintln!("[DBG-audit-765f34] MAX501 retry after {retired:?}; remaining={remaining}");
+            let attempts = u32::from(RL08_RETRY_WORK_UNITS_MAX - remaining);
+            tokio::time::sleep(
+                DB_PASS_DEADLINE * attempts
+                    + std::time::Duration::from_millis(u64::from(retry_jitter)),
+            )
+            .await;
             continue;
         }
         assert!(retired.map_err(debug)?);
