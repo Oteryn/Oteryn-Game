@@ -1106,3 +1106,55 @@ mod phase_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tool_spawn_tests {
+    use super::*;
+
+    #[test]
+    fn reusable_item_on_map_target_can_spawn_without_relocation() -> Result<(), String> {
+        let mut callback = super::super::load()?
+            .into_iter()
+            .find(|row| row.key.ends_with("annihilator-entry"))
+            .ok_or("source encounter")?;
+        callback.trigger = Trigger::Use;
+        callback.lever = None;
+        callback.requires_world_admission = true;
+        callback.item_on_target = Some(
+            serde_json::from_value(serde_json::json!({
+                "item": "oteryn:item.tibia.i4049",
+                "count": 1,
+                "replacement": null,
+                "target_replacement": null,
+                "reusable": true,
+                "selected_instance": true
+            }))
+            .map_err(|e| e.to_string())?,
+        );
+        callback.storage = vec![
+            serde_json::from_value(serde_json::json!({
+                "track": "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use",
+                "minimum": 0,
+                "maximum": 0,
+                "set": 1
+            }))
+            .map_err(|e| e.to_string())?,
+        ];
+        callback.effects = CallbackEffectSet::default();
+        let spawn = serde_json::json!({
+            "creature": "oteryn:creature.squidgy_slime",
+            "offset_x": 1,
+            "offset_y": 0
+        });
+        let mut effects = serde_json::to_value(&callback.effects).map_err(|e| e.to_string())?;
+        effects["tool_spawn"] = spawn;
+        callback.effects = serde_json::from_value(effects).map_err(|e| e.to_string())?;
+        assert!(valid(&callback));
+        callback.requires_world_admission = false;
+        assert!(!valid(&callback));
+        callback.requires_world_admission = true;
+        callback.item_on_target.as_mut().ok_or("tool")?.reusable = false;
+        assert!(!valid(&callback));
+        Ok(())
+    }
+}
