@@ -127,6 +127,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return refusal();
         };
+        let walls: Vec<_> = if action == JARS[4].0 {
+            WALL_X
+                .filter_map(|x| {
+                    let pos = TilePos {
+                        x,
+                        y: WALL_Y,
+                        floor: WALL_FLOOR,
+                    };
+                    entries(map, pos)
+                        .find(|(_, facts)| facts.appearance_id == ORIGINAL_WALL)
+                        .map(|(key, _)| key)
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
+        if !map
+            .facts
+            .quest_callback_capacity(target.placement_key, revision, walls.len())
+        {
+            return refusal();
+        }
         let context = QuestWorldContext {
             party: Vec::new(),
             map_revision: crate::map::overlay::map_revision(map.overlay.base()),
@@ -172,7 +194,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 target.placement_key,
                 revision,
                 after,
-                &[],
+                if outcome == JarOutcome::FinalJar {
+                    &walls
+                } else {
+                    &[]
+                },
                 &[],
                 false,
                 None,
@@ -181,7 +207,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let disposition = match outcome {
             JarOutcome::Broken { .. } => UseDisposition::Committed,
             JarOutcome::FinalJar => {
-                self.states.chat.push_quest_feedback(session, "The horestis tomb was broken, the boss of the tomb will be reborn in 45 seconds. The barrier will be built from here 2 minutes.");
+                self.states.chat.publish_quest_speech(&runtime, actor, session, "The horestis tomb was broken, the boss of the tomb will be reborn in 45 seconds. The barrier will be built from here 2 minutes.");
                 self.open_horestis_tomb(&mut runtime, map);
                 self.states
                     .spell_states
@@ -192,7 +218,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 UseDisposition::Committed
             }
             JarOutcome::Failed { .. } => {
-                self.states.chat.push_quest_feedback(
+                self.states.chat.publish_quest_speech(
+                    &runtime,
+                    actor,
                     session,
                     if digest[8] & 1 == 0 {
                         "Waaaaaah"
@@ -229,27 +257,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     fn open_horestis_tomb(&self, runtime: &mut ChannelRuntimeV1, map: &BundleMap) {
         let now = self.owner_now().get();
-        for x in WALL_X {
-            let pos = TilePos {
-                x,
-                y: WALL_Y,
-                floor: WALL_FLOOR,
-            };
-            if let Some((key, facts)) =
-                entries(map, pos).find(|(_, facts)| facts.appearance_id == ORIGINAL_WALL)
-            {
-                // Hide the base barrier by putting it in the source batch's passage set.
-                map.facts.apply_quest_callback(
-                    key,
-                    map.facts.object_revision(key),
-                    facts,
-                    &[key],
-                    &[],
-                    false,
-                    None,
-                );
-            }
-        }
         self.spawn_horestis(runtime, map, HORESTIS_SPAWNS[0]);
         if let Ok(mut pending) = self.states.quest_callbacks.mummys_curse.lock() {
             *pending = Some(TombTimers {
