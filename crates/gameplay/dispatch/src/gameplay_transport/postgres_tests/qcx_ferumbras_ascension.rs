@@ -202,6 +202,9 @@ fn chest_case() -> TestResult {
             ).bind(format!("oteryn:item.tibia.i{item}")).fetch_one(&h.pool).await?;
             assert_eq!(quantity, count, "reward bag item {item}");
         }
+        drop(owner);
+        drop(authority);
+        drop(seal);
         h.cleanup().await
     })
 }
