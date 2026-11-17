@@ -28,4 +28,16 @@ output with Mission09 and the receipt atomically. Wire both original controls
 through production USE. Test success, missing input rollback, full inventory,
 replay and wrong quest state through that path, first red and then green.
 
-Status: donor investigation complete; implementation and validation pending.
+The donor's `data-global/startup/others/functions.lua:49-94` resolves
+`itemId = false` by stamping the top-down, top-top and ground objects with the
+AID. The donor map's final objects at the two controls are 19161 and 19162.
+The committed B3 region retains those as top-level ordinal 4 at the same positions;
+production bindings can therefore use exact native counterparts without changing
+World placement data or manufacturing an AID.
+
+The mounted `brainout.rs` cases drive framed USE and cover one-input rollback,
+two-input success, ground position/quantity, Mission09, replay, full inventory
+and wrong quest state. Their initial focused run is compiling dependencies.
+
+Status: donor investigation and regression case authoring complete;
+implementation and red/green validation pending.

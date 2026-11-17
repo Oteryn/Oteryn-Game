@@ -44,7 +44,7 @@ pub(super) fn catalogue(original: &quest::QuestStateCatalogue, callback: &Callba
     // Arrange the NPC prerequisite only; the production USE owns the brain mission.
     let tracks = callback.storage.iter().map(|storage| {
         let mut track = original.track(&storage.track).cloned().ok_or("brain mission track")?;
-        track.initial = if storage.preserve && !wrong { 1 } else { -1 };
+        track.initial = if storage.preserve && !wrong { 1 } else { track.initial };
         Ok(track)
     }).collect::<Result<Vec<_>, &str>>()?;
     quest::QuestStateCatalogue::new(original.content_revision(), tracks,
