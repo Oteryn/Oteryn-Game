@@ -213,6 +213,17 @@ fn lersatio_mirrors_are_registered_with_both_counter_transitions() -> Result<(),
                 .iter()
                 .find(|callback| callback.key == key)
                 .ok_or("mirror phase")?;
+            assert!(
+                oteryn_gameplay_quests::quest::source_world_objects::source_is_ready(
+                    callback, 8667
+                )
+            );
+            assert!(
+                !oteryn_gameplay_quests::quest::source_world_objects::source_is_ready(
+                    callback, 8721
+                ),
+                "a fresh target for a broken mirror cannot activate either counter phase"
+            );
             let counter = callback
                 .storage
                 .iter()
