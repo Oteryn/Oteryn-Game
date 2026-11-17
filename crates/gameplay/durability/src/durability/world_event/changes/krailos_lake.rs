@@ -33,7 +33,8 @@ pub(crate) async fn advance(
     }
 
     sqlx::query(
-        "INSERT INTO game_krailos_lake VALUES (encode($1,'hex')::uuid,$2::text::numeric,0)
+        "INSERT INTO game_krailos_lake(world_id,reset_epoch,progress)
+         VALUES (encode($1,'hex')::uuid,$2::text::numeric,0)
          ON CONFLICT DO NOTHING",
     )
     .bind(world)

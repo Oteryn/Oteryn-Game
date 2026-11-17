@@ -1,6 +1,6 @@
 CREATE TABLE game_krailos_lake (
     world_id uuid PRIMARY KEY,
-    reset_epoch numeric(20, 0) NOT NULL CHECK (reset_epoch >= 0),
+    reset_epoch numeric(20, 0) NOT NULL CHECK (reset_epoch BETWEEN 0 AND 18446744073709551615),
     progress smallint NOT NULL CHECK (progress BETWEEN 0 AND 36)
 );
 

@@ -109,6 +109,11 @@ mod tests {
         for _ in 0..5 {
             assert!(lake.advance(11, Action::Pour));
         }
+        for _ in 0..29 {
+            assert!(lake.advance(11, Action::Purify));
+        }
+        assert_eq!(lake.phase(12), Some(Phase::DirtyWater));
         assert!(lake.advance(12, Action::Purify));
+        assert_eq!(lake.phase(12), Some(Phase::ShallowWater));
     }
 }
