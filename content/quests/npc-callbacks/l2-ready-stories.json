@@ -756,6 +756,7 @@
           "set": 2
         }
       ],
+      "completes": true,
       "take": [
         {
           "item": "oteryn:item.tibia.i3212",
@@ -770,10 +771,11 @@
       "outfit": null,
       "achievement": null,
       "reply": [
-        "You have done our order a great favour by giving this diary to me! Take this blessed Ankh."
+        "By the gods! This is brother Fugio's handwriting and what I read is horrible indeed! You have done our order a great favour by giving this diary to me! Take this blessed Ankh. May it protect you in even your darkest hours."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/costello.lua:63-93:sha256:c23199cb756541cd4972e8d156a69b722d775c6f71a05a9acd369b7744b9d5e8"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/costello.lua:63-93:sha256:c23199cb756541cd4972e8d156a69b722d775c6f71a05a9acd369b7744b9d5e8",
+        "https://tibia.fandom.com/wiki/The_White_Raven_Monastery_Quest/Spoiler: Costello diary/yes transcript"
       ],
       "requires": [
         {

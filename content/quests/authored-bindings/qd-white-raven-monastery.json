@@ -1,0 +1,96 @@
+{
+    "schema": 1,
+    "quests": [
+        {
+            "quest": "oteryn:quest.the_white_raven_monastery_quest",
+            "recipe_sha256": "ad32242bc66dbc321ecfd2caeb651ded11bb395c8cd8ba1e610855f47124a714",
+            "admission": {
+                "minimum_level": 0,
+                "premium": false,
+                "prerequisites": []
+            },
+            "sources": [
+                "https://tibia.fandom.com/wiki/The_White_Raven_Monastery_Quest/Spoiler (curid 4295, oldid 1002868): use the Dead Human north of the magic-wall hole in the Ghostlands catacombs for a Backpack with the Monk's Diary",
+                "https://tibia.fandom.com/wiki/The_White_Raven_Monastery_Quest (curid 3766, oldid 756263): free account, rewards Blessed Ankh, Family Brooch, Isle of the Kings access",
+                "content/quests/definitions/quests-00200-00299.json#/records/48/definition/oteryn_recipe"
+            ],
+            "tracks": [
+                {
+                    "key": "oteryn:quest-progress/qd/white_raven/fugio_body",
+                    "initial": 0,
+                    "minimum": 0,
+                    "maximum": 1
+                }
+            ],
+            "stages": [
+                {
+                    "key": "s3",
+                    "completes": false,
+                    "trigger": {
+                        "kind": "map_use",
+                        "callback": {
+                            "key": "oteryn:quest-callback/qd-white-raven-fugio-body",
+                            "quest": "oteryn:quest.the_white_raven_monastery_quest",
+                            "trigger": "use",
+                            "selector": {
+                                "position": {
+                                    "x": 32262,
+                                    "y": 31861,
+                                    "floor": -11
+                                },
+                                "appearance": 4240,
+                                "unique": null,
+                                "action": null,
+                                "native": {
+                                    "position": {
+                                        "x": 32262,
+                                        "y": 31861,
+                                        "floor": -11
+                                    },
+                                    "appearance": 4240,
+                                    "ordinal": 2
+                                }
+                            },
+                            "lever": null,
+                            "reversible": false,
+                            "passages": [],
+                            "teleport": null,
+                            "storage": [
+                                {
+                                    "track": "oteryn:quest-progress/qd/white_raven/fugio_body",
+                                    "minimum": 0,
+                                    "maximum": 0,
+                                    "set": 1
+                                }
+                            ],
+                            "offerings": [],
+                            "item_on_target": null,
+                            "world_requirements": [],
+                            "return_on_failure": false,
+                            "failure_message": "The dead human is empty.",
+                            "success_message": "You have found a backpack.",
+                            "sources": [
+                                "https://tibia.fandom.com/wiki/The_White_Raven_Monastery_Quest/Spoiler (curid 4295, oldid 1002868): use the Dead Human north of the magic-wall hole in the Ghostlands catacombs for a Backpack with the Monk's Diary",
+                                "https://tibia.fandom.com/wiki/The_White_Raven_Monastery_Quest (curid 3766, oldid 756263): free account, rewards Blessed Ankh, Family Brooch, Isle of the Kings access",
+                                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/48/definition:sha256:2c742d8b9a3456c96d861f4af17f2ae2cc5a13fc5fa2ac3ae5684608edd479f2",
+                                "content/world/placements/region-z11-x126-y124.b3:32262,31861,11/ordinal2"
+                            ],
+                            "effects": {
+                                "item_reward": {
+                                    "item": "oteryn:item.tibia.i2854",
+                                    "count": 1,
+                                    "contents": [
+                                        {
+                                            "item": "oteryn:item.tibia.i3212",
+                                            "count": 1
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}
