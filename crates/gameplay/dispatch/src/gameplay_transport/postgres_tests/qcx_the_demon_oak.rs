@@ -1,43 +1,96 @@
-//! Exercise the Yesim Adeit gravestone as projected in the production map.
+//! Demon Oak reward access and mutually exclusive claims through the composed USE dispatcher.
 use super::fixture::{Harness, debug, id};
 use super::kill_reward_e2e::scenario_thread::run_async;
-use super::quest_world_callbacks::{local, wire, world};
 use super::{Dependencies, TestResult, prepare_current_session};
-use crate::content::{NativeEntryStart, channel_content_pin::ChannelContentPin};
-use crate::foundation::ChannelRuntimeV1;
-use crate::gameplay_transport::SeamRooms;
-use crate::gameplay_transport::connection::FirstEntryOutcome;
-use oteryn_gameplay_quests::quest::{
-    loader::load_embedded_quest_state,
-    world_callbacks::{self, Position},
+use crate::content::channel_content_pin::ChannelContentPin;
+use crate::durability::item_mint::TypedDefinitionRef;
+use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
+use crate::gameplay_transport::connection::{FirstEntryOutcome, UseCommand};
+use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
+use crate::map::{
+    boot::{BootPins, BundleWorld},
+    overlay::TilePos,
 };
-use oteryn_protocol_oteryn::world_object::{
-    UseDisposition, WorldObjectTarget, decode_use_result, encode_use_intent,
-};
+use oteryn_gameplay_quests::quest::loader::load_embedded_quest_state;
+use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::sync::Arc;
 
-const GRAVE: Position = Position {
+const QUEST: &str = "oteryn:quest.demon_oak";
+const DONE: &str = "oteryn:quest-progress/quest/u8_2/the_demon_oak/done";
+const GRAVE: TilePos = TilePos {
     x: 32710,
     y: 32398,
     floor: -7,
 };
-const REWARD_ROOM: Position = Position {
+const LANDING: TilePos = TilePos {
     x: 32714,
     y: 32398,
     floor: -8,
 };
-const DONE: &str = "oteryn:quest-progress/quest/u8_2/the_demon_oak/done";
+const CHESTS: [(TilePos, u16); 4] = [
+    (
+        TilePos {
+            x: 32710,
+            y: 32393,
+            floor: -8,
+        },
+        3389,
+    ),
+    (
+        TilePos {
+            x: 32712,
+            y: 32393,
+            floor: -8,
+        },
+        8077,
+    ),
+    (
+        TilePos {
+            x: 32714,
+            y: 32393,
+            floor: -8,
+        },
+        14768,
+    ),
+    (
+        TilePos {
+            x: 32716,
+            y: 32393,
+            floor: -8,
+        },
+        14769,
+    ),
+];
 
 #[test]
 fn reported_victory_opens_the_unmarked_gravestone() -> TestResult {
+    scenario("qcx_oak_grave", None)
+}
+#[test]
+fn demon_legs_uses_the_shared_reward_choice() -> TestResult {
+    scenario("qcx_oak_legs", Some(0))
+}
+#[test]
+fn rainbow_shield_uses_the_shared_reward_choice() -> TestResult {
+    scenario("qcx_oak_shield", Some(1))
+}
+#[test]
+fn thorn_spitter_uses_the_shared_reward_choice() -> TestResult {
+    scenario("qcx_oak_spitter", Some(2))
+}
+#[test]
+fn arcana_uses_the_shared_reward_choice() -> TestResult {
+    scenario("qcx_oak_arcana", Some(3))
+}
+
+fn scenario(name: &'static str, choice: Option<usize>) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    let result = run_async(async |admin| {
-        let h =
-            Harness::create_with_admission_seed(admin, "qcx_demon_oak_grave", false, false).await?;
-        prepare_current_session(&h).await?;
+    let result = run_async(async move |admin| {
+        let h = Harness::create_with_admission_seed(admin, name, false, false).await?;
+        let fresh = prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -53,36 +106,22 @@ fn reported_victory_opens_the_unmarked_gravestone() -> TestResult {
                 "content-1",
             )?;
         let generation = controller.active().ok_or("active generation")?;
-        let mut map_grave = world_callbacks::load()?
-            .into_iter()
-            .find(|c| c.key == "oteryn:quest-callback/demon-oak-reward-grave")
-            .ok_or("grave callback")?;
-        // Project the real appearance and absence of a UID regardless of the callback under test.
-        map_grave.selector.unique = None;
-        map_grave.selector.appearance = Some(1979);
-        let world = world(&map_grave, GRAVE)?;
+        let start = match choice {
+            Some(index) => TilePos {
+                y: 32394,
+                ..CHESTS[index].0
+            },
+            None => TilePos {
+                x: GRAVE.x - 1,
+                ..GRAVE
+            },
+        };
+        let world = reward_world(start, admitted.world_id, admitted.channel_id)?;
         let cells = world
             .movement_cells(activation.qualified_room().movement_cells())
             .map_err(debug)?;
-        let start = Position {
-            x: GRAVE.x - 1,
-            ..GRAVE
-        };
         let frame = activation.frame_binding().digest();
-        let room = activation
-            .qualified_room()
-            .bundle_view(
-                cells.clone(),
-                frame,
-                world.map_revision_digest(),
-                NativeEntryStart {
-                    x: start.x.into(),
-                    y: start.y.into(),
-                    floor: -i16::from(start.floor),
-                },
-            )
-            .ok_or("reward room bundle")?;
-        let content = ChannelContentPin::from_activation(
+        let pin = ChannelContentPin::from_activation(
             admitted.world_id,
             1,
             generation.identity().server_artifact_digest(),
@@ -100,7 +139,7 @@ fn reported_victory_opens_the_unmarked_gravestone() -> TestResult {
             1,
             "runtime-scope-assignment:1",
             2,
-            content,
+            pin,
         )
         .map_err(debug)?;
         let reservation = runtime
@@ -120,119 +159,241 @@ fn reported_victory_opens_the_unmarked_gravestone() -> TestResult {
             .bind(generation.identity().client_artifact_digest().as_slice()).bind(frame.as_slice()).execute(&h.pool).await?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
-        owner.rooms = SeamRooms::new(None, Some(&room));
         owner.movement_cells = (&cells).into();
-        let catalogue = Arc::new(
+        owner.quest_catalogue = Some(Arc::new(
             load_embedded_quest_state("content-1")
                 .map_err(debug)?
                 .catalogue()
                 .clone(),
-        );
-        owner.quest_catalogue = Some(Arc::clone(&catalogue));
+        ));
         let fence = owner
             .current_quest_fence(admitted.game_session_id)
             .await
             .map_err(debug)?
             .ok_or("fence")?;
         admitted.item_fence = Some(fence.item_fence());
-        owner.admit_quest_session(&admitted).await;
-        let [oldrak] =
-            super::classic_quests::install(&owner, &admitted, ["oteryn:npc.oldrak"]).await?;
-        let mut placement = world.base().digest().to_vec();
-        let key = oteryn_world_bundle::bundle::placement_key(GRAVE.floor, GRAVE.x, GRAVE.y, 1)
-            .ok_or("gravestone placement")?;
-        placement.extend_from_slice(&key.to_be_bytes());
-        let payload = encode_use_intent(&WorldObjectTarget {
-            placement,
-            expected_revision: 0,
-        })
-        .map_err(debug)?;
-
-        let result = wire(&owner, &mut admitted, 1, 2, payload.clone()).await?;
-        assert_ne!(
-            decode_use_result(&result).map_err(debug)?,
-            UseDisposition::Committed
-        );
-        assert_eq!(
-            deps.runtime
-                .lock()
-                .await
-                .read_actor_position(actor)
-                .map_err(debug)?
-                .position(),
-            local(start)
-        );
-
-        // Seed the existing defeat transition and report it through the real NPC dispatcher.
-        use crate::durability::quest_state::{
-            QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
-        };
-        use crate::foundation::{CommandId, CommandRef};
-        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-        let outcome = slot
-            .commit_quest_transition(
-                owner.root,
-                owner.character,
-                owner.holder,
-                fence,
-                QuestTransitionRequest {
-                    transition_key:
-                        "oteryn:quest-transition/quest/u8_2/the_demon_oak/done/action_1".into(),
-                    cause: QuestCause::Command(CommandRef::new(
-                        admitted.game_session_id,
-                        CommandId::new(100).map_err(debug)?,
-                    )),
-                },
-                Arc::clone(&catalogue),
+        let native = generation.native_gameplay().ok_or("native items")?;
+        h.root
+            .initialize_admission_equipment(
+                &authority,
+                &h.node,
+                &fence.item_fence(),
+                generation.identity().server_artifact_digest(),
+                fresh.operation(),
             )
             .await
             .map_err(debug)?;
-        assert!(
-            matches!(outcome, QuestTransitionOutcome::Committed(_)),
-            "{outcome:?}"
+        let backpack = crate::durability::starter_grant::StarterTemplate {
+            definition: TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: "oteryn:item.tibia.i2854".into(),
+                revision_ref: "definition-r1".into(),
+            },
+            ..crate::durability::starter_grant::StarterTemplate::main()
+        };
+        h.root
+            .grant_starter_items(
+                &authority,
+                &h.node,
+                &fence.item_fence(),
+                &NativeItemWeights(native),
+                &backpack,
+            )
+            .await
+            .map_err(debug)?;
+        owner.admit_quest_session(&admitted).await;
+        let target = choice.map_or(GRAVE, |index| CHESTS[index].0);
+        assert_ne!(
+            use_at(&owner, admitted, target, 1).await?,
+            UseDisposition::Committed
         );
-        drop(slot);
+
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        let seeded = sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,2,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+            .bind(id(41).as_slice()).bind(DONE).bind(QUEST).execute(&mut *tx).await?;
+        assert_eq!(seeded.rows_affected(), 1);
+        tx.commit().await?;
         owner
             .refresh_quest_session(admitted.game_session_id, false)
             .await;
-        super::classic_quests::talk(&mut owner, &admitted, oldrak, 101, "hi").await?;
-        super::classic_quests::talk(&mut owner, &admitted, oldrak, 102, "demon oak").await?;
-        assert_eq!(
-            super::classic_quests::progress(&owner, &admitted, &authority, DONE).await?,
-            2
-        );
         owner.clock_origin = owner
             .clock_origin
             .checked_sub(std::time::Duration::from_secs(2))
             .ok_or("clock")?;
-        admitted.item_fence = Some(
-            owner
-                .current_quest_fence(admitted.game_session_id)
-                .await
-                .map_err(debug)?
-                .ok_or("fence after reporting")?
-                .item_fence(),
-        );
-        let result = wire(&owner, &mut admitted, 2, 2, payload).await?;
         assert_eq!(
-            decode_use_result(&result).map_err(debug)?,
+            use_at(&owner, admitted, target, 2).await?,
             UseDisposition::Committed
         );
-        assert_eq!(
-            deps.runtime
-                .lock()
-                .await
-                .read_actor_position(actor)
-                .map_err(debug)?
-                .position(),
-            local(REWARD_ROOM)
-        );
+
+        if let Some(index) = choice {
+            owner.clock_origin = owner
+                .clock_origin
+                .checked_sub(std::time::Duration::from_secs(2))
+                .ok_or("clock")?;
+            assert_ne!(
+                use_at(&owner, admitted, target, 3).await?,
+                UseDisposition::Committed
+            );
+            for (ci, (_, item)) in CHESTS.iter().enumerate() {
+                let count: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1")
+                    .bind(format!("oteryn:item.tibia.i{item}")).fetch_one(&h.pool).await?;
+                assert_eq!(count, i64::from(ci == index), "item {item}");
+            }
+            let value: i64 = sqlx::query_scalar(
+                "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
+            )
+            .bind(DONE)
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(value, 3, "all four options share Done 2 → 3");
+        } else {
+            assert_eq!(
+                deps.runtime
+                    .lock()
+                    .await
+                    .read_actor_position(actor)
+                    .map_err(debug)?
+                    .position(),
+                local(LANDING)
+            );
+        }
         Ok(())
     });
     eprintln!(
-        "POSTGRES_CASE_COMPLETED reported_victory_opens_the_unmarked_gravestone {:?} success={}",
+        "POSTGRES_CASE_COMPLETED {name} {:?} success={}",
         started.elapsed(),
         result.is_ok()
     );
     result
+}
+
+fn local(pos: TilePos) -> MovementLocalPosition {
+    MovementLocalPosition {
+        x: pos.x.into(),
+        y: pos.y.into(),
+        floor: -i16::from(pos.floor),
+    }
+}
+
+async fn use_at(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+    pos: TilePos,
+    command_id: u64,
+) -> TestResult<UseDisposition> {
+    let map = owner.bundle_map().ok_or("bundle map")?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    let ordinal = if pos == GRAVE { 1 } else { 2 };
+    let key = oteryn_world_bundle::bundle::placement_key(pos.floor, pos.x, pos.y, ordinal)
+        .ok_or("world object placement")?;
+    placement.extend_from_slice(&key.to_be_bytes());
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(debug)?
+        .ok_or("current item fence")?;
+    let outcome = owner
+        .use_world_object(
+            admitted.runtime_actor.ok_or("actor")?,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id,
+                item_fence: Some(fence.item_fence()),
+            },
+            WorldObjectTarget {
+                placement,
+                expected_revision: 0,
+            },
+        )
+        .await;
+    Ok(outcome.disposition)
+}
+
+fn reward_world(
+    start: TilePos,
+    world: crate::foundation::WorldId,
+    channel: crate::foundation::ChannelId,
+) -> TestResult<BundleWorld> {
+    use oteryn_world_bundle::{bundle, sector, writer};
+    use std::collections::BTreeMap;
+    let (fixture, mut pins) = crate::map::boot::tests::bundle();
+    let mut manifest = bundle::read(&fixture)?.manifest;
+    manifest.world = bundle::Extent {
+        min_x: 32709,
+        min_y: 32393,
+        max_x: 32717,
+        max_y: 32399,
+        floors: vec![-8, -7],
+    };
+    manifest.palette.truncate(1);
+    for (id, appearance) in [(1, 1979), (2, 2187), (3, 2472)] {
+        manifest.palette.push(bundle::PaletteEntry {
+            key: format!("oteryn:terrain.tibia.i{appearance}"),
+            id,
+            family: bundle::Family::Terrain,
+            terrain: Some(bundle::Terrain {
+                kind: bundle::TerrainKind::Common,
+                walkable: None,
+                ground_speed: None,
+                blocks_projectile: None,
+            }),
+        });
+    }
+    let mut cells = BTreeMap::new();
+    cells.insert((LANDING.floor, LANDING.y, LANDING.x), vec![0]);
+    cells.insert((GRAVE.floor, GRAVE.y, GRAVE.x - 1), vec![0]);
+    cells.insert((GRAVE.floor, GRAVE.y, GRAVE.x), vec![0, 1]);
+    for (pos, _) in CHESTS {
+        cells.insert((pos.floor, pos.y, pos.x), vec![0, 2, 3]);
+        cells.insert((pos.floor, pos.y + 1, pos.x), vec![0]);
+    }
+    let mut sectors = BTreeMap::<_, Vec<_>>::new();
+    for ((floor, y, x), stack) in cells {
+        sectors
+            .entry((floor, x / 32, y / 32))
+            .or_default()
+            .push(sector::Tile {
+                x,
+                y,
+                flags: 0,
+                house: 0,
+                zones: vec![],
+                items: stack
+                    .into_iter()
+                    .map(|palette| sector::Item {
+                        palette,
+                        depth: 0,
+                        attrs: Default::default(),
+                    })
+                    .collect(),
+            });
+    }
+    let mut sectors = sectors
+        .into_iter()
+        .map(|((floor, sx, sy), tiles)| bundle::Sector {
+            floor,
+            sx,
+            sy,
+            tiles,
+        })
+        .collect::<Vec<_>>();
+    sectors.sort_by_key(bundle::order);
+    let bytes = writer::write(&manifest, &sectors, &Default::default())?;
+    pins.digest = bundle::read(&bytes)?.digest;
+    let base = crate::map::load(&bytes, &pins).map_err(debug)?;
+    crate::map::boot::boot(
+        &bytes,
+        &BootPins {
+            map_revision: crate::map::overlay::map_revision(&base),
+            bundle: pins,
+            start,
+        },
+        world,
+        channel,
+        |_| None,
+    )
+    .map_err(Into::into)
 }
