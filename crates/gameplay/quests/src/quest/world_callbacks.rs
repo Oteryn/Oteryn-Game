@@ -823,6 +823,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
 
 mod selector_gates;
 
+/// Validate callback data with the same closed rules used by the World registry.
 pub fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
     parse(&serde_json::json!({"schema":1,"callbacks":callbacks}).to_string()).map(|_| ())
 }

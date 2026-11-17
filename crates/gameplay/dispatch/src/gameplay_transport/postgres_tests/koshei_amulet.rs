@@ -90,6 +90,7 @@ pub(super) async fn exercise(
         *admitted = next;
         assert_ne!(result, UseDisposition::Committed);
         assert_eq!(snapshot(h).await?, (0, 1, 0, 1));
+        assert!(!door_access(owner, admitted)?);
     }
     owner.clock_origin -= std::time::Duration::from_secs(2);
     let command = admitted.continuity.next_command_id;
@@ -97,9 +98,11 @@ pub(super) async fn exercise(
     *admitted = next;
     assert_eq!(result, UseDisposition::Committed);
     assert_eq!(snapshot(h).await?, (1, 0, 1, 1));
+    assert!(door_access(owner, admitted)?);
     let (_, replay, _) = super::item_craft::exchange(owner, *admitted, command, &actual, None).await?;
     assert_eq!(replay, UseDisposition::Committed);
     assert_eq!(snapshot(h).await?, (1, 0, 1, 1));
+    assert!(door_access(owner, admitted)?);
     let state = owner.root.read_character_quest_state(owner.character, fence.character_id).await.map_err(debug)?;
     assert_eq!(state.tracks().get(source::TRACK), Some(&1));
     Ok(())
@@ -108,4 +111,10 @@ pub(super) async fn exercise(
 async fn snapshot(h: &Harness) -> TestResult<(i64, i64, i64, i64)> {
     Ok(sqlx::query_as("SELECT (SELECT count(*) FROM game_character_quest_tracks WHERE track_key=$1 AND value=1), (SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i7532' AND lifecycle=1), (SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$2), (SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3031' AND lifecycle=1)")
         .bind(source::TRACK).bind(source::KEY).fetch_one(&h.pool).await?)
+}
+
+fn door_access(owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: &AdmittedSession) -> TestResult<bool> {
+    let sessions = owner.states.quest_sessions.lock().map_err(|_| "quest sessions")?;
+    let copy = sessions.get(&admitted.game_session_id).and_then(|state| state.copy.as_ref()).ok_or("quest copy")?;
+    Ok(copy.meets_door_storage(41351))
 }
