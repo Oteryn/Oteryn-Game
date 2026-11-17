@@ -511,19 +511,19 @@ impl NpcRuleCatalog {
                 let mut catalogue = Self::load_embedded()?;
                 let supplemental = Self::from_json_documents(&[
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/draconia.json"),
-                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/sandra-lottery.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/m41-kilmaresh.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-albinius.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-gerimor.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-gnomus.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-oldrak.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-henricus.json"),
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/sandra-lottery.json"),
                 ])?;
                 catalogue.programs.extend(supplemental.programs);
                 validate::catalogue(&catalogue)?;
                 catalogue.programs.retain(|p| {
-                    if p.document.program_key.as_deref() == Some("oteryn:quest-npc-program.sandra-lottery") { return true; }
-                    p.document.program_key.as_deref() == Some(hidden_threats::PROGRAM)
+                    p.document.program_key.as_deref() == Some("oteryn:quest-npc-program.sandra-lottery")
+                        || p.document.program_key.as_deref() == Some(hidden_threats::PROGRAM)
                         || p.document.program_key.as_deref() == Some(questpc2_oldrak_source::PROGRAM)
                         || p.document.program_key.as_deref() == Some(questpc2_albinius_source::PROGRAM)
                         || p.document.program_key.as_deref() == Some(questpc2_gerimor_source::PROGRAM)

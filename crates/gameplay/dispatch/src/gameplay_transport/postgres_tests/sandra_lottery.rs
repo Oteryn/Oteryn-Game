@@ -111,3 +111,54 @@ fn sandra_lottery_claim_is_repeatable_per_ticket_and_stable_on_replay() {
     assert_ne!(first, claim_key([1; 16], 2));
     assert_ne!(first, claim_key([2; 16], 1));
 }
+
+#[test]
+fn sandra_lottery_source_planner_requires_owned_ticket() -> super::TestResult {
+    use oteryn_gameplay_quests::quest::npc_rules::{
+        NpcInventorySnapshot, NpcItemKey, NpcRuleCatalog, NpcRuleInput, NpcRuleTrigger,
+    };
+    use std::collections::BTreeMap;
+    let source = NpcRuleCatalog::from_json_documents(&[include_str!(
+        "../../../../../../content/dialogues/quest-rules-supplemental/sandra-lottery.json"
+    )])?;
+    let tracks = BTreeMap::from([(
+        "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt".into(),
+        1,
+    )]);
+    let outfits = BTreeMap::new();
+    for count in [0, 1] {
+        let mut inventory = NpcInventorySnapshot::default();
+        if count > 0 {
+            inventory.items.insert(
+                NpcItemKey {
+                    item: SANDRA_LOTTERY.input.into(),
+                    subtype: None,
+                },
+                count,
+            );
+        }
+        let before = inventory.clone();
+        let result = source.plan_item_exchange(&NpcRuleInput {
+            npc: "oteryn:npc.sandra",
+            trigger: NpcRuleTrigger::Say,
+            message: "lottery",
+            player_name: None,
+            topic: 0,
+            tracks: &tracks,
+            inventory: &inventory,
+            now_epoch_seconds: 0,
+            calendar_month: 1,
+            premium_current: false,
+            level: 1,
+            vocation: "oteryn:vocation.none",
+            sex: 0,
+            outfits: &outfits,
+        })?;
+        assert_eq!(result.is_some(), count == 1);
+        if let Some(plan) = result {
+            assert_eq!(plan.selected_rule_keys, ["oteryn:quest-npc/sandra/lottery"]);
+        }
+        assert_eq!(inventory, before, "planning must never mutate custody");
+    }
+    Ok(())
+}
