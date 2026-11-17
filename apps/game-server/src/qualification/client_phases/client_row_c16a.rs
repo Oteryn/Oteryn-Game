@@ -65,26 +65,21 @@ async fn acquire_rune(
         .collect();
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let here = tile(client.world_spatial().actor_position)?;
-    let selected = metadata
-        .npcs
-        .npcs
-        .iter()
-        .filter(|npc| sellers.contains(&npc.key))
-        .filter_map(|npc| {
-            route(world, here, |at| {
-                npc.placements
-                    .iter()
-                    .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
-            })
-            .map(|path| (npc, path))
-        })
-        .min_by_key(|(_, path)| path.len());
-    let Some((npc, path)) = selected else {
-        let balances = runtime::balances(client.session_mut()).await?;
-        return Err(format!("rune {id} acquisition blocked: no player-walk route within the admitted town window to a compiled-world seller; eligible_sellers={sellers:?}; observed_balances={balances:?}; carried_quantity={}; no item mint or remote vendor interaction; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:1", rune_quantity(client, reference)?).into());
+    let npc = match reach_npc(
+        client,
+        world,
+        &metadata.npcs,
+        |npc| sellers.contains(&npc.key),
+        &format!("C16-rune-{id}"),
+    )
+    .await
+    {
+        Ok(npc) => npc,
+        Err(error) => {
+            let balances = runtime::balances(client.session_mut()).await?;
+            return Err(format!("rune {id} acquisition blocked: {error}; eligible_sellers={sellers:?}; observed_balances={balances:?}; carried_quantity={}; no item mint or remote vendor interaction; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:1", rune_quantity(client, reference)?).into());
+        }
     };
-    walk(client, world, &path).await?;
     let actor = client
         .world_entities()
         .and_then(|entities| {
@@ -175,6 +170,7 @@ async fn inventory_quantity(
         if tokio::time::Instant::now() >= deadline {
             return Err(format!("rune inventory frame missing: definition={reference} expected={expected} observed={}", rune_quantity(client, reference)?).into());
         }
+        verdict::Harness::global().progress("player-wait");
         client.service_liveness(Duration::from_millis(20)).await?;
     }
 }
@@ -315,9 +311,12 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
         let mut expected = String::new();
         for (rune_id, stem) in [(3180, "wall"), (3156, "growth")] {
             let reference = acquire_rune(&mut client, world, rune_id).await?.0;
-            let path_to_site = route(world, tile(client.world_spatial().actor_position)?, |at| {
+            let reach_from = tile(client.world_spatial().actor_position)?;
+            let path_to_site = reach_route(&mut client, world, reach_from, |at| {
                 rune_corridor(world, at).is_some()
             })
+            .await?
+            .ok()
             .ok_or("C16a client has no barrier corridor")?;
             walk(&mut client, world, &path_to_site).await?;
             client.take_events();
@@ -386,4 +385,15 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
             "e2e_all scenario=C16a.client status=FAIL evidence={error}"
         )),
     }
+}
+
+#[cfg(test)]
+#[test]
+fn qualification_reach2_c16a_newhaven_seller() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| reach2_seller_test(3180, "C16a").map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "reach2 seller test thread failed")?
+        .map_err(Into::into)
 }

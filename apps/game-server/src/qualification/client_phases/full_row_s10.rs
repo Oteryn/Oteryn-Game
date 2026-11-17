@@ -134,6 +134,7 @@ async fn talk(
         if tokio::time::Instant::now() >= deadline {
             return Err(format!("step talk-{text}: accepted at sequence {} but conversation delta timed out; need STATE_DOMAIN_NPC_CONVERSATION", reply.server_sequence).into());
         }
+        verdict::Harness::global().progress("player-wait");
         client.service_liveness(Duration::from_millis(25)).await?;
     }
 }
@@ -164,9 +165,18 @@ async fn approach(
     world: &crate::map::boot::BundleWorld,
     npc: &oteryn_world_bundle::npc::Npc,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| npc.placements.iter().any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3))
-        .ok_or_else(|| format!("step approach-{}: no legitimate walking route inside the compiled town window; need authored reachable placement/travel chain", npc.key))?;
-    walk(client, world, &path).await?;
+    let metadata = oteryn_world_bundle::bundle::visit(
+        &std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?,
+        |_, _| Ok(()),
+    )?;
+    reach_npc(
+        client,
+        world,
+        &metadata.npcs,
+        |candidate| candidate.key == npc.key,
+        &format!("S10-approach-{}", npc.key),
+    )
+    .await?;
     actor_at(client, npc).ok_or_else(|| {
         format!(
             "step approach-{}: walked to authored placement but no NPC entity delta was served",
@@ -212,33 +222,7 @@ async fn earn(
     spawns: &oteryn_world_bundle::spawn::Table,
     needed: u64,
 ) -> TestResult {
-    let rats: Vec<_> = spawns
-        .sources
-        .iter()
-        .flat_map(|source| {
-            source.points.iter().filter_map(|point| {
-                (spawns.creatures[point.creature as usize].key == "oteryn:creature.rat")
-                    .then_some((point.x, point.y, source.floor))
-            })
-        })
-        .collect();
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
-    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    while carried_gold(client)? < needed {
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("step earn-fare: combat/loot budget expired; observed carried_gold={}, required={needed}; need sufficient authored player-obtainable loot", carried_gold(client)?).into());
-        }
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            rats.iter().any(|&(x, y, floor)| {
-                at.x.abs_diff(x).max(at.y.abs_diff(y)) <= 1 && at.floor == floor
-            })
-        })
-        .ok_or("step earn-fare: no legitimate route to an authored rat spawn")?;
-        walk(client, world, &path).await?;
-        client_hunt::hunt(client)
-            .await
-            .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step earn-fare: real combat/loot failed: {error}"), error) })?;
-    }
+    full_gold::earn(client, world, spawns, "S10-fare", needed).await?;
     Ok(())
 }
 
@@ -253,27 +237,18 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_character(clients, 0xf8, 1).await?;
-    let here = tile(client.world_spatial().actor_position)?;
-    let (key, keyword, display, fare, npc) = TRAVEL_NPCS
+    let npc = reach_npc(
+        &mut client,
+        world,
+        &metadata.npcs,
+        |npc| TRAVEL_NPCS.iter().any(|(key, _, _, _)| *key == npc.key),
+        "S10-quote-captain",
+    )
+    .await?;
+    let &(key, keyword, display, fare) = TRAVEL_NPCS
         .iter()
-        .find_map(|&(key, keyword, display, fare)| {
-            metadata
-                .npcs
-                .npcs
-                .iter()
-                .find(|npc| npc.key == key)
-                .filter(|npc| {
-                    route(world, here, |at| {
-                        npc.placements.iter().any(|p| {
-                            p.floor == at.floor
-                                && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3
-                        })
-                    })
-                    .is_some()
-                })
-                .map(|npc| (key, keyword, display, fare, npc))
-        })
-        .ok_or("step quote: no authored S10 paid-travel NPC is reachable by legitimate walking from admission; need a compiled route to a travel service")?;
+        .find(|(key, _, _, _)| *key == npc.key)
+        .ok_or("S10 selected captain has no offer")?;
     let actor = approach(&mut client, world, npc).await?;
     let _ = talk(&mut client, actor, "hi").await?;
     let (quote, _, _) = talk(&mut client, actor, keyword).await?;
@@ -301,7 +276,21 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step refusal: confirmation unexpectedly had enough money ({before_gold} >= {fare}) and observed reply={refusal:?}; need an ordinary unfunded character for the negative path").into());
     }
     row.step("refusal", &refusal);
-    earn(&mut client, world, &metadata.spawns, fare).await?;
+    let mut needed = fare;
+    let actor = loop {
+        verdict::Harness::global().progress("S10-earn-return-fare");
+        earn(&mut client, world, &metadata.spawns, needed).await?;
+        let actor = approach(&mut client, world, npc).await?;
+        let available = carried_gold(&client)?;
+        if available >= fare {
+            break actor;
+        }
+        // A return crossing can spend part of the earned fare. Earn that observed
+        // deficit too before confirming the row's paid journey.
+        needed = needed
+            .checked_add(fare - available)
+            .ok_or("S10 return fare overflow")?;
+    };
     let funded_gold = carried_gold(&client)?;
     let _ = talk(&mut client, actor, "hi").await?;
     let _ = talk(&mut client, actor, keyword).await?;

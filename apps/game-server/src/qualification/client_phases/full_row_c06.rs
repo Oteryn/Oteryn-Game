@@ -285,22 +285,14 @@ async fn acquire(
                 })?
         })
         .collect();
-    let here = tile(client.world_spatial().actor_position)?;
-    let (npc, path) = npcs
-        .npcs
-        .iter()
-        .filter(|n| sellers.contains(&n.key))
-        .filter_map(|n| {
-            route(world, here, |at| {
-                n.placements
-                    .iter()
-                    .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
-            })
-            .map(|p| (n, p))
-        })
-        .min_by_key(|(_, p)| p.len())
-        .ok_or_else(|| format!("step=1 observed=no-reachable-seller-{item_id}"))?;
-    walk(client, world, &path).await?;
+    let npc = reach_npc(
+        client,
+        world,
+        npcs,
+        |npc| sellers.contains(&npc.key),
+        &format!("C06-rune-{item_id}"),
+    )
+    .await?;
     let actor = client
         .world_entities()
         .and_then(|es| {
@@ -399,6 +391,7 @@ async fn use_rune(
 async fn drain_after(client: &mut DevClientSession, sequence: u64) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
     loop {
+        verdict::Harness::global().progress("player-wait");
         client.service_liveness(Duration::from_millis(25)).await?;
         client.take_events();
         if client.last_server_sequence() > sequence {
@@ -439,6 +432,7 @@ async fn inventory_wait(
                 format!("inventory delta observed={} need={n}", quantity(client, r)?).into(),
             );
         }
+        verdict::Harness::global().progress("player-wait");
         client.service_liveness(Duration::from_millis(20)).await?
     }
 }
@@ -455,6 +449,7 @@ async fn wait_self_health(
 ) -> TestResult<u32> {
     let d = tokio::time::Instant::now() + Duration::from_secs(30);
     loop {
+        verdict::Harness::global().progress("player-wait");
         client.service_liveness(Duration::from_millis(30)).await?;
         for e in client.take_events() {
             if let SessionEvent::ActorVitals(x) = e
@@ -475,6 +470,7 @@ async fn wait_target_health_below(
 ) -> TestResult {
     let d = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
+        verdict::Harness::global().progress("player-wait");
         client.service_liveness(Duration::from_millis(25)).await?;
         client.take_events();
         if target_health(client, target).is_some_and(|v| v < n) {
@@ -495,6 +491,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
         if tokio::time::Instant::now() >= d {
             return Err(format!("logout observed={:?}", r.result).into());
         }
+        verdict::Harness::global().progress("player-wait");
         client.service_liveness(Duration::from_millis(250)).await?;
     }
 }

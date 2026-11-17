@@ -119,6 +119,7 @@ async fn wait_quantity(
             )
             .into());
         }
+        verdict::Harness::global().progress("player-wait");
         client.service_liveness(Duration::from_millis(20)).await?;
     }
 }
@@ -157,23 +158,14 @@ async fn buy_meat(
         &std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?,
         |_, _| Ok(()),
     )?;
-    let here = tile(client.world_spatial().actor_position)?;
-    let (npc, path) = metadata
-        .npcs
-        .npcs
-        .iter()
-        .filter(|npc| sellers.contains(&npc.key))
-        .filter_map(|npc| {
-            route(world, here, |at| {
-                npc.placements
-                    .iter()
-                    .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
-            })
-            .map(|path| (npc, path))
-        })
-        .min_by_key(|(_, path)| path.len())
-        .ok_or("no walk route to authored meat seller")?;
-    walk(client, world, &path).await?;
+    let npc = reach_npc(
+        client,
+        world,
+        &metadata.npcs,
+        |npc| sellers.contains(&npc.key),
+        "C09-meat",
+    )
+    .await?;
     let actor = client
         .world_entities()
         .and_then(|entities| {
@@ -254,6 +246,7 @@ async fn damage_and_spend_mana(
     let before = *client.actor_vitals().ok_or("pre-combat vitals absent")?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
     let health = loop {
+        verdict::Harness::global().progress("player-wait");
         client.service_liveness(Duration::from_millis(50)).await?;
         let changed = client
             .take_events()
@@ -309,6 +302,7 @@ async fn wait_regeneration(
     let deadline = tokio::time::Instant::now() + Duration::from_secs(25);
     let (mut best_health, mut best_mana) = (health, mana);
     loop {
+        verdict::Harness::global().progress("player-wait");
         client.service_liveness(Duration::from_millis(50)).await?;
         for event in client.take_events() {
             if let SessionEvent::ActorVitals(delta) = event {
@@ -342,6 +336,7 @@ async fn accepted_logout(client: &mut DevClientSession) -> TestResult {
         if tokio::time::Instant::now() >= deadline {
             return Err(format!("logout remained refused; last={reply:?}").into());
         }
+        verdict::Harness::global().progress("player-wait");
         client.service_liveness(Duration::from_millis(250)).await?;
         client.take_events();
     }
@@ -449,4 +444,15 @@ mod tests {
         row.pass(STEPS[0], ());
         assert!(row.invalid);
     }
+}
+
+#[cfg(test)]
+#[test]
+fn qualification_reach2_c09_newhaven_seller() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| reach2_seller_test(3577, "C09").map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "reach2 seller test thread failed")?
+        .map_err(Into::into)
 }

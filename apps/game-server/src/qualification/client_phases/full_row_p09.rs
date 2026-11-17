@@ -81,7 +81,11 @@ async fn wildcards(client: &mut DevClientSession) -> TestResult<u8> {
         .wildcard_balance)
 }
 
-fn shrine_tile(world: &BundleWorld, start: TilePos) -> TestResult<TilePos> {
+async fn shrine_tile(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    start: TilePos,
+) -> TestResult<Vec<StepDirection>> {
     use crate::map::view::MapFacts;
     use oteryn_protocol_oteryn::world_map::MapDefinition;
     let content = crate::content::daily_reward::DailyRewardContent::catalogue()
@@ -93,27 +97,24 @@ fn shrine_tile(world: &BundleWorld, start: TilePos) -> TestResult<TilePos> {
         .map(|id| provisioning::item_reference(&index, *id))
         .collect::<TestResult<Vec<_>>>()?;
     let facts = world.facts().pinned();
-    for (floor, x, y, tile_data) in world.base().tiles() {
-        let at = TilePos { floor, x, y };
-        if start.x.abs_diff(x) > 160 || start.y.abs_diff(y) > 160 {
-            continue;
+    let mut shrines = BTreeSet::new();
+    for (count, (floor, x, y, tile_data)) in world.base().tiles().enumerate() {
+        if count.is_multiple_of(REACH_CHUNK) {
+            verdict::Harness::global().progress("P09-shrine-scan");
+            client.service_liveness(Duration::from_millis(1)).await?;
         }
+        let at = TilePos { floor, x, y };
         let shrine = tile_data.ids().iter().zip(tile_data.depths())
             .filter(|(_, depth)| **depth == 0).enumerate().any(|(ordinal, (id, _))| {
                 u8::try_from(ordinal).ok().and_then(|n| facts.base_entry(at, n, *id))
                     .is_some_and(|entry| matches!(entry.definition, MapDefinition::Item(reference) if refs.contains(&reference)))
             });
-        if shrine
-            && route(world, start, |candidate| {
-                candidate.floor == at.floor
-                    && candidate.x.abs_diff(at.x).max(candidate.y.abs_diff(at.y)) <= 1
-            })
-            .is_some()
-        {
-            return Ok(at);
+        if shrine {
+            shrines.insert(at);
         }
     }
-    Err("step-3 no reachable production daily shrine in town window".into())
+    reach_route(client, world, start, |at| shrines.iter().any(|shrine| at.floor == shrine.floor && at.x.abs_diff(shrine.x).max(at.y.abs_diff(shrine.y)) <= 1)).await?
+        .map_err(|searched| format!("step-3 no reachable production daily shrine in whole bundle; shrines={} searched={searched} cap={REACH_SEARCH_NODES}", shrines.len()).into())
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
@@ -143,11 +144,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if wall(&mut client).await? != initial {
         return Err("step-2 refusal changed daily wall".into());
     }
-    let shrine = shrine_tile(world, tile(client.world_spatial().actor_position)?)?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        at.floor == shrine.floor && at.x.abs_diff(shrine.x).max(at.y.abs_diff(shrine.y)) <= 1
-    })
-    .ok_or("step-3 shrine walking route disappeared")?;
+    let start = tile(client.world_spatial().actor_position)?;
+    let path = shrine_tile(&mut client, world, start).await?;
     walk(&mut client, world, &path).await?;
     let opened = client
         .session_mut()

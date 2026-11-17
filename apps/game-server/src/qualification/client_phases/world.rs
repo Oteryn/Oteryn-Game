@@ -485,6 +485,156 @@ fn route(
 const REACH_SEARCH_NODES: usize = 3_000_000;
 const REACH_CHUNK: usize = 20_000;
 
+#[derive(Clone, Copy, Debug)]
+enum ReachMove {
+    Step(StepDirection),
+    Boat(usize),
+}
+
+struct ReachOffer {
+    captain: String,
+    keyword: String,
+    fare: u64,
+    arrival: TilePos,
+}
+
+type ReachDepartures = BTreeMap<TilePos, Vec<usize>>;
+
+/// Only ordinary, unguarded captain offers from the same catalogue used by serve.
+fn reach_travel_offers(
+    npcs: &oteryn_world_bundle::npc::Table,
+) -> TestResult<(Vec<ReachOffer>, ReachDepartures)> {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content");
+    let catalogue = crate::content::NpcDataCatalogue::load(
+        &root,
+        std::ffi::OsStr::new("world"),
+        crate::content::npc_catalogue_preproduction_limits(),
+    )
+    .map_err(|e| format!("reach travel catalogue: {e:?}"))?;
+    let model = catalogue
+        .service_model_for_project()
+        .map_err(|e| format!("reach travel model: {e:?}"))?;
+    let mut offers = Vec::new();
+    let mut departures: ReachDepartures = BTreeMap::new();
+    for npc in &npcs.npcs {
+        let Some((_, entry)) = model.npcs().iter().find(|(key, _)| key.key == npc.key) else {
+            continue;
+        };
+        for travel in
+            crate::content::npc_catalogue::travel::resolve(&model, &npc.key, &entry.services)
+        {
+            if travel.held
+                || travel.route.premium
+                || travel.route.min_level.is_some_and(|level| level > 1)
+                || travel.yalahar_gate
+                || travel.yalahar_town_gate.is_some()
+                || travel.quest_gate.is_some()
+                || travel.quest_clear_gate.is_some()
+                || travel.ticket.is_some()
+                || travel.return_origin.is_some()
+                || travel.world_change.is_some()
+            {
+                continue;
+            }
+            let arrival = TilePos {
+                x: u16::try_from(travel.route.destination.x)?,
+                y: u16::try_from(travel.route.destination.y)?,
+                floor: -i8::try_from(travel.route.destination.floor)?,
+            };
+            let index = offers.len();
+            offers.push(ReachOffer {
+                captain: npc.key.clone(),
+                keyword: travel.keyword,
+                fare: travel.route.price,
+                arrival,
+            });
+            for p in &npc.placements {
+                for dx in -3..=3 {
+                    for dy in -3..=3 {
+                        if let Some((x, y)) =
+                            p.x.checked_add_signed(dx).zip(p.y.checked_add_signed(dy))
+                        {
+                            departures
+                                .entry(TilePos {
+                                    x,
+                                    y,
+                                    floor: p.floor,
+                                })
+                                .or_default()
+                                .push(index);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Ok((offers, departures))
+}
+
+/// BFS over production movement and admitted captain edges. A step or crossing costs one
+/// edge, so the first goal has the shortest planned route, independent of NPC order.
+async fn reach_search(
+    world: &BundleWorld,
+    from: TilePos,
+    goal: impl Fn(TilePos) -> bool,
+    offers: &[ReachOffer],
+    departures: &ReachDepartures,
+    mut heartbeat: impl AsyncFnMut() -> TestResult,
+) -> TestResult<Result<(TilePos, Vec<ReachMove>), usize>> {
+    let mut queue = VecDeque::from([from]);
+    let mut parents = BTreeMap::from([(from, None)]);
+    let mut expanded = 0usize;
+    while let Some(at) = queue.pop_front() {
+        if goal(at) {
+            let mut path = Vec::new();
+            let mut cursor = at;
+            while let Some(Some((previous, action))) = parents.get(&cursor) {
+                path.push(*action);
+                cursor = *previous;
+            }
+            path.reverse();
+            return Ok(Ok((at, path)));
+        }
+        if parents.len() > REACH_SEARCH_NODES {
+            break;
+        }
+        expanded += 1;
+        if expanded.is_multiple_of(REACH_CHUNK) {
+            verdict::Harness::global().progress("route-search");
+            heartbeat().await?;
+        }
+        for direction in [
+            StepDirection::North,
+            StepDirection::East,
+            StepDirection::South,
+            StepDirection::West,
+        ] {
+            if let Some(next) = destination(world, at, direction)
+                && let std::collections::btree_map::Entry::Vacant(entry) = parents.entry(next)
+            {
+                entry.insert(Some((at, ReachMove::Step(direction))));
+                queue.push_back(next);
+            }
+        }
+        if let Some(indices) = departures.get(&at) {
+            for &index in indices {
+                let next = offers[index].arrival;
+                if world
+                    .base()
+                    .tile(next.x, next.y, next.floor)
+                    .is_some_and(|tile| tile.walkable())
+                    && world.enterable(next)
+                    && let std::collections::btree_map::Entry::Vacant(entry) = parents.entry(next)
+                {
+                    entry.insert(Some((at, ReachMove::Boat(index))));
+                    queue.push_back(next);
+                }
+            }
+        }
+    }
+    Ok(Err(parents.len()))
+}
+
 /// Like `route` without its 160-tile and two-floor window: it searches the whole bundle (stairs,
 /// ladders and floor changes included) up to `REACH_SEARCH_NODES` tiles. The search yields to the
 /// connection every `REACH_CHUNK` expansions so liveness is served and the harness sees progress.
@@ -495,45 +645,233 @@ pub(super) async fn reach_route(
     from: TilePos,
     goal: impl Fn(TilePos) -> bool,
 ) -> TestResult<Result<Vec<StepDirection>, usize>> {
-    let mut queue = VecDeque::from([from]);
-    let mut parents = BTreeMap::from([(from, None)]);
-    let mut expanded = 0usize;
-    while let Some(at) = queue.pop_front() {
-        if goal(at) {
-            let mut path = Vec::new();
-            let mut cursor = at;
-            while let Some(Some((previous, direction))) = parents.get(&cursor) {
-                path.push(*direction);
-                cursor = *previous;
-            }
-            path.reverse();
-            return Ok(Ok(path));
+    let result = reach_search(world, from, goal, &[], &BTreeMap::new(), async || {
+        client.service_liveness(Duration::from_millis(1)).await?;
+        Ok(())
+    })
+    .await?;
+    match result {
+        Ok((goal, actions)) => {
+            let path = actions
+                .into_iter()
+                .map(|action| match action {
+                    ReachMove::Step(direction) => Ok(direction),
+                    ReachMove::Boat(_) => Err("walking planner produced boat".into()),
+                })
+                .collect::<TestResult<Vec<_>>>()?;
+            evidence(&format!(
+                "REACH_ROUTE from={from:?} goal={goal:?} route_length={} captain=none",
+                path.len()
+            ));
+            Ok(Ok(path))
         }
-        if parents.len() > REACH_SEARCH_NODES {
-            break;
-        }
-        expanded += 1;
-        if expanded.is_multiple_of(REACH_CHUNK) {
-            verdict::Harness::global().progress("route-search");
-            client.service_liveness(Duration::from_millis(1)).await?;
-        }
-        for direction in [
-            StepDirection::North,
-            StepDirection::East,
-            StepDirection::South,
-            StepDirection::West,
-        ] {
-            let Some(next) = destination(world, at, direction) else {
-                continue;
-            };
-            if parents.contains_key(&next) {
-                continue;
-            }
-            parents.insert(next, Some((at, direction)));
-            queue.push_back(next);
+        Err(searched) => {
+            evidence(&format!(
+                "REACH_ROUTE from={from:?} searched={searched} cap={REACH_SEARCH_NODES} goal=unreachable"
+            ));
+            Ok(Err(searched))
         }
     }
-    Ok(Err(parents.len()))
+}
+
+fn reach_npc_at(npc: &oteryn_world_bundle::npc::Npc, at: TilePos) -> bool {
+    npc.placements
+        .iter()
+        .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
+}
+
+/// Walk, pay a real captain when needed, then walk to the nearest eligible NPC.
+async fn reach_npc<'a>(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    npcs: &'a oteryn_world_bundle::npc::Table,
+    eligible: impl Fn(&oteryn_world_bundle::npc::Npc) -> bool,
+    label: &str,
+) -> TestResult<&'a oteryn_world_bundle::npc::Npc> {
+    let candidates: Vec<_> = npcs.npcs.iter().filter(|npc| eligible(npc)).collect();
+    if candidates.is_empty() {
+        return Err(format!("{label}: no eligible NPC placement in compiled bundle").into());
+    }
+    let goal = reach_travel(
+        client,
+        world,
+        npcs,
+        |at| candidates.iter().any(|npc| reach_npc_at(npc, at)),
+        label,
+    )
+    .await?;
+    let npc = candidates
+        .into_iter()
+        .find(|npc| reach_npc_at(npc, goal))
+        .ok_or("reach goal has no NPC")?;
+    evidence(&format!(
+        "REACH_NPC row={label} npc={} goal={goal:?}",
+        npc.key
+    ));
+    Ok(npc)
+}
+
+async fn reach_travel(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+    goal: impl Fn(TilePos) -> bool,
+    label: &str,
+) -> TestResult<TilePos> {
+    let (offers, departures) = reach_travel_offers(npcs)?;
+    loop {
+        verdict::Harness::global().progress("reach-travel-plan");
+        let from = tile(client.world_spatial().actor_position)?;
+        if goal(from) {
+            evidence(&format!(
+                "REACH_TRAVEL row={label} from={from:?} goal={from:?} route_length=0 fare=0 captains=[]"
+            ));
+            return Ok(from);
+        }
+        let planned = reach_search(world, from, &goal, &offers, &departures, async || {
+            client.service_liveness(Duration::from_millis(1)).await?;
+            Ok(())
+        })
+        .await?;
+        let (goal, actions) = planned.map_err(|searched| format!("{label}: no reachable compiled-world goal from={from:?}; searched={searched} cap={REACH_SEARCH_NODES}"))?;
+        let fare = actions
+            .iter()
+            .filter_map(|action| match action {
+                ReachMove::Boat(index) => Some(offers[*index].fare),
+                _ => None,
+            })
+            .try_fold(0u64, |total, fare| {
+                total.checked_add(fare).ok_or("reach fare overflow")
+            })?;
+        if fare > full_gold::coin_value(client)? {
+            let metadata = oteryn_world_bundle::bundle::visit(
+                &std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?,
+                |_, _| Ok(()),
+            )?;
+            full_gold::earn(client, world, &metadata.spawns, label, fare).await?;
+            // Hunt travel changes the start; choose the nearest goal again from the observed tile.
+            continue;
+        }
+        evidence(&format!(
+            "REACH_TRAVEL row={label} from={from:?} goal={goal:?} route_length={} walk_steps={} fare={fare} captains={:?}",
+            actions.len(),
+            actions
+                .iter()
+                .filter(|action| matches!(action, ReachMove::Step(_)))
+                .count(),
+            actions
+                .iter()
+                .filter_map(|a| match a {
+                    ReachMove::Boat(i) => Some(offers[*i].captain.as_str()),
+                    _ => None,
+                })
+                .collect::<Vec<_>>()
+        ));
+        let mut steps = Vec::new();
+        for action in actions {
+            match action {
+                ReachMove::Step(direction) => steps.push(direction),
+                ReachMove::Boat(index) => {
+                    walk(client, world, &steps).await?;
+                    steps.clear();
+                    reach_sail(client, npcs, &offers[index], label).await?;
+                }
+            }
+        }
+        walk(client, world, &steps).await?;
+        return Ok(goal);
+    }
+}
+
+async fn reach_home(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+) -> TestResult {
+    let metadata = oteryn_world_bundle::bundle::visit(
+        &std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?,
+        |_, _| Ok(()),
+    )?;
+    reach_travel(
+        client,
+        world,
+        &metadata.npcs,
+        |at| at == TOWN,
+        "return-to-town",
+    )
+    .await?;
+    Ok(())
+}
+
+async fn reach_sail(
+    client: &mut oteryn_dev_client::DevClientSession,
+    npcs: &oteryn_world_bundle::npc::Table,
+    offer: &ReachOffer,
+    label: &str,
+) -> TestResult {
+    use oteryn_dev_client::client_runtime::npc_shop;
+    use oteryn_protocol_oteryn::npc_service as wire;
+    let captain = npcs
+        .npcs
+        .iter()
+        .find(|npc| npc.key == offer.captain)
+        .ok_or("reach captain absent")?;
+    let actor = client
+        .world_entities()
+        .and_then(|entities| {
+            entities.iter().find(|entity| {
+                entity.kind == oteryn_dev_client::EntityKind::Npc
+                    && captain.placements.iter().any(|p| {
+                        entity.position.x == i32::from(p.x)
+                            && entity.position.y == i32::from(p.y)
+                            && entity.position.floor == -i16::from(p.floor)
+                    })
+            })
+        })
+        .map(|entity| entity.entity)
+        .ok_or("reach captain not visible after walk")?;
+    let carried_before = full_gold::coin_value(client)?;
+    for text in ["hi", offer.keyword.as_str(), "yes"] {
+        verdict::Harness::global().progress("reach-captain-talk");
+        let reply = npc_shop::talk(
+            client.session_mut(),
+            &wire::NpcTalkIntent {
+                npc_actor: actor,
+                text: text.into(),
+            },
+        )
+        .await?;
+        if reply != wire::NpcIntentDisposition::Ok {
+            return Err(format!(
+                "{label}: captain={} text={text} refused={reply:?}",
+                offer.captain
+            )
+            .into());
+        }
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+    loop {
+        verdict::Harness::global().progress("reach-captain-arrival");
+        let carried_after = full_gold::coin_value(client)?;
+        if tile(client.world_spatial().actor_position)? == offer.arrival
+            && (offer.fare == 0 || carried_after < carried_before)
+        {
+            evidence(&format!(
+                "REACH_BOAT row={label} captain={} destination={} fare={} goal={:?} carried_before={carried_before} carried_after={carried_after}",
+                offer.captain, offer.keyword, offer.fare, offer.arrival
+            ));
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "{label}: captain={} arrival timeout expected={:?} observed={:?}",
+                offer.captain,
+                offer.arrival,
+                client.world_spatial().actor_position
+            )
+            .into());
+        }
+        client.service_liveness(Duration::from_millis(20)).await?;
+    }
 }
 
 /// Use the production floor resolver over the production bundle's collision facts.
@@ -3411,4 +3749,150 @@ fn qualification_nbroute_retries_only_stationary_rejections_with_a_bound() {
             assert_eq!(town_route_retry_delay(disposition, false, attempt), None);
         }
     }
+}
+
+// Both regression rows share the real compiler/loader rather than synthetic town facts.
+#[cfg(test)]
+fn reach2_fixture() -> TestResult<&'static (BundleWorld, oteryn_world_bundle::npc::Table)> {
+    static FIXTURE: std::sync::OnceLock<
+        Result<(BundleWorld, oteryn_world_bundle::npc::Table), String>,
+    > = std::sync::OnceLock::new();
+    FIXTURE
+        .get_or_init(|| {
+            (|| -> TestResult<_> {
+                let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+                let bytes = if let Ok(path) = std::env::var("NODE_BOOT_WORLD_BUNDLE") {
+                    std::fs::read(path)?
+                } else {
+                    use oteryn_world_bundle_compiler::{bundle::BuildClass, compile, source};
+                    verdict::Harness::global().progress("reach2-compile-world");
+                    let project = source::project(&root)?;
+                    let (registry, palette) = source::registry(&root, &project)?;
+                    compile::compile(
+                        &compile::Input {
+                            regions: &project.regions,
+                            palette: &palette,
+                            identity: serde_json::from_slice(&std::fs::read(
+                                root.join("content/world/pins/oteryn.identity.json"),
+                            )?)?,
+                            world: source::world_extent(&root)?,
+                            build_class: BuildClass::NonProduction,
+                            draft_areas: oteryn_world_bundle_compiler::project::draft_areas(
+                                &project.index,
+                            )?,
+                            families: &project.families,
+                        },
+                        &registry,
+                    )?
+                    .bytes
+                };
+                verdict::Harness::global().progress("reach2-boot-world");
+                let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+                let mut pin: serde_json::Value = serde_json::from_slice(&std::fs::read(
+                    root.join("content/world/pins/oteryn.json"),
+                )?)?;
+                pin["digest"] = metadata
+                    .digest
+                    .iter()
+                    .map(|b| format!("{b:02x}"))
+                    .collect::<String>()
+                    .into();
+                let world = boot_world(
+                    bytes,
+                    &pin,
+                    WorldId::decode(&v7(1, 2))?,
+                    ChannelId::decode(&v7(1, 3))?,
+                )?;
+                Ok((world, metadata.npcs))
+            })()
+            .map_err(|error| error.to_string())
+        })
+        .as_ref()
+        .map_err(|error| error.clone().into())
+}
+
+#[cfg(test)]
+fn reach2_seller_test(id: u32, row: &str) -> TestResult {
+    let (world, npcs) = reach2_fixture()?;
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(
+        root.join("content/services/trade/trade-00000-00323.json"),
+    )?)?;
+    let key = format!("oteryn:item.tibia.i{id}");
+    let sellers: BTreeSet<_> = trades["records"]
+        .as_array()
+        .ok_or("trade records")?
+        .iter()
+        .filter_map(|r| {
+            r["declaration"]["offers"]
+                .as_array()?
+                .iter()
+                .any(|o| o["direction"] == "SellToPlayer" && o["item"]["key"] == key)
+                .then(|| r["declaration"]["identity"]["key"].as_str())
+                .flatten()?
+                .strip_prefix("oteryn:service.trade.")
+                .map(|name| format!("oteryn:npc.{name}"))
+        })
+        .collect();
+    let (offers, departures) = reach_travel_offers(npcs)?;
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    let (goal, actions) = runtime
+        .block_on(reach_search(
+            world,
+            TOWN,
+            |at| {
+                npcs.npcs
+                    .iter()
+                    .filter(|npc| sellers.contains(&npc.key))
+                    .any(|npc| reach_npc_at(npc, at))
+            },
+            &offers,
+            &departures,
+            async || {
+                tokio::task::yield_now().await;
+                Ok(())
+            },
+        ))?
+        .map_err(|searched| format!("{row}: no reachable seller {id}; searched={searched}"))?;
+    let npc = npcs
+        .npcs
+        .iter()
+        .find(|npc| sellers.contains(&npc.key) && reach_npc_at(npc, goal))
+        .ok_or("seller goal absent")?;
+    let mut at = TOWN;
+    let mut captains = Vec::new();
+    for action in &actions {
+        match action {
+            ReachMove::Step(direction) => {
+                at = destination(world, at, *direction).ok_or("seller route has illegal step")?;
+            }
+            ReachMove::Boat(index) => {
+                assert!(
+                    departures
+                        .get(&at)
+                        .is_some_and(|indices| indices.contains(index))
+                );
+                at = offers[*index].arrival;
+                assert!(
+                    world
+                        .base()
+                        .tile(at.x, at.y, at.floor)
+                        .is_some_and(|tile| tile.walkable())
+                        && world.enterable(at)
+                );
+                captains.push(offers[*index].captain.as_str());
+            }
+        }
+    }
+    assert_eq!(at, goal);
+    assert!(reach_npc_at(npc, at));
+    assert!(!actions.is_empty());
+    eprintln!(
+        "{row} seller={} item={id} goal={goal:?} route_length={} captains={captains:?}",
+        npc.key,
+        actions.len()
+    );
+    Ok(())
 }

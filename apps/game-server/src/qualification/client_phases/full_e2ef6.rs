@@ -278,7 +278,11 @@ async fn resting_tiles(
     let mut shrines = Vec::new();
     {
         let facts = world.facts().pinned();
-        for (floor, x, y, tile) in world.base().tiles() {
+        for (count, (floor, x, y, tile)) in world.base().tiles().enumerate() {
+            if count.is_multiple_of(REACH_CHUNK) {
+                verdict::Harness::global().progress("P10-shrine-scan");
+                client.service_liveness(Duration::from_millis(1)).await?;
+            }
             let at = TilePos { floor, x, y };
             if tile.ids().iter().zip(tile.depths()).filter(|(_, depth)| **depth == 0)
                 .enumerate().any(|(ordinal, (id, _))| {
@@ -289,50 +293,44 @@ async fn resting_tiles(
             }
         }
     }
-    shrines.sort_by_key(|at| (start.x.abs_diff(at.x).max(start.y.abs_diff(at.y)), *at));
-    let compiled = shrines.len();
-    let mut unreachable = 0usize;
-    for shrine in shrines.into_iter().take(8) {
-        let Ok(path) = reach_route(client, world, start, |at| {
-            at.floor == shrine.floor
-                && at.x.abs_diff(shrine.x).max(at.y.abs_diff(shrine.y)) <= 1
-                && world
-                    .base()
-                    .tile(at.x, at.y, at.floor)
-                    .is_some_and(|tile| tile.protection_zone())
-        })
-        .await?
-        else {
-            unreachable += 1;
-            continue;
-        };
-        // Resolve the exact endpoint through the same bundle movement oracle.
-        let mut inside = start;
-        for direction in path {
-            inside = destination(world, inside, direction)
-                .ok_or("P10 shrine path endpoint unavailable")?;
-        }
-        let outside_path = route(world, inside, |at| {
-            at.floor == inside.floor
-                && at.x.abs_diff(inside.x).max(at.y.abs_diff(inside.y)) >= 4
-                && world
-                    .base()
-                    .tile(at.x, at.y, at.floor)
-                    .is_some_and(|tile| !tile.protection_zone())
-        });
-        if let Some(path) = outside_path {
-            let mut outside = inside;
-            for direction in path {
-                outside = destination(world, outside, direction)
-                    .ok_or("P10 outside path endpoint unavailable")?;
-            }
-            return Ok((inside, outside));
-        }
+    let path = reach_route(client, world, start, |at| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| tile.protection_zone())
+            && shrines.iter().any(|shrine| {
+                at.floor == shrine.floor
+                    && at.x.abs_diff(shrine.x).max(at.y.abs_diff(shrine.y)) <= 1
+            })
+    })
+    .await?
+    .map_err(|searched| {
+        format!(
+            "P10 no reachable PZ shrine; authored={} searched={searched}",
+            shrines.len()
+        )
+    })?;
+    let mut inside = start;
+    for direction in path {
+        inside =
+            destination(world, inside, direction).ok_or("P10 shrine path endpoint unavailable")?;
     }
-    Err(format!(
-        "P10 player route blocked: step=shrine-route observed=compiled-shrines={compiled};unreachable-from-{start:?}={unreachable};no PZ approach with an outside return route among the nearest 8"
-    )
-    .into())
+    let outside_path = reach_route(client, world, inside, |at| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| !tile.protection_zone())
+    })
+    .await?
+    .map_err(|searched| {
+        format!("P10 no reachable non-PZ tile from={inside:?} searched={searched}")
+    })?;
+    let mut outside = inside;
+    for direction in outside_path {
+        outside = destination(world, outside, direction)
+            .ok_or("P10 outside path endpoint unavailable")?;
+    }
+    Ok((inside, outside))
 }
 
 async fn resting_walk(
@@ -446,6 +444,7 @@ async fn resting_spend(client: &mut DevClientSession, soul: bool) -> TestResult 
             )
             .into());
         }
+        verdict::Harness::global().progress("player-wait");
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
     }
@@ -492,6 +491,7 @@ async fn resting_deficits(
         if tokio::time::Instant::now() >= deadline {
             return Err("P10 HP deficit prerequisite blocked: no nonlethal native rat damage with at least eight missing HP".into());
         }
+        verdict::Harness::global().progress("player-wait");
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
     }
@@ -596,6 +596,7 @@ async fn resting_bonuses(
         let mut next_stamina_read = started;
         let mut stamina = stamina_before;
         let stamina_after = loop {
+            verdict::Harness::global().progress("player-wait");
             client.service_liveness(Duration::from_millis(50)).await?;
             for event in client.take_events() {
                 if let SessionEvent::ActorVitals(delta) = event {
@@ -671,6 +672,7 @@ async fn resting_bonuses(
         let mut observed_stamina = outside_stamina;
         let until = tokio::time::Instant::now() + Duration::from_secs(370);
         while tokio::time::Instant::now() < until {
+            verdict::Harness::global().progress("player-wait");
             client.service_liveness(Duration::from_millis(100)).await?;
             for event in client.take_events() {
                 if let SessionEvent::ActorVitals(delta) = event {
@@ -713,6 +715,7 @@ async fn resting_bonuses(
         let interval = if promoted { 15 } else { 120 };
         let deadline = tokio::time::Instant::now() + Duration::from_secs(interval + 10);
         loop {
+            verdict::Harness::global().progress("player-wait");
             client.service_liveness(Duration::from_millis(50)).await?;
             client.take_events();
             let soul = client.actor_vitals().ok_or("P10 reentry soul frame missing")?.soul;
@@ -800,6 +803,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
                 if tokio::time::Instant::now() < deadline => {}
             _ => return Err(format!("E2EF6 logout did not settle: {logout:?}").into()),
         }
+        verdict::Harness::global().progress("player-wait");
         client.service_liveness(Duration::from_millis(100)).await?;
         client.take_events();
     }
@@ -933,6 +937,7 @@ async fn temple_respawn(
             .health;
         let deadline = tokio::time::Instant::now() + Duration::from_secs(40);
         loop {
+            verdict::Harness::global().progress("player-wait");
             client.service_liveness(Duration::from_millis(50)).await?;
             let damage = client
                 .take_events()
@@ -994,14 +999,7 @@ async fn temple_respawn(
     }
     .await;
     // Preserve the entry position required by the pre-existing phases, even on failure.
-    let restore: TestResult = async {
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            at == TOWN
-        })
-        .ok_or("E2EF6 return route unavailable")?;
-        walk(&mut client, world, &path).await
-    }
-    .await;
+    let restore: TestResult = async { reach_home(&mut client, world).await }.await;
     let released = logout(&mut client).await;
     result.and(restore).and(released)
 }
@@ -1100,16 +1098,14 @@ async fn approach_oressa(
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
     let basis = spatial_basis::current(client)?;
-    let npc = npcs
-        .npcs
-        .iter()
-        .find(|npc| npc.key == "oteryn:npc.oressa")
-        .ok_or("Oressa prerequisite blocked: compiled world has no oteryn:npc.oressa placement")?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        npc.placements.iter().any(|placement| placement.floor == at.floor
-            && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3)
-    }).ok_or("Oressa prerequisite blocked: no player walking route to oteryn:npc.oressa within the existing town route budget")?;
-    walk(client, world, &path).await?;
+    let npc = reach_npc(
+        client,
+        world,
+        npcs,
+        |npc| npc.key == "oteryn:npc.oressa",
+        "player-Oressa",
+    )
+    .await?;
     client.world_entities().and_then(|entities| entities.iter().find(|entry| {
         entry.kind == oteryn_dev_client::EntityKind::Npc && npc.placements.iter().any(|placement| {
             entry.position.x == i32::from(placement.x)
@@ -1153,6 +1149,7 @@ async fn oressa_talk(
         if disposition == wire::NpcIntentDisposition::RateLimited
             && tokio::time::Instant::now() < deadline
         {
+            verdict::Harness::global().progress("player-wait");
             client.service_liveness(Duration::from_millis(50)).await?;
             client.take_events();
             continue;
@@ -1235,6 +1232,7 @@ async fn earn_level_eight(
         let kill_deadline = (tokio::time::Instant::now() + Duration::from_secs(60)).min(deadline);
         let mut damaged = false;
         loop {
+            verdict::Harness::global().progress("player-wait");
             client.service_liveness(Duration::from_millis(50)).await?;
             for event in client.take_events() {
                 if let SessionEvent::WorldSpatialEntities(delta) = event {
@@ -1252,6 +1250,7 @@ async fn earn_level_eight(
                     if after.0 > before.0 || tokio::time::Instant::now() >= settled {
                         break after;
                     }
+                    verdict::Harness::global().progress("player-wait");
                     client.service_liveness(Duration::from_millis(50)).await?;
                     client.take_events();
                 };
@@ -1341,11 +1340,7 @@ async fn first_vocation(
     }.await;
     let restore: TestResult = async {
         client.session_mut().attack_target(None).await?;
-        let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            at == TOWN
-        })
-        .ok_or("Oressa journey return route unavailable")?;
-        walk(&mut client, world, &back).await
+        reach_home(&mut client, world).await
     }
     .await;
     let released = logout(&mut client).await;
@@ -1494,6 +1489,7 @@ async fn wait_inventory(
         if tokio::time::Instant::now() >= deadline {
             return Err(format!("{blocker}; observed={:?}", client.inventory()).into());
         }
+        verdict::Harness::global().progress("player-wait");
         client.service_liveness(Duration::from_millis(50)).await?;
     }
 }
@@ -1501,11 +1497,7 @@ async fn wait_inventory(
 async fn return_and_release(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     let restore: TestResult = async {
         client.session_mut().attack_target(None).await?;
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            at == TOWN
-        })
-        .ok_or("death row cleanup: no walking route back to entry")?;
-        walk(client, world, &path).await
+        reach_home(client, world).await
     }
     .await;
     let released = logout(client).await;
@@ -1560,18 +1552,7 @@ async fn approach_service(
     key: &str,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
     let basis = spatial_basis::current(client)?;
-    let npc = npcs.npcs.iter().find(|npc| npc.key == key).ok_or_else(|| {
-        format!("player prerequisite blocked: compiled world has no {key} placement")
-    })?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        npc.placements.iter().any(|place| {
-            place.floor == at.floor && at.x.abs_diff(place.x).max(at.y.abs_diff(place.y)) <= 3
-        })
-    })
-    .ok_or_else(|| {
-        format!("player prerequisite blocked: no walking route to {key} within town route budget")
-    })?;
-    walk(client, world, &path).await?;
+    let npc = reach_npc(client, world, npcs, |npc| npc.key == key, "player-service").await?;
     client
         .world_entities()
         .and_then(|view| {
@@ -1620,6 +1601,7 @@ async fn service_talk(
         if disposition == wire::NpcIntentDisposition::RateLimited
             && tokio::time::Instant::now() < deadline
         {
+            verdict::Harness::global().progress("player-wait");
             client.service_liveness(Duration::from_millis(50)).await?;
             continue;
         }
@@ -1714,6 +1696,7 @@ async fn observed_death(
     let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let mut damaged = false;
     loop {
+        verdict::Harness::global().progress("player-wait");
         client.service_liveness(Duration::from_millis(50)).await?;
         for event in client.take_events() {
             if let SessionEvent::ActorVitals(delta) = event {
@@ -2035,7 +2018,8 @@ async fn item_loss(
         if custody(client.inventory().ok_or("protected relog inventory absent")?) != expected { return Err("protected death custody/amulet consumption differs after fresh admission".into()); }
         row.pass("protected-relog-custody", &expected);
         let destination = tile(protected_position)?;
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == destination).ok_or("protected death ground return route unavailable")?;
+        let reach_from = tile(client.world_spatial().actor_position)?;
+        let path = reach_route(&mut client, world, reach_from,  |at| at == destination).await?.ok().ok_or("protected death ground return route unavailable")?;
         walk(&mut client, world, &path).await?;
         let after_ground = custody(&CharacterInventory { entries: ground_entries(&mut client, protected_position).await?, ..Default::default() });
         if after_ground != ground_signature { return Err(format!("protected death changed ground custody: before={ground_signature:?} after={after_ground:?}").into()); }
@@ -2054,7 +2038,8 @@ async fn item_loss(
         if custody(client.inventory().ok_or("unprotected relog inventory absent")?) != saved { return Err("unprotected death custody differs after fresh admission".into()); }
         row.pass("unprotected-relog-custody", &saved);
         let destination = tile(encounter)?;
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == destination)
+        let reach_from = tile(client.world_spatial().actor_position)?;
+        let path = reach_route(&mut client, world, reach_from,  |at| at == destination).await?.ok()
             .ok_or("no real return route to death ground")?;
         walk(&mut client, world, &path).await?;
         let ground = ground_entries(&mut client, encounter).await?;
@@ -2341,42 +2326,51 @@ async fn pvp_meet(
 ) -> TestResult<oteryn_dev_client::EntityRef> {
     victim.session_mut().attack_target(None).await?;
     attacker.session_mut().attack_target(None).await?;
-    let path = route(world, tile(victim.world_spatial().actor_position)?, |at| {
-        world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_some_and(|tile| !tile.protection_zone())
-            && spawns.sources.iter().all(|source| {
-                source.floor != at.floor
-                    || source
-                        .points
-                        .iter()
-                        .all(|point| at.x.abs_diff(point.x).max(at.y.abs_diff(point.y)) > 10)
-            })
-    })
+    let reach_from = tile(victim.world_spatial().actor_position)?;
+    let path = full_e2ef5::with_observer_liveness(
+        attacker,
+        reach_route(victim, world, reach_from, |at| {
+            world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| !tile.protection_zone())
+                && spawns.sources.iter().all(|source| {
+                    source.floor != at.floor
+                        || source
+                            .points
+                            .iter()
+                            .all(|point| at.x.abs_diff(point.x).max(at.y.abs_diff(point.y)) > 10)
+                })
+        }),
+    )
+    .await?
+    .ok()
     .ok_or("PvP player route blocked: no reachable non-PZ tile clear of creature spawns")?;
-    walk(victim, world, &path).await?;
+    full_e2ef5::with_observer_liveness(attacker, walk(victim, world, &path)).await?;
     let target = tile(victim.world_spatial().actor_position)?;
-    let path = route(
-        world,
-        tile(attacker.world_spatial().actor_position)?,
-        |at| {
+    let reach_from = tile(attacker.world_spatial().actor_position)?;
+    let path = full_e2ef5::with_observer_liveness(
+        victim,
+        reach_route(attacker, world, reach_from, |at| {
             at.floor == target.floor
                 && at.x.abs_diff(target.x) + at.y.abs_diff(target.y) == 1
                 && world
                     .base()
                     .tile(at.x, at.y, at.floor)
                     .is_some_and(|tile| !tile.protection_zone())
-        },
+        }),
     )
+    .await?
+    .ok()
     .ok_or("PvP player route blocked: no adjacent non-PZ attacker tile")?;
-    walk(attacker, world, &path).await?;
+    full_e2ef5::with_observer_liveness(victim, walk(attacker, world, &path)).await?;
     let identity = *victim
         .world_entities()
         .ok_or("victim visibility absent")?
         .own_identity();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
+        verdict::Harness::global().progress("player-wait");
         attacker.service_liveness(Duration::from_millis(50)).await?;
         if let Some(entity) = attacker
             .world_entities()
@@ -2478,7 +2472,9 @@ async fn observed_pvp_death(
         let attack = attacker.session_mut().attack_target(Some(&target)).await?;
         last_attack.clear();
         last_attack.push_str(&format!("{attack:?}"));
+        verdict::Harness::global().progress("player-wait");
         victim.service_liveness(Duration::from_millis(50)).await?;
+        verdict::Harness::global().progress("player-wait");
         attacker.service_liveness(Duration::from_millis(50)).await?;
         if victim.world_entities().is_some_and(|view| {
             view.others()
