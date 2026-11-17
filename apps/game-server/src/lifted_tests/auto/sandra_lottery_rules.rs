@@ -34,7 +34,8 @@ fn sandra_lottery_accepts_previous_outfit_definition_pin() -> TestResult {
             .filter(|transition| transition.key != marker)
             .cloned()
             .collect(),
-    )?;
+    )
+    .map_err(|error| format!("{error:?}"))?;
     let quest = "oteryn:quest.outfit_and_addon_quests";
     let mut hash = previous
         .definition_hash(quest)
