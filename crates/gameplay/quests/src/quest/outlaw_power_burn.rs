@@ -73,7 +73,12 @@ mod tests {
             .ok_or("reward chest")?;
         assert!(reward.completes);
         assert_eq!(
-            reward.item_reward().ok_or("chest contents")?.contents.len(),
+            reward
+                .item_reward()
+                .as_ref()
+                .ok_or("chest contents")?
+                .contents
+                .len(),
             2
         );
         Ok(())
