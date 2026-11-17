@@ -1105,10 +1105,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(attack);
         drop(states);
         drop(runtime);
+        self.settle_stable_entries(stable_entries).await;
         drop(permit);
         #[cfg(test)]
         trace.set("ai_save");
-        self.settle_stable_entries(stable_entries).await;
         self.save_trained_levels(trained).await;
         #[cfg(test)]
         trace.set("ai_complete");
