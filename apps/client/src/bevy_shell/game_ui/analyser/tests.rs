@@ -554,8 +554,30 @@ fn analyser_resolves_following_pages_and_new_items() -> TestResult {
         .iter(app.world())
         .find_map(|(entity, c)| (c.reset && c.tool == Tool::Session).then_some(entity))
         .ok_or("session reset")?;
+    let panel = |app: &App| -> Result<_, Box<dyn std::error::Error>> {
+        Ok(app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .analyser_panel())
+    };
+    let loot = panel(&app)?.loot;
+    assert!((1000..1100).all(|id| loot.contains_key(&id)));
     app.world_mut().trigger(Activate { entity: reset });
     app.update();
+    let reset_panel = panel(&app)?;
+    assert!(reset_panel.loot.is_empty());
+    assert_eq!(
+        reset_panel
+            .reports
+            .get(Tool::Loot.key())
+            .ok_or("retained loot report")?
+            .loot,
+        loot
+    );
     for _ in 0..10 {
         let command = {
             let mut commands = app.world_mut().non_send_mut::<tokio::sync::mpsc::UnboundedReceiver<crate::combat_input::PlayCommand>>();
