@@ -1,5 +1,6 @@
 use crate::bestiary_postgres_harness::{CHANNEL, Harness, TestResult, WORLD, debug, id, runtime};
 use crate::content::ProductionKey;
+use crate::durability::raid_runner::{CommittedRaidAction, RaidPlacementOutcome};
 use crate::durability::raid_schedule::{
     CalendarRaidScheduleCandidate, RaidScheduleCandidate, RaidSchedulerCheck,
 };
@@ -98,9 +99,23 @@ async fn exercise(h: &Harness) -> TestResult {
         .bind(request.now_ms + 4 * 24 * 3_600_000)
         .execute(&h.pool).await?;
     assert_eq!(h.root.check_raid_schedules(&authority, &h.node, request.clone()).await?.firings.len(), 1);
-    sqlx::query("UPDATE game_world_raid_firings SET state=2 WHERE world_id=encode($1,'hex')::uuid")
-        .bind(world.as_bytes().as_slice())
-        .execute(&h.pool).await?;
+    let firing = request.candidates[0].firing_id;
+    let wave = h.root.advance_raid_run(&h.node, firing, channel, request.generation,
+        request.candidates[0].definition.clone(), request.now_ms).await?.ok_or("wave")?;
+    let CommittedRaidAction::Wave { creatures, .. } = wave.action else {
+        return Err("first effect must be the horse wave".into());
+    };
+    assert_eq!(creatures.len(), 24);
+    assert_eq!(creatures.iter().filter(|plan| plan.creature.as_str() == "oteryn:creature.wild_horse").count(), 6);
+    let outcomes = creatures.into_iter().map(|plan| RaidPlacementOutcome {
+        identity: plan.identity,
+        placed: false,
+    }).collect();
+    h.root.acknowledge_raid_effect(&h.node, wave.identity, outcomes, request.now_ms).await?;
+    let complete = h.root.advance_raid_run(&h.node, firing, channel, request.generation,
+        request.candidates[0].definition.clone(), request.now_ms).await?.ok_or("completion")?;
+    assert_eq!(complete.action, CommittedRaidAction::Complete { cleanup: false });
+    h.root.acknowledge_raid_effect(&h.node, complete.identity, Vec::new(), request.now_ms).await?;
     request.candidates[0].firing_id = id(82);
     request.now_ms += 10_740_000;
     assert!(h.root.check_raid_schedules(&authority, &h.node, request.clone()).await?.firings.is_empty());
