@@ -30,7 +30,7 @@ fn source_catalogue(pin: &str) -> StoredResult<&'static QuestStateCatalogue> {
                 pin,
             )
             .map(|source| source.catalogue().clone())
-            .map_err(|error| error.to_string())
+            .map_err(|error| format!("{error:?}"))
         })
         .as_ref()
         .map_err(|_| DurabilityError::InvalidStoredState)
