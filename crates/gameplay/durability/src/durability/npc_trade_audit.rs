@@ -31,6 +31,7 @@ use sha2::{Digest, Sha256};
 mod hireling;
 mod obsidian_knife;
 mod pick_exchange;
+pub mod purchase;
 pub use hireling::{OneItemHirelingPackageV1, OneItemHouseFurnitureKitV1};
 
 /// BUY rows (NPC-0 §5.5): 20 coin BURN lines, 2 change MINTs and the item MINT.
@@ -124,6 +125,9 @@ pub struct OneItemNpcTradeLineV1 {
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemNpcTradeV1 {
+    /// Explicit bulk purchase variant; absent for every legacy single-mint trade.
+    #[prost(message, optional, tag = "21")]
+    pub purchase: Option<purchase::OneItemNpcBulkPurchaseV1>,
     /// NPC-TRADE-3: Item fluid state, including an explicitly empty container.
     #[prost(uint32, optional, tag = "19")]
     pub fluid_subtype: Option<u32>,
@@ -349,6 +353,9 @@ fn line_item(line: &OneItemNpcTradeLineV1) -> Option<&[u8]> {
 mod yeo;
 
 pub fn check_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
+    if let Some(purchase) = &value.purchase {
+        return purchase::check(value, purchase);
+    }
     if value.fluid_subtype.is_some_and(|subtype| subtype > 20)
         || value
             .full_charges
@@ -389,10 +396,18 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
     }
     let side = cause.side;
     if side == SIDE_EXCHANGE {
-        if cause.npc_key == "oteryn:npc.uzgod" { obsidian_knife::check(value)?; }
-        else if cause.npc_key == "oteryn:npc.seymour" {
-            pick_exchange::check_recipe(value, "oteryn:npc.seymour", "oteryn:item.tibia.i2856", "oteryn:item.tibia.i3374")?;
-        } else { pick_exchange::check(value)?; }
+        if cause.npc_key == "oteryn:npc.uzgod" {
+            obsidian_knife::check(value)?;
+        } else if cause.npc_key == "oteryn:npc.seymour" {
+            pick_exchange::check_recipe(
+                value,
+                "oteryn:npc.seymour",
+                "oteryn:item.tibia.i2856",
+                "oteryn:item.tibia.i3374",
+            )?;
+        } else {
+            pick_exchange::check(value)?;
+        }
     }
     let hireling_sell = sell_hireling::audit_source(value);
     if side == SIDE_SELL && value.house_key.is_some() && !hireling_sell {

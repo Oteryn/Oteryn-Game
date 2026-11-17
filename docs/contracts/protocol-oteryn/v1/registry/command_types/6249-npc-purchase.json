@@ -1,0 +1,10 @@
+{
+  "id": 6249,
+  "name": "NPC_PURCHASE",
+  "owner_decision": "NPC-BUY-BACKPACKS-1 owner packet, 2026-11-17",
+  "capability": 514,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/npc_purchase_v1.proto#NpcPurchaseIntentV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/npc-purchase-v1.md#purchase-result",
+  "max_payload_bytes": 128,
+  "max_result_payload_bytes": 1024
+}

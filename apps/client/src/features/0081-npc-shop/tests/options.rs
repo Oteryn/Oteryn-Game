@@ -50,6 +50,7 @@ fn npc_shop_options_filter_owned_quotes_and_open_the_live_backpack()
             });
     }
     assert!(link.npc_shop_options(ShopOptions {
+        in_backpacks: false,
         ignore_capacity: true,
         ignore_equipped: true,
         only_owned: true
@@ -59,6 +60,7 @@ fn npc_shop_options_filter_owned_quotes_and_open_the_live_backpack()
     assert_eq!(quotes.len(), 1);
     assert_eq!(quotes[0].item, 42);
     assert!(link.npc_shop_options(ShopOptions {
+        in_backpacks: false,
         ignore_capacity: false,
         ignore_equipped: false,
         only_owned: true
@@ -103,6 +105,7 @@ fn npc_shop_options_filter_owned_quotes_and_open_the_live_backpack()
     assert!(commands.try_recv().is_err());
     assert!(link.npc_shop_panel().live.feedback.contains("capacity"));
     assert!(link.npc_shop_options(ShopOptions {
+        in_backpacks: false,
         ignore_capacity: true,
         ignore_equipped: true,
         only_owned: false
@@ -124,6 +127,68 @@ fn npc_shop_options_filter_owned_quotes_and_open_the_live_backpack()
                 replace_view: None
             }
         )
+    );
+    Ok(())
+}
+
+#[test]
+fn npc_buy_captures_overflow_preference_and_bag_flag_each_time()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_ui::npc_shop::{ShopOptions, npc_service};
+    let (link, mut commands, _outbox) = play_channel();
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.npc_shop.live.selected = true;
+        mailbox.npc_shop.live.purchase_selected = true;
+        mailbox
+            .npc_shop
+            .live
+            .apply_window(npc_service::NpcTradeWindow {
+                open: Some((
+                    EntityRef {
+                        identity: [9; 16],
+                        generation: 2,
+                    },
+                    7,
+                )),
+                offers: vec![npc_service::NpcOffer {
+                    item_definition_ref: 42,
+                    side: NpcTradeSide::Buy,
+                    count: 1,
+                    unit_price: 2,
+                }],
+            });
+    }
+    let quote = link.npc_shop_panel().live.quotes()[0];
+    link.npc_trade_request(quote, 45);
+    let crate::combat_input::PlayCommand::NpcPurchase(first) = commands.try_recv()? else {
+        return Err("bulk purchase command missing".into());
+    };
+    assert_eq!(first.amount, 45);
+    assert!(first.ignore_cap);
+    assert!(!first.in_backpacks);
+    crate::play::mailbox::lock(&link.mailbox)
+        .npc_shop
+        .live
+        .pending = false;
+    assert!(link.npc_shop_options(ShopOptions {
+        ignore_capacity: false,
+        in_backpacks: true,
+        ..ShopOptions::default()
+    }));
+    link.npc_trade_request(quote, 45);
+    let crate::combat_input::PlayCommand::NpcPurchase(second) = commands.try_recv()? else {
+        return Err("second bulk purchase command missing".into());
+    };
+    assert!(!second.ignore_cap);
+    assert!(second.in_backpacks);
+    assert_eq!(
+        oteryn_session::npc_purchase::decode_npc_purchase(
+            &oteryn_session::npc_purchase::encode_npc_purchase(&second)
+                .map_err(|error| format!("{error:?}"))?
+        )
+        .map_err(|error| format!("{error:?}"))?,
+        second
     );
     Ok(())
 }

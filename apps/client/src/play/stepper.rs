@@ -349,6 +349,10 @@ super::feature_0014_container_tree::protocol::session_trait! {
     fn npc_inventory(&self) -> Option<oteryn_session::CharacterInventory> {
         None
     }
+    fn npc_purchase(&mut self,_intent:&oteryn_session::npc_purchase::NpcPurchaseIntent)
+        ->impl Future<Output=Result<(oteryn_session::CommandStatus,String),SessionError>>+Send {
+        async {Err(SessionError::CapabilityNotSelected{capability:514})}
+    }
     fn npc_trade(
         &mut self,
         _intent: &oteryn_session::npc_service::NpcTradeIntent,

@@ -1,4 +1,5 @@
 [
+ "{} items; {} gold + 20 gold per shopping bag",
  "Reshaping a gem's mods lets you randomly re-roll each mod of the gem. Reshape position {}: {} gold and {} {} fragments.",
  "Mod Reshaping unavailable: {}.",
  "Reshape mod {} of the selected gem?\nCost: {} gold and {} {} fragments. The server rerolls the mod.",

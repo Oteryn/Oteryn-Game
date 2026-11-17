@@ -4,13 +4,15 @@ use crate::npc_shop::{NpcTradeSide, Quote};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ShopOptions {
     pub ignore_capacity: bool,
+    pub in_backpacks: bool,
     pub ignore_equipped: bool,
     pub only_owned: bool,
 }
 impl Default for ShopOptions {
     fn default() -> Self {
         Self {
-            ignore_capacity: false,
+            ignore_capacity: true,
+            in_backpacks: false,
             ignore_equipped: true,
             only_owned: false,
         }

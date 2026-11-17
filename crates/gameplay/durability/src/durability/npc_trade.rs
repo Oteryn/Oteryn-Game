@@ -31,11 +31,12 @@
 
 use oteryn_gameplay_economy::npc_trade as rules;
 mod grizzly;
-pub mod yeo;
 mod obsidian_knife;
 mod pick_exchange;
 mod present_exchange;
+pub mod purchase;
 mod quest_shop;
+pub mod yeo;
 pub use oteryn_gameplay_economy::npc_trade::{
     Entry, NpcTradeCoins, NpcTradeLine, NpcTradeLineKind,
 };
@@ -63,8 +64,8 @@ use super::item_transfer::{
 use super::item_transfer_audit::{ITEM_LIFECYCLE_RETIRED, OneItemCommandRefV1};
 use super::npc_trade_audit::{
     LINE_COIN_BURN, LINE_COIN_MINT, LINE_ITEM_BURN, LINE_ITEM_MINT, NpcTradeEventIdentity,
-    OneItemNpcTradeCauseV1, OneItemNpcTradeLineV1, OneItemNpcTradeV1, SIDE_BUY, SIDE_EXCHANGE, SIDE_SELL,
-    encode_npc_trade_event,
+    OneItemNpcTradeCauseV1, OneItemNpcTradeLineV1, OneItemNpcTradeV1, SIDE_BUY, SIDE_EXCHANGE,
+    SIDE_SELL, encode_npc_trade_event,
 };
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
@@ -84,6 +85,11 @@ pub use hireling::{HirelingPackageSelection, HirelingTradeSelection};
 #[derive(Default)]
 struct TradeCommitOptions<'a> {
     sell_all: bool,
+    purchase: Option<(
+        purchase::PurchaseSelection,
+        &'a dyn super::item_loop_move::ItemLoopContent,
+        &'a super::spell_owner_commit::SpellLanePermit,
+    )>,
     hireling: Option<hireling::Extra>,
     weights: Option<&'a dyn super::item_transfer::ItemWeightLookup>,
     /// Source coordinates captured from the exact live NPC by the normal trade caller.
@@ -221,6 +227,7 @@ pub enum NpcTradeError {
     CapacityExceeded,
     /// The outputs do not fit the backpack's free entries after the burn.
     DoesNotFit,
+    OverCapacity,
     /// SELL: no direct entry holds the offer's item as §5.4 requires.
     ItemNotFound,
     /// A server-owned condition attached to this NPC offer is not currently satisfied.
@@ -261,6 +268,7 @@ impl std::fmt::Display for NpcTradeError {
             Self::NoBackpack => formatter.write_str("NPC trade needs an equipped backpack"),
             Self::InsufficientFunds => formatter.write_str("insufficient coins for the NPC trade"),
             Self::CapacityExceeded => formatter.write_str("NPC trade needs too many coin stacks"),
+            Self::OverCapacity => formatter.write_str("You do not have enough capacity."),
             Self::DoesNotFit => formatter.write_str("NPC trade outputs do not fit the backpack"),
             Self::ItemNotFound => formatter.write_str("no item to sell"),
             Self::RequirementNotMet => formatter.write_str("NPC trade requirement is not met"),
@@ -345,11 +353,15 @@ fn is_coin(definition: &TypedDefinitionRef) -> bool {
 /// unit of a count-1 SELL offer; its total and units come from the plan (`None` here).
 fn validate(request: &NpcTradeRequest, sell_all: bool) -> Result<Option<(u64, u32)>> {
     if request.cause.side == NpcTradeSide::Exchange {
-        if request.cause.npc_key == obsidian_knife::NPC { obsidian_knife::validate(request, sell_all)?; }
-        else if request.cause.npc_key == present_exchange::NPC { present_exchange::validate(request, sell_all)?; }
-        else { pick_exchange::validate(request, sell_all)?; }
+        if request.cause.npc_key == obsidian_knife::NPC {
+            obsidian_knife::validate(request, sell_all)?;
+        } else if request.cause.npc_key == present_exchange::NPC {
+            present_exchange::validate(request, sell_all)?;
+        } else {
+            pick_exchange::validate(request, sell_all)?;
+        }
     }
-    validate_sell_bound(request,sell_all,rules::NPC_TRADE_SELL_GOLD_UNITS_MAX)
+    validate_sell_bound(request, sell_all, rules::NPC_TRADE_SELL_GOLD_UNITS_MAX)
 }
 
 fn validate_sell_bound(
@@ -549,6 +561,7 @@ async fn yasir_permitted(
 }
 
 /// The trade materialized from the locked before-state.
+#[derive(Clone)]
 struct Plan {
     lines: Vec<NpcTradeLine>,
     burned_gold_units: u64,
@@ -680,7 +693,7 @@ impl DurabilityRoot {
                            FROM game_npc_trades \
                           WHERE game_session_id = encode($1,'hex')::uuid \
                             AND command_id = $2::text::numeric(20,0) \
-                            AND character_id = encode($3,'hex')::uuid",
+                            AND character_id = encode($3,'hex')::uuid AND NOT purchase_v2",
                     )
                     .bind(command.game_session_id().as_bytes().as_slice())
                     .bind(command.command_id().get().to_string())
@@ -800,6 +813,7 @@ impl DurabilityRoot {
     ) -> Result<NpcTradeOutcome> {
         let TradeCommitOptions {
             sell_all,
+            purchase,
             hireling,
             weights,
             yasir_position,
@@ -822,6 +836,9 @@ impl DurabilityRoot {
             yasir_position,
         );
         binding = yeo::bind(binding, yeo_position);
+        if let Some((selection, _, _)) = &purchase {
+            binding = selection.bind(binding);
+        }
         if let Some(source) = &hireling {
             binding = source.bind(binding);
         }
@@ -830,10 +847,11 @@ impl DurabilityRoot {
             .map_err(|_| NpcTradeError::AuthorityRejected)?;
         let node = node.clone();
 
-        let mut weight_context = weights;
+        let mut weight_context = (weights, purchase);
         self.try_issue_semantic_pass()?
             .run_with_context(&mut weight_context,move |holder, deadline, weights| {
                 Box::pin(async move {
+                    let (weights,purchase)=weights;
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
@@ -957,7 +975,15 @@ impl DurabilityRoot {
                     if matches!(hireling,Some(hireling::Extra::Package(_))) && entries.len()>=capacity {
                         return Ok(Err(NpcTradeError::DoesNotFit));
                     }
-                    let plan = if yeo_position.is_some() {yeo::plan(&request,capacity,&entries,tx.tuple().tuple()).map(|plan|(plan,0,1))} else if hireling_sell {sell_hireling::plan(&request,priced,capacity,&entries)} else {match (priced, request.cause.side) {
+                    let prepared_purchase = if let Some((selection,content,permit))=purchase.as_ref() {
+                        let tuple=tx.tuple().tuple();
+                        match purchase::prepare(&mut tx,&fence,&request,selection,*content,permit,&recovery,&node,backpack,&entries,capacity,tuple).await {
+                            Ok(value)=>Some(value),
+                            Err(NpcTradeError::Unavailable(error))=>return Err(error),
+                            Err(error)=>return Ok(Err(error)),
+                        }
+                    } else {None};
+                    let plan = if let Some(prepared)=&prepared_purchase {Ok((prepared.plan.clone(),prepared.total,prepared.units))} else if yeo_position.is_some() {yeo::plan(&request,capacity,&entries,tx.tuple().tuple()).map(|plan|(plan,0,1))} else if hireling_sell {sell_hireling::plan(&request,priced,capacity,&entries)} else {match (priced, request.cause.side) {
                         (None, _) => plan_sell_all(&request, capacity, &entries),
                         (Some((total, units)), NpcTradeSide::Buy) => plan_buy(&request, total, units, capacity, &entries, tx.tuple().tuple(), super::bank::fee_payer_is_junior(fence.character_id))
                             .map(|plan| (plan, total, units)),
@@ -975,7 +1001,7 @@ impl DurabilityRoot {
                         Err(error) => return Ok(Err(error)),
                     };
                     // A sell-all records and audits the units it sold as its quantity.
-                    let quantity = if sell_all { units } else { request.quantity };
+                    let quantity = if sell_all || prepared_purchase.is_some() { units } else { request.quantity };
 
                     if plan.bank_debit_gold_units > 0 {
                         // The complete native Character fence already locked the live payer
@@ -1004,6 +1030,7 @@ impl DurabilityRoot {
                         (quantity, total, sell_all),
                         &plan,
                     );
+                    if let Some(prepared)=&prepared_purchase { prepared.annotate(&mut message); }
                     message.hireling_package=hireling.as_ref().and_then(|source|source.package_audit(world_id,plan.item_instance_id));
                     message.house_key=house_key.clone();
                     message.house_furniture_kit=hireling.as_ref().and_then(|source|source.kit_audit(plan.item_instance_id));
@@ -1032,6 +1059,7 @@ impl DurabilityRoot {
                         &envelope,
                         tuple,
                         house_key.as_deref(),
+                        prepared_purchase.as_ref(),
                     )
                     .await?;
                     if let Some(source)=&hireling
@@ -1127,9 +1155,17 @@ fn trade_message(
 ) -> OneItemNpcTradeV1 {
     let definition = |line: &NpcTradeLine| match line.coin {
         Some(coin) => request.coins.of(coin),
-        None if request.cause.side == NpcTradeSide::Exchange && line.kind == NpcTradeLineKind::ItemBurn => {
-            if request.cause.npc_key == obsidian_knife::NPC { obsidian_knife::input_for(line, &plan.lines) } else if request.cause.npc_key == present_exchange::NPC { present_exchange::input() } else { pick_exchange::input() }
-        },
+        None if request.cause.side == NpcTradeSide::Exchange
+            && line.kind == NpcTradeLineKind::ItemBurn =>
+        {
+            if request.cause.npc_key == obsidian_knife::NPC {
+                obsidian_knife::input_for(line, &plan.lines)
+            } else if request.cause.npc_key == present_exchange::NPC {
+                present_exchange::input()
+            } else {
+                pick_exchange::input()
+            }
+        }
         None => yeo::definition(request, line),
     };
     let state = |line: &NpcTradeLine, quantity: u32| OneItemStateV1 {
@@ -1150,6 +1186,7 @@ fn trade_message(
     };
     let cause = &request.cause;
     OneItemNpcTradeV1 {
+        purchase: None,
         fluid_subtype: request.fluid_subtype.map(u32::from),
         full_charges: request.full_charges.map(u32::from),
         cause: Some(OneItemNpcTradeCauseV1 {
@@ -1207,6 +1244,7 @@ async fn apply_trade(
     envelope: &[u8],
     tuple: Type2EventTuple,
     house_key: Option<&str>,
+    purchase: Option<&purchase::PreparedPurchase>,
 ) -> std::result::Result<(), DurabilityError> {
     let gold = |value: u64| i64::try_from(value).map_err(|_| DurabilityError::InvalidStoredState);
     let cause = &request.cause;
@@ -1219,14 +1257,14 @@ async fn apply_trade(
            item_definition_production_key, item_definition_revision_ref, item_instance_id, \
            item_units, backpack_item_instance_id, burned_gold_units, minted_gold_units, \
            line_count, occurred_at, envelope_sha256, committed_at, bank_debit_gold_units, \
-           sell_all, house_key, fluid_subtype, full_charges) \
+           sell_all, house_key, fluid_subtype, full_charges, purchase_v2) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
            encode($4,'hex')::uuid, $5::text::numeric(20,0), encode($6,'hex')::uuid, $7, \
            encode($8,'hex')::uuid, encode($9,'hex')::uuid, $10::text::numeric(20,0), $11, \
            $12::text::numeric(20,0), $13, $14, $15, $16, $17, $18, $19, $20, \
            encode($21,'hex')::uuid, $22, encode($23,'hex')::uuid, $24, $25, $26, $27, \
            sha256($28), floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $29, \
-           $30, $31, ($32::integer[])[1]::smallint, ($32::integer[])[2])",
+           ($30::boolean[])[1], $31, ($32::integer[])[1]::smallint, ($32::integer[])[2], ($30::boolean[])[2])",
     )
     .bind(request.transaction_id.as_slice())
     .bind(request.event_id.as_slice())
@@ -1257,7 +1295,7 @@ async fn apply_trade(
     .bind(request.occurred_at_unix_ms)
     .bind(envelope)
     .bind(gold(plan.bank_debit_gold_units)?)
-    .bind(sell_all)
+    .bind(vec![sell_all, purchase.is_some()])
     .bind(house_key)
     .bind(vec![
         request.fluid_subtype.map(i32::from),
@@ -1265,9 +1303,14 @@ async fn apply_trade(
     ])
     .execute(&mut **tx)
     .await?;
+    if let Some(purchase) = purchase {
+        purchase::store(tx, request, purchase).await?;
+    }
 
     for (ordinal, line) in (1_i16..).zip(&plan.lines) {
-        let definition = yeo::definition(request, line);
+        let definition = purchase
+            .and_then(|purchase| purchase.definition(line))
+            .unwrap_or_else(|| yeo::definition(request, line));
         if line_is_burn(line.kind) {
             let changed = sqlx::query(
                 "UPDATE game_item_instances \
@@ -1318,22 +1361,26 @@ async fn apply_trade(
             .bind(request.transaction_id.as_slice())
             .execute(&mut **tx)
             .await?;
-            sqlx::query(
-                "INSERT INTO game_item_container_entries(item_instance_id, world_id, \
+            if let Some(output) = purchase.and_then(|purchase| purchase.output(line)) {
+                purchase::place(tx, fence, request, line, output, backpack).await?;
+            } else {
+                sqlx::query(
+                    "INSERT INTO game_item_container_entries(item_instance_id, world_id, \
                    character_id, parent_item_instance_id, placement_ordinal, \
                    placed_transaction_id) \
                  VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, \
                    encode($3,'hex')::uuid, encode($4,'hex')::uuid, $5::text::numeric(20,0), \
                    encode($6,'hex')::uuid)",
-            )
-            .bind(line.item_instance_id.as_slice())
-            .bind(world_id.as_bytes().as_slice())
-            .bind(fence.character_id.as_bytes().as_slice())
-            .bind(backpack.as_slice())
-            .bind(line.placement_ordinal.to_string())
-            .bind(request.transaction_id.as_slice())
-            .execute(&mut **tx)
-            .await?;
+                )
+                .bind(line.item_instance_id.as_slice())
+                .bind(world_id.as_bytes().as_slice())
+                .bind(fence.character_id.as_bytes().as_slice())
+                .bind(backpack.as_slice())
+                .bind(line.placement_ordinal.to_string())
+                .bind(request.transaction_id.as_slice())
+                .execute(&mut **tx)
+                .await?;
+            }
         }
         sqlx::query(
             "INSERT INTO game_npc_trade_lines(transaction_id, line_ordinal, line_kind, \
@@ -1355,6 +1402,9 @@ async fn apply_trade(
         .execute(&mut **tx)
         .await?;
         if line.kind == NpcTradeLineKind::ItemMint
+            && purchase
+                .and_then(|purchase| purchase.definition(line))
+                .is_none()
             && let Some(subtype) = request.fluid_subtype.filter(|s| *s != 0)
         {
             sqlx::query("INSERT INTO game_item_fluid_states(item_instance_id,world_id,fluid_subtype,last_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid)")

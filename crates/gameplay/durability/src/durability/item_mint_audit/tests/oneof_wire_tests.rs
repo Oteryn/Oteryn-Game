@@ -89,6 +89,7 @@ fn operation_fixtures() -> Vec<(u32, &'static str, OneItemOperationV1)> {
             9,
             "NpcTrade",
             OneItemOperationV1::NpcTrade(crate::durability::npc_trade_audit::OneItemNpcTradeV1 {
+                purchase: None,
                 quantity: 7,
                 unit_price: 129,
                 ..Default::default()

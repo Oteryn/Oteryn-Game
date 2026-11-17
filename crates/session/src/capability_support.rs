@@ -175,6 +175,8 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::sanction_record::CAPABILITY_SANCTION_RECORD_V1,
     oteryn_protocol_oteryn::highscores_loyalty::CAPABILITY_HIGHSCORES_LOYALTY_V1,
     oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_APPEARANCE_V1,
+    oteryn_protocol_oteryn::npc_purchase::CAPABILITY_NPC_PURCHASE_V1,
+    oteryn_protocol_oteryn::npc_purchase::CAPABILITY_OBTAIN_CONTAINERS_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
@@ -289,6 +291,8 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     atelier::v2::CAPABILITY_GEM_ATELIER_V2,
     // WU26 own sanction record, command 6240.
     oteryn_protocol_oteryn::sanction_record::CAPABILITY_SANCTION_RECORD_V1,
+    oteryn_protocol_oteryn::npc_purchase::CAPABILITY_NPC_PURCHASE_V1,
+    oteryn_protocol_oteryn::npc_purchase::CAPABILITY_OBTAIN_CONTAINERS_V1,
 ];
 
 pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {
@@ -448,4 +452,14 @@ mod action_bar_cooldown_tests {
         assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&463));
         assert!(gated_routes().any(|(id, commands, _)| id == 463 && commands.contains(&6147)));
     }
+}
+
+#[cfg(test)]
+#[test]
+fn npc_purchase_capabilities_advertise_real_gated_routes() {
+    for (capability, command) in [(514, 6249), (515, 6250)] {
+        assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&capability));
+        assert!(gated_routes().any(|(id, commands, _)| id == capability && commands == [command]));
+    }
+    assert!(gated_routes().any(|(id, commands, _)| id == 3 && commands == [7, 8]));
 }

@@ -311,6 +311,8 @@ pub mod lens_help;
 pub mod target_move;
 
 /// NPC shop look and sell-all panel state.
+#[path = "features/0514-npc-purchase/mod.rs"]
+pub mod npc_purchase;
 #[path = "features/0081-npc-shop/mod.rs"]
 pub mod npc_shop;
 

@@ -388,3 +388,83 @@ pub(in super::super) async fn pouch_weight(
     }
     Ok(Ok(total))
 }
+
+impl DurabilityRoot {
+    /// Obtain actions have independent receipts and settings, with the same native custody/fence checks.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "same fenced preference writer as quick loot"
+    )]
+    pub async fn commit_obtain_container<C: ItemLoopContent>(
+        &self,
+        permit: &SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        command: CommandRef,
+        content: &C,
+        request: oteryn_protocol_oteryn::npc_purchase::ObtainContainerIntent,
+    ) -> std::result::Result<std::result::Result<QuickLootResult, LoopMoveRefusal>, DurabilityError>
+    {
+        use oteryn_protocol_oteryn::npc_purchase::{ObtainAction, encode_obtain_container};
+        permit.check_scope(fence.runtime_scope)?;
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        let encoded =
+            encode_obtain_container(&request).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let mut context = (permit, content);
+        self.try_issue_semantic_pass()?.run_with_context(&mut context,move|holder,deadline,context|Box::pin(async move{
+            let(_,content)=*context;
+            let mut tx=super::super::db::begin_semantic_transaction(holder,deadline).await?;
+            assert_recovery_fence(&mut tx,&record).await?;
+            lock_loop_command(&mut tx,command).await?;
+            if let Some(row)=sqlx::query("SELECT character_id::text,request,result FROM game_obtain_container_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
+                .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_optional(&mut *tx).await? {
+                if uuid_text(row.try_get("character_id")?)?!=*fence.character_id.as_bytes() || row.try_get::<Vec<u8>,_>("request")?!=encoded {return Ok(Err(LoopMoveRefusal::Rejected));}
+                let result=wire::decode_quick_loot_result(&row.try_get::<Vec<u8>,_>("result")?).map_err(|_|DurabilityError::InvalidStoredState)?;
+                super::super::db::commit_semantic_transaction(tx,deadline).await?;
+                return Ok(Ok(result));
+            }
+            let attempt:LoopResult<QuickLootResult>=async {
+                assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence,Some(command),content.loop_content_digest()).await?;
+                let(world,_)=scope_of(&fence).map_err(|_|LoopError::Refused(LoopMoveRefusal::Rejected))?;
+                let category=request.category.map_or(0,|category|category as i16);
+                let mut result=QuickLootResult{items:Vec::new()};
+                match request.action {
+                    ObtainAction::Set=>{
+                        let id=request.container.ok_or(LoopError::Refused(LoopMoveRefusal::Rejected))?;
+                        recipient(&mut tx,fence.character_id,*world.as_bytes(),content,Recipient::Container(id)).await?;
+                        sqlx::query("INSERT INTO game_character_obtain_containers(character_id,category,container_id) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid) ON CONFLICT(character_id,category) DO UPDATE SET container_id=EXCLUDED.container_id")
+                            .bind(fence.character_id.as_bytes().as_slice()).bind(category).bind(id.as_slice()).execute(&mut *tx).await?;
+                    },
+                    ObtainAction::Clear=>{
+                        sqlx::query("DELETE FROM game_character_obtain_containers WHERE character_id=encode($1,'hex')::uuid AND category=$2").bind(fence.character_id.as_bytes().as_slice()).bind(category).execute(&mut *tx).await?;
+                    },
+                    ObtainAction::Open=>{
+                        let selected:Option<String>=sqlx::query_scalar("SELECT container_id::text FROM game_character_obtain_containers WHERE character_id=encode($1,'hex')::uuid AND category=$2").bind(fence.character_id.as_bytes().as_slice()).bind(category).fetch_optional(&mut *tx).await?;
+                        if let Some(selected)=selected {
+                            let id=uuid_text(&selected)?;
+                            recipient(&mut tx,fence.character_id,*world.as_bytes(),content,Recipient::Container(id)).await?;
+                            result.items.push(QuickLootItemResult{item:id,accepted:true});
+                        }
+                    },
+                }
+                Ok(result)
+            }.await;
+            match attempt {
+                Ok(result)=>{
+                    let bytes=wire::encode_quick_loot_result(&result).map_err(|_|DurabilityError::InvalidStoredState)?;
+                    sqlx::query("INSERT INTO game_obtain_container_receipts(game_session_id,command_id,character_id,request,result) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,$4,$5)")
+                        .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(&encoded).bind(bytes).execute(&mut *tx).await?;
+                    super::super::db::commit_semantic_transaction(tx,deadline).await?;
+                    Ok(Ok(result))
+                },
+                Err(LoopError::Refused(reason))=>Ok(Err(reason)),
+                Err(LoopError::Durability(error))=>Err(error),
+                Err(LoopError::Database(error))=>Err(error.into()),
+            }
+        })).await
+    }
+}

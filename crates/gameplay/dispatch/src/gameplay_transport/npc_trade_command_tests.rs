@@ -185,6 +185,7 @@ fn a_committed_sell_all_reports_the_units_its_item_burns_sold() {
         assert_eq!(
             step_of(Ok(outcome)).ok(),
             Some(SoldUnits {
+                message: None,
                 units: 111,
                 gold: 1_110
             })

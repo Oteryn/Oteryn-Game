@@ -27,6 +27,18 @@ pub(in crate::play) fn trade_request(
     if mailbox.npc_shop.pending {
         return;
     }
+    if mailbox.npc_shop.live.purchase_selected
+        && quote.side == oteryn_client_ui::npc_shop::NpcTradeSide::Buy
+    {
+        if let Some(intent) =
+            oteryn_client_ui::npc_purchase::request(&mut mailbox.npc_shop.live, quote, amount)
+            && commands.send(PlayCommand::NpcPurchase(intent)).is_err()
+        {
+            mailbox.npc_shop.live.pending = false;
+            mailbox.npc_shop.live.feedback = tr!("Session ended").into();
+        }
+        return;
+    }
     if let Some(intent) =
         oteryn_client_ui::npc_dialogue::trade_request(&mut mailbox.npc_shop.live, quote, amount)
         && commands.send(PlayCommand::NpcTrade(intent)).is_err()

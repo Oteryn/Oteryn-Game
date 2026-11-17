@@ -299,6 +299,8 @@ pub mod tutorial_notices;
 pub mod stash;
 
 /// Capability-81 NPC shop command execution through the admitted session.
+#[path = "features/0514-npc-purchase/protocol.rs"]
+pub mod npc_purchase;
 #[path = "features/0081-npc-shop/protocol.rs"]
 pub mod npc_shop;
 

@@ -9,6 +9,7 @@ impl Outbox {
         mailbox.npc_shop.selected = session.npc_shop_selected();
         let shop = &mut mailbox.npc_shop.live;
         shop.selected = session.feature_selected(3);
+        shop.purchase_selected = session.feature_selected(514);
         shop.resources_selected = session.feature_selected(272);
         if let Some(payload) = session.feature_snapshot(14)
             && let Ok(views) =
@@ -76,6 +77,19 @@ impl Outbox {
             );
         }
         Ok(())
+    }
+    pub(in crate::play) async fn npc_purchase_run<T: Stepper>(
+        &self,
+        session: &mut T,
+        intent: &oteryn_session::npc_purchase::NpcPurchaseIntent,
+    ) -> Result<(), oteryn_session::SessionError> {
+        let (_status, text) = session.npc_purchase(intent).await?;
+        {
+            let mut mailbox = lock(&self.0);
+            mailbox.npc_shop.live.pending = false;
+            mailbox.npc_shop.live.feedback = text;
+        }
+        self.npc_shop_balances(session).await
     }
     pub(in crate::play) async fn npc_trade_run<T: Stepper>(
         &self,

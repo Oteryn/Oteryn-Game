@@ -39,6 +39,7 @@ pub enum PlayCommand {
     Stash(oteryn_client_runtime::stash::StashCommand),
     NpcTalk(oteryn_session::npc_service::NpcTalkIntent),
     NpcTrade(oteryn_session::npc_service::NpcTradeIntent),
+    NpcPurchase(oteryn_session::npc_purchase::NpcPurchaseIntent),
     NpcShop(oteryn_client_runtime::npc_shop::NpcShopCommand),
     PlayerTyping(oteryn_client_runtime::player_typing::PlayerTypingCommand),
     DailyReward(oteryn_client_runtime::daily_reward::DailyRewardCommand),

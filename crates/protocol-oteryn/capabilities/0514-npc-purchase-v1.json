@@ -1,0 +1,20 @@
+{
+  "id": 514,
+  "name": "NPC_PURCHASE_V1",
+  "constant": "npc_purchase::CAPABILITY_NPC_PURCHASE_V1",
+  "requires": [
+    3,
+    4
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    6249
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

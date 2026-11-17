@@ -104,6 +104,7 @@ pub mod market;
 pub mod market_details;
 pub mod mechanics_status;
 pub mod native_map_cues;
+pub mod npc_purchase;
 pub mod npc_service;
 pub mod npc_shop;
 pub mod party;

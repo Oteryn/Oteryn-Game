@@ -110,7 +110,8 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
         .id();
     commands.entity(details).add_child(shop_controls);
     for (kind, caption) in [
-        (Kind::IgnoreCapacity, "Ignore capacity"),
+        (Kind::IgnoreCapacity, "Drop overflow under character"),
+        (Kind::InBackpacks, "Buy in backpacks"),
         (Kind::IgnoreEquipped, "Ignore equipped"),
         (Kind::OnlyOwned, "Only owned"),
     ] {

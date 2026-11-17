@@ -161,7 +161,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
             control(
                 hwnd,
                 "BUTTON",
-                "Ignore capacity preview",
+                tr!("Drop overflow under character"),
                 107,
                 (10, 375, 190, 28),
                 BS_AUTOCHECKBOX as u32,
@@ -180,6 +180,14 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
                 "Owned sell offers",
                 109,
                 (400, 375, 160, 28),
+                BS_AUTOCHECKBOX as u32,
+            ),
+            control(
+                hwnd,
+                "BUTTON",
+                tr!("Buy in backpacks"),
+                111,
+                (10, 410, 190, 28),
                 BS_AUTOCHECKBOX as u32,
             ),
         ];
@@ -212,9 +220,12 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
                 .copied();
             let mut buffer = [0u16; 12];
             let len = GetWindowTextW(amount, buffer.as_mut_ptr(), 12);
-            let quantity = oteryn_client_ui::npc_shop::parse_amount(&String::from_utf16_lossy(
-                &buffer[..len.max(0) as usize],
-            ));
+            let quantity = selected.and_then(|quote| {
+                mailbox.npc_shop.live.parse_amount(
+                    quote,
+                    &String::from_utf16_lossy(&buffer[..len.max(0) as usize]),
+                )
+            });
             // Resolve actions against the identities actually displayed before any redraw.
             let actions = std::mem::take(&mut actions.0);
             let clicked = actions.contains(&102);
@@ -222,6 +233,9 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
             let sold_all = actions.contains(&104);
             if !mailbox.npc_shop.pending && !mailbox.npc_shop.live.pending {
                 let options = &mut mailbox.npc_shop.live.options;
+                if actions.contains(&111) {
+                    options.in_backpacks = !options.in_backpacks;
+                }
                 if actions.contains(&107) {
                     options.ignore_capacity = !options.ignore_capacity;
                 }
@@ -233,10 +247,15 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
                 }
             }
             let shop = &mailbox.npc_shop.live;
+            windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow(
+                option_controls[3],
+                i32::from(shop.purchase_selected && !shop.pending),
+            );
             for (control, checked) in option_controls.iter().zip([
                 shop.options.ignore_capacity,
                 shop.options.ignore_equipped,
                 shop.options.only_owned,
+                shop.options.in_backpacks,
             ]) {
                 SendMessageW(*control, BM_SETCHECK, usize::from(checked), 0);
             }

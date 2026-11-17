@@ -1,0 +1,7 @@
+name=npc_purchase
+commands=6249
+transport=npc_purchase
+composed=npc_purchase
+authority=npc_purchase
+[route]
+match routing::npc_trade::route_purchase(authority,session.actor,&mut session.admitted,command,&mut session.item_view,&mut session.container_views).await {Some(dispatch)=>dispatch,None=>return Err(ServeEnd::Disconnected)}

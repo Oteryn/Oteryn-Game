@@ -1,0 +1,20 @@
+{
+  "id": 515,
+  "name": "OBTAIN_CONTAINERS_V1",
+  "constant": "npc_purchase::CAPABILITY_OBTAIN_CONTAINERS_V1",
+  "requires": [
+    4,
+    14
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    6250
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

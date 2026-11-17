@@ -1274,7 +1274,7 @@ async fn check_incoming_capacity_core(
     }
 }
 
-async fn load_carried_rows(
+pub(super) async fn load_carried_rows(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character: CharacterId,
 ) -> std::result::Result<Vec<sqlx::postgres::PgRow>, DurabilityError> {

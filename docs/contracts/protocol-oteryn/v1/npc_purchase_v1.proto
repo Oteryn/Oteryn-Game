@@ -1,0 +1,15 @@
+syntax = "proto3";
+package oteryn.protocol.v1.npc_purchase;
+import "npc_service_v1.proto";
+message NpcPurchaseIntentV1 {
+ oteryn.protocol.v1.npc_service.NpcTradeIntentV1 offer = 1; // BUY, quantity exactly one
+ uint32 amount = 2; // physical units, 1..10000
+ bool ignore_cap = 3;
+ bool in_backpacks = 4;
+}
+message ObtainContainerIntentV1 {
+ enum Action { UNSPECIFIED = 0; SET = 4; CLEAR = 5; OPEN = 6; }
+ Action action = 1;
+ uint32 category = 2; // absent/default=0, otherwise existing quick-loot categories 1..5
+ optional bytes container = 3; // exactly 16 bytes for SET; absent for CLEAR/OPEN
+}

@@ -182,7 +182,7 @@ fn floating_shop_remains_nonmodal_and_actual_controls_respect_higher_modal() -> 
         .ok_or("capacity option")?;
     app.world_mut().trigger(Activate { entity: option });
     assert!(
-        app.world()
+        !app.world()
             .non_send::<HostOwner>()
             .play
             .as_ref()
@@ -197,7 +197,7 @@ fn floating_shop_remains_nonmodal_and_actual_controls_respect_higher_modal() -> 
         .spawn((super::super::GameModal, GlobalZIndex(180), Node::default()));
     app.world_mut().trigger(Activate { entity: option });
     assert!(
-        app.world()
+        !app.world()
             .non_send::<HostOwner>()
             .play
             .as_ref()

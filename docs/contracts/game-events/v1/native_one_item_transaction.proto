@@ -693,6 +693,7 @@ message OneItemNpcTradeV1 {
   optional OneItemHouseFurnitureKitV1 house_furniture_kit = 18; // mutually exclusive with package
   optional uint32 fluid_subtype = 19; // NPC-TRADE-3: 0..20, Item fluid state, never quantity
   optional uint32 full_charges = 20; // NPC-TRADE-3: exact pinned native default charges
+  optional OneItemNpcBulkPurchaseV1 purchase = 21; // Explicit bulk purchase shape; absent for legacy trades
 }
 
 // Closed ItemUseCause (decision ITEM-USE-0 §4.2): the variant and the using
@@ -849,4 +850,19 @@ message OneItemWriteOnceV1 {
   uint64 state_revision_after = 6;
   uint64 scope_ownership_generation = 7;
   uint64 character_lease_generation = 8;
+}
+
+// NPC-BUY-BACKPACKS-1: additive bulk shape. Old single-mint checks remain unchanged.
+message OneItemNpcBulkPurchaseV1 {
+  bool in_backpacks = 1;
+  bool ignore_cap = 2;
+  uint32 stack_size = 3;
+  OneItemTypedDefinitionRevisionV1 item_definition = 4;
+  optional OneItemTypedDefinitionRevisionV1 bag_definition = 5;
+  repeated OneItemNpcBulkPurchaseOutputV1 outputs = 6;
+}
+message OneItemNpcBulkPurchaseOutputV1 {
+  bytes item_instance_id = 1;
+  optional bytes parent = 2;
+  optional OneItemGroundV1 ground = 3;
 }

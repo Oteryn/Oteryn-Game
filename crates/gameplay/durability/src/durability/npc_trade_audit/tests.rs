@@ -83,6 +83,7 @@ fn mint_line(
 
 fn trade(side: u32, quantity: u32, unit_price: u64) -> OneItemNpcTradeV1 {
     OneItemNpcTradeV1 {
+        purchase: None,
         fluid_subtype: None,
         full_charges: None,
         cause: Some(OneItemNpcTradeCauseV1 {
@@ -1231,4 +1232,98 @@ fn worst_case_sell_all_payload_and_envelope_are_the_registered_rows() {
     // A 21st stack is refused before encoding.
     let over = singles(FEE_INPUTS_MAX + 1, 1);
     assert_eq!(check_npc_trade(&over), Err(AuditError::CapacityExceeded));
+}
+
+fn shopping_bag_purchase() -> OneItemNpcTradeV1 {
+    use super::purchase::{OneItemNpcBulkPurchaseOutputV1, OneItemNpcBulkPurchaseV1};
+    let mut value = trade(SIDE_BUY, 45, 2);
+    value.total_gold_units = 150;
+    value.burned_gold_units = 200;
+    value.minted_gold_units = 50;
+    value.lines = vec![
+        burn(LINE_COIN_BURN, 10, coin(Coin::Platinum, "r"), 1, 2, 0),
+        mint_line(LINE_COIN_MINT, 20, coin(Coin::Gold, "r"), 2, 50),
+    ];
+    let bag = definition("Item", "oteryn:item.tibia.i21411", "r");
+    let mut outputs = Vec::new();
+    let mut next = 80_u8;
+    for (index, count) in [20, 20, 5].into_iter().enumerate() {
+        let bag_id = next;
+        value.lines.push(mint_line(
+            LINE_ITEM_MINT,
+            bag_id,
+            bag.clone(),
+            3 + index as u64,
+            1,
+        ));
+        outputs.push(OneItemNpcBulkPurchaseOutputV1 {
+            item_instance_id: uuid(bag_id),
+            parent: Some(uuid(50)),
+            ground: None,
+        });
+        next += 1;
+        for slot in 1..=count {
+            value
+                .lines
+                .push(mint_line(LINE_ITEM_MINT, next, sword("s"), slot, 1));
+            outputs.push(OneItemNpcBulkPurchaseOutputV1 {
+                item_instance_id: uuid(next),
+                parent: Some(uuid(bag_id)),
+                ground: None,
+            });
+            next += 1;
+        }
+    }
+    value.purchase = Some(OneItemNpcBulkPurchaseV1 {
+        in_backpacks: true,
+        ignore_cap: false,
+        stack_size: 1,
+        item_definition: Some(sword("s")),
+        bag_definition: Some(bag),
+        outputs,
+    });
+    value
+}
+
+#[test]
+fn purchase_audit_admits_three_bags_and_forty_five_contents() {
+    assert_eq!(check_npc_trade(&shopping_bag_purchase()), Ok(()));
+}
+
+#[test]
+fn purchase_audit_requires_exact_fee_outputs_and_custody() {
+    let value = shopping_bag_purchase();
+    let mut changed = value.clone();
+    changed.total_gold_units -= 20;
+    assert!(check_npc_trade(&changed).is_err());
+    let mut changed = value.clone();
+    changed.lines.pop();
+    assert!(check_npc_trade(&changed).is_err());
+    let mut changed = value.clone();
+    changed.purchase.as_mut().unwrap().outputs[1].parent = Some(uuid(50));
+    assert!(check_npc_trade(&changed).is_err());
+    let mut changed = value;
+    changed.purchase = None;
+    assert!(check_npc_trade(&changed).is_err());
+}
+
+#[test]
+fn purchase_audit_preserves_native_fluid_bounds_for_bag_contents() {
+    let mut value = shopping_bag_purchase();
+    let fluid = definition("Item", "oteryn:item.tibia.i2874", "r");
+    value.fluid_subtype = Some(1);
+    value.purchase.as_mut().unwrap().item_definition = Some(fluid.clone());
+    for line in &mut value.lines {
+        if line.kind == LINE_ITEM_MINT
+            && line
+                .after
+                .as_ref()
+                .is_some_and(|after| after.definition == Some(sword("s")))
+        {
+            line.after.as_mut().unwrap().definition = Some(fluid.clone());
+        }
+    }
+    assert_eq!(check_npc_trade(&value), Ok(()));
+    value.fluid_subtype = Some(21);
+    assert!(check_npc_trade(&value).is_err());
 }

@@ -18,6 +18,7 @@ pub struct Quote {
 pub struct LiveShop {
     pub options: ShopOptions,
     pub selected: bool,
+    pub purchase_selected: bool,
     pub resources_selected: bool,
     pub balances: Option<resources::ResourceBalances>,
     pub containers: container_tree::ContainerViews,
@@ -99,6 +100,13 @@ impl LiveShop {
         )
     }
     pub fn total(&self, quote: Quote, amount: u32) -> String {
+        if self.purchase_selected && quote.side == NpcTradeSide::Buy && self.options.in_backpacks {
+            return lfmt!(
+                "{} items; {} gold + 20 gold per shopping bag",
+                u64::from(quote.count) * u64::from(amount),
+                u64::from(quote.price) * u64::from(amount)
+            );
+        }
         lfmt!(
             "{} items; {} gold",
             u64::from(quote.count) * u64::from(amount),
@@ -128,12 +136,24 @@ impl LiveShop {
         Some(usize::from(capacity).saturating_sub(inventory.entries.len()))
     }
     /// Mirrors the server economy's quantity and side-specific total bounds.
+    pub fn parse_amount(&self, quote: Quote, text: &str) -> Option<u32> {
+        if !self.purchase_selected || quote.side != NpcTradeSide::Buy {
+            return super::parse_amount(text);
+        }
+        let amount = text.trim().parse().ok()?;
+        self.valid_amount(quote, amount).then_some(amount)
+    }
     pub fn valid_amount(&self, quote: Quote, amount: u32) -> bool {
         let maximum = match quote.side {
             NpcTradeSide::Buy => 20_000_000 + 999_999_999_999u64,
             NpcTradeSide::Sell => 1_009_999,
         };
-        (1..=100).contains(&amount) && u64::from(quote.price) * u64::from(amount) <= maximum
+        let limit = if self.purchase_selected && quote.side == NpcTradeSide::Buy {
+            10_000
+        } else {
+            100
+        };
+        (1..=limit).contains(&amount) && u64::from(quote.price) * u64::from(amount) <= maximum
     }
     pub fn trade(&mut self, quote: Quote, amount: u32) -> Option<npc_service::NpcTradeIntent> {
         if !self.selected || self.pending {

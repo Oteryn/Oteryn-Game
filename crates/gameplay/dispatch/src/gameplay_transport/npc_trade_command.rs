@@ -39,7 +39,13 @@ pub enum NpcTradeStep {
 }
 
 impl NpcTradeStep {
+    #[track_caller]
     fn rejected() -> Self {
+        #[cfg(test)]
+        super::operator_event(&format!(
+            "event=npc_trade_rejected source={}",
+            std::panic::Location::caller()
+        ));
         Self::Refused(NpcTradeRefusal::only(NpcIntentDisposition::Rejected))
     }
 }
@@ -99,11 +105,17 @@ fn answers(receipt: &NpcTradeReceipt, intent: &NpcTradeIntent, sell_all: bool) -
 }
 
 /// What a sell-all sold: the units and the gold paid for them.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct SoldUnits {
     pub(super) units: u32,
     pub(super) gold: u64,
+    pub(super) message: Option<String>,
 }
+
+// Keep the transaction's large future behind the NPC service boundary. The generic
+// connection routes need only this pointer-sized future, including for legacy buys.
+type TradeFuture<'a> =
+    std::pin::Pin<Box<dyn std::future::Future<Output = Result<SoldUnits, Box<NpcTradeStep>>> + 'a>>;
 
 pub(super) fn unix_ms_now() -> i64 {
     std::time::SystemTime::now()
@@ -137,17 +149,55 @@ pub(super) async fn trade(
     intent: NpcTradeIntent,
     sell_all: bool,
 ) -> Result<SoldUnits, Box<NpcTradeStep>> {
+    let future: TradeFuture<'_> = Box::pin(trade_mode(
+        admission, actor, command, intent, sell_all, None,
+    ));
+    future.await
+}
+
+pub(super) async fn trade_mode(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: NpcTradeIntent,
+    sell_all: bool,
+    purchase: Option<oteryn_protocol_oteryn::npc_purchase::NpcPurchaseIntent>,
+) -> Result<SoldUnits, Box<NpcTradeStep>> {
     let session = command.game_session_id;
     // Without an item fence no trade can commit or have committed for the session.
     let (Some(fence), Ok(command_id)) = (command.item_fence, CommandId::new(command.command_id))
     else {
         return Err(Box::new(NpcTradeStep::rejected()));
     };
-    let Some(_permit) = admission.spell_lane_permit().await else {
+    let Some(permit) = admission.spell_lane_permit().await else {
         return Err(Box::new(NpcTradeStep::Unknown));
     };
     let command_ref = CommandRef::new(session, command_id);
     let occurrence = occurrence(session, command.command_id, intent.npc_actor);
+    if let Some(purchase) = purchase {
+        match admission
+            .root
+            .read_npc_purchase(
+                admission.character,
+                fence.character_id,
+                command_ref,
+                occurrence,
+                purchase,
+            )
+            .await
+        {
+            Ok(Some(text)) => {
+                return Ok(SoldUnits {
+                    units: purchase.amount,
+                    gold: 0,
+                    message: Some(text),
+                });
+            }
+            Ok(None) => {}
+            Err(NpcTradeError::Unavailable(error)) => return Err(unavailable("admission", error)),
+            Err(_) => return Err(Box::new(NpcTradeStep::rejected())),
+        }
+    }
     match admission
         .root
         .read_npc_trade(
@@ -158,14 +208,15 @@ pub(super) async fn trade(
         )
         .await
     {
-        Ok(Some(receipt)) if answers(&receipt, &intent, sell_all) => {
+        Ok(Some(receipt)) if purchase.is_none() && answers(&receipt, &intent, sell_all) => {
             return Ok(SoldUnits {
+                message: None,
                 units: receipt.quantity,
                 gold: u64::from(receipt.quantity).saturating_mul(receipt.unit_price),
             });
         }
         Ok(None) => {}
-        Err(NpcTradeError::Unavailable(_)) => return Err(Box::new(NpcTradeStep::Unknown)),
+        Err(NpcTradeError::Unavailable(error)) => return Err(unavailable("admission", error)),
         Ok(Some(_)) | Err(_) => return Err(Box::new(NpcTradeStep::rejected())),
     }
 
@@ -175,7 +226,7 @@ pub(super) async fn trade(
     .await
     {
         Ok(selection) => selection,
-        Err(NpcTradeError::Unavailable(_)) => return Err(Box::new(NpcTradeStep::Unknown)),
+        Err(NpcTradeError::Unavailable(error)) => return Err(unavailable("admission", error)),
         Err(_) => return Err(Box::new(NpcTradeStep::rejected())),
     };
     if !admission.states.player_trades.physical_service(session) {
@@ -360,7 +411,7 @@ pub(super) async fn trade(
             Err(_) => return Err(Box::new(NpcTradeStep::rejected())),
         },
         Ok(None) => return Err(Box::new(NpcTradeStep::rejected())),
-        Err(ItemTransferError::Unavailable(_)) => return Err(Box::new(NpcTradeStep::Unknown)),
+        Err(ItemTransferError::Unavailable(error)) => return Err(unavailable("backpack", error)),
         Err(_) => return Err(Box::new(NpcTradeStep::rejected())),
     };
     let id = |tag: &[u8]| derived(tag, session, command.command_id);
@@ -396,6 +447,9 @@ pub(super) async fn trade(
         coins,
         backpack,
     };
+    if purchase.is_some() && hireling.is_some() {
+        return Err(Box::new(NpcTradeStep::rejected()));
+    }
     let hireling_runtime = if hireling.is_some() {
         Some(admission.runtime.lock().await)
     } else {
@@ -417,7 +471,108 @@ pub(super) async fn trade(
     {
         return Err(Box::new(NpcTradeStep::rejected()));
     }
-    let result = if let Some(selection) = hireling {
+    let mut purchase_runtime = if purchase.is_some() {
+        Some(admission.runtime.lock().await)
+    } else {
+        None
+    };
+    let mut purchase_text = None;
+    let result = if let Some(purchase) = purchase {
+        use crate::content::ReferenceItemField::Known;
+        use crate::durability::item_loop_move::{ItemLoopContent, LoopGround};
+        let Some(runtime) = purchase_runtime.as_mut() else {
+            return Err(Box::new(NpcTradeStep::rejected()));
+        };
+        if let Err(refusal) = admission.states.npc_conversations.trade_in(
+            &admission.states.chat,
+            runtime,
+            actor,
+            session,
+            &intent,
+            pinned_index(runtime, admission.active_generation),
+        ) {
+            return Err(Box::new(NpcTradeStep::Refused(*refusal)));
+        }
+        let at = match runtime.read_actor_position(actor) {
+            Ok(at) => at.position(),
+            Err(_) => return Err(Box::new(NpcTradeStep::rejected())),
+        };
+        let pin = runtime.content_pin();
+        let revision = |digest: [u8; 32]| {
+            let mut value = String::from("sha256:");
+            for byte in digest {
+                use std::fmt::Write;
+                let _ = write!(value, "{byte:02x}");
+            }
+            value
+        };
+        let name = native
+            .item_policy(
+                &request.item.definition.production_key,
+                &request.item.definition.revision_ref,
+            )
+            .and_then(|policy| match &policy.record().semantics.presentation {
+                Known(presentation) => match &presentation.name {
+                    Known(name) => Some(name.clone()),
+                    _ => None,
+                },
+                _ => None,
+            })
+            .ok_or_else(|| Box::new(NpcTradeStep::rejected()))?;
+        let weights = super::item_ref_admission::NativeItemWeights(native)
+            .with_wheel(admission.premium_coordinator);
+        let category = match weights.loot_category(&request.item.definition) {
+            oteryn_gameplay_items::quick_loot::LootCategory::Gold => 1,
+            oteryn_gameplay_items::quick_loot::LootCategory::CreatureProduct => 2,
+            oteryn_gameplay_items::quick_loot::LootCategory::Equipment => 3,
+            oteryn_gameplay_items::quick_loot::LootCategory::Consumable => 4,
+            oteryn_gameplay_items::quick_loot::LootCategory::Other => 5,
+        };
+        let (stack_size, _) = crate::durability::item_transfer::stack_maximum(request.item.stack)
+            .map_err(|_| Box::new(NpcTradeStep::rejected()))?;
+        let bags = if purchase.in_backpacks {
+            purchase.amount.div_ceil(stack_size).div_ceil(20)
+        } else {
+            0
+        };
+        purchase_text = Some(oteryn_gameplay_economy::npc_purchase::purchase_message(
+            purchase.amount,
+            &name,
+            bags,
+            request.unit_price * u64::from(purchase.amount) + u64::from(bags) * 20,
+        ));
+        let selection = npc_trade::purchase::PurchaseSelection {
+            amount: purchase.amount,
+            in_backpacks: purchase.in_backpacks,
+            ignore_cap: purchase.ignore_cap,
+            category,
+            ground: LoopGround {
+                spatial_position: [
+                    at.x.to_be_bytes().as_slice(),
+                    at.y.to_be_bytes().as_slice(),
+                    at.floor.to_be_bytes().as_slice(),
+                ]
+                .concat(),
+                map_revision: revision(pin.map_revision_digest()),
+                content_revision: revision(pin.server_artifact_digest()),
+                placement_context: pin.frame_binding_digest().to_vec(),
+            },
+            item_name: name,
+        };
+        admission
+            .root
+            .commit_npc_bulk_purchase(
+                admission.character,
+                admission.holder,
+                fence,
+                request,
+                selection,
+                &weights,
+                &permit,
+                yasir_position,
+            )
+            .await
+    } else if let Some(selection) = hireling {
         admission
             .root
             .commit_hireling_trade(
@@ -452,7 +607,35 @@ pub(super) async fn trade(
             .commit_npc_trade(admission.character, admission.holder, fence, request)
             .await
     };
-    step_of(result)
+    if purchase.is_some()
+        && let Err(error) = &result
+    {
+        super::operator_event(&format!("event=npc_purchase_refused reason={error:?}"));
+        let text = match error {
+            NpcTradeError::OverCapacity => "You do not have enough capacity.",
+            NpcTradeError::DoesNotFit => "There is not enough room.",
+            NpcTradeError::InsufficientFunds => "You do not have enough money.",
+            _ => "Sorry, not possible.",
+        };
+        if !matches!(error, NpcTradeError::Unavailable(_)) {
+            return Err(Box::new(NpcTradeStep::Refused(NpcTradeRefusal {
+                disposition: NpcIntentDisposition::Rejected,
+                update: super::npc_command::NpcUpdate {
+                    conversation: Some(oteryn_protocol_oteryn::npc_service::NpcConversation {
+                        open: Some((
+                            intent.npc_actor,
+                            oteryn_protocol_oteryn::npc_service::NpcConversationState::Open,
+                        )),
+                        lines: vec![text.into()],
+                    }),
+                    window: None,
+                },
+            })));
+        }
+    }
+    let mut result = step_of(result)?;
+    result.message = purchase_text;
+    Ok(result)
 }
 
 /// The step of a commit result: any committed outcome is `OK`; a storage failure is unknown; every
@@ -465,6 +648,7 @@ fn step_of(
             npc_trade::NpcTradeOutcome::Committed(trade)
             | npc_trade::NpcTradeOutcome::AlreadyCommitted(trade),
         ) => Ok(SoldUnits {
+            message: None,
             units: trade
                 .lines
                 .iter()
@@ -473,7 +657,7 @@ fn step_of(
                 .sum(),
             gold: trade.total_gold_units,
         }),
-        Err(NpcTradeError::Unavailable(_)) => Err(Box::new(NpcTradeStep::Unknown)),
+        Err(NpcTradeError::Unavailable(error)) => Err(unavailable("commit", error)),
         Err(_) => Err(Box::new(NpcTradeStep::rejected())),
     }
 }
@@ -482,3 +666,42 @@ fn step_of(
 #[allow(clippy::expect_used, clippy::panic, reason = "test fixtures")]
 #[path = "npc_trade_command_tests.rs"]
 mod tests;
+
+pub(super) async fn purchase(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: oteryn_protocol_oteryn::npc_purchase::NpcPurchaseIntent,
+) -> (NpcTradeStep, Option<String>) {
+    let future: TradeFuture<'_> = Box::pin(trade_mode(
+        admission,
+        actor,
+        command,
+        intent.offer,
+        false,
+        Some(intent),
+    ));
+    match future.await {
+        Ok(result) => (NpcTradeStep::Traded, result.message),
+        Err(step) => {
+            let text = match step.as_ref() {
+                NpcTradeStep::Refused(refusal) => refusal
+                    .update
+                    .conversation
+                    .as_ref()
+                    .and_then(|conversation| conversation.lines.first())
+                    .cloned(),
+                _ => None,
+            };
+            (*step, text)
+        }
+    }
+}
+
+fn unavailable(phase: &str, error: impl std::fmt::Debug) -> Box<NpcTradeStep> {
+    super::operator_event(&format!(
+        "event=npc_trade_unavailable phase={phase} error={}",
+        format!("{error:?}").replace(char::is_whitespace, "_")
+    ));
+    Box::new(NpcTradeStep::Unknown)
+}

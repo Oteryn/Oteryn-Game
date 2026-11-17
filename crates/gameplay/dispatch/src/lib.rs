@@ -1,5 +1,12 @@
 //! ADR-0019 gameplay crate `oteryn-gameplay-dispatch`: modules moved verbatim from `oteryn-game-server` (re-exported there at the old path).
 
+// A focused local test build leaves shared fixture helpers without their other callers.
+// Normal library builds and the default complete CI test build retain their strict lints.
+#![cfg_attr(
+    all(test, oteryn_dispatch_focused_pg),
+    allow(dead_code, unused_imports)
+)]
+
 pub mod gameplay_transport;
 pub mod observability;
 

@@ -199,6 +199,15 @@ pub async fn run_session<T: Stepper>(
                     Err(error) => error,
                 }
             }
+            Ok(PlayCommand::NpcPurchase(intent)) => {
+                match outbox.npc_purchase_run(&mut session, &intent).await {
+                    Ok(()) => {
+                        publish(&mut session, &outbox, &mut held);
+                        continue;
+                    }
+                    Err(error) => error,
+                }
+            }
             Ok(PlayCommand::NpcTrade(intent)) => {
                 match outbox.npc_trade_run(&mut session, &intent).await {
                     Ok(()) => {

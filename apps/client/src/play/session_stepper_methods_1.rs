@@ -197,6 +197,12 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     fn npc_inventory(&self) -> Option<oteryn_session::CharacterInventory> {
         self.inventory().cloned()
     }
+    async fn npc_purchase(
+        &mut self,
+        intent: &oteryn_session::npc_purchase::NpcPurchaseIntent,
+    ) -> Result<(oteryn_session::CommandStatus, String), SessionError> {
+        oteryn_client_runtime::npc_purchase::send(self, intent).await
+    }
     async fn npc_trade(
         &mut self,
         intent: &oteryn_session::npc_service::NpcTradeIntent,

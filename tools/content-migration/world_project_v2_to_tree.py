@@ -279,6 +279,8 @@ def materialize_item_tree(reference, declarations, editor, sources):
     # Accepted reward Item facts are tree-first; retain them across legacy regeneration.
     from quest_reward_item_semantics import apply_admissions
     apply_admissions(item_records, ROOT)
+    import npc_shopping_bag
+    npc_shopping_bag.apply_admissions(item_records)
     apply_summer_item_admissions(item_records)
     apply_primal_item_admissions(item_records)
     apply_encounter_corpse_admissions(item_records)

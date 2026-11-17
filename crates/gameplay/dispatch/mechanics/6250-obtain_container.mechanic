@@ -1,0 +1,4 @@
+name=obtain_container
+commands=6250
+[route]
+match routing::obtain_container::route(authority,session.actor,&mut session.admitted,command,&mut session.container_views,&mut session.item_view).await {Some(dispatch)=>dispatch,None=>return Err(ServeEnd::Disconnected)}

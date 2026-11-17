@@ -1,0 +1,16 @@
+{
+  "id": 514,
+  "name": "NPC_PURCHASE_V1",
+  "owner_decision": "NPC-BUY-BACKPACKS-1 owner packet, 2026-11-17",
+  "owner": "Existing fenced NPC trade and native item custody owners",
+  "requires": [
+    3,
+    4
+  ],
+  "command_types": [
+    6249
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Offered by BUNDLE_WORLD_OFFERED_CAPABILITIES only; the legacy NPC and loot commands retain their existing behaviour."
+}

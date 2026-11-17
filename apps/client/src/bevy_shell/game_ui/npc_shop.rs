@@ -33,6 +33,7 @@ enum Kind {
     SellAll,
     Close,
     IgnoreCapacity,
+    InBackpacks,
     IgnoreEquipped,
     OnlyOwned,
     OpenBackpack,
@@ -101,9 +102,10 @@ fn perform(owner: &mut HostOwner, state: &mut State, action: Action, amount: &st
             state.feedback.clear();
             true
         }
-        Kind::IgnoreCapacity | Kind::IgnoreEquipped | Kind::OnlyOwned => {
+        Kind::IgnoreCapacity | Kind::InBackpacks | Kind::IgnoreEquipped | Kind::OnlyOwned => {
             let mut options = panel.live.options;
             match action.kind {
+                Kind::InBackpacks => options.in_backpacks = !options.in_backpacks,
                 Kind::IgnoreCapacity => options.ignore_capacity = !options.ignore_capacity,
                 Kind::IgnoreEquipped => options.ignore_equipped = !options.ignore_equipped,
                 Kind::OnlyOwned => options.only_owned = !options.only_owned,
@@ -121,7 +123,7 @@ fn perform(owner: &mut HostOwner, state: &mut State, action: Action, amount: &st
             };
             match action.kind {
                 Kind::Trade => {
-                    let Some(amount) = oteryn_client_ui::npc_shop::parse_amount(amount) else {
+                    let Some(amount) = panel.live.parse_amount(quote, amount) else {
                         state.feedback = "Amount must be an integer from 1 to 100.".into();
                         return false;
                     };
@@ -244,6 +246,7 @@ fn project(
     }
     for (caption, mut text) in &mut options {
         let checked = match caption.0 {
+            Kind::InBackpacks => panel.live.options.in_backpacks,
             Kind::IgnoreCapacity => panel.live.options.ignore_capacity,
             Kind::IgnoreEquipped => panel.live.options.ignore_equipped,
             Kind::OnlyOwned => panel.live.options.only_owned,
@@ -255,6 +258,7 @@ fn project(
         let supported = match action.kind {
             Kind::Close => true,
             _ if panel.pending || panel.live.pending || state.pending.is_some() => false,
+            Kind::InBackpacks => panel.live.purchase_selected,
             Kind::Look => panel.selected && state.selection.is_some(),
             Kind::SellAll => {
                 panel.selected
@@ -265,7 +269,9 @@ fn project(
             Kind::Trade => {
                 panel.live.selected
                     && state.selection.is_some_and(|quote| {
-                        oteryn_client_ui::npc_shop::parse_amount(&amount)
+                        panel
+                            .live
+                            .parse_amount(quote, &amount)
                             .is_some_and(|amount| panel.live.can_trade(quote, amount))
                     })
             }
@@ -325,7 +331,9 @@ fn project(
     let price = state
         .selection
         .and_then(|quote| {
-            oteryn_client_ui::npc_shop::parse_amount(&amount)
+            panel
+                .live
+                .parse_amount(quote, &amount)
                 .map(|amount| panel.live.total(quote, amount))
         })
         .unwrap_or_else(|| {

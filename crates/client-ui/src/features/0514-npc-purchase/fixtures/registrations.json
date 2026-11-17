@@ -1,0 +1,21 @@
+[
+  {
+    "mechanic": "0514-npc-purchase",
+    "kind": "handlers",
+    "id": "0514-npc-purchase-commands",
+    "status": "supported",
+    "commands": [
+      6249
+    ],
+    "direction": "client_to_server",
+    "capability": 514,
+    "entry": "mod.rs::request",
+    "not_applicable": {
+      "settings": "The existing NPC ShopOptions owner retains overflow and shopping-bag preferences.",
+      "state": "The existing NPC shop and container panels retain state.",
+      "protocol": "The client-runtime NPC purchase adapter owns the capability-gated protocol.",
+      "view": "The existing NPC shop and container views own presentation.",
+      "input": "The existing NPC shop input selects the purchase adapter; Obtain exposes a typed session adapter."
+    }
+  }
+]

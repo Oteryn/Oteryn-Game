@@ -4,6 +4,7 @@ pub mod bank;
 pub mod coin_exchange;
 pub mod guild_bank;
 pub mod market;
+pub mod npc_purchase;
 pub mod npc_trade;
 pub mod player_trade;
 pub mod store;
