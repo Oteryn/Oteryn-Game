@@ -50,6 +50,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(runtime);
         drop(revision);
         let committed = matches!(result, QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_));
+        if matches!(result, QuestTransitionOutcome::Committed(_)) && let Some(message) = &callback.success_message {
+            self.states.chat.push_quest_feedback(command.game_session_id, message);
+        }
         if committed { self.refresh_quest_session(command.game_session_id, false).await; }
         Ok(Some(UseOutcome { disposition: if committed { UseDisposition::Committed } else { UseDisposition::Rejected }, ..UseOutcome::rejected() }))
     }
