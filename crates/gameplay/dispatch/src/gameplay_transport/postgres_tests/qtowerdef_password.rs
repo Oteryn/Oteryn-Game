@@ -18,12 +18,16 @@ pub(super) async fn issue(
     command: u64,
 ) -> TestResult<String> {
     super::classic_quests::talk(owner, admitted, thanita, command, "hi").await?;
-    let lines = super::classic_quests::talk(owner, admitted, thanita, command + 1, "mission").await?;
-    let code = lines.iter().find_map(|line| {
-        let (_, tail) = line.split_once("password you need to tell Bunny is ' ")?;
-        let (code, _) = tail.split_once(" '")?;
-        Some(code)
-    }).ok_or("Thanita must issue a password")?;
+    let lines =
+        super::classic_quests::talk(owner, admitted, thanita, command + 1, "mission").await?;
+    let code = lines
+        .iter()
+        .find_map(|line| {
+            let (_, tail) = line.split_once("password you need to tell Bunny is ' ")?;
+            let (code, _) = tail.split_once(" '")?;
+            Some(code)
+        })
+        .ok_or("Thanita must issue a password")?;
     assert_eq!(code.len(), 4);
     assert!(code.bytes().all(|byte| byte.is_ascii_digit()));
     super::classic_quests::talk(owner, admitted, thanita, command + 2, "bye").await?;
