@@ -163,18 +163,36 @@ fn documents() -> Result<Vec<Document>, String> {
         schema: 1,
         runtime_enabled: true,
         quest: "oteryn:quest.elemental_spheres_quest".into(),
-        tracks: vec![Track { key: track.into(), initial: -1, min: -1, max: 1 }],
-        rules: ["earth", "energy", "fire", "ice"].into_iter().map(|element| Rule {
-            creature: format!("oteryn:creature.{element}_overlord"),
-            transition: format!("oteryn:quest-transition/elemental-spheres/{element}-overlord-death"),
-            effects: vec![Effect { track: track.into(), default: -1,
-                from: Comparison { kind: "lt".into(), value: 1 }, set: Some(1), add: None }],
-            room: None,
-            top_damage_only: false,
-            define_transition: true,
-            epoch_tracks: None,
-            quest: String::new(),
-        }).collect(),
+        tracks: vec![Track {
+            key: track.into(),
+            initial: -1,
+            min: -1,
+            max: 1,
+        }],
+        rules: ["earth", "energy", "fire", "ice"]
+            .into_iter()
+            .map(|element| Rule {
+                creature: format!("oteryn:creature.{element}_overlord"),
+                transition: format!(
+                    "oteryn:quest-transition/elemental-spheres/{element}-overlord-death"
+                ),
+                effects: vec![Effect {
+                    track: track.into(),
+                    default: -1,
+                    from: Comparison {
+                        kind: "lt".into(),
+                        value: 1,
+                    },
+                    set: Some(1),
+                    add: None,
+                }],
+                room: None,
+                top_damage_only: false,
+                define_transition: true,
+                epoch_tracks: None,
+                quest: String::new(),
+            })
+            .collect(),
     });
     Ok(documents)
 }
