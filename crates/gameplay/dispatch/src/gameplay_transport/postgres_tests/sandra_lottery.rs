@@ -628,3 +628,53 @@ fn sandra_lottery_vial_deposits_use_repeatable_command_claims() {
     }
     assert!(!repeatable_exchange("oteryn:quest-npc/other/lottery"));
 }
+
+#[test]
+fn sandra_lottery_bonus_topics_match_donor_enrollment_flow() -> super::TestResult {
+    use oteryn_gameplay_quests::quest::npc_rules::{
+        NpcInventorySnapshot, NpcRuleCatalog, NpcRuleInput, NpcRuleTrigger,
+    };
+    use std::collections::BTreeMap;
+    let source = NpcRuleCatalog::from_json_documents(&[include_str!(
+        "../../../../../../content/dialogues/quest-rules-supplemental/sandra-lottery.json"
+    )])?;
+    let inventory = NpcInventorySnapshot::default();
+    let outfits = BTreeMap::new();
+    let track = "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt";
+    for (value, message, topic, expected) in [
+        (0, "ticket", 0, 1),
+        (0, "yes", 1, 2),
+        (0, "yes", 2, 0),
+        (1, "deposit", 0, 3),
+        (2, "bonus", 0, 3),
+    ] {
+        let tracks = BTreeMap::from([(track.into(), value)]);
+        let plan = source
+            .plan_item_exchange(&NpcRuleInput {
+                npc: "oteryn:npc.sandra",
+                trigger: NpcRuleTrigger::Say,
+                message,
+                player_name: None,
+                topic,
+                tracks: &tracks,
+                inventory: &inventory,
+                now_epoch_seconds: 0,
+                calendar_month: 1,
+                premium_current: false,
+                level: 1,
+                vocation: "oteryn:vocation.none",
+                sex: 0,
+                outfits: &outfits,
+            })?
+            .ok_or("bonus dialogue")?;
+        assert_eq!(plan.next_topic, expected);
+        if topic == 2 {
+            assert!(
+                plan.track_changes
+                    .iter()
+                    .any(|change| change.key == track && change.after == 1)
+            );
+        }
+    }
+    Ok(())
+}

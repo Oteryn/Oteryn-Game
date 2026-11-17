@@ -21,7 +21,42 @@
       "npc": "oteryn:npc.sandra",
       "trigger": "say",
       "keywords": [
-        "bonus"
+        "vial",
+        "ticket",
+        "bonus",
+        "deposit"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "We have a special offer for depositing vials. Would you like to hear it?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:68-71"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/sandra/bonus-explain",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.sandra",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        1
       ],
       "guards": [],
       "effects": [
@@ -31,10 +66,10 @@
         }
       ],
       "reply": [
-        "Would you like to join the bonus system now?"
+        "You can receive a lottery ticket for depositing 100 identical vials. Would you like to join the bonus system?"
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:94-101"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:93-101"
       ]
     },
     {
@@ -73,13 +108,16 @@
       "npc": "oteryn:npc.sandra",
       "trigger": "say",
       "keywords": [
+        "vial",
+        "ticket",
+        "bonus",
         "deposit"
       ],
       "guards": [
         {
           "kind": "storage",
           "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
-          "op": "eq",
+          "op": "ge",
           "value": 1
         }
       ],
@@ -93,7 +131,7 @@
         "Would you like a lottery ticket for 100 identical empty vials?"
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:70-74"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:72-74"
       ]
     },
     {
