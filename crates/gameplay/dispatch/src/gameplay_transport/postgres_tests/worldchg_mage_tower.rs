@@ -206,9 +206,12 @@ async fn scenario(admin: String) -> TestResult {
             .map_err(debug)?;
         actor
     };
-    for (character, count) in [(id(41), 250_i64), (id(60), 249)] {
+    for (character, count) in [
+        (character, 250_i64),
+        (current.current_character_lease().character_id(), 249),
+    ] {
         sqlx::query("INSERT INTO game_world_change_personal_counters(world_id,change_key,character_id,counter) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,$4::bigint)")
-            .bind(world.as_bytes().as_slice()).bind(kind.key()).bind(character.as_slice()).bind(count)
+            .bind(world.as_bytes().as_slice()).bind(kind.key()).bind(character.as_bytes().as_slice()).bind(count)
             .execute(&h.pool).await?;
     }
 
@@ -283,12 +286,18 @@ async fn exercise_personal_reset(
 ) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("player")?;
     let session = admitted.game_session_id;
-    let character = id(41);
+    let character = owner
+        .runtime
+        .lock()
+        .await
+        .bound_attacker_lease(actor, session)
+        .map_err(debug)?
+        .character_id();
     let key = CounterKind::MagesTower.key();
     let queue = owner.states.attack.lock().await.kills().clone();
     for (command, before, after) in [(9003, 249_i64, 249), (9004, 250, 0), (9005, 251, 251)] {
         sqlx::query("INSERT INTO game_world_change_personal_counters(world_id,change_key,character_id,counter) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,$4::bigint) ON CONFLICT(world_id,change_key,character_id) DO UPDATE SET counter=EXCLUDED.counter")
-            .bind(admitted.world_id.as_bytes().as_slice()).bind(key).bind(character.as_slice())
+            .bind(admitted.world_id.as_bytes().as_slice()).bind(key).bind(character.as_bytes().as_slice())
             .bind(before).execute(&h.pool).await?;
         {
             let mut runtime = owner.runtime.lock().await;
@@ -318,7 +327,7 @@ async fn exercise_personal_reset(
             h.root.maintain_ready_once().await.map_err(debug)?;
         }
         let count: String = sqlx::query_scalar("SELECT counter::text FROM game_world_change_personal_counters WHERE world_id=encode($1,'hex')::uuid AND change_key=$2 AND character_id=encode($3,'hex')::uuid")
-            .bind(admitted.world_id.as_bytes().as_slice()).bind(key).bind(character.as_slice())
+            .bind(admitted.world_id.as_bytes().as_slice()).bind(key).bind(character.as_bytes().as_slice())
             .fetch_one(&h.pool).await?;
         assert_eq!(count.parse::<i64>()?, after);
     }
