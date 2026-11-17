@@ -104,6 +104,27 @@ Tests: QB-3 cells in the Python and compiler placement tests;
 waits and run the whole story (`qengine-rewards-qb-citizen-story`,
 `qengine-rewards-qb-warrior-story`) on PostgreSQL in CI.
 
+## QB-VAMPIRE — Vampire Hunter Quest token ranks
+
+| Stage | TibiaWiki | Global behaviour |
+|---|---|---|
+| Gate | `Vampire_Hunter_Quest` | Storkus 32589,31962,7 accepts vampire lord tokens only after The Inquisition's vampire mission (donor questline 11) |
+| Ranks 1-6 | `Vampire_Hunter_Quest`, `Vampire_Lord_Token` | 1, 4, 5, 10, 30 and 50 tokens (100 in all), each rank sharing experience |
+| Last rank | `Vampire_Doll`, `Blood_Skull` | a vampire doll, and the Vengoth lower-castle door (action 41731) opens to the blood skull chest |
+
+- The experience per rank (1,000, 5,000, 10,000, 20,000, 50,000 and 100,000)
+  is the Crystal donor's (`storkus.lua:143-196`). The local TibiaWiki snapshot
+  confirms the 100-token total, but not the experience values; they still need
+  checking against the live Wiki page.
+- Razing! (`oteryn:achievement/razing`) is not granted yet. The local snapshot
+  links it to Storkus and the tokens but leaves out its trigger, so the trigger
+  is an open fact for the live Wiki.
+
+Tests: Storkus's cell in the Python and compiler placement tests;
+`qb_vampire_hunter_storkus_is_placed_and_ranks_complete` runs the gate refusal,
+each rank's one-short refusal and exchange, the doll and the door
+(`qengine-rewards-qb-vampire-hunter`) on PostgreSQL in CI.
+
 Known global-parity gaps (later batches or the server lane):
 
 - Decaying Defender: Bloodshade (Rotten)'s donor cell 34069,31982,14 and its

@@ -138,3 +138,9 @@ fn qb3_outfit_hand_in_npcs_are_admitted_at_their_source_cells() -> TestResult {
     }
     Ok(())
 }
+
+/// QB-VAMPIRE: Storkus takes vampire lord tokens for the Vampire Hunter Quest ranks.
+#[test]
+fn qb_vampire_hunter_storkus_is_admitted_at_his_source_cell() -> TestResult {
+    admitted_at("oteryn:npc.storkus", 32589, 31962, 7)
+}

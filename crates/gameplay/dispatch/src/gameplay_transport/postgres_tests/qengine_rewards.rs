@@ -221,6 +221,12 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "qb-citizen-backpack-start" => &["addon", "backpack"],
         "qb-citizen-backpack-materials" => &["addon"],
         "qb-citizen-hat-start" | "qb-citizen-hat" => &["hat"],
+        "qb-vampire-hunter-rank-1"
+        | "qb-vampire-hunter-rank-2"
+        | "qb-vampire-hunter-rank-3"
+        | "qb-vampire-hunter-rank-4"
+        | "qb-vampire-hunter-rank-5"
+        | "qb-vampire-hunter-rank-6" => &["vampire lord token"],
         "qb-warrior-shoulder-start" => &["earn", "yes"],
         "qb-warrior-shoulder-bones" => &["hardened bones"],
         "qb-warrior-shoulder-claw" => &["dragon claw"],
@@ -1182,6 +1188,9 @@ pub(super) async fn exercise(
             owner, admitted, h, name,
         ))
         .await;
+    }
+    if name == "qengine-rewards-qb-vampire-hunter" {
+        return Box::pin(super::qb_vampire_hunter::exercise(owner, admitted, h)).await;
     }
     if name.starts_with("qengine-rewards-l10-")
         || name.starts_with("qengine-rewards-l8-")

@@ -41,6 +41,8 @@ QB_CELLS = {
     "oteryn:npc.hanna": (32408, 32220, 7),
     "oteryn:npc.lubo": (32489, 32119, 7),
     "oteryn:npc.trisha": (32346, 31749, 7),
+    # QB-VAMPIRE
+    "oteryn:npc.storkus": (32589, 31962, 7),
 }
 
 
