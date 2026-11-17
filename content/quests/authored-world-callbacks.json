@@ -4380,6 +4380,7 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
+        "oteryn-authored:outlaw-camp:oven:crystal-201189f8",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_outlaw_camp/actions_oven.lua:1-23",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:1007-1011",
         "Retained native oven appearance 2535 at (32623,32188,9); the lever has no retained UID, so it uses the exact placement."
@@ -4464,6 +4465,7 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
+        "oteryn-authored:outlaw-camp:power-switch:crystal-201189f8",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_outlaw_camp/actions_power_switch.lua:1-16",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:1012-1015"
       ],
@@ -4549,6 +4551,7 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
+        "oteryn-authored:outlaw-camp:power-burn:crystal-201189f8",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_outlaw_camp/actions_power_burn.lua:1-19",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:1017-1020"
       ],
@@ -4653,6 +4656,7 @@
       "return_on_failure": false,
       "failure_message": "It is empty.",
       "sources": [
+        "oteryn-authored:outlaw-camp:reward:crystal-201189f8",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_outlaw_camp/actions_the_outlaw_camp_quest.lua:1-33",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:3491-3495"
       ],
