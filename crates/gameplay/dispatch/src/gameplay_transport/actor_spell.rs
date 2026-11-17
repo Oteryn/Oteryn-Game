@@ -2728,17 +2728,16 @@ impl ChannelSpellStates {
                     element,
                     refused: false,
                 } => {
-                    // Environment damage has no source actor and is dealt like a creature hit.
-                    if !tick.provenance.is_unattributed() && !crate::gameplay_transport::paced_movement::underwater_drown::is_environment_drown(
-                        &tick.provenance,
-                    ) && !super::npc_command::djinn_greetings::is_soulfire(&tick.provenance)
-                        && (tick.provenance.source_kind != ConditionSourceKind::Creature
-                        || !tick
-                            .provenance
+                    let provenance = &tick.provenance;
+                    let environment =
+                        super::paced_movement::underwater_drown::is_environment_drown(provenance)
+                            || super::npc_command::djinn_greetings::is_soulfire(provenance);
+                    let creature = provenance.source_kind == ConditionSourceKind::Creature
+                        && provenance
                             .source
                             .as_deref()
-                            .is_some_and(|s| s.starts_with("creature:")))
-                    {
+                            .is_some_and(|source| source.starts_with("creature:"));
+                    if !provenance.is_unattributed() && !environment && !creature {
                         return None;
                     }
                     let amount = self.elite_condition_damage(
