@@ -304,7 +304,7 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    sqlx::query("UPDATE game_character_progression_state SET level=$1, character_revision=2")
+    sqlx::query("UPDATE game_character_progression_state SET level=$1")
         .bind(level)
         .execute(&mut *tx)
         .await?;
@@ -317,15 +317,70 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
                 .bind(id(41).as_slice()).bind(id(91).as_slice()).bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(ordinal).bind(id(seed + 20).as_slice()).execute(&mut *tx).await?;
         }
     }
-    // Imported prerequisite tracks require revision 2; keep their Character root
-    // and progression at the same revision before loading the live quest fence.
-    sqlx::query("UPDATE game_character_roots SET character_revision=2 WHERE character_id=encode($1,'hex')::uuid")
-        .bind(id(41).as_slice()).execute(&mut *tx).await?;
-    for s in &callback.storage {
-        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,value,quest_key,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,2) ON CONFLICT(character_id,track_key) DO UPDATE SET value=excluded.value")
-            .bind(id(41).as_slice()).bind(&s.track).bind(s.minimum).bind(&callback.quest).execute(&mut *tx).await?;
-    }
     tx.commit().await?;
+    // Establish a real receipt chain: revisions cannot be imported independently
+    // of the progression owner's complete history.
+    let setup_fence = composed_test_owner::load_quests(&owner, session).await?;
+    let sequencer =
+        crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new();
+    let mut setup_slot = sequencer.acquire(setup_fence.character_id).await;
+    let weights = super::engitem_reward_text::Weights(native);
+    let predecessors: Vec<String> = if spirit {
+        vec!["oteryn:quest-reward/l6-spirit-accept".into()]
+    } else {
+        (1..8)
+            .map(|stage| format!("oteryn:quest-reward/m01c-pilgrimage-s{stage}"))
+            .collect()
+    };
+    for (command, transition_key) in (16900..).zip(predecessors) {
+        let previous = setup_slot
+            .commit_quest_reward(
+                &h.root,
+                &authority,
+                &h.node,
+                setup_fence,
+                crate::durability::quest_state::QuestTransitionRequest {
+                    transition_key,
+                    cause: crate::durability::quest_state::QuestCause::Command(
+                        super::engitem_reward_text::command(command)?,
+                    ),
+                },
+                Arc::clone(owner.quest_catalogue.as_ref().ok_or("catalogue")?),
+                crate::durability::reward_claim_mint::QuestRewardAdmission {
+                    native,
+                    weights: &weights,
+                    fee_payment: None,
+                    actor_conditions: None,
+                    carried_use: None,
+                    creature_use: None,
+                    peer_use: None,
+                },
+                &owner.premium_coordinator,
+            )
+            .await
+            .map_err(debug)?;
+        assert!(
+            matches!(
+                previous,
+                crate::durability::quest_state::QuestTransitionOutcome::Committed(_)
+            ),
+            "prerequisite transition: {previous:?}"
+        );
+    }
+    drop(setup_slot);
+    if spirit {
+        // The three previously collected wills use the existing imported flags;
+        // the acceptance receipt above owns their quest's current revision/pin.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        for storage in callback.storage.iter().skip(1) {
+            sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,value,quest_key,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,2)")
+                .bind(id(41).as_slice()).bind(&storage.track).bind(storage.minimum).bind(&callback.quest).execute(&mut *tx).await?;
+        }
+        tx.commit().await?;
+    }
     let fence = composed_test_owner::load_quests(&owner, session).await?;
     owner.states.chat.install_npc_talk(Arc::new(
         oteryn_gameplay_npc::npc_talk::NpcTalkBook::from_model_with_native_quests(
