@@ -11,7 +11,8 @@ fn session() -> Result<GameSessionId, Box<dyn std::error::Error>> {
     GameSessionId::decode(&id(1)).map_err(|error| format!("{error:?}").into())
 }
 fn row(status: Status) -> Result<VipPresenceRow, Box<dyn std::error::Error>> {
-    Ok(VipPresenceRow { channel: None,
+    Ok(VipPresenceRow {
+        channel: None,
         target: CharacterId::decode(&id(2)).map_err(|error| format!("{error:?}"))?,
         entry: 1,
         name: "Alice".into(),

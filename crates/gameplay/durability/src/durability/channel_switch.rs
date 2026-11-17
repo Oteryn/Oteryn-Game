@@ -133,7 +133,10 @@ impl DurabilityRoot {
                     }
                     let rows = sqlx::query(LOAD_SQL)
                         .bind(world.as_slice())
-                        .bind(i64::try_from(MAX_LOAD_CHANNELS).map_err(|_| DurabilityError::InvalidStoredState)?)
+                        .bind(
+                            i64::try_from(MAX_LOAD_CHANNELS)
+                                .map_err(|_| DurabilityError::InvalidStoredState)?,
+                        )
                         .fetch_all(&mut *tx)
                         .await?;
                     let mut load = Vec::with_capacity(rows.len());
@@ -143,7 +146,8 @@ impl DurabilityRoot {
                         load.push((
                             <[u8; 16]>::try_from(channel.as_slice())
                                 .map_err(|_| DurabilityError::InvalidStoredState)?,
-                            u32::try_from(online).map_err(|_| DurabilityError::InvalidStoredState)?,
+                            u32::try_from(online)
+                                .map_err(|_| DurabilityError::InvalidStoredState)?,
                         ));
                     }
                     commit_semantic_transaction(tx, deadline).await?;

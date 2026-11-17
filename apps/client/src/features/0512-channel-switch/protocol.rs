@@ -40,7 +40,11 @@ impl Outbox {
         } else if command.kind == COMMAND_TYPE_CHANNEL_LOAD {
             oteryn_client_ui::channel_switch::apply_load(&mut mailbox.channel_switch, result);
         } else {
-            oteryn_client_ui::channel_switch::apply_status(&mut mailbox.channel_switch, result, now);
+            oteryn_client_ui::channel_switch::apply_status(
+                &mut mailbox.channel_switch,
+                result,
+                now,
+            );
         }
     }
 }

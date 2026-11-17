@@ -115,36 +115,35 @@ pub(super) async fn authorize(
             .map_err(retry_login)?;
         let rows = crate::character_selection::join(characters, &directory);
         use crate::character_selection::SelectionAction;
-        let action = if quick
-            && let Some((character_id, channel_id)) = config.channel_switch.clone()
-        {
-            // chsw: the switch's fresh admission; the selection check below still requires the
-            // target to be a listed Channel of the character's World.
-            SelectionAction::Play {
-                character_id,
-                channel_id: Some(channel_id),
-            }
-        } else if let Some(selection) = config.training_queue.next() {
-            SelectionAction::Train {
-                character_id: selection.character_id,
-                channel_id: selection.channel_id,
-            }
-        } else if quick
-            && let Some(selection) = device
-                .as_ref()
-                .and_then(|attempt| attempt.quick_selection(&rows))
-        {
-            selection
-        } else {
-            config.training_queue.clear();
-            let selector = config.select_character.clone();
-            let preselect = config.character_id.clone();
-            let cancel = cancellation.clone();
-            let shown = rows.clone();
-            tokio::task::spawn_blocking(move || selector(&shown, &preselect, cancel))
-                .await
-                .map_err(retry_login)?
-        };
+        let action =
+            if quick && let Some((character_id, channel_id)) = config.channel_switch.clone() {
+                // chsw: the switch's fresh admission; the selection check below still requires the
+                // target to be a listed Channel of the character's World.
+                SelectionAction::Play {
+                    character_id,
+                    channel_id: Some(channel_id),
+                }
+            } else if let Some(selection) = config.training_queue.next() {
+                SelectionAction::Train {
+                    character_id: selection.character_id,
+                    channel_id: selection.channel_id,
+                }
+            } else if quick
+                && let Some(selection) = device
+                    .as_ref()
+                    .and_then(|attempt| attempt.quick_selection(&rows))
+            {
+                selection
+            } else {
+                config.training_queue.clear();
+                let selector = config.select_character.clone();
+                let preselect = config.character_id.clone();
+                let cancel = cancellation.clone();
+                let shown = rows.clone();
+                tokio::task::spawn_blocking(move || selector(&shown, &preselect, cancel))
+                    .await
+                    .map_err(retry_login)?
+            };
         quick = false;
         let action = match action {
             SelectionAction::TrainMany { characters } => {

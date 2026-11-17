@@ -153,6 +153,11 @@ impl ClientBootstrap {
             admitted.channel_id(),
             admitted.channels(),
         );
+        link.channel_probe_platform(
+            self.native_login
+                .as_ref()
+                .map(|config| config.platform_url.clone()),
+        );
         link.house_world(admitted.world_id());
         if admitted.training_requested() {
             let remaining = self

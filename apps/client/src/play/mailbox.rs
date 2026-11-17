@@ -218,6 +218,11 @@ pub(super) struct Mailbox {
     pub(super) channel_switch: oteryn_client_ui::channel_switch::ChannelSwitchPanel,
     pub(super) channel_switch_target: Option<[u8; 16]>,
     pub(super) channel_switch_character: String,
+    /// client-channel-probe-v1: the Platform the probe list comes from, the last refresh and
+    /// the measured pings by Channel.
+    pub(super) channel_probe_platform: Option<String>,
+    pub(super) channel_probe_refreshed: Option<std::time::Instant>,
+    pub(super) channel_probe_pings: Vec<([u8; 16], Option<u32>)>,
     pub(super) weapon_proficiency: oteryn_client_ui::weapon_proficiency::WeaponProficiencyPanel,
 
     pub(super) achievements: oteryn_client_ui::account_achievements::AchievementsPanel,

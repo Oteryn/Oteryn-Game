@@ -4,6 +4,8 @@ mod account_fixtures;
 mod bazaar;
 #[path = "challenge_tests.rs"]
 mod challenge;
+#[path = "channel_probe_fixture_tests.rs"]
+mod channel_probe_fixtures;
 #[path = "directory_fixture_tests.rs"]
 mod directory_fixtures;
 #[path = "platform_fixture_tests.rs"]

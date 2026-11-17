@@ -76,7 +76,8 @@ mod tests {
         let at = Instant::now();
         let store = VipPresenceStore {
             batch: PresenceBatch {
-                entries: vec![PresenceEntry { channel: None,
+                entries: vec![PresenceEntry {
+                    channel: None,
                     entry: 1,
                     name: "Alice".into(),
                     status: Status::Online,

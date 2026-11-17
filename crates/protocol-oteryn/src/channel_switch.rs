@@ -162,10 +162,15 @@ pub fn decode_load(payload: &[u8]) -> Option<Vec<([u8; 16], u32)>> {
         return None;
     }
     let channels: Vec<([u8; 16], u32)> = rest
-        .chunks_exact(20)
+        .as_chunks::<20>()
+        .0
+        .iter()
         .map(|entry| {
             let (channel, online) = entry.split_at(16);
-            Some((channel.try_into().ok()?, u32::from_be_bytes(online.try_into().ok()?)))
+            Some((
+                channel.try_into().ok()?,
+                u32::from_be_bytes(online.try_into().ok()?),
+            ))
         })
         .collect::<Option<_>>()?;
     channels

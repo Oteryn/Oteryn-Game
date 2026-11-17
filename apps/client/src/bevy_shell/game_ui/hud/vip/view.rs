@@ -208,14 +208,10 @@ pub(super) fn project(
             .iter()
             .find(|value| value.entry == entry.entry);
         // chsw (capability 513): an Online row names the Channel ("Online — Aurelia-3").
-        let shown = live
-            .filter(|value| value.channel.is_some())
-            .map_or_else(
-                || entry.name.clone(),
-                |value| {
-                    oteryn_client_ui::social_channel::vip_entry_text(&channel_names, value)
-                },
-            );
+        let shown = live.filter(|value| value.channel.is_some()).map_or_else(
+            || entry.name.clone(),
+            |value| oteryn_client_ui::social_channel::vip_entry_text(&channel_names, value),
+        );
         if text.0 != shown {
             text.0 = shown;
         }

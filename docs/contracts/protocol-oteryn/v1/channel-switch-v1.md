@@ -71,7 +71,8 @@ Command 6251 `CHANNEL_LOAD`: the payload is empty; any byte is `REJECTED` with a
 The `ACCEPTED` result lists every current Channel of the caller's World with its online count:
 one count byte (`0..=64`), then per Channel its 16-byte ChannelId and a big-endian `u32`,
 strictly ascending by ChannelId (at most 1,281 bytes). The count is read from the durable current
-sessions (`session_state` 1 or 2) of each Channel, so it is never stale and never invented. No
+sessions (`session_state` 1 or 2) of each Channel (a house session counts on its origin Channel),
+so it is never stale and never invented; a World with more than 64 Channels lists the first 64. No
 capacity, "full" state or full-Channel refusal exists yet; the window shows the count only.
 
 ## Channel on social rows (capability 513)

@@ -56,7 +56,10 @@ impl PlayLink {
         oteryn_client_ui::social_channel::ChannelNames,
     ) {
         let mailbox = lock(&self.mailbox);
-        (mailbox.party.own_channel, mailbox.party.channel_names.clone())
+        (
+            mailbox.party.own_channel,
+            mailbox.party.channel_names.clone(),
+        )
     }
 }
 impl PlayView {

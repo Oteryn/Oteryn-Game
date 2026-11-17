@@ -173,7 +173,8 @@ fn c0512_every_refusal_opens_the_error_of_its_lock() -> Result<(), &'static str>
 }
 
 #[test]
-fn c0512_load_fills_the_online_column_and_unknown_channels_stay_unknown() -> Result<(), &'static str> {
+fn c0512_load_fills_the_online_column_and_unknown_channels_stay_unknown() -> Result<(), &'static str>
+{
     let mut p = panel();
     let command = request_load(&p).ok_or("a load query")?;
     assert_eq!((command.capability, command.kind), (512, 6251));
@@ -190,11 +191,17 @@ fn c0512_load_fills_the_online_column_and_unknown_channels_stay_unknown() -> Res
     let rows = panel_rows(&p, 0);
     assert_eq!(rows[1].0[3], "7");
     assert_eq!(rows[3].0[3], "0");
-    assert_eq!(rows[2].0[3], "—", "a Channel the server did not count stays unknown");
+    assert_eq!(
+        rows[2].0[3], "—",
+        "a Channel the server did not count stays unknown"
+    );
     // A refused or malformed answer shows no count rather than a stale one.
     apply_load(&mut p, &load(CommandStatus::Rejected, Vec::new()));
     assert!(p.rows.iter().all(|row| row.online.is_none()));
     p.selected = false;
-    assert!(request_load(&p).is_none(), "no query without the capability");
+    assert!(
+        request_load(&p).is_none(),
+        "no query without the capability"
+    );
     Ok(())
 }

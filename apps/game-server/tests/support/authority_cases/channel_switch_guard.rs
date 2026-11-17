@@ -2,8 +2,9 @@
 //! admission receipt insert, against the production SQLx migration. The first admission sets the
 //! baseline, the same Channel is not a switch, a different Channel is a switch even after a relog,
 //! a refused or failed destination leaves the guard unchanged and a retry yields one outcome.
+//! The online count of command 6251 is read from the same production schema.
 use crate::bestiary_postgres_harness::{
-    CHARACTER, Harness, TestResult, WORLD, configured_admin, id, runtime,
+    CHANNEL, CHARACTER, Harness, TestResult, WORLD, configured_admin, id, runtime,
 };
 
 const CHANNEL_A: u8 = 61;
@@ -66,6 +67,29 @@ async fn pvp_fixture(pool: &sqlx::PgPool, sql: &'static str) -> TestResult {
     Ok(())
 }
 
+/// Command 6251's online count per current Channel, read as `oteryn_game_runtime`. With
+/// `terminal` the fixture session is ended first, inside the same rolled-back transaction.
+async fn load(pool: &sqlx::PgPool, terminal: bool) -> TestResult<Vec<(Vec<u8>, i64)>> {
+    let mut tx = pool.begin().await?;
+    if terminal {
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=3")
+            .execute(&mut *tx)
+            .await?;
+    }
+    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+        .execute(&mut *tx)
+        .await?;
+    let rows = sqlx::query_as(oteryn_gameplay_durability::durability::channel_switch::LOAD_SQL)
+        .bind(id(WORLD).as_slice())
+        .bind(64_i64)
+        .fetch_all(&mut *tx)
+        .await?;
+    tx.rollback().await?;
+    Ok(rows)
+}
 
 /// The durable preflight read as `oteryn_game_runtime`: cooldown left, lock, destination exists.
 async fn preflight(
@@ -110,6 +134,10 @@ fn channel_switch_guard_classifies_admissions_and_enforces_the_cooldown() -> Tes
                 let h = Harness::create(admin, "channel_switch_guard", true).await?;
                 let result: TestResult = async {
                     let pool = &h.pool;
+                    // Command 6251: the assigned Channel with its one current session; an ended
+                    // session no longer counts, and the Channel stays listed at zero.
+                    assert_eq!(load(pool, false).await?, vec![(id(CHANNEL).to_vec(), 1)]);
+                    assert_eq!(load(pool, true).await?, vec![(id(CHANNEL).to_vec(), 0)]);
                     // The first admission sets the baseline and is not a switch.
                     admit(pool, 1, CHANNEL_A).await?;
                     assert_eq!(guard(pool).await?, Some((channel_text(CHANNEL_A), 0, false)));

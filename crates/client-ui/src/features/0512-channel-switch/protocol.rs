@@ -2,9 +2,9 @@ use super::{ChannelSwitchPanel, view::lock_text};
 use oteryn_client_runtime::{
     CommandStatus,
     channel_switch::{
-        CAPABILITY_CHANNEL_SWITCH_V1, COMMAND_TYPE_CHANNEL_SWITCH_REQUEST,
-        COMMAND_TYPE_CHANNEL_LOAD, COMMAND_TYPE_CHANNEL_SWITCH_STATUS, SwitchLock, decode_load,
-        decode_status, encode_request,
+        CAPABILITY_CHANNEL_SWITCH_V1, COMMAND_TYPE_CHANNEL_LOAD,
+        COMMAND_TYPE_CHANNEL_SWITCH_REQUEST, COMMAND_TYPE_CHANNEL_SWITCH_STATUS, SwitchLock,
+        decode_load, decode_status, encode_request,
     },
     raw_feature::{FeatureCommand, GatedCommandResult},
 };

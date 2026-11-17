@@ -1,5 +1,6 @@
 //! Bounded asynchronous Platform directory client.
 
+pub mod channel_probe;
 pub mod gameplay_entry;
 pub mod native_login;
 
@@ -150,10 +151,29 @@ impl PlatformClient {
         token: Option<&native_login::AccessToken>,
         cancellation: CancellationToken,
     ) -> Result<DirectorySnapshot, PlatformClientError> {
+        self.fetch_json(
+            "v1/client/directory",
+            "directory",
+            token,
+            cancellation,
+            parse_directory,
+        )
+        .await
+    }
+
+    /// One bounded JSON `GET` under the shared span, metric and error mapping.
+    async fn fetch_json<T>(
+        &self,
+        path: &str,
+        label: &'static str,
+        token: Option<&native_login::AccessToken>,
+        cancellation: CancellationToken,
+        parse: fn(&[u8]) -> Result<T, PlatformClientError>,
+    ) -> Result<T, PlatformClientError> {
         let endpoint = self
             .config
             .base_url
-            .join("v1/client/directory")
+            .join(path)
             .map_err(|_error| PlatformClientError::InvalidBaseUrl)?;
         let mut span = oteryn_error_codes::Span::start(
             oteryn_error_codes::Level::Info,
@@ -162,7 +182,7 @@ impl PlatformClient {
             None,
         )
         .slow_after(PLATFORM_SLOW_OPERATION);
-        span.field("endpoint", "directory");
+        span.field("endpoint", label);
         span.field("attempts", 1_u64);
         let started = std::time::Instant::now();
         let request = async {
@@ -201,20 +221,20 @@ impl PlatformClient {
                 }
                 body.extend_from_slice(&chunk);
             }
-            parse_directory(&body)
+            parse(&body)
         };
         let result = match cancellable(cancellation, request).await {
             Cancellable::Completed(result) => result,
             Cancellable::Cancelled => Err(PlatformClientError::Cancelled),
         };
         oteryn_error_codes::metrics::Registry::global()
-            .histogram("platform_call_ms", &[("endpoint", "directory")])
+            .histogram("platform_call_ms", &[("endpoint", label)])
             .observe(u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX));
         match result {
-            Ok(snapshot) => {
+            Ok(value) => {
                 span.set_outcome("ok");
                 span.field("status", 200_u64);
-                Ok(snapshot)
+                Ok(value)
             }
             Err(error) => {
                 span.set_outcome("failed");
