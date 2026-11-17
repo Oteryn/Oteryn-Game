@@ -30,3 +30,27 @@ fn lersatio_scene_admission_options_reject_mistyped_flags() {
         assert!(serde_json::from_value::<SceneRelocation>(relocation).is_err());
     }
 }
+
+#[test]
+fn lersatio_encounter_accepts_bounded_current_spectator_input() -> Result<(), serde_json::Error> {
+    use oteryn_gameplay_quests::quest::world_callbacks::Encounter;
+    let encounter: Encounter = serde_json::from_value(serde_json::json!({
+        "minimum_level":1,
+        "players":[],
+        "monsters":[{"creature":"oteryn:creature.lersatio","position":{"x":32967,"y":31459,"floor":-1}}],
+        "room_min":{"x":32963,"y":31456,"floor":-1},
+        "room_max":{"x":32972,"y":31465,"floor":-1},
+        "spectators":{
+            "minimum":{"x":32954,"y":31447,"floor":-2},
+            "maximum":{"x":32972,"y":31465,"floor":-2},
+            "destination":{"x":32967,"y":31459,"floor":-1}
+        }
+    }))?;
+    assert!(encounter.players.is_empty());
+    let spectators = encounter.spectators.ok_or_else(|| {
+        <serde_json::Error as serde::de::Error>::custom("spectator input missing")
+    })?;
+    assert_eq!(spectators.minimum.floor, -2);
+    assert_eq!(spectators.destination.floor, -1);
+    Ok(())
+}

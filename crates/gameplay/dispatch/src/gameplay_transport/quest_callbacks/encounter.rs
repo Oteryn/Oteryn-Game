@@ -163,7 +163,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let mut players = Vec::new();
         let mut proofs = Vec::new();
-        for member in &encounter.players {
+        let mut members = encounter.players.clone();
+        if let Some(spectators) = &encounter.spectators {
+            members.clear();
+            for (_, position, member_session) in &census {
+                let at = position.position();
+                if member_session.is_some()
+                    && at.floor == -i16::from(spectators.minimum.floor)
+                    && (i32::from(spectators.minimum.x)..=i32::from(spectators.maximum.x))
+                        .contains(&at.x)
+                    && (i32::from(spectators.minimum.y)..=i32::from(spectators.maximum.y))
+                        .contains(&at.y)
+                {
+                    if members.len() >= 8 {
+                        return UseDisposition::Rejected;
+                    }
+                    members.push(
+                        oteryn_gameplay_quests::quest::world_callbacks::EncounterPlayer {
+                            from: Position {
+                                x: match at.x.try_into() {
+                                    Ok(x) => x,
+                                    Err(_) => return UseDisposition::Rejected,
+                                },
+                                y: match at.y.try_into() {
+                                    Ok(y) => y,
+                                    Err(_) => return UseDisposition::Rejected,
+                                },
+                                floor: spectators.minimum.floor,
+                            },
+                            to: spectators.destination,
+                        },
+                    );
+                }
+            }
+        }
+        for member in &members {
             let mut occupants = census
                 .iter()
                 .filter(|(_, pos, _)| pos.position() == local(member.from));

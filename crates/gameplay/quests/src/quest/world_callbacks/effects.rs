@@ -299,8 +299,19 @@ pub struct EncounterMonster {
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
+pub struct EncounterSpectators {
+    pub minimum: Position,
+    pub maximum: Position,
+    pub destination: Position,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct Encounter {
     pub minimum_level: u32,
+    /// Current player occupants of a bounded source room replace fixed staging tiles.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spectators: Option<EncounterSpectators>,
     pub players: Vec<EncounterPlayer>,
     pub monsters: Vec<EncounterMonster>,
     pub room_min: Position,
@@ -845,7 +856,20 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_to: BTreeSet<_> = encounter.players.iter().map(|p| p.to).collect();
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase == Some(EncounterPhase::Cults);
-        if (encounter.minimum_level == 0 && !source_party)
+        if encounter.spectators.as_ref().is_some_and(|spectators| {
+            !pos(spectators.minimum)
+                || !pos(spectators.maximum)
+                || spectators.minimum.floor != spectators.maximum.floor
+                || spectators.minimum.x > spectators.maximum.x
+                || spectators.minimum.y > spectators.maximum.y
+                || !in_room(spectators.destination)
+                || encounter.timing.is_some()
+                || encounter.phase.is_some()
+                || !encounter.players.is_empty()
+                || (u64::from(spectators.maximum.x.saturating_sub(spectators.minimum.x)) + 1)
+                    * (u64::from(spectators.maximum.y.saturating_sub(spectators.minimum.y)) + 1)
+                    > 4096
+        }) || (encounter.minimum_level == 0 && !source_party)
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()
@@ -862,6 +886,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     || (u64::from(encounter.room_max.x.saturating_sub(encounter.room_min.x)) + 1)
                         * (u64::from(encounter.room_max.y.saturating_sub(encounter.room_min.y)) + 1)
                         > 4096
+            } else if encounter.spectators.is_some() {
+                !encounter.players.is_empty()
             } else {
                 !(1..=if encounter.phase.is_some() { 16 } else { 8 })
                     .contains(&encounter.players.len())
