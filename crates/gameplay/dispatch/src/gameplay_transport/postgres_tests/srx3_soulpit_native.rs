@@ -812,7 +812,7 @@ fn native_soulpit_scenario_with_entry_cue(
                                     // be returning the holder. Re-establish readiness before
                                     // consuming a global clearance tick. An action error
                                     // cancels the capture reader that answers liveness probes.
-                                    h.root.await_ready().await.map_err(debug)?;
+                                    h.root.await_ready().await.map_err(|error| format!("{error:?}"))?;
                                     let now = owner.owner_now().get();
                                     let global = now >= global_due;
                                     if global { global_due = now.saturating_add(1_000_000); }
