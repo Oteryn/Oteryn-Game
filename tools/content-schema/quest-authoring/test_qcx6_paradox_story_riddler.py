@@ -3,7 +3,6 @@ import json
 import unittest
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 PREFIX = "oteryn:quest-progress/quest/u7_24/the_paradox_tower/"
 SYNC = "oteryn:quest-progress/l6/paradox/source-synced"
@@ -84,6 +83,7 @@ class ParadoxStoryRiddlerTests(unittest.TestCase):
         self.assertEqual(callback["keywords"], ["math"])
         self.assertEqual(callback["topic"], 0)
         self.assertEqual(callback["take"], [])
+        self.assertFalse(callback.get("completes", False))
         for field in ("give", "outfit", "achievement", "experience", "fee"):
             self.assertIsNone(callback.get(field), field)
 
