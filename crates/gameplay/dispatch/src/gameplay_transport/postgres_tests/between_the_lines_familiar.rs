@@ -185,7 +185,7 @@ async fn scenario(admin: String) -> TestResult {
         .find_map(|index| {
             let index = NonZeroU32::new(u32::try_from(index).ok()?)?;
             let (definition, active) = deps.spells.source_indexed(index)?;
-            (active && definition.key == "candidate:spell/summon_druid_familiar").then_some(index)
+            (active && definition.key == "candidate:spell/druid_familiar").then_some(index)
         })
         .ok_or("Summon Druid Familiar spell index")?;
     let intent = SpellCastIntent {
