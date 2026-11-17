@@ -106,8 +106,8 @@ impl SeasonalWindow {
     }
 }
 
-/// Only donor-backed, physically composed daily changes can qualify an active gate.
-/// Unknown/held keys fail closed, including the requested incomplete quest titles.
+/// Evaluate admission gates from the persisted daily decision or live counter phase.
+/// Each supported key has an explicit rule.
 pub fn is_active(day: &DailyWorldChanges, key: &str) -> bool {
     if day.reset_epoch == 0 {
         return false;

@@ -1,6 +1,6 @@
 //! WORLDCHG-Q. One World/reset decision, reused by every Channel and quest lane.
-//! Mutation helpers join the caller's fenced semantic transaction; they never commit,
-//! debit Items, grant rewards, or authorize a held title's activation.
+//! Contribution writes join the caller's fenced custody transaction. The server
+//! save projects the retiring epoch's tallies into the immutable daily decision.
 use super::*;
 use crate::character_recovery_fence::CharacterRecoveryFenceV1;
 use oteryn_gameplay_world_change::{

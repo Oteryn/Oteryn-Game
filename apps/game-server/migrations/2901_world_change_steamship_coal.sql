@@ -25,4 +25,13 @@ BEGIN
         'ALTER TABLE game_item_craft_records ADD CONSTRAINT game_item_craft_records_outputs_check CHECK ((%s) OR (consume_source AND recipe IN (''oteryn:world-change.awash-coal'', ''oteryn:world-change.steamship-coal'') AND outputs = ''[]''::jsonb AND before_item->>''definition_production_key'' = ''oteryn:item.tibia.i12600''))',
         previous
     );
+    SELECT pg_get_expr(conbin, conrelid) INTO STRICT previous
+    FROM pg_constraint
+    WHERE conrelid='game_item_craft_records'::regclass
+      AND conname='game_item_craft_event_source_location_check';
+    ALTER TABLE game_item_craft_records DROP CONSTRAINT game_item_craft_event_source_location_check;
+    EXECUTE format(
+        'ALTER TABLE game_item_craft_records ADD CONSTRAINT game_item_craft_event_source_location_check CHECK ((%s) OR (consume_source AND recipe IN (''oteryn:world-change.awash-coal'', ''oteryn:world-change.steamship-coal'') AND before_item->>''definition_production_key'' = ''oteryn:item.tibia.i12600'' AND jsonb_typeof(event_source_location) = ''object'' AND octet_length(event_source_location::text) BETWEEN 2 AND 4096 AND event_source_location ?& ARRAY[''item_instance_id'', ''parent_item_instance_id'', ''world_id'', ''placement_ordinal'', ''placed_transaction_id'']))',
+        previous
+    );
 END $$;

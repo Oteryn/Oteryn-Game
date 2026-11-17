@@ -232,7 +232,7 @@ impl DurabilityRoot {
                     return Ok(Some(UseDisposition::Rejected));
                 }
             }
-            let result = write_with_skinning(
+            let result = write(
                 &mut tx, permit, fence, &request, context.0, context.1, None, coal.map(|(_, delivery)| delivery),
             ).await?;
             if result == UseDisposition::Committed {
@@ -254,11 +254,27 @@ impl DurabilityRoot {
     }
 }
 
+async fn write_with_skinning<C: ItemLoopContent>(
+    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
+    permit: &super::spell_owner_commit::SpellLanePermit,
+    fence: CurrentCharacterItemFence,
+    request: &ItemCraftRequest,
+    native: &NativeGameplayState,
+    content: &C,
+    skinning: Option<(
+        &SkinningRequest,
+        &oteryn_gameplay_content::content::charm_source::CanonicalCharmCatalogue,
+    )>,
+) -> Result<UseDisposition, DurabilityError> {
+    write(tx, permit, fence, request, native, content, skinning, None).await
+}
+
 #[allow(
+    clippy::too_many_arguments,
     clippy::too_many_lines,
     reason = "existing craft writer retains its single atomic inventory and audit owner"
 )]
-async fn write_with_skinning<C: ItemLoopContent>(
+async fn write<C: ItemLoopContent>(
     tx: &mut super::item_mint_audit::Type2Transaction<'_>,
     permit: &super::spell_owner_commit::SpellLanePermit,
     fence: CurrentCharacterItemFence,
@@ -280,9 +296,10 @@ async fn write_with_skinning<C: ItemLoopContent>(
         .bind(request.source.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
     let source = match source {
         Some(source) => Some(source),
-        None if request.station.is_none()
-            && request.tool.is_none()
-            && request.gathering.is_none() =>
+        None if coal.is_some()
+            || (request.station.is_none()
+                && request.tool.is_none()
+                && request.gathering.is_none()) =>
         {
             event_containers::nested_source(tx, fence, request.source, *world.as_bytes()).await?
         }
@@ -298,6 +315,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
         revision_ref: source.try_get("definition_revision_ref")?,
     };
     if nested_source.is_some()
+        && coal.is_none()
         && oteryn_gameplay_items::reward_bag::event_containers::event_container_rule(
             &definition.production_key,
         )

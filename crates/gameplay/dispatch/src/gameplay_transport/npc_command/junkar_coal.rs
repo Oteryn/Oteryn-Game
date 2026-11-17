@@ -43,6 +43,7 @@ pub(super) async fn donate(
         .backpack
         .iter()
         .flat_map(|bag| &bag.entries)
+        .chain(inventory.nested.iter().map(|(_, entry)| entry))
         .find(|entry| entry.item.definition.production_key == COAL_ITEM)
         .map(|entry| entry.item.item_instance_id);
     {

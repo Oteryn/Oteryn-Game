@@ -116,6 +116,32 @@ mod tests {
     }
 
     #[test]
+    fn contribution_decisions_round_trip_and_legacy_days_default_to_inactive() -> Result<(), String>
+    {
+        let mut day = crate::daily::roll_calendar(&[42; 16], 1, 11, 17);
+        let legacy = serde_json::to_value(NativeDecision::capture(&day))
+            .map_err(|error| error.to_string())?;
+        for key in ["awash", "steamship_open", "swamp_epidemic"] {
+            assert!(legacy.get(key).is_none());
+        }
+        let legacy: NativeDecision =
+            serde_json::from_value(legacy).map_err(|error| error.to_string())?;
+        let legacy = legacy.restore().map_err(|error| format!("{error:?}"))?;
+        assert!(!legacy.awash && !legacy.steamship_open && !legacy.swamp_epidemic);
+
+        day.awash = true;
+        day.steamship_open = true;
+        day.swamp_epidemic = true;
+        let encoded = serde_json::to_vec(&NativeDecision::capture(&day))
+            .map_err(|error| error.to_string())?;
+        let decoded: NativeDecision =
+            serde_json::from_slice(&encoded).map_err(|error| error.to_string())?;
+        let restored = decoded.restore().map_err(|error| format!("{error:?}"))?;
+        assert!(restored.awash && restored.steamship_open && restored.swamp_epidemic);
+        Ok(())
+    }
+
+    #[test]
     fn persisted_native_decisions_reject_invalid_bindings() -> Result<(), String> {
         let original = crate::daily::roll_calendar(&[42; 16], 1, 6, 13);
         let valid = serde_json::to_value(NativeDecision::capture(&original))
