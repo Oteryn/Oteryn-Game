@@ -62,3 +62,9 @@ lib-test rustc process had been running for almost 12 minutes and had
 about 10.7 GiB resident. The cgroup recorded memory pressure with zero OOM
 kills at this point. This is direct evidence that time spent inside the
 nextest command can be substantial before any test starts.
+
+At roughly 38 minutes the two-job workspace baseline exited before test
+execution with Cargo code 101. The gameplay content lib-test and dispatch
+lib-test rustc processes were killed by SIGKILL. The cgroup recorded two
+OOM kills and has a 16 GiB memory limit with no swap. A one-job retry is
+running against the same base and retained artifacts.
