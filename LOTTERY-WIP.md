@@ -23,10 +23,9 @@ item, rather than inventing a blank item ID.
 
 ## Next implementation steps
 
-1. Advance this task to required base e2152d050038cecdb3728c222af2ac184e1cac5a
-   or newer. The local origin/main currently points to its ancestor
-   c8b3890e601e6073713dcac2ea9ee271f4a257e8 and lacks the existing NPC
-   programme exchange path inspected at the required base.
+1. Base update completed: fetched origin/main at
+   e2152d050038cecdb3728c222af2ac184e1cac5a and merged into the task
+   branch. The prior base mismatch is resolved.
 2. Extend the existing exchange row with weighted outcomes, using the
    server RNG owner and the existing fenced atomic transaction.
 3. Wire Sandra's dialogue through the production NPC programme caller.
@@ -41,3 +40,16 @@ command/mechanic ordinal 6275.
 The owner's latest instruction permits incremental WIP pushes after each
 completed step. This commit records donor research only and claims no
 runtime behavior or passing validation.
+
+## Production integration points inspected
+
+- crates/gameplay/quests/src/quest/npc_rules/item_exchange.rs:8 owns
+  inventory key discovery and the bounded deterministic exchange planner.
+- crates/gameplay/durability/src/durability/quest_state/npc_program.rs:300
+  calls that planner during source evaluation; the durable transaction
+  checks command replay before loading fenced inventory and reevaluating.
+- Weighted selection must happen only after replay lookup and retain the
+  existing inventory participant so refused outcomes roll back all inputs.
+
+Bound META organization policy resolved from Oteryn/Oteryn at
+1bfb5ff98c8aa156e73669a14e083a1d464c29fb through the GitHub contents API.
