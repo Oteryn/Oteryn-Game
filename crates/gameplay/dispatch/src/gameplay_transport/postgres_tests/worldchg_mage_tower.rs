@@ -5,7 +5,8 @@ use super::{
 };
 use crate::durability::world_event::changes::counters::{self, CounterKind};
 use crate::foundation::{
-    CommandId, CommandRef, ExactActorRef, OwnerDamageCommand, ScopeOwnershipGeneration, WorldId,
+    ChannelContentPin, ChannelId, CommandId, CommandRef, ExactActorRef, MovementLocalPosition,
+    OwnerDamageCommand, ScopeOwnershipGeneration, WorldId,
 };
 use crate::monster_owner_cycle::respawn_job::MonsterRespawnJob;
 use oteryn_gameplay_entities::carrier::WorldSpawnProjection;
@@ -32,13 +33,28 @@ async fn scenario(admin: String) -> TestResult {
         .map_err(debug)?;
     let (controller, pin) =
         super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
-    let room = pin.qualified_room().clone();
-    let deps = Dependencies::with_content_and_capacity(
-        pin.into_channel_pin(),
-        room,
+    let channel = ChannelId::decode(&id(43)).map_err(debug)?;
+    let map = mage_tower_room(world, channel)?;
+    let baseline = pin.qualified_room();
+    let cells = map
+        .movement_cells(baseline.movement_cells())
+        .map_err(debug)?;
+    let room = super::rust_lottery::bundle_action_room(baseline, &map, world, &cells)?;
+    let mut deps = Dependencies::with_content_and_capacity(
+        ChannelContentPin::from_activation(
+            world,
+            pin.activation_sequence(),
+            pin.identity().server_artifact_digest(),
+            pin.identity().client_artifact_digest(),
+            room.frame_binding().digest(),
+            room.map_revision_digest(),
+            (33143, 31529, 2),
+        ),
+        room.clone(),
         crate::spell::cast::v1_spell_book().map_err(debug)?,
         16,
     )?;
+    deps.combat_room = Some(room);
     deps.runtime
         .lock()
         .await
@@ -136,6 +152,44 @@ async fn scenario(admin: String) -> TestResult {
         (job, replacement)
     };
 
+    let unix_seconds: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+    let current = crate::world_party_runtime_postgres_cases::committed_fresh_player(
+        &h,
+        60,
+        63,
+        70,
+        unix_seconds,
+    )
+    .await?;
+    let spectator = {
+        let mut runtime = owner.runtime.lock().await;
+        let session = current.current_game_session_id();
+        let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .bind_attacker_lease(actor, session, current.current_character_lease())
+            .map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(
+                actor,
+                MovementLocalPosition {
+                    x: 33142,
+                    y: 31529,
+                    floor: 2,
+                },
+            )
+            .map_err(debug)?;
+        actor
+    };
+    for (character, count) in [(id(41), 250_i64), (id(60), 249)] {
+        sqlx::query("INSERT INTO game_world_change_personal_counters(world_id,change_key,character_id,counter) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,$4::bigint)")
+            .bind(world.as_bytes().as_slice()).bind(kind.key()).bind(character.as_slice()).bind(count)
+            .execute(&h.pool).await?;
+    }
+
     // Seed prior Yielothax deaths, then cross the existing transition through the same
     // native kill caller. The Energized form must stay gone as the World enters Raging.
     sqlx::query("UPDATE game_world_change_counters SET state=jsonb_set(state,'{counts,0}','2000') WHERE world_id=encode($1,'hex')::uuid AND change_key=$2")
@@ -152,6 +206,25 @@ async fn scenario(admin: String) -> TestResult {
         let now = owner.owner_now().get().max(now + 50_000);
         job.pass(&mut runtime, now).map_err(debug)?;
         assert!(runtime.spawn_point_creatures()[0].2.is_none());
+        assert_eq!(
+            runtime
+                .read_actor_position(deps.actor)
+                .map_err(debug)?
+                .position()
+                .floor,
+            2
+        );
+        assert_eq!(
+            runtime
+                .read_actor_position(spectator)
+                .map_err(debug)?
+                .position(),
+            MovementLocalPosition {
+                x: 33142,
+                y: 31529,
+                floor: 3,
+            }
+        );
 
         let raging = "oteryn:creature.raging_mage";
         let policy = runtime.companion_policy(raging).map_err(debug)?;
@@ -224,4 +297,68 @@ async fn exercise_personal_reset(
         assert_eq!(count.parse::<i64>()?, after);
     }
     Ok(())
+}
+
+fn mage_tower_room(
+    world: WorldId,
+    channel: ChannelId,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    use oteryn_world_bundle::{bundle, sector};
+    let (bytes, mut pins) = crate::map::boot::tests::bundle();
+    let mut source = bundle::read(&bytes)?;
+    source.manifest.palette.truncate(1);
+    source.manifest.world = bundle::Extent {
+        min_x: 33142,
+        min_y: 31529,
+        max_x: 33145,
+        max_y: 31530,
+        floors: vec![-3, -2],
+    };
+    let tile = |x| sector::Tile {
+        x,
+        y: 31529,
+        flags: 0,
+        house: 0,
+        zones: vec![],
+        items: vec![sector::Item {
+            palette: 0,
+            depth: 0,
+            attrs: Default::default(),
+        }],
+    };
+    let mut sectors = vec![
+        bundle::Sector {
+            floor: -3,
+            sx: 33142 / 32,
+            sy: 31529 / 32,
+            tiles: vec![tile(33142)],
+        },
+        bundle::Sector {
+            floor: -2,
+            sx: 33142 / 32,
+            sy: 31529 / 32,
+            tiles: (33142..=33144).map(tile).collect(),
+        },
+    ];
+    sectors.sort_by_key(bundle::order);
+    let bytes =
+        oteryn_world_bundle::writer::write(&source.manifest, &sectors, &Default::default())?;
+    pins.digest = bundle::read(&bytes)?.digest;
+    let base = crate::map::load(&bytes, &pins).map_err(debug)?;
+    crate::map::boot::boot(
+        &bytes,
+        &crate::map::boot::BootPins {
+            map_revision: crate::map::overlay::map_revision(&base),
+            bundle: pins,
+            start: crate::map::overlay::TilePos {
+                x: 33143,
+                y: 31529,
+                floor: -2,
+            },
+        },
+        world,
+        channel,
+        |_| None,
+    )
+    .map_err(debug)
 }
