@@ -75,6 +75,11 @@ fn qoptic_observer_eye_wire_step_moves_only_the_paired_player() -> TestResult {
         );
         let mut deps = Dependencies::with_content(pin, room.clone(), fixture.spells)?;
         deps.combat_room = Some(room);
+        let controller_authority =
+            crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
+                .current_session_at(deps.admitted.game_session_id)
+                .await?
+                .0;
         let partner_session = partner_authority.current_game_session_id();
         let partner_start = MovementLocalPosition {
             x: 32777,
@@ -85,6 +90,13 @@ fn qoptic_observer_eye_wire_step_moves_only_the_paired_player() -> TestResult {
             let mut runtime = deps.runtime.lock().await;
             runtime
                 .initialize_first_entry_position(deps.actor)
+                .map_err(debug)?;
+            runtime
+                .bind_attacker_lease(
+                    deps.actor,
+                    deps.admitted.game_session_id,
+                    controller_authority.current_character_lease(),
+                )
                 .map_err(debug)?;
             let reservation = runtime
                 .reserve_fresh_session(partner_session)
@@ -108,6 +120,7 @@ fn qoptic_observer_eye_wire_step_moves_only_the_paired_player() -> TestResult {
         deps.initialize_player(&owner, partner, partner_session)
             .await;
         let mut admitted = deps.admitted;
+        admitted.first_entry = crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
         for (command, direction, controller_y, partner_y) in [
             (1, StepDirection::South, 32913, 32907),
             (2, StepDirection::South, 32914, 32908),
