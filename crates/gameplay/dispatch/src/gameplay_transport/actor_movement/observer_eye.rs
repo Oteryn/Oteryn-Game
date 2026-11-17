@@ -43,6 +43,11 @@ const WEST_EXIT: MovementLocalPosition = MovementLocalPosition {
     floor: bindings::FLOOR,
 };
 
+const EAST_EXIT: MovementLocalPosition = MovementLocalPosition {
+    x: 32784,
+    ..WEST_EXIT
+};
+
 fn is_submerged(appearance: u16) -> bool {
     matches!(appearance, 24891..=24893 | 24912)
 }
@@ -78,15 +83,76 @@ fn platform_at(map: &crate::map::boot::BundleMap, at: MovementLocalPosition) -> 
     })
 }
 
-pub(in crate::gameplay_transport) fn advance_platforms(
-    runtime: &ChannelRuntimeV1,
+impl ChannelSpellStates {
+    pub(in crate::gameplay_transport) fn next_observer_eye_due(&self) -> Option<u64> {
+        self.observer_eye_pair
+            .map(|pair| pair.expires.min(pair.next_platform_cycle))
+    }
+}
+
+fn eject_expired_pair(
+    runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
+    cells: &NativeEntryMovementCells,
+    map: &crate::map::boot::BundleMap,
+    pair: ObserverEyePair,
+) {
+    let closed = crate::map::floor::BundleDoors(&map.facts);
+    let mut exits = Vec::with_capacity(2);
+    for ((actor, session), destination) in [(pair.controller, EAST_EXIT), (pair.partner, WEST_EXIT)]
+    {
+        let Ok(expected) = runtime.read_actor_position(actor) else {
+            continue;
+        };
+        let at = expected.position();
+        let in_chamber = if destination == EAST_EXIT {
+            on_tile(at, bindings::TOPAZ) || on_ornament(at)
+        } else {
+            platform_field(at)
+        };
+        if !in_chamber || states.is_dead(actor) {
+            continue;
+        }
+        let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
+            runtime,
+            cells,
+            actor,
+            session,
+            expected,
+            destination,
+            &closed,
+        ) else {
+            return;
+        };
+        exits.push(proof);
+    }
+    if exits.is_empty()
+        || runtime
+            .commit_source_steps_and_project(exits, || true)
+            .is_ok()
+    {
+        states.observer_eye_pair = None;
+    }
+}
+
+pub(in crate::gameplay_transport) fn advance_observer_eye(
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    cells: &NativeEntryMovementCells,
     map: &crate::map::boot::BundleMap,
     now_us: u64,
 ) {
-    let Some(pair) = current_pair(runtime, states, now_us) else {
+    let Some(pair) = states.observer_eye_pair else {
         return;
     };
+    if now_us >= pair.expires {
+        eject_expired_pair(runtime, states, cells, map, pair);
+        return;
+    }
+    if current_pair(runtime, states, now_us).is_none() {
+        states.observer_eye_pair = None;
+        return;
+    }
     let Some(late) = now_us.checked_sub(pair.next_platform_cycle) else {
         return;
     };
@@ -151,10 +217,14 @@ pub(super) fn holds_partner(
     actor: ExactActorRef,
     now_us: u64,
 ) -> bool {
-    states
-        .observer_eye_pair
-        .is_some_and(|pair| pair.partner.0 == actor)
-        && current_pair(runtime, states, now_us).is_some()
+    states.observer_eye_pair.is_some_and(|pair| {
+        pair.partner.0 == actor
+            && if now_us >= pair.expires {
+                current_player(runtime, states, pair.partner).is_some_and(platform_field)
+            } else {
+                current_pair(runtime, states, now_us).is_some()
+            }
+    })
 }
 
 fn pair_on_pads(
@@ -195,6 +265,12 @@ pub(super) fn mirror_step(
     now_us: u64,
     blocking: &dyn crate::map::floor::CellBlocker,
 ) {
+    if states
+        .observer_eye_pair
+        .is_some_and(|pair| now_us >= pair.expires)
+    {
+        return;
+    }
     let arrived_on_pad = on_tile(to, bindings::TOPAZ) || on_tile(to, bindings::EMERALD);
     if !arrived_on_pad
         && !states

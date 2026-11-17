@@ -21,10 +21,19 @@ fn qoptic_observer_eye_submerged_platform_ejects_the_west_player() -> TestResult
     observer_eye_scenario(admin, Scenario::Fall)
 }
 
+#[test]
+fn qoptic_observer_eye_deadline_ejects_both_players_without_another_step() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    observer_eye_scenario(admin, Scenario::Timeout)
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Scenario {
     Movement,
     Fall,
+    Timeout,
 }
 
 fn observer_eye_scenario(admin: String, scenario: Scenario) -> TestResult {
@@ -145,8 +154,11 @@ fn observer_eye_scenario(admin: String, scenario: Scenario) -> TestResult {
             (6, StepDirection::South, 32914, 32908),
         ]
         .into_iter()
-        .take(if scenario == Scenario::Fall { 2 } else { 6 })
-        {
+        .take(match scenario {
+            Scenario::Movement => 6,
+            Scenario::Fall => 2,
+            Scenario::Timeout => 1,
+        }) {
             let (result, _) = owner
                 .paced_step(deps.actor, deps.admitted.game_session_id, direction)
                 .await;
@@ -159,28 +171,22 @@ fn observer_eye_scenario(admin: String, scenario: Scenario) -> TestResult {
                     floor: -14,
                 };
                 let last_item = || -> TestResult<u16> {
-                    Ok(
-                        crate::map::view::compose_tile(&map.overlay, &map.facts, position)
-                            .map_err(debug)?
-                            .and_then(|tile| {
-                                tile.entries.last().map(|item| item.facts.appearance_id)
-                            })
-                            .ok_or("fixture platform")?,
-                    )
+                    crate::map::view::compose_tile(&map.overlay, &map.facts, position)
+                        .map_err(debug)?
+                        .and_then(|tile| tile.entries.last().map(|item| item.facts.appearance_id))
+                        .ok_or_else(|| "fixture platform".into())
                 };
                 let now = owner.owner_now().get();
-                let runtime = deps.runtime.lock().await;
+                let mut runtime = deps.runtime.lock().await;
+                assert_eq!(last_item()?, 24912);
+                owner.advance_observer_eye(&mut runtime, map, now).await;
                 assert_eq!(last_item()?, 24912);
                 owner
-                    .advance_observer_eye_platforms(&runtime, map, now)
-                    .await;
-                assert_eq!(last_item()?, 24912);
-                owner
-                    .advance_observer_eye_platforms(&runtime, map, now + 2_000_000)
+                    .advance_observer_eye(&mut runtime, map, now + 2_000_000)
                     .await;
                 assert_eq!(last_item()?, 24889);
                 owner
-                    .advance_observer_eye_platforms(&runtime, map, now + 2_000_000)
+                    .advance_observer_eye(&mut runtime, map, now + 2_000_000)
                     .await;
                 assert_eq!(last_item()?, 24889);
             }
@@ -211,6 +217,45 @@ fn observer_eye_scenario(admin: String, scenario: Scenario) -> TestResult {
                     ..partner_start
                 },
                 "partner after controller STEP {command}",
+            );
+        }
+        if scenario == Scenario::Timeout {
+            let map = owner.bundle_map().ok_or("timeout bundle")?;
+            let now = owner.owner_now().get();
+            let mut runtime = deps.runtime.lock().await;
+            owner
+                .advance_observer_eye(&mut runtime, map, now + 299_000_000)
+                .await;
+            assert_eq!(
+                runtime
+                    .read_actor_position(partner)
+                    .map_err(debug)?
+                    .position(),
+                partner_start
+            );
+            owner
+                .advance_observer_eye(&mut runtime, map, now + 300_000_000)
+                .await;
+            assert_eq!(
+                runtime
+                    .read_actor_position(partner)
+                    .map_err(debug)?
+                    .position(),
+                MovementLocalPosition {
+                    y: 32904,
+                    ..partner_start
+                }
+            );
+            assert_eq!(
+                runtime
+                    .read_actor_position(deps.actor)
+                    .map_err(debug)?
+                    .position(),
+                MovementLocalPosition {
+                    x: 32784,
+                    y: 32904,
+                    floor: 14
+                }
             );
         }
         drop(owner);

@@ -6,14 +6,20 @@ use std::pin::pin;
 use std::task::Poll;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) async fn advance_observer_eye_platforms(
+    pub(super) async fn advance_observer_eye(
         &self,
-        runtime: &crate::foundation::ChannelRuntimeV1,
+        runtime: &mut crate::foundation::ChannelRuntimeV1,
         map: &crate::map::boot::BundleMap,
         now: u64,
     ) {
         let mut states = self.states.spell_states.lock().await;
-        super::actor_spell::advance_observer_eye_platforms(runtime, &mut states, map, now);
+        super::actor_spell::advance_observer_eye(
+            runtime,
+            &mut states,
+            self.movement_cells(),
+            map,
+            now,
+        );
     }
 
     pub(super) async fn run_source_owner_cycles(
@@ -52,6 +58,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map(|due| due.get())
                     .into_iter()
                     .chain(states.primal_callbacks.next_due_us())
+                    .chain(states.next_observer_eye_due())
                     .chain(states.spite_steps.next_due_us())
                     .chain(states.rotten_blood_callbacks.next_due_time())
                     .chain(
@@ -107,7 +114,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Keep the population sweep outside any operation. Multi-pass
             // units such as equipment checkpoints scope their own grants.
             {
-                let runtime = self.runtime.lock().await;
+                let mut runtime = self.runtime.lock().await;
                 if runtime.owner_fence().is_err() {
                     return;
                 }
@@ -115,12 +122,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let now = self.owner_now().get();
                     map.facts.expire_movement_items(now);
                     let mut states = self.states.spell_states.lock().await;
-                    super::actor_spell::advance_observer_eye_platforms(
-                        &runtime,
-                        &mut states,
-                        map,
-                        now,
-                    );
+                    super::actor_spell::advance_observer_eye(&runtime, &mut states, map, now);
                 }
                 if let Ok(mut gate) = self.states.world_gate.lock() {
                     gate.begin_turn();
