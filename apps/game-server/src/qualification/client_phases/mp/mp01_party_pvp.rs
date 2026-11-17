@@ -435,18 +435,27 @@ async fn pvp_journey(
     let old_death = latest_death(&bots[3]).await?;
     let old_kills = history(&mut bots[0], character::CharacterTab::RecentPvpKills).await?;
     let old_deaths = history(&mut bots[3], character::CharacterTab::RecentDeaths).await?;
-    // Provisioning sets the build, not its wielded weapon. Equip through A's own protocol.
+    // Equip through A's own protocol unless provisioning already wielded it.
     let definitions = provisioning::item_index()?;
     let axe = provisioning::item_reference(&definitions, 3276)?;
-    let equipped = bots[0]
-        .client()?
-        .session_mut()
-        .equip_item_definition(axe)
-        .await?;
-    if equipped.status != CommandStatus::Accepted
-        || equipped.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
-    {
-        return Err(format!("axe equip refused:{equipped:?};source:apps/game-server/src/qualification/client_phases/provision.rs:86").into());
+    // Fenced provisioning (provision.rs) already wields the axe; a second equip is SlotMismatch.
+    let wielded = bots[0].client()?.inventory().is_some_and(|inventory| {
+        inventory
+            .equipment
+            .iter()
+            .any(|entry| entry.item.item_definition_ref == axe)
+    });
+    if !wielded {
+        let equipped = bots[0]
+            .client()?
+            .session_mut()
+            .equip_item_definition(axe)
+            .await?;
+        if equipped.status != CommandStatus::Accepted
+            || equipped.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
+        {
+            return Err(format!("axe equip refused:{equipped:?};source:apps/game-server/src/qualification/client_phases/provision.rs:86").into());
+        }
     }
     let from = tile(bots[3].client()?.world_spatial().actor_position)?;
     let path = route(world, from, |at| {
