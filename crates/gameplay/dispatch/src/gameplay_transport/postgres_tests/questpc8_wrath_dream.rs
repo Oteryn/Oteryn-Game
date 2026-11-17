@@ -66,6 +66,18 @@ pub(super) async fn before(
     refuse(owner, admitted, dragon, 6002).await
 }
 
+// The routed harness owns a disposable database. Count both awards and
+// immutable grant requests: another attempt for an already-owned achievement
+// can leave the award count unchanged.
+async fn achievement_counts(h: &Harness) -> TestResult<(i64, i64)> {
+    Ok(sqlx::query_as(
+        "SELECT (SELECT count(*) FROM game_account_achievements),
+                (SELECT count(*) FROM game_account_achievement_grant_requests)",
+    )
+    .fetch_one(&h.pool)
+    .await?)
+}
+
 pub(super) async fn after(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
@@ -74,6 +86,7 @@ pub(super) async fn after(
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
     assert_eq!(progress(owner, admitted, authority, STAGE).await?, 6);
+    let before_report = achievement_counts(h).await?;
     talk(owner, admitted, dragon, 6300, "hi").await?;
     talk(owner, admitted, dragon, 6301, "dream journey").await?;
     assert_eq!(progress(owner, admitted, authority, STAGE).await?, 7);
@@ -91,6 +104,11 @@ pub(super) async fn after(
     assert_eq!(progress(owner, admitted, authority, STAGE).await?, 7);
     let receipt_count:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid AND transition_key=$2").bind(id(41).as_slice()).bind(REPORT).fetch_one(&h.pool).await?;
     assert_eq!(receipt_count, 1);
+    assert_eq!(
+        achievement_counts(h).await?,
+        before_report,
+        "reporting the completed dream and replaying it must preserve awards and grant requests"
+    );
     let completed:bool=sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind("oteryn:quest.wrath_of_the_emperor_quest").fetch_one(&h.pool).await?;
     assert!(
         !completed,
