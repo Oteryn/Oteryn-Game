@@ -256,6 +256,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     FreshAdmissionDurableOutcomeV1::Committed(_)
                     | FreshAdmissionDurableOutcomeV1::ExistingCommitted(_),
                 ) => {}
+                Ok(FreshAdmissionDurableOutcomeV1::RejectedChannelSwitch(status)) => {
+                    self.rollback_runtime_player(reservation).await?;
+                    return Err(AdmissionRefusal::ChannelSwitch(status));
+                }
                 // The owner evidence moved after composition: proven noncommit.
                 Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority)
                     if budget.stale_rounds < FRESH_ADMISSION_ROUNDS =>

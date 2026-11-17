@@ -24,6 +24,21 @@ struct Envelope<'a> {
     payload: &'a str,
 }
 
+fn channel_switch_refusal(
+    error: &sqlx::Error,
+) -> Option<oteryn_protocol_oteryn::channel_switch::SwitchStatus> {
+    let error = error
+        .as_database_error()?
+        .try_downcast_ref::<sqlx::postgres::PgDatabaseError>()?;
+    match error.code() {
+        "OTH01" => {
+            super::channel_switch::preflight_status(error.detail()?.parse().ok()?, None, true, true)
+        }
+        "OTH02" => super::channel_switch::preflight_status(0, Some(error.detail()?), true, true),
+        _ => None,
+    }
+}
+
 fn write_current(w: &mut Writer, f: &FreshCurrentEvidence) -> Result<()> {
     w.text(&f.account_id)?;
     w.bytes(f.character_id.as_bytes())?;
@@ -361,8 +376,9 @@ pub trait TerminalReleaseParticipant: Send + Sync {
 }
 impl FreshAdmissionStore {
     /// Require a current stream read at PREPARE and COMMIT, independently of entry checks.
-    pub fn with_security_revocation_freshness(mut self,required:bool)->Self {
-        self.security_revocation_freshness_required=required;self
+    pub fn with_security_revocation_freshness(mut self, required: bool) -> Self {
+        self.security_revocation_freshness_required = required;
+        self
     }
 
     /// One ADMIT0 predicate at both deciding owners. The caller holds the admission
@@ -462,7 +478,10 @@ impl FreshAdmissionStore {
     /// Complete admitted-World root catalogue for the terminal journal capture.
     #[must_use]
     pub fn with_journal_catalogue(&self, catalogue: super::journal::LogoutCatalogue) -> Self {
-        Self { journal_catalogue: Some(std::sync::Arc::new(catalogue)), ..self.clone() }
+        Self {
+            journal_catalogue: Some(std::sync::Arc::new(catalogue)),
+            ..self.clone()
+        }
     }
 
     /// chsw: the terminal release of a voluntary Channel switch keeps the Party membership.
@@ -686,8 +705,14 @@ impl FreshAdmissionStore {
             return Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority);
         };
         commit_session_use(&mut tx, initial.character_id(), b.candidate_session, b.transport.to_bytes(), use_state.revision).await?;
-        sqlx::query("INSERT INTO game_durability_fresh_admission_receipts (replay_key, game_session_id, account_id, character_id, world_id, channel_id, character_lease_generation, scope_ownership_generation, connection_generation, transport_ref, semantic_version, operation_json, authorization_decided_at) VALUES ($1, encode($2,'hex')::uuid, $3::text::uuid, encode($4,'hex')::uuid, encode($5,'hex')::uuid, encode($6,'hex')::uuid, $7::text::numeric(20,0), $8::text::numeric(20,0), 1, $9, 1, $10, $11)")
-            .bind(replay.as_slice()).bind(b.candidate_session.as_bytes().as_slice()).bind(&b.account_id).bind(initial.character_id().as_bytes().as_slice()).bind(initial.world_id().as_bytes().as_slice()).bind(initial.channel_id().as_bytes().as_slice()).bind(initial.character_lease_generation().to_string()).bind(initial.scope_ownership_generation().to_string()).bind(b.transport.to_bytes().as_slice()).bind(&encoded).bind(decided_at).execute(&mut *tx).await?;
+        let receipt_insert = sqlx::query("INSERT INTO game_durability_fresh_admission_receipts (replay_key, game_session_id, account_id, character_id, world_id, channel_id, character_lease_generation, scope_ownership_generation, connection_generation, transport_ref, semantic_version, operation_json, authorization_decided_at) VALUES ($1, encode($2,'hex')::uuid, $3::text::uuid, encode($4,'hex')::uuid, encode($5,'hex')::uuid, encode($6,'hex')::uuid, $7::text::numeric(20,0), $8::text::numeric(20,0), 1, $9, 1, $10, $11)")
+            .bind(replay.as_slice()).bind(b.candidate_session.as_bytes().as_slice()).bind(&b.account_id).bind(initial.character_id().as_bytes().as_slice()).bind(initial.world_id().as_bytes().as_slice()).bind(initial.channel_id().as_bytes().as_slice()).bind(initial.character_lease_generation().to_string()).bind(initial.scope_ownership_generation().to_string()).bind(b.transport.to_bytes().as_slice()).bind(&encoded).bind(decided_at).execute(&mut *tx).await;
+        if let Err(error) = receipt_insert {
+            if let Some(status) = channel_switch_refusal(&error) {
+                return Ok(FreshAdmissionDurableOutcomeV1::RejectedChannelSwitch(status));
+            }
+            return Err(error.into());
+        }
         sqlx::query("INSERT INTO game_durability_reconnect_sessions (game_session_id, account_id, character_id, world_id, runtime_scope_kind, runtime_scope_world_id, runtime_scope_channel_id, character_lease_generation, scope_ownership_generation, current_generation, current_transport_ref, session_state, fresh_replay_key, admission_security_generation) VALUES (encode($1,'hex')::uuid, $2::text::uuid, encode($3,'hex')::uuid, encode($4,'hex')::uuid, 1, encode($4,'hex')::uuid, encode($5,'hex')::uuid, $6::text::numeric(20,0), $7::text::numeric(20,0), 1, $8, 2, $9, $10::text::numeric)")
             .bind(b.candidate_session.as_bytes().as_slice()).bind(&b.account_id).bind(initial.character_id().as_bytes().as_slice()).bind(initial.world_id().as_bytes().as_slice()).bind(initial.channel_id().as_bytes().as_slice()).bind(initial.character_lease_generation().to_string()).bind(initial.scope_ownership_generation().to_string()).bind(b.transport.to_bytes().as_slice()).bind(replay.as_slice()).bind(b.signed_security_generation.to_string()).execute(&mut *tx).await?;
         store.guards

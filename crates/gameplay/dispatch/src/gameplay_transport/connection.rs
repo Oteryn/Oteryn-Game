@@ -463,6 +463,7 @@ pub enum FirstEntryOutcome {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AdmissionRefusal {
+    ChannelSwitch(oteryn_protocol_oteryn::channel_switch::SwitchStatus),
     /// PREMCHAN: authenticated destination entry requires current Premium. Uses the existing
     /// silent rejection path; no new public error code is allocated.
     PremiumRequired,
@@ -501,6 +502,19 @@ pub(super) fn admission_refused_event(refusal: AdmissionRefusal) -> Option<&'sta
 pub(super) fn report_admission_refusal(refusal: AdmissionRefusal) {
     let (kind, reason) = match refusal {
         AdmissionRefusal::PremiumRequired | AdmissionRefusal::Rejected => ("rejected", None),
+        AdmissionRefusal::ChannelSwitch(status) => {
+            use oteryn_protocol_oteryn::channel_switch::SwitchLock;
+            (
+                match status.lock {
+                    SwitchLock::Cooldown => "channel_cooldown",
+                    SwitchLock::Combat => "channel_combat",
+                    SwitchLock::Skull => "channel_skull",
+                    SwitchLock::Transition => "channel_transition",
+                    _ => "channel_locked",
+                },
+                None,
+            )
+        }
         AdmissionRefusal::Unavailable => ("unavailable", None),
         AdmissionRefusal::Classified(error) => ("classified", Some(error)),
         AdmissionRefusal::Queued(_) => ("queued", None),
