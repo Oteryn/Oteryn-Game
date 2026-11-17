@@ -133,7 +133,14 @@ fn run_compile(
                 "fixture hometown requires region selection".into(),
             ));
         }
-        project.families.subareas.select_default_town(town)?;
+        project
+            .families
+            .subareas
+            .select_default_town(town, regions)?;
+        project
+            .families
+            .subareas
+            .validate_default_town_tile(&project.regions)?;
     }
     let (registry, palette) = registry(root, &project)?;
     let input = Input {

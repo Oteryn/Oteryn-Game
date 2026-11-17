@@ -532,13 +532,11 @@ async fn return_to_protection_zone(
     Ok(at)
 }
 
-// Closed, non-key plain door orientations from map/door_registry.rs.
+// Initially usable closed doors from map/door_registry.rs. Key-door closed
+// forms 1629/1632 start unlocked; quest/level doors are never accepted.
 fn retry_door(appearance: u16, action: Option<u16>) -> bool {
-    [
-        1638, 1640, 1642, 1644, 1656, 1658, 1660, 1662, 1674, 1676, 1685, 1689, 1694, 1698,
-    ]
-    .contains(&appearance)
-        && !matches!(action, Some(101 | 1001))
+    ([1638, 1640, 1656, 1658, 1685, 1694, 2177, 2179].contains(&appearance) && action.is_none())
+        || ([1629, 1632].contains(&appearance) && !matches!(action, Some(101 | 1001)))
 }
 
 // Resolve the configured entry against authored hometown temples, independently
@@ -589,12 +587,32 @@ pub(super) async fn reach_route(
     from: TilePos,
     goal: impl Fn(TilePos) -> bool,
 ) -> TestResult<Result<Vec<StepDirection>, ReachFailure>> {
-    reach_route_serviced(world, from, goal, async || {
-        verdict::Harness::global().progress("route-search");
+    let mut origin = from;
+    loop {
         client.service_liveness(Duration::from_millis(1)).await?;
-        Ok(())
-    })
-    .await
+        client.take_events(); // Canonical session stores retain the applied observations.
+        let observed = tile(client.world_spatial().actor_position)?;
+        if observed != origin {
+            origin = observed;
+        }
+        let path = reach_route_serviced(world, origin, &goal, async || {
+            verdict::Harness::global().progress("route-search");
+            client.service_liveness(Duration::from_millis(1)).await?;
+            client.take_events();
+            Ok(())
+        })
+        .await?;
+        client.service_liveness(Duration::from_millis(1)).await?;
+        client.take_events();
+        let observed = tile(client.world_spatial().actor_position)?;
+        if observed == origin {
+            return Ok(path);
+        }
+        evidence(&format!(
+            "route_search replan=true from={origin:?} observed={observed:?}"
+        ));
+        origin = observed;
+    }
 }
 
 // Keep the search shared with the offline production-bundle regression. Live
@@ -3021,6 +3039,7 @@ pub(super) async fn journeys(
             evidence(&format!(
                 "e2e_all scenario=M01.step-relogin status=FAIL seconds=0 evidence={detail} cause=precondition root=profile_return/fixture-town"
             ));
+            provisioning::e2ef1_logout_for_return(&mut client).await?;
             return Err(detail.into());
         }
     }
@@ -3325,7 +3344,11 @@ fn smoke_with(
         None => source::project(&root)?,
     };
     if regions.is_some() {
-        project.families.subareas.select_default_town(8)?;
+        project.families.subareas.select_default_town(8, regions)?;
+        project
+            .families
+            .subareas
+            .validate_default_town_tile(&project.regions)?;
     }
     let (registry, palette) = source::registry(&root, &project)?;
     let identity = serde_json::from_slice(&std::fs::read(
@@ -3677,4 +3700,16 @@ fn qualification_fixture_hometown_follows_fixture_start() -> TestResult {
         .join()
         .map_err(|_| "fixture hometown test thread failed")??;
     Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn qualification_retry_door_excludes_quest_storage() {
+    for appearance in [1642, 1644, 1660, 1662, 1674, 1676, 1689, 1698] {
+        assert!(!retry_door(appearance, Some(41719)));
+        assert!(!retry_door(appearance, None));
+    }
+    assert!(retry_door(2177, None));
+    assert!(retry_door(2179, None));
+    assert!(!retry_door(2177, Some(101)));
 }
