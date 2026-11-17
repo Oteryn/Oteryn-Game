@@ -107,7 +107,7 @@ fn a_player_switches_between_two_live_channels_and_reenters_the_other_one() -> T
                     false,
                 )
                 .await?;
-                prepare_current_session(&h).await?;
+                let source_request = prepare_current_session(&h).await?;
                 let seal = h.recovery.seal_current().map_err(debug)?;
                 let authority = h
                     .root
@@ -115,58 +115,52 @@ fn a_player_switches_between_two_live_channels_and_reenters_the_other_one() -> T
                     .await
                     .map_err(debug)?;
                 // Channel 43 on the harness node: Character 41, positioned and leased.
-                let mut first = Dependencies::new()?;
-                let entry = first.room.entry_start();
-                let logout_cell = crate::foundation::MovementLocalPosition {
-                    x: entry.x,
-                    y: entry.y,
-                    floor: entry.floor,
+                let first = Dependencies::new()?;
+                // The bundle supplies explicit walkability and House facts on both Channels.
+                let (bytes, bundle_pins) = crate::map::boot::tests::bundle();
+                let base = crate::map::load(&bytes, &bundle_pins).map_err(debug)?;
+                let boot_pins = crate::map::boot::BootPins {
+                    map_revision: crate::map::overlay::map_revision(&base),
+                    bundle: bundle_pins,
+                    start: crate::map::overlay::TilePos { x: 1, y: 0, floor: -7 },
                 };
-                let pin = crate::content::channel_content_pin::ChannelContentPin::from_activation(
+                let map_for = |channel| crate::map::boot::boot(
+                    &bytes, &boot_pins, first.admitted.world_id, channel, crate::map::boot::tests::items
+                ).map_err(debug);
+                let source_map = map_for(first.admitted.channel_id)?;
+                let cells = source_map.movement_cells(first.room.movement_cells()).map_err(debug)?;
+                let logout_cell = crate::foundation::MovementLocalPosition { x: 1, y: 0, floor: 7 };
+                let pin = |start_x| crate::content::channel_content_pin::ChannelContentPin::from_activation(
                     first.admitted.world_id,
                     1,
-                    first.room.movement_cells().scope().generation_digest,
+                    cells.scope().generation_digest,
                     [2; 32],
-                    first.room.frame_binding().digest(),
-                    first.room.map_revision_digest(),
-                    (entry.x + 10, entry.y, entry.floor),
+                    source_map.frame_binding_digest(first.admitted.world_id),
+                    source_map.map_revision_digest(),
+                    (start_x, logout_cell.y, logout_cell.floor),
                 );
-                let mut fence = super::fixture::fence(1)?.item_fence();
-                fence.character_lease_generation = 2;
-                first.admitted.item_fence = Some(fence);
-                {
-                    let mut runtime = first.runtime.lock().await;
-                    runtime.replace_encounter_fixture_content(pin.clone());
-                    runtime
-                        .initialize_pinned_test_position(first.actor, logout_cell)
-                        .map_err(debug)?;
-                    runtime
-                        .bind_attacker_lease(
-                            first.actor,
-                            first.admitted.game_session_id,
-                            crate::foundation::CharacterLease::new(
-                                crate::foundation::CharacterId::decode(&id(41)).map_err(debug)?,
-                                2,
-                            )
-                            .map_err(debug)?,
-                        )
-                        .map_err(debug)?;
-                }
-                first.admitted.first_entry = FirstEntryOutcome::Positioned;
-                // Channel 44 on a second node of the same World, with its own admitted player.
-                let (node, second) = world::admit_second_node(&h).await?;
+                first.runtime.lock().await.replace_encounter_fixture_content(pin(logout_cell.x));
                 let mut owner = first.owner(&h, &authority);
-                first.initialize(&owner).await;
+                owner.movement_cells = (&cells).into();
+                let mut admitted = first.admitted;
+                let (placement, fence, decided) = Box::pin(owner.initialize_first_entry(
+                    &source_request, admitted.game_session_id, source_request.operation().authorization.transport,
+                    first.actor,
+                )).await;
+                assert_eq!(placement, FirstEntryOutcome::Positioned);
+                admitted.first_entry = placement;
+                admitted.item_fence = fence;
                 let mut position_fence = super::fixture::fence(super::revision(&h).await?)?;
-                position_fence.character_lease_generation = fence.character_lease_generation;
-                assert!(owner.track_restored(first.admitted.game_session_id, first.actor,
-                    &crate::gameplay_transport::last_position::AdmissionPosition::FirstLogin, position_fence));
+                position_fence.character_lease_generation = fence.ok_or("source item fence")?.character_lease_generation;
+                assert!(owner.track_restored(admitted.game_session_id, first.actor,
+                    &decided.ok_or("source placement")?, position_fence));
+                // Channel 44 has a separate runtime and its own admitted resident.
+                let (node, second) = world::admit_second_node(&h).await?;
                 // The fixture entered long enough ago that no fresh-login fight block holds.
                 owner.clock_origin = owner
                     .clock_origin
                     .checked_sub(Duration::from_secs(120))
                     .ok_or("clock")?;
-                let mut admitted = first.admitted;
                 admitted.continuity.selected_capabilities = SelectedCapabilities::select(
                     BUNDLE_WORLD_OFFERED_CAPABILITIES,
                     &[CAPABILITY_CHANNEL_SWITCH_V1],
@@ -247,10 +241,13 @@ fn a_player_switches_between_two_live_channels_and_reenters_the_other_one() -> T
                     Some(ChannelId::decode(&there).map_err(debug)?),
                 )
                 .await?;
-                let destination = second.owner_from(&h.root, &node, &authority);
+                let mut destination = second.owner_from(&h.root, &node, &authority);
+                let destination_map = map_for(second.admitted.channel_id)?;
+                let destination_cells = destination_map.movement_cells(second.room.movement_cells()).map_err(debug)?;
+                destination.movement_cells = (&destination_cells).into();
                 let actor = {
                     let mut runtime = second.runtime.lock().await;
-                    runtime.replace_encounter_fixture_content(pin);
+                    runtime.replace_encounter_fixture_content(pin(2));
                     let reservation = runtime.reserve_fresh_session(entered).map_err(debug)?;
                     runtime.commit_fresh_session(reservation).map_err(debug)?
                 };
