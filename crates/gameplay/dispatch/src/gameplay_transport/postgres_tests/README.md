@@ -9,3 +9,7 @@ another `#[path] mod` line in `monk_save_postgres_tests.rs`, the shared list eve
 mechanic used to edit. The module is a sibling of `fixture`, `fresh_fixture` and the
 other explicit mounts, so `super::fixture` keeps resolving. A test that needs routed
 PostgreSQL returns early when no admin URL is configured.
+
+Register each new file in `build_pg_groups.rs` with one owning feature, starting
+with the smallest group by source lines. The build rejects unassigned files.
+Run PG cases with `--features pg-tests-all` or the owning `pg-tests-gN` feature.

@@ -20,7 +20,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "c83e07358aa5b72ca9e7657717adb48e98acad52"
+APPROVED = "b52c16f45db59296a0a8397b4fa059c2ad3d4756"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -158,7 +158,7 @@ def _postgres_cache_consumer_regressions() -> None:
     text = (ROOT / ".github/workflows/merge-group-gate.yml").read_text(encoding="utf-8")
     block = text.split("  durability_postgres:\n", 1)[1]
     block = re.split(r"^  [A-Za-z_][A-Za-z_0-9-]*:\n", block, maxsplit=1, flags=re.M)[0]
-    assert "    needs: [candidate, durability_postgres_build]\n" in block
+    assert "    needs: [candidate, durability_postgres_build, durability_postgres_groups_build]\n" in block
     for forbidden in ("rustup ", "cargo +", "cargo build", "cargo test", "actions/cache/"):
         assert forbidden not in block, forbidden
     assert block.count('--workspace-remap "$GITHUB_WORKSPACE" --tool-config-file') == 6
@@ -510,7 +510,7 @@ def main() -> int:
             return core.main()
 
     mutations = 0
-    for job in ("durability_postgres_build", "durability_postgres", "rust_windows"):
+    for job in ("durability_postgres_build", "durability_postgres_groups_build", "durability_postgres", "rust_windows"):
         for key in ("if: false", "continue-on-error: true", '"continue-on-error": true'):
             changed = original.replace(f"  {job}:\n", f"  {job}:\n    {key}\n", 1)
             assert changed != original and validate(changed) != 0, (job, key)
@@ -531,7 +531,7 @@ def main() -> int:
             mutations += 1
 
     for fragment in (
-        '        archive: [base, g1, g2, g3, g4]',
+        '        archive: [g1, g2, g3, g4]',
         'cargo +1.100.0 nextest archive --locked --build-jobs 1 -p oteryn-gameplay-dispatch --lib --features "pg-tests-$GROUP"',
     ):
         assert fragment in original

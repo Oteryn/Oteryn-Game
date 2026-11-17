@@ -288,6 +288,8 @@ pub fn attributes(name: &str) -> Result<&'static str, Box<dyn std::error::Error>
         | "prey"
         | "prey_difficulty"
         | "pvp_live"
+        | "qd_steal_from_thieves"
+        | "qd_world"
         | "qengine_access"
         | "qengine_document_stories"
         | "qengine_endgame_stories"
@@ -578,7 +580,6 @@ pub fn attributes(name: &str) -> Result<&'static str, Box<dyn std::error::Error>
         "a4_invisible"
         | "account_friends"
         | "admit_cap_2"
-        | "all_charms_incoming_order"
         | "all_charms_outgoing"
         | "appearance_observation_busy"
         | "automatic_spell"
@@ -661,9 +662,11 @@ pub fn attributes(name: &str) -> Result<&'static str, Box<dyn std::error::Error>
         | "viola"
         | "world_reset_activation"
         | "worldchg_benevola" => Ok("#[cfg(feature = \"pg-tests-g3\")]\n"),
-        "arena_match" | "bed_sleep_fixture" | "loop_training" | "viola_book" => {
-            Ok("#[cfg(any(feature = \"pg-tests-g3\", feature = \"pg-tests-g4\"))]\n")
-        }
+        "all_charms_incoming_order"
+        | "arena_match"
+        | "bed_sleep_fixture"
+        | "loop_training"
+        | "viola_book" => Ok("#[cfg(any(feature = \"pg-tests-g3\", feature = \"pg-tests-g4\"))]\n"),
         "activity_logout"
         | "activity_loss"
         | "activity_player_death"
@@ -676,6 +679,7 @@ pub fn attributes(name: &str) -> Result<&'static str, Box<dyn std::error::Error>
         | "bosstiary_slots"
         | "cake_phases"
         | "character_services_v2"
+        | "charm_gaps"
         | "coin_market"
         | "condition_potions"
         | "creature_illusion"
@@ -746,6 +750,7 @@ pub fn attributes(name: &str) -> Result<&'static str, Box<dyn std::error::Error>
         | "summer_phosphorus"
         | "utility_runes"
         | "wheel_allocation"
+        | "worldchg_returns"
         | "worldchg_trader" => Ok("#[cfg(feature = \"pg-tests-g4\")]\n"),
         _ => Err(format!(
             "PostgreSQL module {name} needs an assignment to the smallest pg-tests group"

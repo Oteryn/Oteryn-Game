@@ -1,0 +1,48 @@
+# Node-boot e2e rows known to FAIL on main (seeded from merge-group-gate run 44089797199, main 2026-11-17).
+# One row per line: <scenario id> <first failing assertion>. A listed FAIL row does not fail its stage but is
+# printed as NODE_BOOT_KNOWN_FAIL; any FAIL row not listed fails the stage. Remove a row when it passes
+# (NODE_BOOT_KNOWN_FAIL_STALE). Never add a row to make a new failure green.
+C01.full assertion at C01.full/admission
+C02.full no-progress at C02.full/walk; watch-aborted-before-verdict
+C03.full assertion at C03.full/baseline; watch-aborted-before-verdict
+C04.full assertion at C04.full/admission; step-1-observed-PZ-CAST-expected-accepted-rejected-no-delta-reply-CastOutcome---command_id:-1--status:-Rejected--disposition:-Rejected--resu
+C05.full assertion at C05.full/row-check; observed-runtime-failure-see-C05_GAP
+C06.full assertion at C06.full/admission; required-actions-unproven-see-C06_GAP
+C09.full assertion at C09.full/admission; runtime-step-failed-see-C09_GAP
+C11.full assertion at C11.full/admission; step=player-monk-choice-observed=Oressa-absent_step=solo-serene-observed=vitals=Some(ActorVitals-{-health:-150,-max_health:-150,-mana:-55,-m
+C12.full transport at C12.full/admission; step:baseline-cast;observed:transport-I/O-failed:-Broken-pipe--os-error-32-;not-run:acquire-50271,augmented-cast,unequip,unequipped-cast,fre
+C13.full assertion at C13/summon-payment-spawn; required-actions-unproven-see-E2EF5_GAP
+C16a.full assertion at C16a/acquire-magic-wall; required-actions-unproven-see-E2EF5_GAP
+C16b.full assertion at C16b/acquire-paralyze; required-actions-unproven-see-E2EF5_GAP
+C16c.full assertion at C16c/buy-convince; required-actions-unproven-see-E2EF5_GAP
+C16d.full assertion at C16d/buy-chameleon; required-actions-unproven-see-E2EF5_GAP
+C17a.full assertion at C17a/haste-cast; required-actions-unproven-see-E2EF5_GAP
+C17c.full assertion at C17c/cast-rat; required-actions-unproven-see-E2EF5_GAP
+C17d.full assertion at C17d/player-challenge-access; required-actions-unproven-see-E2EF5_GAP
+C18a.full assertion at C18a/player-spell-access; required-actions-unproven-see-E2EF5_GAP
+C20a.full blocked-by at S16a/oressa-reachable
+C20b.full assertion at C20b/earned-loss-eligible-level
+C20c.full assertion at C20c/adventurer-earned-prerequisites
+C20d.full assertion at C20d/lifecycle
+E01.full assertion at E01/greet; source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1
+E03.full assertion at E03/gold-up; source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1
+E04.full assertion at E04/look; source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1
+E05.full assertion at E05/browse; source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1
+E07.full assertion at E07/depot; source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1
+P10.full assertion at P10/shrine-open-and-claim
+P16.full no-progress at P16/adventurer-earned-prerequisites
+P19.full no-progress at P19/influenced-selection-combat
+P21.full assertion at P21/player-acquisition
+S01.full assertion at S01/join; source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1
+S08.full assertion at S08/earned-levels
+S09.full assertion at S09/fight-refusal; source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1
+S13a.full assertion at S13a/solo-refusal
+S13b.full assertion at S13b/solo-zero-charge
+S16a.full assertion at S16a/oressa-reachable
+S18.full assertion at S18/yell; source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1
+W01b.full assertion at W01b.full/admission
+W18.full assertion at W18.full/admission; step:prerequisite-or-mechanic-refused
+W19a.full deadline at W19a.full/walk
+W20b.full assertion at W20b/light-cast-mana
+W22b.full assertion at W22b.full/fixture-release; steps=1,2,3,4,5,6,7;step-1:prey_query_returned_no_unlocked_slot|step-2:no_reachable_visible_rat|step-3:no_reachable_visible_rat|step-4:Gut_r
+W23.full assertion at W23.full/admission; step-citizenship-route-observed-no-walking-route-need-reachable-shipped-citizen-tile

@@ -1,6 +1,6 @@
 # PGGROUPS-1: dispatch PostgreSQL test compilation groups
 
-Base: `e2152d050`; branch: `claude/happy-davinci-ijz3wy-pggroups`.
+Original base: `e2152d050`; merged main: `b36492845`; branch: `claude/happy-davinci-ijz3wy-pggroups`.
 
 PostgreSQL cases remain library tests. Local developers must pass
 `--features pg-tests-all` to include all PG cases, or select one of
@@ -8,7 +8,42 @@ PostgreSQL cases remain library tests. Local developers must pass
 New PG test modules must be assigned to the smallest group by source lines.
 The default features include no PG group.
 
-## Validation evidence
+## Merge follow-up
+
+The main baseline and the grouped source both contain 2,296 PG tests. The groups
+own 636, 504, 557 and 599 respectively. The before/after name diff is empty,
+each test has exactly one owner, and the test bodies are unchanged. The new
+`/tmp/before.txt` and `/tmp/after.txt` lists both have SHA-256
+`94d7c22f648361edf9d4510c91929fe85cb62fc321fb41d22b65d2949c467cd3`.
+The four newly mounted modules belong to g4 alongside their shared scenario
+consumers. The generated mounts reject an unassigned module during the build.
+
+The MQ base job keeps its original `durability_postgres_build` ID and
+`Merge Queue / Durability PostgreSQL harness build` check name. A separate
+`durability_postgres_groups_build` matrix supplies the four dispatch archives.
+Both producers must succeed before the partitions run. The updated repository
+policy check and MQ simulation passed with 64 mutations. The pinned workflow
+blob is `b52c16f45db59296a0a8397b4fa059c2ad3d4756`.
+
+All four merged group builds passed sequentially with `--locked --no-run -j1`
+and zero dispatch warnings. Each compiled PG list matches its source list.
+
+| Group | Peak RSS (KiB) | Peak RSS (GiB) | Wall time |
+|---|---:|---:|---:|
+| g1 | 11,720,044 | 11.18 | 15:20.19 |
+| g2 | 11,555,292 | 11.02 | 11:39.35 |
+| g3 | 11,318,880 | 10.79 | 9:58.58 |
+| g4 | 15,058,392 | 14.36 | 12:33.91 |
+
+The no-feature build passed with zero dispatch warnings and lists zero PG tests.
+All-targets, all-features Clippy passed with `-D warnings`. Formatting, repository
+policy, all 19 repository regression scripts, the workspace architecture check,
+and governance validation with 135 tests passed on the merged tree. Cargo still
+reports pre-existing vendored dependency warnings.
+The g4 Steal From Thieves mission and reward case passed against local
+PostgreSQL in 45.95 seconds.
+
+## Original validation evidence
 
 The coordinator replaced the full-build inventory requirement with a source-level
 inventory because the base lib-test exceeds this container's 16 GiB hard limit.
@@ -18,7 +53,7 @@ The single baseline attempt was stopped without retrying (compiler observed at
 Walk every module mounted under `postgres_tests`, emitting fully qualified test
 function paths for native and macro test attributes. Compare the base revision
 against the union of the four owning feature groups and require exactly one
-owner for every case. Source inventory passed: 2,279 tests before and after; g1 636, g2 504, g3 557, g4 582; no-feature PG count 0. Every test has exactly one group. `diff /tmp/before.txt /tmp/after.txt` is empty. Both lists have SHA-256 `8c20341098ce01afd76d9d090772a65f4f1f4c49ee7194fc193342a14369a6ee`.
+owner for every case. Source inventory passed: 2,279 tests before and after; g1 636, g2 504, g3 557, g4 582; no-feature PG count 0. Every test has exactly one group. The original before/after name diff was empty. Both original lists had SHA-256 `8c20341098ce01afd76d9d090772a65f4f1f4c49ee7194fc193342a14369a6ee`.
 
 The parser at `/tmp/pg-inventory.py` walked 1,081 files from `git show e2152d05:<path>` and the changed tree, following explicit paths, ordinary/inline modules and generated mounts. It expanded `damage_cases!`, `quest_case!`, and `native_case!`: 2,209 direct tests plus 70 generated tests. It compared actual generated module cfgs and test cfgs, including dispatch’s generated copy of the shared fixture. Test body token hashes, excluding cfg attributes, show zero changes.
 
@@ -80,14 +115,14 @@ timeout or assertion was changed.
 
 ## Module assignment
 
-Baseline line counts below are actual `wc -l` counts over each complete mounted subtree, including nonconventional and external mounts; nested modules inherit their owner’s group. Evidence: `/tmp/PGGROUPS-1-wc.txt` and `/tmp/pg-inventory-module-wc.json`. Shared helpers retain their consumer groups; tests have exactly one owner. The parent file adds 1,343 lines of shared helpers and inline cases assigned to g1. Closely coupled enum-case consumers stay together to preserve helper bodies.
+Merged main line counts below are actual `wc -l` counts over each complete mounted subtree, including nonconventional and external mounts; nested modules inherit their owner’s group. Evidence: `/tmp/PGGROUPS-1-wc.txt` and `/tmp/pg-inventory-module-wc.json`. Shared helpers retain their consumer groups; tests have exactly one owner. The parent file adds 1,343 lines of shared helpers and inline cases assigned to g1. Closely coupled enum-case consumers stay together to preserve helper bodies.
 
 | Group | Source lines |
 |---|---:|
 | pg-tests-g1 | 90,314 |
 | pg-tests-g2 | 90,321 |
-| pg-tests-g3 | 90,316 |
-| pg-tests-g4 | 90,334 |
+| pg-tests-g3 | 90,339 |
+| pg-tests-g4 | 91,365 |
 
 | Module | Group | Lines including descendants |
 |---|---:|---:|
@@ -108,8 +143,8 @@ Baseline line counts below are actual `wc -l` counts over each complete mounted 
 | `activity_transfer_recovery` | 2 | 275 |
 | `admit_cap_2` | 3 | 430 |
 | `adventurer_blessing` | 4 | 318 |
-| `all_charms_contracts` | 4 | 1056 |
-| `all_charms_delayed` | 4 | 1199 |
+| `all_charms_contracts` | 4 | 1377 |
+| `all_charms_delayed` | 4 | 1292 |
 | `all_charms_incoming` | 2 | 677 |
 | `all_charms_incoming_order` | 3 | 876 |
 | `all_charms_outgoing` | 3 | 1328 |
@@ -163,6 +198,7 @@ Baseline line counts below are actual `wc -l` counts over each complete mounted 
 | `character_title_completion` | 1 | 375 |
 | `character_title_cosmetics` | 3 | 379 |
 | `character_title_sources` | 4 | 370 |
+| `charm_gaps` | 4 | 66 |
 | `charm_progression` | 3 | 839 |
 | `chat_world_fixture` | 3 | 202 |
 | `citizen_qualification` | 3 | 347 |
@@ -281,7 +317,7 @@ Baseline line counts below are actual `wc -l` counts over each complete mounted 
 | `guild_bank` | 1 | 920 |
 | `guild_chat` | 3 | 770 |
 | `guild_war` | 1 | 362 |
-| `guild_wire` | 3 | 1205 |
+| `guild_wire` | 3 | 1228 |
 | `guildhall` | 2 | 793 |
 | `hazard` | 2 | 466 |
 | `henricus` | 1 | 421 |
@@ -433,7 +469,7 @@ Baseline line counts below are actual `wc -l` counts over each complete mounted 
 | `mount_taming` | 2 | 1270 |
 | `native_objective_atomic` | 1 | 341 |
 | `newhaven_corruptor` | 2 | 997 |
-| `newhaven_starter` | 4 | 434 |
+| `newhaven_starter` | 4 | 447 |
 | `nologout` | 4 | 280 |
 | `novelty_items` | 2 | 1271 |
 | `npc_item_exchanges` | 4 | 585 |
@@ -505,6 +541,8 @@ Baseline line counts below are actual `wc -l` counts over each complete mounted 
 | `pvp_death_most_damage` | 1 | 90 |
 | `pvp_expiry` | 2 | 55 |
 | `pvp_live` | 2 | 1378 |
+| `qd_steal_from_thieves` | 4 | 77 |
+| `qd_world` | 4 | 342 |
 | `qengine_access` | 2 | 1101 |
 | `qengine_document_stories` | 2 | 408 |
 | `qengine_endgame_stories` | 2 | 451 |
@@ -518,7 +556,7 @@ Baseline line counts below are actual `wc -l` counts over each complete mounted 
 | `qengine_m03_pits` | 2 | 187 |
 | `qengine_m03_use` | 1 | 398 |
 | `qengine_outfit_stories` | 1 | 2343 |
-| `qengine_rewards` | 4 | 2479 |
+| `qengine_rewards` | 4 | 2485 |
 | `qengine_s06_construction` | 2 | 27 |
 | `qengine_s06_items` | 2 | 46 |
 | `qengine_voucher_stories` | 2 | 572 |
@@ -556,7 +594,7 @@ Baseline line counts below are actual `wc -l` counts over each complete mounted 
 | `quest_recovery` | 2 | 31 |
 | `quest_reward_claims` | 1 | 1825 |
 | `quest_runtime_fixture` | 1 | 34 |
-| `quest_world_callbacks` | 4 | 7270 |
+| `quest_world_callbacks` | 4 | 7291 |
 | `questl2_djinn` | 3 | 57 |
 | `questl2_djinn_world` | 1 | 100 |
 | `questl2_fixture` | 3 | 180 |
@@ -836,5 +874,6 @@ Baseline line counts below are actual `wc -l` counts over each complete mounted 
 | `worldchg_benevola` | 3 | 459 |
 | `worldchg_grimvale` | 2 | 1714 |
 | `worldchg_hive_egress` | 3 | 297 |
+| `worldchg_returns` | 4 | 92 |
 | `worldchg_trader` | 4 | 368 |
 | `worldchg_yeo` | 1 | 298 |

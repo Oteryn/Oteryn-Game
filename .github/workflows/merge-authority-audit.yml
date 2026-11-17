@@ -26,9 +26,9 @@ jobs:
       contents: read
       pull-requests: read
     env:
-      EXPECTED_MERGE_GROUP_GATE_BLOB: "c83e07358aa5b72ca9e7657717adb48e98acad52"
+      EXPECTED_MERGE_GROUP_GATE_BLOB: "b52c16f45db59296a0a8397b4fa059c2ad3d4756"
       EXPECTED_AGENT_GOVERNANCE_BLOB: "42d84c9089cdef928c6cb17268269156c87c0abb"
-      EXPECTED_MERGE_GATE_BLOB: "a7f50911399a9dd61d9b619b3b16bd3edf294711"
+      EXPECTED_MERGE_GATE_BLOB: "4a947aa6da7702ba8f7f002cd506b44815c144b4"
     steps:
       - name: Validate control-plane candidate as inert data
         shell: bash
@@ -274,7 +274,7 @@ jobs:
               '          python tools/repository/test_validate_merge_group_pg_sim.py\n',
               '    name: Merge Queue / Durability PostgreSQL harness build\n',
               '    name: Merge Queue / Durability PostgreSQL harness\n',
-              '    needs: [candidate, durability_postgres_build]\n',
+              '    needs: [candidate, durability_postgres_build, durability_postgres_groups_build]\n',
               '        image: postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc\n',
               f'          EXPECTED_SHA: {merge_group_head_expression}\n',
               '          verify_registered_target_binding() {\n',
@@ -302,7 +302,7 @@ jobs:
               '          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" \\\n'
               '            --workspace-remap "$GITHUB_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \\\n'
               '            --no-fail-fast "${filters[@]}"\n',
-              '        archive: [base, g1, g2, g3, g4]\n',
+              '        archive: [g1, g2, g3, g4]\n',
               '          cargo +1.100.0 nextest archive --locked --build-jobs 1 -p oteryn-gameplay-dispatch --lib --features "pg-tests-$GROUP" \\\n',
               '            --archive-file "$RUNNER_TEMP/pg-archives/pg-lib-$GROUP.tar.zst"\n',
               '          mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib-g1.filters"\n',

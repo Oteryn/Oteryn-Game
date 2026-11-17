@@ -4,31 +4,45 @@
     clippy::expect_used,
     reason = "test fixture invariants use named assertions"
 )]
+#[cfg(feature = "pg-tests-g3")]
 use crate::ai_think::{
     ThinkSequenceTracker,
     profile_schedule::{AttackTarget, ProfileScheduleState},
 };
+#[cfg(feature = "pg-tests-g3")]
 use crate::content::{
     ProjectReferenceRecord, ProjectV2AuthoringProfile, ProjectV2AuthoringProfileData as Data,
     ProjectV2DefinitionRef as Ref, ProjectV2Family,
 };
+#[cfg(feature = "pg-tests-g3")]
 use crate::creature_auto_attack::{AttackFacts, ProfileAbilityProposal};
+#[cfg(feature = "pg-tests-g3")]
 use crate::creature_damage_spell::*;
+#[cfg(feature = "pg-tests-g3")]
 use crate::foundation::MovementLocalPosition;
+#[cfg(feature = "pg-tests-g3")]
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeWorkStamp, ScopeRuntimeFence,
+    ChannelRuntimeV1, ExactActorRef, GameSessionId,
 };
-use crate::gameplay_transport::actor_spell::{ChannelSpellStates, tests::FACTS};
+use crate::gameplay_transport::actor_spell::ChannelSpellStates;
+#[cfg(feature = "pg-tests-g3")]
+use crate::gameplay_transport::actor_spell::tests::FACTS;
+#[cfg(feature = "pg-tests-g3")]
+use crate::foundation::{RuntimeWorkStamp, ScopeRuntimeFence};
+#[cfg(feature = "pg-tests-g3")]
 use oteryn_gameplay_content::content::creature_attack_geometry::Facing;
+#[cfg(feature = "pg-tests-g3")]
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 
+#[cfg(feature = "pg-tests-g3")]
 struct CurrentWorld {
     facts: SpellCombatFacts,
     missing: bool,
     blocked: bool,
     facing: Option<Facing>,
 }
+#[cfg(feature = "pg-tests-g3")]
 impl SpellWorldReader for CurrentWorld {
     fn current_players(
         &mut self,
@@ -76,11 +90,13 @@ impl SpellWorldReader for CurrentWorld {
             .then(|| self.facts.clone())
     }
 }
+#[cfg(feature = "pg-tests-g3")]
 fn test_uuid(tag: u8) -> [u8; 16] {
     [
         0x01, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag,
     ]
 }
+#[cfg(feature = "pg-tests-g3")]
 fn runtime_three_slots() -> (ChannelRuntimeV1, ExactActorRef, GameSessionId) {
     use {
         crate::foundation::{ChannelId, NodeId, WorldId},
@@ -106,6 +122,7 @@ fn runtime_three_slots() -> (ChannelRuntimeV1, ExactActorRef, GameSessionId) {
         .expect("qualified fixture");
     (r, a, s)
 }
+#[cfg(feature = "pg-tests-g3")]
 fn native() -> (Vec<ProjectReferenceRecord>, Vec<ProjectV2AuthoringProfile>) {
     let v: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -117,6 +134,7 @@ fn native() -> (Vec<ProjectReferenceRecord>, Vec<ProjectV2AuthoringProfile>) {
         serde_json::from_value(v["authoring_profiles"].clone()).expect("qualified fixture"),
     )
 }
+#[cfg(feature = "pg-tests-g3")]
 fn setup_named_at(
     name: &str,
     index: usize,
@@ -317,6 +335,7 @@ fn setup_named_at(
     )
 }
 
+#[cfg(feature = "pg-tests-g3")]
 fn qualify_hazard_monster(runtime: &mut ChannelRuntimeV1, actor: ExactActorRef, key: &str) {
     let policies = crate::content::native_gameplay::callback_source_native_test_policies(
         include_bytes!(concat!(
@@ -431,7 +450,7 @@ fn incoming_order_parry_uses_original_native_roll() {
         .expect("scenario");
 }
 
-struct CertainCharms(Vec<oteryn_gameplay_progression::charm_effects::CharmDefinition>);
+pub(super) struct CertainCharms(Vec<oteryn_gameplay_progression::charm_effects::CharmDefinition>);
 impl oteryn_gameplay_progression::charm_effects::CharmCatalogueRead for CertainCharms {
     fn charm(
         &self,
@@ -440,7 +459,7 @@ impl oteryn_gameplay_progression::charm_effects::CharmCatalogueRead for CertainC
         self.0.iter().find(|definition| definition.key() == key)
     }
 }
-fn assign_charms(
+pub(super) fn assign_charms(
     states: &mut ChannelSpellStates,
     runtime: &ChannelRuntimeV1,
     source: ExactActorRef,

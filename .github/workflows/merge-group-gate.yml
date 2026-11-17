@@ -484,6 +484,19 @@ jobs:
       - name: Normalize source mtimes for the restored Cargo cache
         run: python tools/repository/normalize_cargo_mtimes.py
 
+      # Every leg builds the dispatch library tests, which peak above the hosted runner's 16 GB
+      # since #3056 (17.3 GB at -j1, 20.3 GB at -j4, measured 2026-11-17); without swap the
+      # runner is killed and loses communication with the server.
+      - name: Add swap for the workspace test build
+        run: |
+          set -euo pipefail
+          sudo fallocate -l 16G /mnt/oteryn-extra.swap
+          sudo chmod 600 /mnt/oteryn-extra.swap
+          sudo mkswap /mnt/oteryn-extra.swap
+          sudo swapon /mnt/oteryn-extra.swap
+          swapon --show
+          free -h
+
       - name: Verify policy metadata and formatting
         if: matrix.shard == 'lint'
         shell: bash
@@ -632,7 +645,7 @@ jobs:
           cargo +1.100.0 run --locked -p oteryn-game-server -- --smoke
 
   durability_postgres_build:
-    name: Merge Queue / Durability PostgreSQL harness build (${{ matrix.archive }})
+    name: Merge Queue / Durability PostgreSQL harness build
     needs: candidate
     if: needs.candidate.outputs.rust == 'true'
     runs-on: ubuntu-24.04
@@ -641,14 +654,6 @@ jobs:
       contents: read
     outputs:
       base_sha256: ${{ steps.digest.outputs.base_sha256 }}
-      g1_sha256: ${{ steps.digest.outputs.g1_sha256 }}
-      g2_sha256: ${{ steps.digest.outputs.g2_sha256 }}
-      g3_sha256: ${{ steps.digest.outputs.g3_sha256 }}
-      g4_sha256: ${{ steps.digest.outputs.g4_sha256 }}
-    strategy:
-      fail-fast: true
-      matrix:
-        archive: [base, g1, g2, g3, g4]
     # No database here: this job verifies registered-target custody and compiles the PostgreSQL test set
     # in separate archive jobs; the durability_postgres partitions only run them.
     steps:
@@ -719,7 +724,6 @@ jobs:
       # Every registered target present at the candidate is archived exactly once; any target removed
       # or renamed against the protected base fails here, before anything is compiled.
       - name: Archive registered PostgreSQL E2E targets
-        if: matrix.archive == 'base'
         shell: bash
         env:
           BASE_SHA: ${{ needs.candidate.outputs.base_sha }}
@@ -826,12 +830,124 @@ jobs:
       # Library tests that need PostgreSQL skip in the Rust Linux lib shards, which have no database;
       # this archive holds exactly the library tests the partitions run against the service.
       - name: Archive PostgreSQL-backed library tests
-        if: matrix.archive == 'base'
         run: |
           set -euo pipefail
           cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
+      - name: Record archive digests and candidate
+        id: digest
+        env:
+          HEAD_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
+          ARCHIVE: base
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/pg-archives"
+          printf '%s\n' "$HEAD_SHA" > head-sha
+          if [[ "$ARCHIVE" == base ]]; then
+            archives=(pg-e2e.tar.zst pg-lib.tar.zst)
+          else
+            [[ "$ARCHIVE" =~ ^g[1-4]$ ]]
+            archives=("pg-lib-$ARCHIVE.tar.zst")
+          fi
+          sha256sum head-sha "${archives[@]}" > SHA256SUMS
+          ls -l
+          echo "${ARCHIVE}_sha256=$(sha256sum SHA256SUMS | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      # The archives are already zstd-compressed and only live for this run's partitions.
+      - name: Upload PostgreSQL test archives
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mq-postgres-test-archives-base
+          path: ${{ runner.temp }}/pg-archives/
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+          overwrite: true
+
+  durability_postgres_groups_build:
+    name: Merge Queue / Durability PostgreSQL harness build (${{ matrix.archive }})
+    needs: candidate
+    if: needs.candidate.outputs.rust == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    outputs:
+      g1_sha256: ${{ steps.digest.outputs.g1_sha256 }}
+      g2_sha256: ${{ steps.digest.outputs.g2_sha256 }}
+      g3_sha256: ${{ steps.digest.outputs.g3_sha256 }}
+      g4_sha256: ${{ steps.digest.outputs.g4_sha256 }}
+    strategy:
+      fail-fast: true
+      matrix:
+        archive: [g1, g2, g3, g4]
+    # No database here: this job verifies registered-target custody and compiles the PostgreSQL test set
+    # in separate archive jobs; the durability_postgres partitions only run them.
+    steps:
+      - name: Check out exact merge-group candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.merge_group.head_sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact merge-group SHA
+        env:
+          EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Fetch exact merge-group base for PostgreSQL custody
+        env:
+          BASE_SHA: ${{ needs.candidate.outputs.base_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          test "$(git rev-parse FETCH_HEAD)" = "$BASE_SHA"
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install 1.100.0 --profile minimal
+
+      - name: Restore trimmed Cargo cache from protected main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-
+
+      - name: Normalize source mtimes for the restored Cargo cache
+        run: python tools/repository/normalize_cargo_mtimes.py
+
+      - name: Verify locked metadata
+        run: cargo +1.100.0 metadata --locked --format-version 1 >/dev/null
+
+      # cargo-nextest 0.9.146, pinned by SHA-256 as in the Rust Linux legs.
+      - name: Install pinned cargo-nextest
+        env:
+          NEXTEST_VERSION: 0.9.146
+          NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/cargo-nextest.tar.gz"
+          mkdir -p "$RUNNER_TEMP/nextest-bin"
+          if curl --proto '=https' --tlsv1.2 -fsSL --retry 8 --retry-delay 15 --retry-all-errors --retry-max-time 150 --connect-timeout 30 -o "$archive" \
+            "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-${NEXTEST_VERSION}/cargo-nextest-${NEXTEST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"; then
+            echo "${NEXTEST_SHA256}  ${archive}" | sha256sum -c -
+            tar -xzf "$archive" -C "$RUNNER_TEMP/nextest-bin"
+          else
+            # Hosted runners can lose GitHub release downloads for an hour at a time. Build the
+            # same pinned version from crates.io with its locked dependency set instead.
+            echo "::warning::cargo-nextest ${NEXTEST_VERSION} release download failed; building it from crates.io"
+            rustup toolchain install 1.100.0 --profile minimal --no-self-update
+            cargo +1.100.0 install --locked --quiet cargo-nextest --version "=${NEXTEST_VERSION}" --root "$RUNNER_TEMP/nextest-root"
+            cp "$RUNNER_TEMP/nextest-root/bin/cargo-nextest" "$RUNNER_TEMP/nextest-bin/"
+          fi
+          echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
+
       - name: Archive PostgreSQL dispatch group
-        if: matrix.archive != 'base'
         env:
           GROUP: ${{ matrix.archive }}
         run: |
@@ -872,7 +988,7 @@ jobs:
 
   durability_postgres:
     name: Merge Queue / Durability PostgreSQL harness
-    needs: [candidate, durability_postgres_build]
+    needs: [candidate, durability_postgres_build, durability_postgres_groups_build]
     if: needs.candidate.outputs.rust == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -941,10 +1057,10 @@ jobs:
         env:
           EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
           BASE_SHA256: ${{ needs.durability_postgres_build.outputs.base_sha256 }}
-          G1_SHA256: ${{ needs.durability_postgres_build.outputs.g1_sha256 }}
-          G2_SHA256: ${{ needs.durability_postgres_build.outputs.g2_sha256 }}
-          G3_SHA256: ${{ needs.durability_postgres_build.outputs.g3_sha256 }}
-          G4_SHA256: ${{ needs.durability_postgres_build.outputs.g4_sha256 }}
+          G1_SHA256: ${{ needs.durability_postgres_groups_build.outputs.g1_sha256 }}
+          G2_SHA256: ${{ needs.durability_postgres_groups_build.outputs.g2_sha256 }}
+          G3_SHA256: ${{ needs.durability_postgres_groups_build.outputs.g3_sha256 }}
+          G4_SHA256: ${{ needs.durability_postgres_groups_build.outputs.g4_sha256 }}
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/pg-archives"
