@@ -549,12 +549,15 @@ pub(super) fn scenario(earned: bool) -> TestResult {
             .fetch_one(&h.pool)
             .await?;
         assert_eq!(xp, 4);
-        let builds: i64 = sqlx::query_scalar(
-            "SELECT count(*) FROM game_character_build_receipts WHERE cause='vocation_choice'",
+        let builds: Vec<(String, i64)> = sqlx::query_as(
+            "SELECT cause,count(*) FROM game_character_build_receipts GROUP BY cause ORDER BY cause",
         )
-        .fetch_one(&h.pool)
+        .fetch_all(&h.pool)
         .await?;
-        assert_eq!(builds, 4);
+        assert_eq!(
+            builds,
+            vec![("vocation_choice".into(), 1), ("vocation_trial".into(), 3)]
+        );
         if earned {
             super::desert_earned_route::earn(&mut owner, &mut admitted, &h).await?;
         }
