@@ -79,11 +79,17 @@ fn oramond_five_native_roots_reopen_only_on_daily_epoch() -> Result<(), String> 
                 .transition("oteryn:quest-reward/oramond/native-roots-report")
                 .ok_or("root hand-in")?;
             for change in catalogue
-                .evaluate(report, &stored, now)
+                .evaluate(report, &stored, now - 1)
                 .map_err(|e| format!("{e:?}"))?
             {
                 stored.insert(change.track, change.after);
             }
+            // The hand-in has satisfied the non-clock guards. The same stored
+            // state must still refuse one second before the daily boundary.
+            assert_eq!(
+                catalogue.evaluate(restart, &stored, now - 1),
+                Err(crate::quest::QuestRefusal::StageMismatch)
+            );
         }
         let changes = catalogue
             .evaluate(restart, &stored, now)

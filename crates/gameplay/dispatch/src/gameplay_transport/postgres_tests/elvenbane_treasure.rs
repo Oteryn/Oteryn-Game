@@ -36,6 +36,16 @@ fn target_at(
     })
 }
 
+// A second mint can create orphan instances that a receipt-to-item join
+// would miss. This route owns its database, so it can observe every instance.
+async fn item_instances(pool: &sqlx::PgPool) -> TestResult<Vec<(String, i64)>> {
+    Ok(sqlx::query_as(
+        "SELECT item_instance_id::text, quantity FROM game_item_instances ORDER BY item_instance_id",
+    )
+    .fetch_all(pool)
+    .await?)
+}
+
 pub(super) async fn complete(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     member: &mut AdmittedSession,
@@ -79,6 +89,7 @@ pub(super) async fn complete(
             UseDisposition::Committed,
             "actual source chest {suffix} must atomically mint its reward"
         );
+        let minted = item_instances(pool).await?;
         let replay = super::quest_world_callbacks::wire(
             owner,
             member,
@@ -96,6 +107,11 @@ pub(super) async fn complete(
             super::annihilator_route::use_target(owner, member, &chest).await?,
             UseDisposition::NothingToUse,
             "fresh command cannot repeat source once claim {suffix}"
+        );
+        assert_eq!(
+            item_instances(pool).await?,
+            minted,
+            "literal replay or fresh repeat of {suffix} must not mint orphan items or change stack quantities"
         );
         keys.push(format!("{PREFIX}{suffix}"));
         if keys.len() == 3 {

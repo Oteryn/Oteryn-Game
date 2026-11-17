@@ -88,7 +88,7 @@ pub(super) async fn exercise(
     let premium = owner.premium_coordinator.take();
     let denied = step(owner, admitted, 2, StepDirection::North).await;
     owner.premium_coordinator = premium;
-    denied?;
+    let denied_reply = denied?;
     assert_eq!(
         position(owner, admitted).await?,
         origin,
@@ -109,6 +109,12 @@ pub(super) async fn exercise(
         level, 80,
         "the existing XP writer earned the required level"
     );
+    // Premium returned after command 2. Replaying that command must not turn
+    // its old refusal into a newly authorized entry.
+    let retried = step(owner, admitted, 2, StepDirection::North).await?;
+    assert_eq!(retried, denied_reply);
+    assert_eq!(position(owner, admitted).await?, origin);
+    assert_eq!(footprint(h).await?, (0, 0));
     let accepted = step(owner, admitted, 3, StepDirection::North).await?;
     assert_eq!(position(owner, admitted).await?, (32791, 32331, 10));
     assert_eq!(footprint(h).await?, (1, 1));
