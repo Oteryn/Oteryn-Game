@@ -239,29 +239,33 @@ async fn exercise(
         .open_character_authority(&seal)
         .await
         .map_err(debug)?;
-    let mut owner: ComposedFreshAdmission<'_, '_, '_> = ComposedTestOwner {
-        root: &h.root,
-        character: &authority,
-        holder: &h.node,
-        evidence: &evidence,
-        world_id: world,
-        channel_id: channel,
-        required_capabilities: composed_test_owner::empty_capabilities(world, channel)?,
-        runtime: &runtime,
-        room: &room,
-        door: &door,
-        spells: &spells,
-        achievements: &achievements,
-        imported_charms: &charms,
-    }
-    .build();
-    owner.active_generation = Some(generation);
-    owner.quest_catalogue = Some(Arc::new(
-        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
-            .map_err(debug)?
-            .catalogue()
-            .clone(),
-    ));
+    let build_owner = || -> TestResult<ComposedFreshAdmission<'_, '_, '_>> {
+        let mut owner: ComposedFreshAdmission<'_, '_, '_> = ComposedTestOwner {
+            root: &h.root,
+            character: &authority,
+            holder: &h.node,
+            evidence: &evidence,
+            world_id: world,
+            channel_id: channel,
+            required_capabilities: composed_test_owner::empty_capabilities(world, channel)?,
+            runtime: &runtime,
+            room: &room,
+            door: &door,
+            spells: &spells,
+            achievements: &achievements,
+            imported_charms: &charms,
+        }
+        .build();
+        owner.active_generation = Some(generation);
+        owner.quest_catalogue = Some(Arc::new(
+            oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                .map_err(debug)?
+                .catalogue()
+                .clone(),
+        ));
+        Ok(owner)
+    };
+    let owner = build_owner()?;
     let fence = composed_test_owner::load_quests(&owner, session)
         .await?
         .item_fence();
@@ -364,7 +368,11 @@ async fn exercise(
         );
         assert_eq!(h.count("game_item_text_write_receipts").await?, 0);
     }
-    // The same durable command must replay without a second item or receipt.
+    // A new composed owner has no warm quest/receipt cache. The durable
+    // command still replays without a second item or receipt.
+    drop(owner);
+    let owner = build_owner()?;
+    composed_test_owner::load_quests(&owner, session).await?;
     assert_eq!(
         owner
             .use_object(actor, command, target.clone())
@@ -378,9 +386,11 @@ async fn exercise(
     };
     assert_eq!(
         owner.use_object(actor, next, target).await.disposition,
-        UseDisposition::Rejected
+        UseDisposition::NothingToUse
     );
     assert_eq!(h.count("game_reward_claim_mint_receipts").await?, 1);
+    let after:Vec<String>=sqlx::query_scalar("SELECT i.definition_production_key FROM game_item_instances i JOIN game_reward_claim_mint_receipts m USING(item_instance_id) JOIN game_item_container_entries e USING(item_instance_id) WHERE m.claim_production_key=$1 AND e.character_id=m.character_id").bind(case.claim).fetch_all(&h.pool).await?;
+    assert_eq!(after, inventory);
     Ok(())
 }
 
