@@ -106,10 +106,11 @@ pub(super) fn project(
             computed.size().x
         } * computed.inverse_scale_factor;
         if available > 0. {
-            capacities[bar.0] = ((available - 2. * (scroll_size + SLOT_GAP))
+            let lock_size = if side { LOCK_SIZE.y } else { LOCK_SIZE.x } * zoom;
+            capacities[bar.0] = ((available - lock_size - 2. * (scroll_size + SLOT_GAP))
                 / (slot_size + SLOT_GAP))
                 .floor()
-                .max(1.) as usize;
+                .max(0.) as usize;
         }
         let display = if row.enabled && owner.settings.preferences.action_bar.visible {
             Display::Flex

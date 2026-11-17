@@ -81,6 +81,18 @@ pub(super) const MENU_WIDTH: f32 = 160.;
 /// The VIP list's right-click menu.
 #[derive(Component)]
 pub(super) struct ListMenu;
+/// Resolve the physical button using the same preferences for contact and list clicks.
+pub(super) fn button_role(owner: &HostOwner, button: PointerButton) -> PointerButton {
+    let preferences = &owner.settings.preferences;
+    let swapped = (preferences.controls.mouse == crate::play::MousePreset::LeftHanded)
+        ^ preferences.swap_mouse_buttons;
+    match (swapped, button) {
+        (true, PointerButton::Primary) => PointerButton::Secondary,
+        (true, PointerButton::Secondary) => PointerButton::Primary,
+        _ => button,
+    }
+}
+
 /// A right-click on the list itself (not on a contact) toggles the list menu.
 fn open_list_menu(
     event: On<PointerClick>,
@@ -89,7 +101,7 @@ fn open_list_menu(
     mut commands: Commands,
     menus: Query<(Entity, &Node), With<ListMenu>>,
 ) {
-    if event.button != PointerButton::Secondary
+    if button_role(&owner, event.button) != PointerButton::Secondary
         || event.original_event_target() != event.entity
         || !guard.allows(event.entity)
         || !available(&owner)
@@ -547,7 +559,6 @@ fn row_click(
     owner: NonSend<HostOwner>,
     guard: ModalGuard,
 ) {
-    use bevy::picking::pointer::PointerButton;
     let Ok(row) = rows.get(event.entity) else {
         return;
     };
@@ -566,16 +577,8 @@ fn row_click(
         revision: panel.revision,
         entry: row.entry,
     };
-    let swapped = (owner.settings.preferences.controls.mouse
-        == crate::play::MousePreset::LeftHanded)
-        ^ owner.settings.preferences.swap_mouse_buttons;
-    let primary = if swapped {
-        PointerButton::Secondary
-    } else {
-        PointerButton::Primary
-    };
     // Secondary clicks open the shared presentation context menu (`presentation::click`).
-    if event.button == primary && event.count >= 2 {
+    if button_role(&owner, event.button) == PointerButton::Primary && event.count >= 2 {
         message(&owner, target);
     }
 }

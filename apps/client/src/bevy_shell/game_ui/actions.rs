@@ -322,8 +322,11 @@ fn activate(
     controls: Query<(&ActionControl, &Generation)>,
     owner: NonSend<HostOwner>,
     editor: Res<editor::EditorState>,
+    menu: Res<SlotMenu>,
 ) {
-    if !guard.allows(event.entity) {
+    // ButtonPlugin queues Activate for secondary clicks too. The menu claim is
+    // immediate, even before its deferred modal layer exists in the world.
+    if menu.0.is_some() || !guard.allows(event.entity) {
         return;
     }
     let Ok((control, generation)) = controls.get(event.entity) else {
@@ -418,6 +421,7 @@ fn edit_click(
     owner: NonSend<HostOwner>,
     editor: Res<editor::EditorState>,
     skins: Res<Skins>,
+    scale: Option<Res<UiScale>>,
     mut menu: ResMut<SlotMenu>,
     mut commands: Commands,
 ) {
@@ -454,25 +458,13 @@ fn edit_click(
         checked: Some(skins.checked.clone()),
         unchecked: Some(skins.unchecked.clone()),
     };
-    let opened = popup::spawn(
+    let (opened, layer) = super::hud_panes::context_menu::spawn(
         &mut commands,
         &look,
         event.pointer.location().position,
+        scale.as_deref(),
         &items,
     );
-    let layer = commands
-        .spawn((
-            super::GameModal,
-            GlobalZIndex(200),
-            Node {
-                position_type: PositionType::Absolute,
-                width: percent(100.),
-                height: percent(100.),
-                ..default()
-            },
-        ))
-        .add_children(&[opened.scrim, opened.root])
-        .id();
     commands.entity(opened.scrim).observe(dismiss_menu);
     for (entity, choice) in opened
         .entries
@@ -572,13 +564,8 @@ fn menu_action(
         | MenuChoice::SetText
         | MenuChoice::EditHotkey => editor.open(entry.slot, owner.generation()),
         MenuChoice::Clear => {
-            if entry.slot < ROW_SLOTS * 3 {
-                play.link.clear_bar_action(entry.slot);
-                play.link.assign_spell_slot(entry.slot, None);
-            } else {
-                // Bars 4 to 9 keep no assignments yet; say so as the editor does.
-                editor.refuse(entry.slot, owner.generation());
-            }
+            play.link.clear_bar_action(entry.slot);
+            play.link.assign_spell_slot(entry.slot, None);
         }
     }
 }

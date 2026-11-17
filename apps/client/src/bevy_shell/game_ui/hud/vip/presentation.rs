@@ -167,7 +167,7 @@ pub(super) fn click(
     let Action::Edit(entry) = control.command else {
         return;
     };
-    if event.button == PointerButton::Secondary {
+    if view::button_role(&owner, event.button) == PointerButton::Secondary {
         preferences.context = Some((owner.generation(), panel.revision, entry));
     }
 }

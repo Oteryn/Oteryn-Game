@@ -645,6 +645,7 @@ fn transcript_rows_are_selectable_and_offer_sender_actions()
         .query_filtered::<&mut Node, With<super::super::GameRoot>>()
         .single_mut(app.world_mut())?
         .display = Display::Flex;
+    app.insert_resource(UiScale(1.5));
     let action = |app: &mut App, label: &str| -> Result<(), Box<dyn std::error::Error>> {
         let row = app
             .world_mut()
@@ -662,10 +663,10 @@ fn transcript_rows_are_selectable_and_offer_sender_actions()
                 PointerId::Mouse,
                 Location {
                     target: bevy::camera::NormalizedRenderTarget::None {
-                        width: 100,
-                        height: 100,
+                        width: 1000,
+                        height: 600,
                     },
-                    position: Vec2::ZERO,
+                    position: Vec2::new(200., 100.),
                 },
             ),
             button: PointerButton::Secondary,
@@ -674,6 +675,12 @@ fn transcript_rows_are_selectable_and_offer_sender_actions()
             count: 1,
         });
         app.update();
+        let parent = app.world_mut().query_filtered::<&ChildOf, With<crate::bevy_shell::gameplay_dialogs::popup::PopupEntry>>().iter(app.world()).next().ok_or("popup entry")?.parent();
+        crate::bevy_shell::game_ui::hud_panes::context_menu::assert_anchor(
+            app.world(),
+            parent,
+            Vec2::new(200. / 1.5, 100. / 1.5),
+        );
         let entity = app
             .world_mut()
             .query::<(&Text, &ChildOf)>()

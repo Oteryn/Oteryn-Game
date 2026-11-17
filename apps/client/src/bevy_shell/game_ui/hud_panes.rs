@@ -23,6 +23,7 @@ use bevy::{
 };
 use oteryn_client_ui_bevy as source;
 
+pub(super) mod context_menu;
 mod dock;
 pub(in crate::bevy_shell) mod float;
 
@@ -249,6 +250,7 @@ pub(super) fn install(app: &mut App) {
             Update,
             (
                 dock::persist,
+                context_menu::layout,
                 (project, float::project).chain(),
                 float::escape,
                 super::super::ui::toolbar::grid::project,
@@ -590,4 +592,4 @@ fn project(
 
 #[cfg(test)]
 #[path = "hud_panes_tests.rs"]
-mod tests;
+pub(super) mod tests;

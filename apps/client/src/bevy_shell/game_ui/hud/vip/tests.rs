@@ -944,3 +944,66 @@ fn vip_list_actions_open_from_the_right_click_menu_without_a_header() -> TestRes
     assert_eq!(display(&app), Some(Display::None));
     Ok(())
 }
+
+#[test]
+fn swapped_contact_and_list_context_clicks() -> TestResult {
+    use bevy::picking::pointer::PointerButton;
+    let (mut app, _, outbox) = super::super::tests::app()?;
+    publish(&outbox, CONTACTS, 4, VipPresenceStatus::Online);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .settings
+        .preferences
+        .swap_mouse_buttons = true;
+    app.update();
+    app.update();
+    let row = control(&mut app, |action| matches!(action, Action::Edit(73)))?;
+    let mut click = secondary_click(row);
+    click.count = 2;
+    app.world_mut().trigger(click);
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .chat_panel()
+            .console
+            .current,
+        Some(oteryn_client_ui::chat::ChannelTab::Conversation(
+            "Alice".into()
+        ))
+    );
+    assert!(
+        app.world()
+            .resource::<presentation::Preferences>()
+            .context
+            .is_none()
+    );
+    let mut click = secondary_click(row);
+    click.button = PointerButton::Primary;
+    app.world_mut().trigger(click);
+    assert!(
+        app.world()
+            .resource::<presentation::Preferences>()
+            .context
+            .is_some()
+    );
+    let list = app
+        .world_mut()
+        .query_filtered::<Entity, With<List>>()
+        .single(app.world())?;
+    let mut click = secondary_click(list);
+    click.button = PointerButton::Primary;
+    app.world_mut().trigger(click);
+    app.update();
+    assert_eq!(
+        app.world_mut()
+            .query_filtered::<&Node, With<view::ListMenu>>()
+            .single(app.world())?
+            .display,
+        Display::Flex
+    );
+    Ok(())
+}

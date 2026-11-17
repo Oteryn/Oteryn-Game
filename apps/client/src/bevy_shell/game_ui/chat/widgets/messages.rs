@@ -70,18 +70,23 @@ pub(super) fn speech_color(line: Option<&oteryn_session::ChatLine>) -> Color {
     }
 }
 
-pub(super) fn speaker(line: &oteryn_session::ChatLine) -> Option<&str> {
-    use oteryn_session::ChatLine;
-    match line {
-        ChatLine::Local {
-            speaker_name, mode, ..
-        } if *mode != oteryn_session::ChatSpeechMode::MonsterSay => Some(speaker_name),
-        ChatLine::Private { speaker_name, .. }
-        | ChatLine::Room { speaker_name, .. }
-        | ChatLine::Party { speaker_name, .. } => Some(speaker_name),
-        ChatLine::Guild(line) => Some(&line.speaker_name),
-        ChatLine::PrivateChannel(line) => Some(&line.speaker_name),
-        _ => None,
+impl RenderedRow {
+    fn target(&self) -> Option<&str> {
+        use oteryn_session::ChatLine;
+        match self.line.as_ref()? {
+            ChatLine::Local {
+                speaker_name, mode, ..
+            } if *mode != oteryn_session::ChatSpeechMode::MonsterSay => Some(speaker_name),
+            ChatLine::Private { speaker_name, .. } => {
+                Some(self.recipient.as_deref().unwrap_or(speaker_name))
+            }
+            ChatLine::Room { speaker_name, .. } | ChatLine::Party { speaker_name, .. } => {
+                Some(speaker_name)
+            }
+            ChatLine::Guild(line) => Some(&line.speaker_name),
+            ChatLine::PrivateChannel(line) => Some(&line.speaker_name),
+            _ => None,
+        }
     }
 }
 
@@ -109,7 +114,7 @@ pub(super) fn message_menu(
     owner: NonSend<HostOwner>,
     guard: ModalGuard,
     mut commands: Commands,
-    skins: Res<Skins>,
+    (skins, scale): (Res<Skins>, Option<Res<UiScale>>),
     mut state: ResMut<ChatState>,
 ) {
     if event.button != bevy::picking::pointer::PointerButton::Secondary
@@ -128,7 +133,7 @@ pub(super) fn message_menu(
         commands.entity(old).despawn();
     }
     let position = event.pointer.location().position;
-    let name = message.row.line.as_ref().and_then(speaker);
+    let name = message.row.target();
     let mut actions = Vec::new();
     if let Some(name) = name {
         actions.extend([
@@ -171,20 +176,13 @@ pub(super) fn message_menu(
         checked: Some(skins.checked.clone()),
         unchecked: Some(skins.unchecked.clone()),
     };
-    let menu = popup::spawn(&mut commands, &look, position, &items);
-    let layer = commands
-        .spawn((
-            super::super::super::GameModal,
-            GlobalZIndex(200),
-            Node {
-                position_type: PositionType::Absolute,
-                width: percent(100.),
-                height: percent(100.),
-                ..default()
-            },
-        ))
-        .add_children(&[menu.scrim, menu.root])
-        .id();
+    let (menu, layer) = crate::bevy_shell::game_ui::hud_panes::context_menu::spawn(
+        &mut commands,
+        &look,
+        position,
+        scale.as_deref(),
+        &items,
+    );
     commands.entity(menu.scrim).observe(message_dismiss);
     for (entity, action) in menu
         .entries
@@ -241,7 +239,7 @@ pub(super) fn message_action(
     {
         return;
     }
-    let name = control.message.row.line.as_ref().and_then(speaker);
+    let name = control.message.row.target();
     match control.action {
         MessageAction::Copy => {
             let _ = clipboard.set_text(control.message.row.text.clone());
@@ -280,3 +278,6 @@ pub(super) fn message_action(
         commands.entity(menu).despawn();
     }
 }
+
+#[cfg(test)]
+mod tests;
