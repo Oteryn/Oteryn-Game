@@ -151,8 +151,10 @@ fn cast(runtime: &mut ChannelRuntimeV1, issuer: ExactActorRef, spell: &str) -> T
         intent: AiAbilityAdapter::normalize(&actor, &[&actor]).map_err(debug)?,
     };
     assert!(
-        crate::gameplay_transport::retro_combat::execute(runtime, &proposal, 1_000_000)
-            .map_err(|error| format!("dispatch {spell} from {issuer:?}: {error:?}"))?
+        crate::gameplay_transport::monster_profile_cycle::retained::dispatch_encounter_spell(
+            runtime, &proposal, 1_000_000,
+        )
+        .map_err(|error| format!("dispatch {spell} from {issuer:?}: {error:?}"))?
     );
     Ok(())
 }

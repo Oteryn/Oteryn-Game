@@ -6,6 +6,23 @@ use crate::foundation::ExactActorRef;
 use crate::gameplay_transport::soul_war_callbacks::RetainedSoulWarAttack;
 use std::sync::{Arc, Mutex};
 
+/// Dispatch encounter-specific casts before the ordinary physical spell resolver.
+pub(in crate::gameplay_transport) fn dispatch_encounter_spell(
+    runtime: &mut ChannelRuntimeV1,
+    proposal: &ProfileAbilityProposal,
+    now_us: u64,
+) -> Result<bool, crate::foundation::CarrierError> {
+    use super::super::retro_combat::{self, Source};
+
+    let source = match proposal.ability.key.as_str() {
+        "oteryn:ability.spell.retro_time_distortion" => Source::Distortion,
+        "oteryn:ability.spell.retro_blissful_blast" => Source::BlissfulTimes,
+        _ => return Ok(false),
+    };
+    retro_combat::execute(runtime, proposal, source, now_us)?;
+    Ok(true)
+}
+
 #[derive(Debug, Clone)]
 pub(super) struct RetainedProposal {
     pub(super) proposal: ProfileAbilityProposal,
@@ -467,8 +484,7 @@ pub(in crate::gameplay_transport) async fn resume_one_due(
                 return Err(());
             }
             if let Some(proposal) = current.first()
-                && super::super::retro_combat::execute(runtime, proposal, execution_now)
-                    .map_err(|_| ())?
+                && dispatch_encounter_spell(runtime, proposal, execution_now).map_err(|_| ())?
             {
                 pending.advance(cursor)?;
                 return Ok(true);

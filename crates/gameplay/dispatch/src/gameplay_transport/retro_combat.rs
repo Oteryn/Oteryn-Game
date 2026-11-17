@@ -39,21 +39,19 @@ const PARCEL_CASTLE: &str = "oteryn:creature.parcel_castle";
 pub(super) fn execute(
     runtime: &mut ChannelRuntimeV1,
     proposal: &ProfileAbilityProposal,
+    source: Source,
     now_us: u64,
-) -> Result<bool, CarrierError> {
-    let (source, source_key) = match proposal.ability.key.as_str() {
-        "oteryn:ability.spell.retro_time_distortion" => {
-            (Source::Distortion, "oteryn:creature.time_distortion")
-        }
-        "oteryn:ability.spell.retro_blissful_blast" => (Source::BlissfulTimes, BLISSFUL_TIMES),
-        _ => return Ok(false),
+) -> Result<(), CarrierError> {
+    let source_key = match source {
+        Source::Distortion => "oteryn:creature.time_distortion",
+        Source::BlissfulTimes => BLISSFUL_TIMES,
     };
     if !matches!(
         runtime.binding().runtime_scope(),
         RuntimeScopeRefV1::Instance { .. }
     ) || !runtime.matches_live_creature_identity(proposal.issuer, source_key.as_bytes())
     {
-        return Ok(true);
+        return Ok(());
     }
     oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_intent::validate(
         runtime, proposal,
@@ -125,7 +123,7 @@ pub(super) fn execute(
     if consumes_caster {
         runtime.remove_encounter_actor(proposal.issuer)?;
     }
-    Ok(true)
+    Ok(())
 }
 
 #[cfg(test)]
