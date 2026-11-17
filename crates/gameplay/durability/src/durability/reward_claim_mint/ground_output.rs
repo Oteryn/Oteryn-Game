@@ -102,7 +102,15 @@ pub(crate) async fn create(
         Err(super::super::ground_cell_limit::GroundCellAdmissionError::Limit(_)) => {
             return Ok(false);
         }
-        Err(_) => return Err(DurabilityError::InvalidStoredState),
+        Err(error) => match error.into_spell_error() {
+            super::super::spell_item_transaction::SpellItemError::Database(error) => {
+                return Err(error.into());
+            }
+            super::super::spell_item_transaction::SpellItemError::Durability(error) => {
+                return Err(error);
+            }
+            _ => return Ok(false),
+        },
     }
     let proof = serde_json::json!({"callback": callback,"context":context,"output":output,
         "item":item,"transaction":transaction,"character":fence.character_id.as_bytes(),

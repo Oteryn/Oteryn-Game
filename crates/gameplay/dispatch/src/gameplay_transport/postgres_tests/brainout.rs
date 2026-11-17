@@ -296,3 +296,29 @@ pub(super) async fn exercise(
 async fn counts(h: &Harness) -> TestResult<(i64, i64, i64)> {
     Ok(sqlx::query_as("SELECT (SELECT count(*) FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i9659'),(SELECT count(*) FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i19078'),(SELECT count(*) FROM game_character_quest_receipts)").fetch_one(&h.pool).await?)
 }
+
+#[test]
+fn brainout_ground_output_schema_rejects_unbound_or_mixed_outputs() -> TestResult {
+    let original = callback(NAME)?;
+    let value = serde_json::to_value(original)?;
+    for case in 0..4 {
+        let mut invalid = value.clone();
+        match case {
+            0 => invalid["effects"]["ground_output"]["count"] = 0.into(),
+            1 => invalid["offerings"] = serde_json::json!([]),
+            2 => {
+                invalid["effects"]["item_reward"] =
+                    serde_json::json!({"item":"oteryn:item.tibia.i3031","count":1,"contents":[]})
+            }
+            _ => invalid["effects"]["ground_output"]["position"]["floor"] = 1.into(),
+        }
+        assert!(
+            quest::world_callbacks::parse(
+                &serde_json::json!({"schema":1,"callbacks":[invalid]}).to_string()
+            )
+            .is_err(),
+            "invalid Ground output case {case}"
+        );
+    }
+    Ok(())
+}
