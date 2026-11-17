@@ -40,7 +40,7 @@ pub struct GourmetUseRequest {
 pub(in crate::durability) async fn special_food_on_cooldown(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: CurrentCharacterItemFence,
-) -> Result<bool, DurabilityError> {
+) -> std::result::Result<bool, DurabilityError> {
     Ok(sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM game_hireling_gourmet_state
           WHERE character_id=encode($1,'hex')::uuid
