@@ -54,6 +54,7 @@ mod hero_of_bounac;
 pub(super) mod hireling_services;
 mod hive_shared;
 mod isle_of_evil;
+mod junkar_coal;
 mod liquid_black;
 mod magic_effects;
 mod marriage;
@@ -778,6 +779,20 @@ pub(super) async fn npc_bank_talk(
         .is_some_and(|context| admission.has_pending_paid_confirmation(command, &intent, &context))
     {
         return ordinary;
+    }
+    if intent.text.trim().eq_ignore_ascii_case("donate coal")
+        && let Some(context) = admission.states.npc_conversations.current_npc(
+            &admission.states.chat,
+            &runtime,
+            actor,
+            session,
+            &intent,
+        )
+        && oteryn_gameplay_world_change::owner::junkar(&context.2)
+    {
+        drop(runtime);
+        drop(_trade_permit.take());
+        return junkar_coal::donate(admission, actor, command, &intent, context).await;
     }
     if let Some(step) = marriage::prepare(admission, actor, command, &intent, &runtime) {
         if matches!(step, marriage::Step::Ordinary) {

@@ -58,7 +58,55 @@ pub struct GatheringCraft {
     pub attempt: oteryn_gameplay_items::fishing::GatheringAttempt,
 }
 
+/// A dispatch-resolved physical pump or focused Junkar donation.
+#[derive(Debug, Clone, Copy)]
+pub enum CoalDelivery {
+    Awash {
+        position: (u16, u16, i8),
+        appearance: u16,
+    },
+    Steamship,
+}
+
+impl CoalDelivery {
+    fn resource(self) -> oteryn_gameplay_world_change::owner::ContributionKind {
+        use oteryn_gameplay_world_change::owner::ContributionKind;
+        match self {
+            Self::Awash { .. } => ContributionKind::Coal,
+            Self::Steamship => ContributionKind::SteamshipCoal,
+        }
+    }
+}
+
 impl DurabilityRoot {
+    #[allow(clippy::too_many_arguments)]
+    pub async fn deliver_world_change_coal<C: ItemLoopContent>(
+        &self,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: ItemCraftRequest,
+        native: &NativeGameplayState,
+        content: &C,
+        epoch: u64,
+        delivery: CoalDelivery,
+    ) -> Result<Option<UseDisposition>, DurabilityError> {
+        self.craft_item_with_lane::<C, ()>(
+            recovery,
+            node,
+            fence,
+            request,
+            native,
+            content,
+            false,
+            None,
+            Some(permit),
+            Some((epoch, delivery)),
+        )
+        .await
+    }
+
     /// Probe or commit a basic cooking command. A probe needs no current handles or station;
     /// an exact historical receipt is returned before live custody checks after a restart.
     #[allow(clippy::too_many_arguments)]
@@ -84,6 +132,7 @@ impl DurabilityRoot {
             probe,
             None,
             Some(permit),
+            None,
         )
         .await
     }
@@ -102,7 +151,7 @@ impl DurabilityRoot {
         window: Option<&mut super::spell_owner_commit::SpellCommitWindow<'_, T>>,
     ) -> Result<Option<UseDisposition>, DurabilityError> {
         self.craft_item_with_lane(
-            recovery, node, fence, request, native, content, probe, window, None,
+            recovery, node, fence, request, native, content, probe, window, None, None,
         )
         .await
     }
@@ -122,6 +171,7 @@ impl DurabilityRoot {
         probe: bool,
         window: Option<&mut super::spell_owner_commit::SpellCommitWindow<'_, T>>,
         permit: Option<&super::spell_owner_commit::SpellLanePermit>,
+        coal: Option<(u64, CoalDelivery)>,
     ) -> Result<Option<UseDisposition>, DurabilityError> {
         // An enchanting write may not bypass the live resource owner's retained successor.
         // Probes remain available to the common replay path before resolving current handles.
@@ -170,8 +220,31 @@ impl DurabilityRoot {
             let Some(permit) = context.2.as_ref().map(|window| window.permit()).or(context.3) else {
                 return Ok(Some(UseDisposition::Rejected));
             };
-            let result = write(&mut tx, permit, fence, &request, context.0, context.1).await?;
+            if let Some((_, delivery)) = coal {
+                if let CoalDelivery::Awash { position, appearance } = delivery
+                    && !oteryn_gameplay_world_change::owner::dronk_pump(position, appearance)
+                {
+                    return Ok(Some(UseDisposition::NothingToUse));
+                }
+                if request.tool.is_some() || request.ingredient.is_some() || request.gathering.is_some()
+                    || request.enchanting.is_some() || request.station.is_some()
+                {
+                    return Ok(Some(UseDisposition::Rejected));
+                }
+            }
+            let result = write_with_skinning(
+                &mut tx, permit, fence, &request, context.0, context.1, None, coal.map(|(_, delivery)| delivery),
+            ).await?;
             if result == UseDisposition::Committed {
+                if let Some((epoch, delivery)) = coal {
+                    let operation = super::world_event::changes::coal_operation(request.command);
+                    let world = fence.runtime_scope.world_id();
+                    if !matches!(super::world_event::changes::contribute(
+                        &mut tx, &record, world, epoch, operation, delivery.resource(), 1,
+                    ).await?, super::world_event::changes::ContributionWrite::Applied(_)) {
+                        return Ok(Some(UseDisposition::StaleState));
+                    }
+                }
                 if let Some(window) = context.2.as_mut() {
                     super::pvp_live::commit_live_pvp_transaction(tx.into_inner(), deadline, window).await?;
                 } else { tx.commit(deadline).await?; }
@@ -179,17 +252,6 @@ impl DurabilityRoot {
             Ok(Some(result))
         })).await
     }
-}
-
-async fn write<C: ItemLoopContent>(
-    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
-    permit: &super::spell_owner_commit::SpellLanePermit,
-    fence: CurrentCharacterItemFence,
-    request: &ItemCraftRequest,
-    native: &NativeGameplayState,
-    content: &C,
-) -> Result<UseDisposition, DurabilityError> {
-    write_with_skinning(tx, permit, fence, request, native, content, None).await
 }
 
 #[allow(
@@ -207,6 +269,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
         &SkinningRequest,
         &oteryn_gameplay_content::content::charm_source::CanonicalCharmCatalogue,
     )>,
+    coal: Option<CoalDelivery>,
 ) -> Result<UseDisposition, DurabilityError> {
     if request.enchanting.is_some() {
         return enchanting::write(tx, fence, request, native, content).await;
@@ -262,7 +325,22 @@ async fn write_with_skinning<C: ItemLoopContent>(
     let mut retires_ingredient = false;
     let mut ingredient_debit = 1_u32;
     let mut ingredient_consumed = None;
-    let conversion = if let Some(prepared) = &skinning {
+    let conversion = if let Some(delivery) = coal {
+        if definition.family != "Item"
+            || definition.production_key != oteryn_gameplay_world_change::owner::COAL_ITEM
+            || definition.revision_ref != "definition-r1"
+        {
+            return Ok(UseDisposition::NothingToUse);
+        }
+        Some(oteryn_gameplay_items::item_craft::CookingConversion {
+            recipe: match delivery {
+                CoalDelivery::Awash { .. } => "oteryn:world-change.awash-coal",
+                CoalDelivery::Steamship => "oteryn:world-change.steamship-coal",
+            }
+            .into(),
+            outputs: Vec::new(),
+        })
+    } else if let Some(prepared) = &skinning {
         Some(oteryn_gameplay_items::item_craft::CookingConversion {
             recipe: prepared.conversion.recipe.clone(),
             outputs: prepared.conversion.outputs.clone(),

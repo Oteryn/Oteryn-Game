@@ -177,6 +177,10 @@ pub struct DailyWorldChanges {
     pub flower_month: bool,
     #[serde(default)]
     pub awash: bool,
+    #[serde(default)]
+    pub swamp_epidemic: bool,
+    #[serde(default)]
+    pub steamship_open: bool,
     /// W15: 62/498 observed days, accepted as 125 per thousand per reset.
     /// Old immutable decisions stay inactive until their next server save.
     #[serde(default)]
@@ -256,6 +260,8 @@ impl DailyWorldChanges {
         let nightmare_isles = NIGHTMARE_LAYERS[choice(draw(nightmare), 3) as usize];
         Self {
             awash: false,
+            swamp_epidemic: false,
+            steamship_open: false,
             stampede,
             fire_from_the_earth,
             world_counters: true,
@@ -412,6 +418,8 @@ mod tests {
                 grimvale_full_moon: true,
                 flower_month: true,
                 awash: false,
+                swamp_epidemic: false,
+                steamship_open: false,
                 stampede: true,
                 fire_from_the_earth: false,
                 world_counters: true,

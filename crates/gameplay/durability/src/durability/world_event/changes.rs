@@ -196,6 +196,13 @@ pub(super) async fn record(
     if let Some(retiring_epoch) = epoch.checked_sub(1) {
         let coal = tally(tx, world, retiring_epoch, ContributionKind::Coal).await?;
         selected.awash = oteryn_gameplay_world_change::owner::awash_at_save(coal);
+        let steamship_coal =
+            tally(tx, world, retiring_epoch, ContributionKind::SteamshipCoal).await?;
+        selected.steamship_open =
+            oteryn_gameplay_world_change::owner::steamship_at_save(steamship_coal);
+        let medicine = tally(tx, world, retiring_epoch, ContributionKind::Medicine).await?;
+        selected.swamp_epidemic =
+            oteryn_gameplay_world_change::owner::swamp_epidemic_at_save(medicine);
     }
     counters::at_reset(
         tx,
@@ -317,4 +324,47 @@ pub async fn tally(
         .map(|v| v.parse().map_err(|_| DurabilityError::InvalidStoredState))
         .transpose()
         .map(|v| v.unwrap_or(0))
+}
+
+/// Credit the exact medicine pouch consumed by the existing Ottokar exchange.
+/// Uninitialized Worlds can perform the personal exchange without a saved tally.
+pub(crate) async fn credit_ottokar(
+    tx: &mut Transaction<'_, Postgres>,
+    recovery: &CharacterRecoveryFenceV1,
+    world: WorldId,
+    operation: [u8; 16],
+) -> Result<bool, DurabilityError> {
+    lock_admission_relations(tx).await?;
+    let epoch: Option<String> = sqlx::query_scalar("SELECT reset_epoch::text FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid")
+        .bind(world.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    let Some(epoch) = epoch else {
+        return Ok(true);
+    };
+    let epoch = epoch
+        .parse()
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    Ok(matches!(
+        contribute(
+            tx,
+            recovery,
+            world,
+            epoch,
+            operation,
+            ContributionKind::Medicine,
+            1
+        )
+        .await?,
+        ContributionWrite::Applied(_)
+    ))
+}
+
+pub(crate) fn coal_operation(command: crate::foundation::CommandRef) -> [u8; 16] {
+    let digest = Sha256::new()
+        .chain_update(b"oteryn.world-change.coal.v1\0")
+        .chain_update(command.game_session_id().as_bytes())
+        .chain_update(command.command_id().get().to_be_bytes())
+        .finalize();
+    let mut operation = [0; 16];
+    operation.copy_from_slice(&digest[..16]);
+    operation
 }

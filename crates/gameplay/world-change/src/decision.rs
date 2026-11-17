@@ -16,6 +16,10 @@ pub struct NativeDecision {
     flower_month: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     awash: bool,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    swamp_epidemic: bool,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    steamship_open: bool,
 }
 
 impl NativeDecision {
@@ -35,6 +39,8 @@ impl NativeDecision {
             grimvale_full_moon: day.grimvale_full_moon,
             flower_month: day.flower_month,
             awash: day.awash,
+            swamp_epidemic: day.swamp_epidemic,
+            steamship_open: day.steamship_open,
         }
     }
     pub fn restore(&self) -> Result<DailyWorldChanges, crate::rules::RuleError> {
@@ -75,6 +81,8 @@ impl NativeDecision {
             grimvale_full_moon: self.grimvale_full_moon,
             flower_month: self.flower_month,
             awash: self.awash,
+            swamp_epidemic: self.swamp_epidemic,
+            steamship_open: self.steamship_open,
             stampede: false,
             fire_from_the_earth: false,
             world_counters: false,

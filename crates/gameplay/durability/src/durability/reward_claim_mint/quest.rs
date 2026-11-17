@@ -472,6 +472,20 @@ pub(crate) async fn apply(
         .chain_update(command.command_id().get().to_be_bytes())
         .chain_update(callback.key.as_bytes())
         .finalize();
+    if callback.key == "oteryn:quest-reward/l9-afflicted-pouch" {
+        let mut operation = [0; 16];
+        operation.copy_from_slice(&progress_event[..16]);
+        if !super::super::world_event::changes::credit_ottokar(
+            tx,
+            owner.1,
+            fence.runtime_scope.world_id(),
+            operation,
+        )
+        .await?
+        {
+            return Ok(false);
+        }
+    }
     for progress in &callback.achievement_progress {
         super::super::account_achievement::add_progress(
             tx,

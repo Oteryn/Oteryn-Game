@@ -214,3 +214,15 @@ fn raid_arithmetic_and_corruption_fail_closed() -> Result {
     assert_eq!(s.validate(), Err(RaidError::InvalidState));
     Ok(())
 }
+
+#[test]
+fn feverish_citizens_interval_chance_is_bounded_in_both_states() -> Result {
+    for seconds in [1_800, 86_400] {
+        let first_loss = u64::try_from(((1_u128 << 64) * 60).div_ceil(u128::from(seconds)))?;
+        assert!(super::schedule::wins_interval_roll(0, seconds));
+        assert!(super::schedule::wins_interval_roll(first_loss - 1, seconds));
+        assert!(!super::schedule::wins_interval_roll(first_loss, seconds));
+        assert!(!super::schedule::wins_interval_roll(u64::MAX, seconds));
+    }
+    Ok(())
+}

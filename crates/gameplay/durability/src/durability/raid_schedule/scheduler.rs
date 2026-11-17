@@ -139,12 +139,24 @@ impl DurabilityRoot {
                 .bind(request.world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
             let mut legacy_running: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_raid_firings f WHERE f.world_id=encode($1,'hex')::uuid AND f.state=1 AND f.raid_key<>$2 AND NOT EXISTS(SELECT 1 FROM game_world_raid_schedule_sources s WHERE s.world_id=f.world_id AND s.raid_key=f.raid_key AND s.source_kind<>1))")
                 .bind(request.world.as_bytes().as_slice()).bind(super::FEROXA_KEY).fetch_one(&mut *tx).await?;
-            let world_changes = if request.candidates.iter().any(|candidate| requirements.contains_key(candidate.key.as_str())) {
+            use oteryn_gameplay_world_change::owner::{FEVERISH_CITIZENS_RAID, feverish_raid_interval};
+            let world_changes = if request.candidates.iter().any(|candidate|
+                candidate.key.as_str() == FEVERISH_CITIZENS_RAID || requirements.contains_key(candidate.key.as_str())
+            ) {
                 crate::durability::world_event::changes::load(&mut tx, request.world, request.reset_epoch).await?
             } else { None };
             let mut fired = Vec::new();
             let mut retry_activity = false;
-            for candidate in request.candidates {
+            for mut candidate in request.candidates {
+                if candidate.key.as_str() == FEVERISH_CITIZENS_RAID
+                    && let Some(mean_interval_s) = world_changes.as_ref().and_then(feverish_raid_interval)
+                    && let RaidPolicy::Random { .. } = candidate.definition.policy
+                {
+                    candidate.definition.policy = RaidPolicy::Random {
+                        mean_interval_s,
+                        min_gap_s: mean_interval_s,
+                    };
+                }
                 if let Some(required) = requirements.get(candidate.key.as_str())
                     && !world_changes.as_ref().is_some_and(|day| oteryn_gameplay_world_change::owner::is_active(day, required)) {
                     continue;

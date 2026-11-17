@@ -3,7 +3,7 @@ use super::ComposedFreshAdmission;
 use super::connection::{FreshAdmissionAuthority, UseCommand, UseOutcome};
 use super::item_ref_admission::{NativeItemWeights, pinned_index};
 use super::item_view::{ItemKey, SessionItemView};
-use crate::durability::item_craft::ItemCraftRequest;
+use crate::durability::item_craft::{CoalDelivery, ItemCraftRequest};
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use crate::map::view::{self, MapEntryKey, MapFacts};
@@ -287,6 +287,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
             }
         };
+        let position = (map_target.3.x, map_target.3.y, -map_target.3.floor);
+        if intent.use_with_map_item.is_some()
+            && let Some(appearance) = item_id(&station.production_key)
+            && oteryn_gameplay_world_change::owner::dronk_pump(position, appearance)
+        {
+            if !self
+                .states
+                .player_trades
+                .physical(command.game_session_id, Some(source))
+            {
+                return disposition(UseDisposition::Rejected);
+            }
+            let result = self
+                .root
+                .deliver_world_change_coal(
+                    &_permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request,
+                    native,
+                    &NativeItemWeights(native).with_wheel(self.premium_coordinator),
+                    self.reset_epoch,
+                    CoalDelivery::Awash {
+                        position,
+                        appearance,
+                    },
+                )
+                .await
+                .ok()??;
+            return disposition(result);
+        }
         request.station = Some(station);
         let mut catch_roll = 1;
         let mut fishing_skill = 10;
