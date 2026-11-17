@@ -9,3 +9,10 @@ another `#[path] mod` line in `monk_save_postgres_tests.rs`, the shared list eve
 mechanic used to edit. The module is a sibling of `fixture`, `fresh_fixture` and the
 other explicit mounts, so `super::fixture` keeps resolving. A test that needs routed
 PostgreSQL returns early when no admin URL is configured.
+
+On memory-constrained machines, a focused run may set
+`OTERYN_POSTGRES_TEST_GROUPS=actmark` before
+`cargo test -p oteryn-gameplay-dispatch --lib actmark`. The comma-separated group
+names must exist. The build retains their conservatively discovered helper
+dependencies; the runtime test filter still chooses the cases to execute. Leave
+the variable unset for the complete mount, including normal CI and clippy checks.

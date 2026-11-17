@@ -71,10 +71,10 @@ fn focus_postgres_mounts(
         // Conservative token matching also retains dependencies mentioned in
         // helper submodules; extra helpers are safe, a missing helper won't compile.
         for token in source.split(|c: char| !c.is_ascii_alphanumeric() && c != '_') {
-            if let Some(dependency) = modules.get(token) {
-                if selected.insert(token.to_owned()) {
-                    pending.push(dependency.clone());
-                }
+            if let Some(dependency) = modules.get(token)
+                && selected.insert(token.to_owned())
+            {
+                pending.push(dependency.clone());
             }
         }
         let parent = path.parent().ok_or("PG source parent")?;
