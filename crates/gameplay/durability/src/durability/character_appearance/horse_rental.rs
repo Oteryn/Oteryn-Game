@@ -1,5 +1,5 @@
 use crate::domain::appearance::{AccountUnlocks, UnlockFact};
-use crate::foundation::CharacterId;
+use crate::domain::CharacterId;
 
 const MOUNTS: [(i16, &str); 3] = [
     (22, "oteryn:content.mount.rented_horse"),
