@@ -9,6 +9,14 @@ pub(super) async fn scenario(
     replay_only: bool,
     missing_child: bool,
 ) -> TestResult {
+    scenario_with_resume(harness, replay_only, missing_child, false).await
+}
+
+pub(super) async fn resumed_budget(harness: &Harness) -> TestResult {
+    scenario_with_resume(harness, false, false, true).await
+}
+
+async fn scenario_with_resume(harness: &Harness, replay_only: bool, missing_child: bool, resumed: bool) -> TestResult {
     prepare_current_session(harness).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
     let authority = harness
@@ -27,7 +35,7 @@ pub(super) async fn scenario(
     let mut owner = deps.owner(harness, &authority);
     owner.active_generation = Some(active);
     owner.movement_cells = (deps.room.movement_cells()).into();
-    if !replay_only && !missing_child {
+    if !replay_only && !missing_child && !resumed {
         super::shared_budget::exercise(harness, &deps, &owner, rat).await?;
         // The budget test completed the walkback. Start the summon case from the pinned
         // admission cell again, retaining the same AI/schedule owner and its occurrence.
@@ -42,6 +50,25 @@ pub(super) async fn scenario(
     }
     deps.initialize(&owner).await;
     owner.clock_origin -= std::time::Duration::from_secs(10);
+    if resumed {
+        let native = active.native_gameplay().ok_or("native")?;
+        let mut runtime = deps.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        states.monster_melee.think_players = runtime.positioned_melee_census().map_err(debug)?.into_iter()
+            .filter_map(|(actor, _, session)| session.map(|session| (actor, session))).collect();
+        assert_eq!(states.monster_melee.think_players.len(), 1, "resume the real preceding player census");
+        let policy = runtime.companion_snapshot(rat).map_err(debug)?.state.policy;
+        let creature = crate::content::ProjectV2DefinitionRef {
+            family: crate::content::ProjectV2Family::Creature,
+            key: policy.definition_key.clone(), revision: policy.definition_revision.clone(),
+        };
+        states.monster_melee.creature_ai.admit_native_creature(&runtime, native, rat, &creature, 0).map_err(debug)?;
+        let batch = states.monster_melee.creature_ai.reserve_current_thinks(&mut runtime, 0).ok_or("original reservation")?;
+        assert_eq!(batch.occurrences().len(), 1);
+        states.native_profile_pass.prepare_for_test(std::sync::Arc::new(batch)).map_err(debug)?;
+        // A real player path admission advances the shared ledger between owner turns.
+        assert!(owner.states.attack.lock().await.path_budget.admits(50_000, true, false));
+    }
     owner.drain_monster_melee().await;
     let first_report = owner
         .states

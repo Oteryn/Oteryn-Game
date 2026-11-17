@@ -172,3 +172,8 @@ fn activated_outer_source_summon_rejects_inner_catalog_and_registers_once() -> T
 fn current_owner_summon_registration_failure_rolls_back_and_replays_the_refusal() -> TestResult {
     run_case(async |harness| summon_transaction::scenario(harness, false, true).await)
 }
+
+#[test]
+fn resumed_summon_uses_current_path_budget_window() -> TestResult {
+    run_case(async |harness| summon_transaction::resumed_budget(harness).await)
+}

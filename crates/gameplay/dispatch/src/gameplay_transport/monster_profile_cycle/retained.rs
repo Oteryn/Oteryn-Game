@@ -157,6 +157,9 @@ impl PendingProfilePass {
         progress.ai_cursor = offset.checked_add(count).ok_or(())?;
         Ok(progress.ai_cursor == self.actor_bound)
     }
+    pub(in crate::gameplay_transport) fn ai_cursor(&self) -> usize {
+        self.progress().ai_cursor
+    }
     /// Called synchronously beside the AI owner's sequence/deadline commit.
     pub(super) fn record_report(
         &self,
@@ -332,6 +335,13 @@ impl ProfilePassOwner {
         let pending = PendingProfilePass::prepare(batch)?;
         self.pending = Some(Arc::clone(&pending));
         Ok(pending)
+    }
+    #[cfg(test)]
+    pub(in crate::gameplay_transport) fn prepare_for_test(
+        &mut self,
+        batch: Arc<ReservedNativeThinkBatch>,
+    ) -> Result<Arc<PendingProfilePass>, ()> {
+        self.prepare(batch)
     }
     pub(super) fn complete(&mut self, expected: &Arc<PendingProfilePass>) -> Result<(), ()> {
         if !expected.items_ready()

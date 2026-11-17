@@ -590,7 +590,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     map,
                     native,
                     &mut attack.path_budget,
-                    now,
+                    // Resource work uses the current clock while the attack
+                    // guard is held; the reservation's semantic clock stays `now`.
+                    execution_now.max(owner.owner_now().get()),
                     player_waiting_now,
                 );
                 // Native spell proposals carry the source closure's actual formula revision.
