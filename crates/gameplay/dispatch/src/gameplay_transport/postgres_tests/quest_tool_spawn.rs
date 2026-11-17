@@ -241,14 +241,14 @@ fn item_on_map_use_commits_progress_and_spawns_once_without_relocation_postgres(
                     use_with: None,
                     use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
                         placement,
-                        expected_revision: 0,
+                        expected_revision: map.facts.object_revision(key),
                     })),
                     use_with_position: None,
                 })
                 .map_err(debug)?
             };
             let command = admitted.continuity.next_command_id;
-            for _ in 0..2 {
+            for attempt in ["fresh USE", "replayed USE"] {
                 let reply = super::quest_world_callbacks::wire(
                     &owner,
                     &mut admitted,
@@ -259,7 +259,8 @@ fn item_on_map_use_commits_progress_and_spawns_once_without_relocation_postgres(
                 .await?;
                 assert_eq!(
                     decode_use_result(&reply).map_err(debug)?,
-                    UseDisposition::Committed
+                    UseDisposition::Committed,
+                    "{attempt}"
                 );
             }
             let state = h
