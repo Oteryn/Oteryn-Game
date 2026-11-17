@@ -125,7 +125,7 @@ fn spawn_refusal_warning(
 }
 
 /// Realises creature `key` next to the actor of `session` through the same fenced owner path
-/// as the harness Rat, and answers `spawned <entity identity hex> <generation>`.
+/// as the harness Rat, and answers `spawned <entity identity hex> <generation> <actor local id>`.
 pub(super) async fn spawn(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -175,8 +175,9 @@ async fn spawn_placed(
                 .map(|byte| format!("{byte:02x}"))
                 .collect::<String>();
             format!(
-                "spawned {identity} {}",
-                creature.actor.actor_local_generation()
+                "spawned {identity} {} {}",
+                creature.actor.actor_local_generation(),
+                creature.actor.actor_local_id()
             )
         }
         Ok(Err(refusal)) => refuse(refusal.token(), refusal.detail()),

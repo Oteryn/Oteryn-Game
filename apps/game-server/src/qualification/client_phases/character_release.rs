@@ -1,13 +1,18 @@
+fn fixture_need(world: [u8; 16], character: [u8; 16]) -> verdict::Need {
+    verdict::Need::Fixture(world, character)
+}
+
 // A journey can lose its socket before logout, or be cancelled by its deadline.
 // Fresh admission must observe the owning server's terminal release, including
 // control-loss detection and grace; qualification never edits session state.
 // The first timeout per fixture is the root; later waits on it fail at once.
 async fn wait_character_released(clients: &SeamClients<'_>, index: usize) -> TestResult {
     let harness = verdict::Harness::global();
-    harness.fixture_gate(index)?;
+    let need = fixture_need(clients.world, clients.characters[index]);
+    harness.fixture_gate(need)?;
     wait_fixture_released(clients, index)
         .await
-        .map_err(|error| harness.fixture_failed(index, error.as_ref()))
+        .map_err(|error| harness.fixture_failed(need, index, error.as_ref()))
 }
 
 async fn wait_fixture_released(clients: &SeamClients<'_>, index: usize) -> TestResult {
@@ -108,6 +113,16 @@ async fn wait_release(
 #[cfg(test)]
 mod character_release_tests {
     use super::*;
+
+    #[test]
+    fn release_failures_distinguish_fixtures_at_the_same_pair_index() {
+        let core = fixture_need([1; 16], [2; 16]);
+        let packets = fixture_need([1; 16], [3; 16]);
+        let open_pvp = fixture_need([4; 16], [2; 16]);
+        assert_ne!(core, packets);
+        assert_ne!(core, open_pvp);
+        assert_eq!(core, fixture_need([1; 16], [2; 16]));
+    }
 
     #[test]
     fn character_release_waits_through_active_loss_and_grace() -> TestResult {

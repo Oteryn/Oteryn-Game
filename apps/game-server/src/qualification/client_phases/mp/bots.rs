@@ -13,6 +13,7 @@ pub(super) struct Bot<'p, 'a> {
     pub session: Option<DevClientSession>,
     pub character: [u8; 16],
     pub name: String,
+    pending_events: Vec<SessionEvent>,
 }
 
 impl Bot<'_, '_> {
@@ -74,12 +75,34 @@ impl Bot<'_, '_> {
     }
 }
 
-/// Keep partial admissions in `bots` so the caller can release them even on setup failure.
+pub(super) async fn observe_all<T>(
+    bots: &mut [Bot<'_, '_>],
+    observation: impl std::future::Future<Output = TestResult<T>>,
+) -> TestResult<T> {
+    with_liveness(bots, &mut [], "group-observation", observation).await?
+}
+
+/// Keep partial admissions so cleanup can prove durable release even on setup failure.
 pub(super) async fn connect_bots<'p, 'a>(
     roles: &[(&'p SeamClients<'a>, usize, Option<&str>)],
 ) -> (Vec<Bot<'p, 'a>>, TestResult) {
     let mut bots = Vec::new();
-    let result = connect_into(roles, &mut bots).await;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
+    verdict::Harness::global().bounded_wait(deadline, "MP-admissions");
+    let result = tokio::time::timeout_at(deadline, connect_into(roles, &mut bots)).await;
+    let result = result.unwrap_or_else(|elapsed| {
+        verdict::record_error(&elapsed);
+        Err(verdict::context(
+            "MP admissions/provision deadline".to_owned(),
+            elapsed,
+        ))
+    });
+    if result.is_err() {
+        // Setup may have lost a peer during the current bot's command.
+        for bot in &mut bots {
+            bot.session = None;
+        }
+    }
     (bots, result)
 }
 
@@ -102,11 +125,13 @@ async fn connect_into<'p, 'a>(
             session: None,
             character: pair.characters[index],
             name: String::new(),
+            pending_events: Vec::new(),
         });
         let (admitted, current) = bots.split_at_mut(ordinal);
         let bot = current.first_mut().ok_or("admitted bot absent")?;
         with_liveness(
             admitted,
+            &mut [],
             "admissions-pump",
             connect_bot(bot, 0xa0 + u8::try_from(ordinal)?, "connect-initial"),
         )
@@ -125,24 +150,26 @@ async fn connect_into<'p, 'a>(
         }
         // Provisioning (two relogs and a root subprocess) and the name read run long; the
         // admitted bots keep servicing liveness meanwhile.
-        let result = with_liveness(admitted, "admissions-pump", async {
+        let result = with_liveness(admitted, &mut [], "admissions-pump", async {
             if let Some(profile) = profile {
                 provision_as(bot, profile).await?;
             }
             // Same bounded, read-only PgConnection pattern as qualification/death.rs.
-            let result = async {
+            let character = bot.character;
+            let result = observe(bot, async {
                 let mut database = sqlx::PgConnection::connect(pair.url).await?;
                 let name = sqlx::query_scalar("SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND account_id=$2::text::uuid AND world_id=encode($3,'hex')::uuid")
-                    .bind(bot.character.as_slice()).bind(&pair.accounts[index]).bind(pair.world.as_slice())
+                    .bind(character.as_slice()).bind(&pair.accounts[index]).bind(pair.world.as_slice())
                     .fetch_one(&mut database).await?;
                 database.close().await?;
                 TestResult::Ok(name)
-            }.await;
+            }).await;
             bot.name = bot.contextualize("read-character-name", result)?;
             TestResult::Ok(())
         })
         .await?;
         result?;
+        verdict::Harness::global().progress("mp-admitted-bot");
         pump_at(bots, "admissions-pump")
             .await
             .map_err(|error| format!("while_admitting_bot={ordinal} {error}"))?;
@@ -153,30 +180,53 @@ async fn connect_into<'p, 'a>(
 /// Runs one long step of a single bot while every other admitted bot keeps servicing liveness
 /// (the server drops a silent session after about 12s). The step future is polled until it
 /// completes; a service slice runs only between polls, never cancelling a half-read frame.
-async fn with_liveness<T>(
-    others: &mut [Bot<'_, '_>],
+async fn with_liveness<'p, 'a, T>(
+    before: &mut [Bot<'p, 'a>],
+    after: &mut [Bot<'p, 'a>],
     stage: &str,
     step: impl std::future::Future<Output = T>,
 ) -> TestResult<T> {
-    let mut step = std::pin::pin!(step);
-    let mut slice = tokio::time::interval(Duration::from_millis(250));
-    slice.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
-    loop {
-        tokio::select! {
-            biased;
-            result = &mut step => return Ok(result),
-            _ = slice.tick() => {
-                verdict::Harness::global().progress("mp-admissions");
-                pump_at(others, stage).await?;
-            }
-        }
+    if before.is_empty() && after.is_empty() {
+        return Ok(step.await);
     }
+    with_peer_service(step, async || {
+        service_group(before.iter_mut().chain(after.iter_mut()), stage).await
+    })
+    .await
+}
+
+pub(super) async fn on_bot<T>(
+    bots: &mut [Bot<'_, '_>],
+    index: usize,
+    action: impl AsyncFnOnce(&mut Bot<'_, '_>) -> TestResult<T>,
+) -> TestResult<T> {
+    let (before, current) = bots
+        .split_at_mut_checked(index)
+        .ok_or("active bot absent")?;
+    let (bot, after) = current.split_first_mut().ok_or("active bot absent")?;
+    let result = with_liveness(before, after, "peer-service", action(bot)).await;
+    if result.is_err() {
+        // A failed peer read can abort an in-flight command on the active bot.
+        bot.session = None;
+    }
+    result?
+}
+
+pub(super) async fn observe<T>(
+    bot: &mut Bot<'_, '_>,
+    observation: impl std::future::Future<Output = TestResult<T>>,
+) -> TestResult<T> {
+    with_peer_service(observation, async || {
+        service_at(bot, "observation-liveness").await
+    })
+    .await?
 }
 
 async fn connect_bot(bot: &mut Bot<'_, '_>, tag: u8, stage: &str) -> TestResult {
     bot.progress(stage, "begin")?;
     let result = connect_character(bot.pair, tag, bot.index).await;
     bot.session = Some(bot.contextualize(stage, result)?);
+    bot.pending_events.clear();
     bot.progress(stage, "pass")?;
     Ok(())
 }
@@ -248,9 +298,8 @@ async fn provision_current(bot: &mut Bot<'_, '_>, profile: &str) -> TestResult {
     let profile = profile.to_owned();
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
-    let output = tokio::task::spawn_blocking(move || {
-        std::process::Command::new("sudo")
-            .args(["-n", "python3"])
+    let output = observe(bot, async {
+        Ok(fixture_process()
             .arg(script)
             .args([
                 "--socket",
@@ -261,8 +310,9 @@ async fn provision_current(bot: &mut Bot<'_, '_>, profile: &str) -> TestResult {
                 &profile,
             ])
             .output()
+            .await?)
     })
-    .await??;
+    .await?;
     if !output.status.success() {
         let diagnostic =
             String::from_utf8_lossy(&output.stderr[output.stderr.len().saturating_sub(2048)..]);
@@ -280,23 +330,71 @@ pub(super) async fn pump(bots: &mut [Bot<'_, '_>]) -> TestResult<Vec<Vec<Session
 }
 
 async fn pump_at(bots: &mut [Bot<'_, '_>], stage: &str) -> TestResult<Vec<Vec<SessionEvent>>> {
-    let mut events = Vec::with_capacity(bots.len());
-    for bot in bots {
-        let result = async {
-            let client = bot.client()?;
-            client.service_liveness(Duration::from_millis(20)).await?;
-            TestResult::Ok(client.take_events())
-        }
+    service_group(bots.iter_mut(), stage).await?;
+    Ok(bots
+        .iter_mut()
+        .map(|bot| std::mem::take(&mut bot.pending_events))
+        .collect())
+}
+
+async fn service_group<'b, 'p, 'a>(
+    bots: impl Iterator<Item = &'b mut Bot<'p, 'a>>,
+    stage: &str,
+) -> TestResult
+where
+    'p: 'b,
+    'a: 'p,
+{
+    let mut pending: Vec<_> = bots.map(|bot| Box::pin(service_at(bot, stage))).collect();
+    let mut first_error = None;
+    while !pending.is_empty() {
+        let result = std::future::poll_fn(|cx| {
+            for (index, step) in pending.iter_mut().enumerate() {
+                if let std::task::Poll::Ready(result) = step.as_mut().poll(cx) {
+                    return std::task::Poll::Ready((index, result));
+                }
+            }
+            std::task::Poll::Pending
+        })
         .await;
-        let result = bot.contextualize(stage, result);
-        if result.is_err() {
-            // Liveness errors poison the session just like failed command exchanges.
-            // Preserve the diagnostic before dropping it; cleanup must prove durable release.
-            bot.session = None;
+        drop(pending.swap_remove(result.0));
+        if let Err(error) = result.1 {
+            first_error.get_or_insert(error);
         }
-        events.push(result?);
     }
-    Ok(events)
+    first_error.map_or(Ok(()), Err)
+}
+
+async fn service_at(bot: &mut Bot<'_, '_>, stage: &str) -> TestResult {
+    let result = async {
+        let client = bot.client()?;
+        client.service_liveness(Duration::from_millis(20)).await?;
+        TestResult::Ok(client.take_events())
+    }
+    .await;
+    match bot.contextualize(stage, result) {
+        Ok(events) => {
+            // Snapshot queries use the applied session cache. Only the event-based
+            // assertions need records retained while a peer is doing a query.
+            bot.pending_events
+                .extend(events.into_iter().filter(|event| {
+                    matches!(
+                        event,
+                        SessionEvent::Presentation(_)
+                            | SessionEvent::ActorVitals(_)
+                            | SessionEvent::ExpertFightModes(_)
+                    )
+                }));
+            if bot.pending_events.len() > oteryn_dev_client::MAX_QUEUED_EVENTS {
+                return Err("MP peer observation queue exceeded the session event bound".into());
+            }
+            Ok(())
+        }
+        Err(error) => {
+            bot.session = None;
+            Err(error)
+        }
+    }
 }
 
 /// Every observation is bounded and services all participants, including idle witnesses.
@@ -307,7 +405,7 @@ pub(super) async fn wait_observation(
     mut observed: impl FnMut(&[Bot<'_, '_>], &[Vec<SessionEvent>]) -> TestResult<bool>,
 ) -> TestResult {
     verdict::Harness::global().bounded_wait(deadline, "MP-observation");
-    tokio::time::timeout_at(deadline, async {
+    phase_until(bots, deadline, async |bots| {
         loop {
             let events = pump(bots).await?;
             if observed(bots, &events)? {
@@ -316,7 +414,7 @@ pub(super) async fn wait_observation(
         }
     })
     .await
-    .map_err(|_| format!("observation deadline:{detail}"))?
+    .map_err(|error| format!("observation {detail}: {error}").into())
 }
 
 pub(super) async fn walk_bot(
@@ -362,9 +460,9 @@ async fn step_confirmed(
     let before = bots[index].client()?.world_spatial().actor_position;
     let expected =
         destination(world, tile(before)?, direction).ok_or("MP step has no world destination")?;
-    tokio::time::timeout_at(deadline, async {
+    phase_until(bots, deadline, async |bots| {
         loop {
-            let outcome = bots[index].client()?.step(direction).await?;
+            let outcome = on_bot(bots, index, async |bot| Ok(bot.client()?.step(direction).await?)).await?;
             let after = tile(bots[index].client()?.world_spatial().actor_position)?;
             if outcome.disposition == StepDisposition::Moved && after == expected { return TestResult::Ok(()); }
             if outcome.disposition != StepDisposition::Rejected || after != tile(before)? {
@@ -372,7 +470,7 @@ async fn step_confirmed(
             }
             pump(bots).await?;
         }
-    }).await.map_err(|_| "MP movement deadline")??;
+    }).await?;
     // A server-confirmed tile change is real progress of the running row.
     verdict::Harness::global().progress("walk");
     Ok(())
@@ -443,8 +541,11 @@ pub(super) async fn invite_accept(
     peer: usize,
 ) -> TestResult {
     let target = bots[peer].own()?;
-    party(&mut bots[leader], Some(party::PartyIntent::Invite(target))).await?;
-    let invitations = party(&mut bots[peer], None).await?;
+    on_bot(bots, leader, async |bot| {
+        party(bot, Some(party::PartyIntent::Invite(target))).await
+    })
+    .await?;
+    let invitations = on_bot(bots, peer, async |bot| party(bot, None).await).await?;
     let leader_name = bots[leader].name.as_str();
     let handle = invitations
         .invitations
@@ -452,7 +553,10 @@ pub(super) async fn invite_accept(
         .find(|invite| invite.name == leader_name)
         .ok_or("invited bot did not observe leader invitation")?
         .handle;
-    party(&mut bots[peer], Some(party::PartyIntent::Accept(handle))).await?;
+    on_bot(bots, peer, async |bot| {
+        party(bot, Some(party::PartyIntent::Accept(handle))).await
+    })
+    .await?;
     Ok(())
 }
 
@@ -536,6 +640,7 @@ pub(super) async fn relog_all(bots: &mut [Bot<'_, '_>]) -> TestResult {
         let bot = current.first_mut().ok_or("relog bot absent")?;
         with_liveness(
             readmitted,
+            &mut [],
             "relog-pump",
             connect_bot(bot, 0xa5, "connect-relog"),
         )
@@ -569,5 +674,70 @@ pub(super) async fn release_all(
         Ok(())
     } else {
         Err(failures.join("; ").into())
+    }
+}
+
+/// Retire every socket that the cancelled phase could have read or written.
+pub(super) async fn phase_until<T>(
+    bots: &mut [Bot<'_, '_>],
+    deadline: tokio::time::Instant,
+    action: impl AsyncFnOnce(&mut [Bot<'_, '_>]) -> TestResult<T>,
+) -> TestResult<T> {
+    let result = tokio::time::timeout_at(deadline, action(bots)).await;
+    finish_bounded(result, bots.iter_mut().map(|bot| &mut bot.session)).map_err(|elapsed| {
+        verdict::record_error(&elapsed);
+        verdict::context("MP phase deadline".to_owned(), elapsed)
+    })?
+}
+
+fn finish_bounded<'a, T, E, S: 'a>(
+    result: Result<T, E>,
+    sessions: impl IntoIterator<Item = &'a mut Option<S>>,
+) -> Result<T, E> {
+    if result.is_err() {
+        for session in sessions {
+            *session = None;
+        }
+    }
+    result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn elapsed_exchange_retires_borrowed_sessions_before_cleanup() {
+        let mut sessions = [Some("partially read peer"), Some("pending command")];
+        assert_eq!(
+            finish_bounded(Err::<(), _>("elapsed"), &mut sessions),
+            Err("elapsed")
+        );
+        assert_eq!(sessions, [None, None]);
+        let mut sessions = [Some("completed exchange")];
+        assert_eq!(finish_bounded(Ok::<_, &str>(()), &mut sessions), Ok(()));
+        assert_eq!(sessions, [Some("completed exchange")]);
+    }
+
+    #[test]
+    fn admission_servicing_cannot_extend_the_admission_deadline() -> TestResult {
+        let (source, _) = include_str!("bots.rs")
+            .split_once("#[cfg(test)]")
+            .ok_or("test marker missing")?;
+        let (_, admission) = source
+            .split_once("async fn connect_bots")
+            .ok_or("admission missing")?;
+        let (admission, _) = admission
+            .split_once("async fn connect_into")
+            .ok_or("admission body missing")?;
+        assert!(admission.contains("timeout_at(deadline, connect_into"));
+        let (_, service) = source
+            .split_once("async fn with_liveness")
+            .ok_or("liveness missing")?;
+        let (service, _) = service
+            .split_once("async fn connect_bot")
+            .ok_or("liveness body missing")?;
+        assert!(!service.contains("Harness::global().progress"));
+        Ok(())
     }
 }

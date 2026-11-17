@@ -102,8 +102,8 @@ class SpawnTests(unittest.TestCase):
                         served.result(timeout=3)
 
     def test_spawned_reply_is_returned(self):
-        reply = f"spawned {self.IDENTITY} 7\n".encode()
-        self.assertEqual(self.exchange(reply), f"spawned {self.IDENTITY} 7")
+        reply = f"spawned {self.IDENTITY} 7 42\n".encode()
+        self.assertEqual(self.exchange(reply), f"spawned {self.IDENTITY} 7 42")
 
     def test_refusal_retains_the_exact_node_answer(self):
         with self.assertRaises(RuntimeError) as refused:

@@ -67,8 +67,8 @@ impl Row {
 }
 
 pub(super) async fn run_starter(clients: &SeamClients<'_>) {
-    use verdict::Need::Fixture;
-    let mut starter = Row::new("C19a", STARTER).needs(&[Fixture(1)]);
+    let mut starter =
+        Row::new("C19a", STARTER).needs(&[fixture_need(clients.world, clients.characters[1])]);
     let watch = starter.0.watch();
     let result = watch
         .bound(
@@ -86,9 +86,10 @@ pub(super) async fn run(
     spawns: &oteryn_world_bundle::spawn::Table,
     npcs: &oteryn_world_bundle::npc::Table,
 ) {
-    use verdict::Need::{Fixture, Row as After};
+    use verdict::Need::Row as After;
     // Own a connection per row: an error/timeout cannot prevent the next row's verdict.
-    let mut temple = Row::new("C20d", TEMPLE).needs(&[Fixture(1)]);
+    let mut temple =
+        Row::new("C20d", TEMPLE).needs(&[fixture_need(clients.world, clients.characters[1])]);
     let watch = temple.0.watch();
     let result = watch
         .bound(
@@ -99,7 +100,8 @@ pub(super) async fn run(
         .await;
     temple.finish(result);
 
-    let mut vocation = Row::new("S16a", VOCATION).needs(&[Fixture(1)]);
+    let mut vocation =
+        Row::new("S16a", VOCATION).needs(&[fixture_need(clients.world, clients.characters[1])]);
     let watch = vocation.0.watch();
     let result = watch
         .bound(
@@ -111,7 +113,10 @@ pub(super) async fn run(
     vocation.finish(result);
 
     // Promotion starts from the knight the first-vocation row produces.
-    let mut loss = Row::new("C20a", EXPERIENCE_LOSS).needs(&[Fixture(1), After("S16a")]);
+    let mut loss = Row::new("C20a", EXPERIENCE_LOSS).needs(&[
+        fixture_need(clients.world, clients.characters[1]),
+        After("S16a"),
+    ]);
     let watch = loss.0.watch();
     let result = watch
         .bound(
@@ -125,7 +130,8 @@ pub(super) async fn run(
         other => loss.finish(other.map(|_| ())),
     }
 
-    let mut custody = Row::new("C20b", ITEM_LOSS).needs(&[Fixture(1)]);
+    let mut custody =
+        Row::new("C20b", ITEM_LOSS).needs(&[fixture_need(clients.world, clients.characters[1])]);
     let watch = custody.0.watch();
     let result = watch
         .bound(
@@ -138,7 +144,10 @@ pub(super) async fn run(
 
     // Purchase qualification precedes consumption: Character 0 must retain its
     // never-aggressed low-level Adventurer eligibility for both protected deaths.
-    let mut services = Row::new("P16", BLESSING_SERVICES).needs(&[Fixture(1), Fixture(0)]);
+    let mut services = Row::new("P16", BLESSING_SERVICES).needs(&[
+        fixture_need(clients.world, clients.characters[1]),
+        fixture_need(clients.world, clients.characters[0]),
+    ]);
     let watch = services.0.watch();
     let result = watch
         .bound(
@@ -149,7 +158,10 @@ pub(super) async fn run(
         .await;
     finish_blessing_row(services, result);
 
-    let mut consumption = Row::new("C20c", BLESSING_DEATH).needs(&[Fixture(0), Fixture(1)]);
+    let mut consumption = Row::new("C20c", BLESSING_DEATH).needs(&[
+        fixture_need(clients.world, clients.characters[0]),
+        fixture_need(clients.world, clients.characters[1]),
+    ]);
     let watch = consumption.0.watch();
     let result = watch
         .bound(
@@ -161,7 +173,7 @@ pub(super) async fn run(
     finish_blessing_row(consumption, result);
 
     let mut resting = Row::new("P10", RESTING_BONUSES)
-        .needs(&[Fixture(1)])
+        .needs(&[fixture_need(clients.world, clients.characters[1])])
         .fail_detail();
     let watch = resting.0.watch();
     let result = watch

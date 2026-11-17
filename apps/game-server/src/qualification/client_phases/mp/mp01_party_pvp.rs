@@ -1,5 +1,5 @@
 //! MP01: on the no-PvP World, three party members and a separately admitted, unprovisioned
-//! victim; on the Open PvP World (its own node), a provisioned attacker kills a provisioned victim.
+//! starter. On the Open PvP World (its own node), a provisioned attacker kills a provisioned victim.
 use super::*;
 use bots::{Bot, attack_target, party};
 use oteryn_dev_client::{SessionEvent, client_ui::cyclopedia_character as panel};
@@ -32,30 +32,63 @@ pub(super) async fn run(
 ) -> TestResult {
     let started = std::time::Instant::now();
     let mut failures = Vec::new();
-    let (mut bots, setup) = tokio::time::timeout(
-        Duration::from_secs(180),
-        bots::connect_bots(&[
-            (core, 0, Some("knight")),
-            (packets, 0, Some("druid")),
-            (packets, 1, Some("paladin")),
-            (core, 1, None),
-        ]),
-    )
-    .await
-    .unwrap_or_else(|_| (Vec::new(), Err("MP01 admission/provision deadline".into())));
+    let (mut bots, setup) = bots::connect_bots(&[
+        (core, 0, Some("knight")),
+        (packets, 0, Some("druid")),
+        (packets, 1, Some("paladin")),
+        (core, 1, None),
+    ])
+    .await;
     // Keep the exact source error in the step rather than translating it into an incomplete row.
     let ready = check("admissions", setup, &mut failures);
     if ready {
         check(
             "profiles",
-            bounded("profiles", 30, profiles(&mut bots, &NOPVP_VOCATIONS)).await,
+            bounded_bots("profiles", 30, &mut bots, async |bots| {
+                profiles(bots, &NOPVP_VOCATIONS).await
+            })
+            .await,
             &mut failures,
         );
+    }
+    if ready {
+        check(
+            "nopvp-expert",
+            bounded_bots("nopvp-expert", 30, &mut bots, nopvp_expert).await,
+            &mut failures,
+        );
+        check(
+            "nopvp-attack-refused",
+            bounded_bots("nopvp-attack-refused", 120, &mut bots, async |bots| {
+                nopvp_attack_refused(bots, world).await
+            })
+            .await,
+            &mut failures,
+        );
+        check(
+            "stop-combat",
+            bounded_bots("stop-combat", 20, &mut bots, async |bots| {
+                bots::on_bot(bots, 0, async |bot| attack_target(bot, None).await).await
+            })
+            .await,
+            &mut failures,
+        );
+    } else {
+        for step in ["nopvp-expert", "nopvp-attack-refused"] {
+            check(
+                step,
+                Err("blocked by admissions failure".into()),
+                &mut failures,
+            );
+        }
     }
     let joined = if ready {
         check(
             "party",
-            bounded("party", 120, party_journey(&mut bots, world)).await,
+            bounded_bots("party", 120, &mut bots, async |bots| {
+                party_journey(bots, world).await
+            })
+            .await,
             &mut failures,
         )
     } else {
@@ -66,39 +99,12 @@ pub(super) async fn run(
         )
     };
     if ready {
-        check(
-            "nopvp-expert",
-            bounded("nopvp-expert", 30, nopvp_expert(&mut bots)).await,
-            &mut failures,
-        );
-        check(
-            "nopvp-attack-refused",
-            bounded(
-                "nopvp-attack-refused",
-                120,
-                nopvp_attack_refused(&mut bots, world),
-            )
-            .await,
-            &mut failures,
-        );
-        check(
-            "stop-combat",
-            bounded("stop-combat", 20, attack_target(&mut bots[0], None)).await,
-            &mut failures,
-        );
-        let result = bounded("relog", 1100, relog(&mut bots, joined)).await;
+        let result = bounded_bots("relog", 1100, &mut bots, async |bots| {
+            relog(bots, joined).await
+        })
+        .await;
         check("relog", result, &mut failures);
     } else {
-        check(
-            "nopvp-expert",
-            Err("blocked by admissions failure".into()),
-            &mut failures,
-        );
-        check(
-            "nopvp-attack-refused",
-            Err("blocked by admissions failure".into()),
-            &mut failures,
-        );
         check(
             "relog",
             Err("blocked by admissions failure".into()),
@@ -107,7 +113,10 @@ pub(super) async fn run(
     }
     check(
         "release",
-        bounded("release", 1800, bots::release_all(&mut bots, core, packets)).await,
+        bounded_bots("release", 1800, &mut bots, async |bots| {
+            bots::release_all(bots, core, packets).await
+        })
+        .await,
         &mut failures,
     );
     // The no-PvP bots are released; the Open PvP World runs next on its own node.
@@ -156,8 +165,8 @@ async fn relog(bots: &mut [Bot<'_, '_>], joined: bool) -> TestResult {
         (Err(error), _) | (_, Err(error)) => failures.push(error.to_string()),
     }
     // Terminal release removes membership: world_party.rs:792 and terminal_release.rs:88.
-    for (index, bot) in bots.iter_mut().enumerate() {
-        let observation: TestResult = async {
+    for index in 0..bots.len() {
+        let observation = bots::on_bot(bots, index, async |bot| {
             if !party(bot, None).await?.members.is_empty() || !durable_party(bot).await?.is_empty() {
                 return Err("terminal logout retained membership;source:crates/gameplay/durability/src/durability/world_party.rs:792".into());
             }
@@ -167,7 +176,7 @@ async fn relog(bots: &mut [Bot<'_, '_>], joined: bool) -> TestResult {
                 return Err("D lost the no-vocation path after relog".into());
             }
             Ok(())
-        }.await;
+        }).await;
         check("relog-view", observation, &mut failures);
     }
     if joined && failures.is_empty() {
@@ -194,10 +203,24 @@ async fn bounded<T>(
         .map_err(|_| format!("MP01 {phase} deadline;source:{}:{}", file!(), line!()))?
 }
 
+async fn bounded_bots<T>(
+    phase: &'static str,
+    seconds: u64,
+    bots: &mut [Bot<'_, '_>],
+    action: impl AsyncFnOnce(&mut [Bot<'_, '_>]) -> TestResult<T>,
+) -> TestResult<T> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(seconds);
+    verdict::Harness::global().bounded_wait(deadline, phase);
+    bots::phase_until(bots, deadline, action)
+        .await
+        .map_err(|error| format!("MP01 {phase}: {error}").into())
+}
+
 const NOPVP_VOCATIONS: [&str; 4] = ["knight", "druid", "paladin", "none"];
 
 async fn profiles(bots: &mut [Bot<'_, '_>], vocations: &[&str]) -> TestResult {
-    for (bot, &vocation) in bots.iter_mut().zip(vocations) {
+    for (index, &vocation) in vocations.iter().take(bots.len()).enumerate() {
+        bots::on_bot(bots, index, async |bot| {
         let view = tab(bot, character::CharacterTab::GeneralStats).await?;
         let expected =
             character::vocation_id(vocation).ok_or("MP01 vocation has no protocol id")?;
@@ -213,10 +236,15 @@ async fn profiles(bots: &mut [Bot<'_, '_>], vocations: &[&str]) -> TestResult {
             )
             .into());
         }
-        let mut database = sqlx::PgConnection::connect(bot.pair.url).await?;
+        let pair = bot.pair;
+        let character = bot.character;
+        let stored = bots::observe(bot, async {
+        let mut database = sqlx::PgConnection::connect(pair.url).await?;
         let stored: String = sqlx::query_scalar("SELECT vocation FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid")
-            .bind(bot.character.as_slice()).fetch_one(&mut database).await?;
+            .bind(character.as_slice()).fetch_one(&mut database).await?;
         database.close().await?;
+            Ok(stored)
+        }).await?;
         if stored != vocation {
             return Err(format!(
                 "MP01 role={} PG vocation={stored};expected={vocation}",
@@ -229,6 +257,8 @@ async fn profiles(bots: &mut [Bot<'_, '_>], vocations: &[&str]) -> TestResult {
             bot.name,
             view.general.as_ref().map(|stats| stats.level)
         ));
+        Ok(())
+        }).await?;
     }
     Ok(())
 }
@@ -246,61 +276,70 @@ async fn party_journey(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestRes
     let expected = expected.into_iter().map(str::to_owned).collect::<Vec<_>>();
     let leader = bots[0].name.to_owned();
     let mut party_id = None;
-    for bot in &mut bots[..3] {
-        let view = party(bot, None).await?;
-        let mut members = view
-            .members
-            .iter()
-            .map(|m| m.name.as_str())
-            .collect::<Vec<_>>();
-        members.sort_unstable();
-        if members != expected
-            || view.members.iter().filter(|m| m.leader).count() != 1
-            || !view.members.iter().any(|m| m.leader && m.name == leader)
-        {
-            return Err(format!(
-                "MP01 participant={} party view={view:?};expected={expected:?}",
-                bot.name
-            )
-            .into());
-        }
-        let rows = durable_party(bot).await?;
-        let mut names = rows.iter().map(|r| r.1.as_str()).collect::<Vec<_>>();
-        names.sort_unstable();
-        if names != expected
-            || rows.iter().any(|r| r.2 != leader)
-            || rows
+    for index in 0..3 {
+        bots::on_bot(bots, index, async |bot| {
+            let view = party(bot, None).await?;
+            let mut members = view
+                .members
                 .iter()
-                .any(|r| party_id.as_ref().is_some_and(|id| id != &r.0))
-        {
-            return Err(format!(
-                "MP01 participant={} durable party differs:{rows:?}",
+                .map(|m| m.name.as_str())
+                .collect::<Vec<_>>();
+            members.sort_unstable();
+            if members != expected
+                || view.members.iter().filter(|m| m.leader).count() != 1
+                || !view.members.iter().any(|m| m.leader && m.name == leader)
+            {
+                return Err(format!(
+                    "MP01 participant={} party view={view:?};expected={expected:?}",
+                    bot.name
+                )
+                .into());
+            }
+            let rows = durable_party(bot).await?;
+            let mut names = rows.iter().map(|r| r.1.as_str()).collect::<Vec<_>>();
+            names.sort_unstable();
+            if names != expected
+                || rows.iter().any(|r| r.2 != leader)
+                || rows
+                    .iter()
+                    .any(|r| party_id.as_ref().is_some_and(|id| id != &r.0))
+            {
+                return Err(format!(
+                    "MP01 participant={} durable party differs:{rows:?}",
+                    bot.name
+                )
+                .into());
+            }
+            party_id = rows.first().map(|r| r.0.to_owned());
+            evidence(&format!(
+                "MP_CHECK MP01 party-view PASS participant={} members={members:?} PG={rows:?}",
                 bot.name
-            )
-            .into());
+            ));
+            Ok(())
+        })
+        .await?;
+    }
+    bots::on_bot(bots, 3, async |bot| {
+        if !party(bot, None).await?.members.is_empty() || !durable_party(bot).await?.is_empty() {
+            return Err("MP01 D unexpectedly belongs to the party".into());
         }
-        party_id = rows.first().map(|r| r.0.to_owned());
-        evidence(&format!(
-            "MP_CHECK MP01 party-view PASS participant={} members={members:?} PG={rows:?}",
-            bot.name
-        ));
-    }
-    if !party(&mut bots[3], None).await?.members.is_empty()
-        || !durable_party(&bots[3]).await?.is_empty()
-    {
-        return Err("MP01 D unexpectedly belongs to the party".into());
-    }
-    Ok(())
+        Ok(())
+    })
+    .await
 }
 
 /// Read-only qualification observation, following death.rs's bounded durable receipt reader.
 /// No runtime authority is fabricated to call a production writer/read-under-write-lock port.
-async fn durable_party(bot: &Bot<'_, '_>) -> TestResult<Vec<(String, String, String)>> {
-    let mut database = sqlx::PgConnection::connect(bot.pair.url).await?;
+async fn durable_party(bot: &mut Bot<'_, '_>) -> TestResult<Vec<(String, String, String)>> {
+    let pair = bot.pair;
+    let character = bot.character;
+    bots::observe(bot, async {
+    let mut database = sqlx::PgConnection::connect(pair.url).await?;
     let rows = sqlx::query_as("SELECT p.party_id::text,r.name,l.name FROM game_party_members own JOIN game_parties p ON p.party_id=own.party_id JOIN game_party_members m ON m.party_id=p.party_id JOIN game_character_roots r ON r.character_id=m.character_id JOIN game_character_roots l ON l.character_id=p.leader_character_id WHERE own.character_id=encode($1,'hex')::uuid AND p.world_id=encode($2,'hex')::uuid ORDER BY m.seq LIMIT 50")
-        .bind(bot.character.as_slice()).bind(bot.pair.world.as_slice()).fetch_all(&mut database).await?;
+        .bind(character.as_slice()).bind(pair.world.as_slice()).fetch_all(&mut database).await?;
     database.close().await?;
     Ok(rows)
+    }).await
 }
 
 async fn tab(
@@ -340,11 +379,16 @@ async fn snapshots(
     bots: &mut [Bot<'_, '_>],
 ) -> TestResult<Vec<(Vec<panel::HistoryRow>, Vec<panel::HistoryRow>)>> {
     let mut result = Vec::new();
-    for bot in bots {
-        result.push((
-            history(bot, character::CharacterTab::RecentDeaths).await?,
-            history(bot, character::CharacterTab::RecentPvpKills).await?,
-        ));
+    for index in 0..bots.len() {
+        result.push(
+            bots::on_bot(bots, index, async |bot| {
+                Ok((
+                    history(bot, character::CharacterTab::RecentDeaths).await?,
+                    history(bot, character::CharacterTab::RecentPvpKills).await?,
+                ))
+            })
+            .await?,
+        );
     }
     Ok(result)
 }
@@ -373,12 +417,17 @@ async fn pvp_status(bot: &mut Bot<'_, '_>) -> TestResult<party_skull::PvpStatus>
 async fn verify_pvp_state(bot: &mut Bot<'_, '_>) -> TestResult {
     use oteryn_gameplay_combat_rules::pvp::skull::{BLACK_THRESHOLDS_MILLI, RED_THRESHOLDS_MILLI};
     let view = pvp_status(bot).await?;
-    let mut database = sqlx::PgConnection::connect(bot.pair.url).await?;
+    let pair = bot.pair;
+    let character = bot.character;
+    let (stored, points) = bots::observe(bot, async {
+    let mut database = sqlx::PgConnection::connect(pair.url).await?;
     let stored: Option<(i16, bool)> = sqlx::query_as("SELECT CASE WHEN skull_until>clock_timestamp() THEN skull ELSE 0::smallint END,COALESCE(white_skull_until>clock_timestamp(),false) FROM game_character_pvp_state WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid")
-        .bind(bot.character.as_slice()).bind(bot.pair.world.as_slice()).fetch_optional(&mut database).await?;
+        .bind(character.as_slice()).bind(pair.world.as_slice()).fetch_optional(&mut database).await?;
     let points: Vec<i64> = sqlx::query_scalar("SELECT COALESCE(sum(points_milli),0)::bigint FROM unnest(ARRAY[1,7,30]) days LEFT JOIN game_character_unjustified_points ON character_id=encode($1,'hex')::uuid AND committed_at>clock_timestamp()-days*interval '1 day' GROUP BY days ORDER BY days LIMIT 3")
-        .bind(bot.character.as_slice()).fetch_all(&mut database).await?;
+        .bind(character.as_slice()).fetch_all(&mut database).await?;
     database.close().await?;
+        Ok((stored, points))
+    }).await?;
     let (skull, white) = stored.unwrap_or((0, false));
     let expected = match skull {
         0 if white => 3,
@@ -421,15 +470,18 @@ async fn nopvp_expert(bots: &mut [Bot<'_, '_>]) -> TestResult {
         },
         expert: pvp_expert::ExpertMode::RedFist,
     };
-    let reply = bots[0]
-        .client()?
-        .session_mut()
-        .gated_command(
-            pvp_expert::CAPABILITY_PVP_EXPERT_V1,
-            pvp_expert::COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT,
-            &pvp_expert::encode_expert_fight_modes(&requested),
-        )
-        .await?;
+    let reply = bots::on_bot(bots, 0, async |bot| {
+        Ok(bot
+            .client()?
+            .session_mut()
+            .gated_command(
+                pvp_expert::CAPABILITY_PVP_EXPERT_V1,
+                pvp_expert::COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT,
+                &pvp_expert::encode_expert_fight_modes(&requested),
+            )
+            .await?)
+    })
+    .await?;
     let disposition = oteryn_protocol_oteryn::attack::decode_attack_intent_result(&reply.payload)
         .map_err(|error| format!("expert mode decode:{error:?};status={:?};source:crates/protocol-oteryn/src/attack.rs:300", reply.status))?;
     if reply.status != CommandStatus::Accepted
@@ -450,10 +502,20 @@ async fn nopvp_expert(bots: &mut [Bot<'_, '_>]) -> TestResult {
     }).await
 }
 
-/// A's attack on player D is refused on a no-PvP World (`pvp_live.rs:184` via
-/// `check_pvp_legality`, `legality.rs:90`) and D takes no damage in a bounded window.
+/// Probe two level-eligible Characters before joining them into the same party.
 async fn nopvp_attack_refused(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestResult {
-    let from = tile(bots[3].client()?.world_spatial().actor_position)?;
+    let mut levels = [0; 2];
+    for (index, level) in levels.iter_mut().enumerate() {
+        *level = bots::on_bot(bots, index, async |bot| {
+            Ok(tab(bot, character::CharacterTab::GeneralStats)
+                .await?
+                .general
+                .ok_or("no-PvP probe GeneralStats missing")?
+                .level)
+        })
+        .await?;
+    }
+    let from = tile(bots[1].client()?.world_spatial().actor_position)?;
     let path = route(world, from, |at| {
         world
             .base()
@@ -476,18 +538,31 @@ async fn nopvp_attack_refused(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> 
             })
     })
     .ok_or("no reachable non-PZ combat pair in pinned world")?;
-    bots::walk_bot(bots, 3, world, &path).await?;
-    bots::approach(bots, 0, 3, world, true).await?;
+    bots::walk_bot(bots, 1, world, &path).await?;
+    bots::approach(bots, 0, 1, world, true).await?;
+    bots::pump(bots).await?;
     let attacker = bots[0].own()?;
-    let victim = bots[3].own()?;
-    let before = bots[3].client()?.actor_vitals().copied();
-    let outcome = bots[0]
+    let victim = bots[1].own()?;
+    let before = bots[1]
         .client()?
-        .session_mut()
-        .attack_target(Some(&victim))
-        .await?;
-    if outcome.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected {
-        return Err(format!("attack on a player in a no-PvP World must be Rejected;status={:?};disposition={:?};source:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/combat.rs:62;pvp_live.rs:184;legality.rs:90", outcome.status, outcome.disposition).into());
+        .actor_vitals()
+        .copied()
+        .ok_or("no-PvP victim vitals missing")?;
+    let mut health = before.health;
+    let outcome = bots::on_bot(bots, 0, async |bot| {
+        Ok(bot
+            .client()?
+            .session_mut()
+            .attack_target(Some(&victim))
+            .await?)
+    })
+    .await?;
+    if !proves_optional_world_refusal(
+        levels[0],
+        levels[1],
+        outcome.disposition == oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected,
+    ) {
+        return Err(format!("attack on a player in a no-PvP World must be Rejected for level-eligible actors;levels={levels:?};status={:?};disposition={:?};source:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/combat.rs:62;pvp_live.rs:184;legality.rs:90", outcome.status, outcome.disposition).into());
     }
     let mut damaged = false;
     let mut hit_seen = false;
@@ -499,19 +574,24 @@ async fn nopvp_attack_refused(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> 
         for event in &events[0] {
             if let SessionEvent::Presentation(delta) = event {
                 hit_seen |= delta.value.iter().any(|event| matches!(event.kind,
-                    oteryn_protocol_oteryn::presentation::PresentationEventKind::ValueText { target, attacker: Some(source), .. }
-                    if target == victim && source == attacker));
+                    oteryn_protocol_oteryn::presentation::PresentationEventKind::ValueText { target, attacker: Some(source), kind: oteryn_protocol_oteryn::presentation::PresentationValueKind::DamageDealt, primary, .. }
+                    if target == victim && source == attacker && primary.value > 0));
             }
         }
-        for event in &events[3] {
+        for event in &events[1] {
             if let SessionEvent::ActorVitals(delta) = event {
-                damaged |= delta.value.health < delta.value.max_health;
+                damaged |= delta.value.health < health;
+                health = delta.value.health;
             }
         }
     }
-    let after = bots[3].client()?.actor_vitals().copied();
-    if damaged || hit_seen || before.map(|v| v.health) != after.map(|v| v.health) {
-        return Err(format!("D took damage on a no-PvP World;damaged={damaged};hit_seen={hit_seen};before={before:?};after={after:?}").into());
+    let after = bots[1]
+        .client()?
+        .actor_vitals()
+        .copied()
+        .ok_or("no-PvP victim final vitals missing")?;
+    if damaged || hit_seen || after.health < health {
+        return Err(format!("B took damage on a no-PvP World;damaged={damaged};hit_seen={hit_seen};before={before:?};after={after:?}").into());
     }
     Ok(())
 }
@@ -613,39 +693,42 @@ async fn pvp_world_rows(
         url: &fixture.url,
         ..*core
     };
-    let (mut bots, setup) = tokio::time::timeout(
-        Duration::from_secs(180),
-        bots::connect_bots(&[
-            (&pair, 0, Some(PVP_VOCATIONS[0])),
-            (&pair, 1, Some(PVP_VOCATIONS[1])),
-        ]),
-    )
-    .await
-    .unwrap_or_else(|_| {
-        (
-            Vec::new(),
-            Err("MP01 PvP admission/provision deadline".into()),
-        )
-    });
+    let (mut bots, setup) = bots::connect_bots(&[
+        (&pair, 0, Some(PVP_VOCATIONS[0])),
+        (&pair, 1, Some(PVP_VOCATIONS[1])),
+    ])
+    .await;
     if check("pvp-admissions", setup, failures) {
         check(
             "pvp-profiles",
-            bounded("pvp-profiles", 30, profiles(&mut bots, &PVP_VOCATIONS)).await,
+            bounded_bots("pvp-profiles", 30, &mut bots, async |bots| {
+                profiles(bots, &PVP_VOCATIONS).await
+            })
+            .await,
             failures,
         );
         check(
             "pvp-combat",
-            bounded("pvp-combat", 480, pvp_journey(&mut bots, world, towns)).await,
+            bounded_bots("pvp-combat", 480, &mut bots, async |bots| {
+                pvp_journey(bots, world, towns).await
+            })
+            .await,
             failures,
         );
         check(
             "pvp-stop-combat",
-            bounded("pvp-stop-combat", 20, attack_target(&mut bots[0], None)).await,
+            bounded_bots("pvp-stop-combat", 20, &mut bots, async |bots| {
+                bots::on_bot(bots, 0, async |bot| attack_target(bot, None).await).await
+            })
+            .await,
             failures,
         );
         check(
             "pvp-relog",
-            bounded("pvp-relog", 1100, relog(&mut bots, false)).await,
+            bounded_bots("pvp-relog", 1100, &mut bots, async |bots| {
+                relog(bots, false).await
+            })
+            .await,
             failures,
         );
     } else {
@@ -660,22 +743,24 @@ async fn pvp_world_rows(
     // release_all waits for both indexes of two pairs; this World has one pair.
     check(
         "pvp-release",
-        bounded(
-            "pvp-release",
-            1800,
-            bots::release_all(&mut bots, &pair, &pair),
-        )
+        bounded_bots("pvp-release", 1800, &mut bots, async |bots| {
+            bots::release_all(bots, &pair, &pair).await
+        })
         .await,
         failures,
     );
 }
 
-async fn latest_death(bot: &Bot<'_, '_>) -> TestResult<Option<(String, String, String)>> {
-    let mut database = sqlx::PgConnection::connect(bot.pair.url).await?;
+async fn latest_death(bot: &mut Bot<'_, '_>) -> TestResult<Option<(String, String, String)>> {
+    let pair = bot.pair;
+    let character = bot.character;
+    bots::observe(bot, async {
+    let mut database = sqlx::PgConnection::connect(pair.url).await?;
     let receipt = sqlx::query_as("SELECT death_occurrence_id::text,original_character_revision::text,committed_character_revision::text FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid AND death_world_id=encode($2,'hex')::uuid AND death_channel_id=encode($3,'hex')::uuid ORDER BY committed_at DESC,death_occurrence_id DESC LIMIT 1")
-        .bind(bot.character.as_slice()).bind(bot.pair.world.as_slice()).bind(bot.pair.channel.as_slice()).fetch_optional(&mut database).await?;
+        .bind(character.as_slice()).bind(pair.world.as_slice()).bind(pair.channel.as_slice()).fetch_optional(&mut database).await?;
     database.close().await?;
     Ok(receipt)
+    }).await
 }
 
 /// A's attack, B's damage, death and temple respawn, the durable death receipt, A's frag
@@ -685,14 +770,20 @@ async fn pvp_journey(
     world: &BundleWorld,
     towns: &oteryn_world_bundle::subarea::Table,
 ) -> TestResult {
-    let mut database = sqlx::PgConnection::connect(bots[1].pair.url).await?;
-    let home: Option<i32> = sqlx::query_scalar(
+    let url = bots[1].pair.url;
+    let victim_character = bots[1].character;
+    let home = bots::observe_all(bots, async {
+        let mut database = sqlx::PgConnection::connect(url).await?;
+        let home: Option<i32> = sqlx::query_scalar(
         "SELECT town_id FROM game_character_home_towns WHERE character_id=encode($1,'hex')::uuid",
     )
-    .bind(bots[1].character.as_slice())
+    .bind(victim_character.as_slice())
     .fetch_optional(&mut database)
     .await?;
-    database.close().await?;
+        database.close().await?;
+        Ok(home)
+    })
+    .await?;
     let town = match home {
         Some(id) => u32::try_from(id)?,
         None => towns.default_town.ok_or("world default town absent")?,
@@ -706,16 +797,22 @@ async fn pvp_journey(
         y: temple.y,
         floor: temple.floor,
     };
-    let baseline = pvp_status(&mut bots[0]).await?;
+    let baseline = bots::on_bot(bots, 0, pvp_status).await?;
     if baseline.skull != 0 || baseline.points_milli != [0; 3] {
         return Err(format!(
             "MP01 needs neutral A for a single unjustified kill oracle;observed={baseline:?}"
         )
         .into());
     }
-    let old_death = latest_death(&bots[1]).await?;
-    let old_kills = history(&mut bots[0], character::CharacterTab::RecentPvpKills).await?;
-    let old_deaths = history(&mut bots[1], character::CharacterTab::RecentDeaths).await?;
+    let old_death = bots::on_bot(bots, 1, latest_death).await?;
+    let old_kills = bots::on_bot(bots, 0, async |bot| {
+        history(bot, character::CharacterTab::RecentPvpKills).await
+    })
+    .await?;
+    let old_deaths = bots::on_bot(bots, 1, async |bot| {
+        history(bot, character::CharacterTab::RecentDeaths).await
+    })
+    .await?;
     // Equip through A's own protocol. MP provisioning (bots.rs provision_current) only mints the
     // axe into the backpack; it does not wield it, so an axe already worn is the only skip.
     let definitions = provisioning::item_index()?;
@@ -727,11 +824,14 @@ async fn pvp_journey(
             .any(|entry| entry.item.item_definition_ref == axe)
     });
     if !wielded {
-        let equipped = bots[0]
-            .client()?
-            .session_mut()
-            .equip_item_definition(axe)
-            .await?;
+        let equipped = bots::on_bot(bots, 0, async |bot| {
+            Ok(bot
+                .client()?
+                .session_mut()
+                .equip_item_definition(axe)
+                .await?)
+        })
+        .await?;
         if equipped.status != CommandStatus::Accepted
             || equipped.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
         {
@@ -788,15 +888,18 @@ async fn pvp_journey(
         },
         expert: pvp_expert::ExpertMode::RedFist,
     };
-    let reply = bots[0]
-        .client()?
-        .session_mut()
-        .gated_command(
-            pvp_expert::CAPABILITY_PVP_EXPERT_V1,
-            pvp_expert::COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT,
-            &pvp_expert::encode_expert_fight_modes(&mode),
-        )
-        .await?;
+    let reply = bots::on_bot(bots, 0, async |bot| {
+        Ok(bot
+            .client()?
+            .session_mut()
+            .gated_command(
+                pvp_expert::CAPABILITY_PVP_EXPERT_V1,
+                pvp_expert::COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT,
+                &pvp_expert::encode_expert_fight_modes(&mode),
+            )
+            .await?)
+    })
+    .await?;
     let disposition = oteryn_protocol_oteryn::attack::decode_attack_intent_result(&reply.payload)
         .map_err(|error| format!("expert mode decode:{error:?};status={:?};source:crates/protocol-oteryn/src/attack.rs:300", reply.status))?;
     if reply.status != CommandStatus::Accepted
@@ -816,7 +919,7 @@ async fn pvp_journey(
         }
         Ok(false)
     }).await?;
-    attack_target(&mut bots[0], Some(&victim)).await?;
+    bots::on_bot(bots, 0, async |bot| attack_target(bot, Some(&victim)).await).await?;
     let mut victim_damaged = false;
     let mut attacker_saw_hit = false;
     // A level-100 victim takes many melee hits; its own regeneration is part of the fight.
@@ -833,30 +936,39 @@ async fn pvp_journey(
         Ok(victim_damaged && attacker_saw_hit && tile(client.world_spatial().actor_position)? == temple
             && client.actor_vitals().is_some_and(|v| v.health == v.max_health))
     }).await?;
-    attack_target(&mut bots[0], None).await?;
-    let death = latest_death(&bots[1])
+    bots::on_bot(bots, 0, async |bot| attack_target(bot, None).await).await?;
+    let death = bots::on_bot(bots, 1, latest_death)
         .await?
         .ok_or("MP01 respawn missing durable death receipt")?;
     if Some(&death) == old_death.as_ref() || death.1 == death.2 {
         return Err("MP01 respawn reused old death/revision".into());
     }
-    let kills = history(&mut bots[0], character::CharacterTab::RecentPvpKills).await?;
+    let kills = bots::on_bot(bots, 0, async |bot| {
+        history(bot, character::CharacterTab::RecentPvpKills).await
+    })
+    .await?;
     let description = character::pvp_kill_description(&bots[1].name);
     if !kills.iter().any(|k| {
         k.description == description
             && k.status == Some(character::KillStatus::Unjustified)
             && !old_kills.contains(k)
-    }) || !history(&mut bots[1], character::CharacterTab::RecentDeaths)
-        .await?
-        .iter()
-        .any(|d| !old_deaths.contains(d))
+    }) || !bots::on_bot(bots, 1, async |bot| {
+        history(bot, character::CharacterTab::RecentDeaths).await
+    })
+    .await?
+    .iter()
+    .any(|d| !old_deaths.contains(d))
     {
         return Err("MP01 A kill view / B death view lack new attributed death".into());
     }
-    let mut database = sqlx::PgConnection::connect(bots[0].pair.url).await?;
+    let attacker_character = bots[0].character;
+    let points = bots::observe_all(bots, async {
+    let mut database = sqlx::PgConnection::connect(url).await?;
     let points: Option<i32> = sqlx::query_scalar("SELECT points_milli FROM game_character_unjustified_points WHERE character_id=encode($1,'hex')::uuid AND victim_character_id=encode($2,'hex')::uuid AND death_occurrence_id=$3::text::uuid")
-        .bind(bots[0].character.as_slice()).bind(bots[1].character.as_slice()).bind(&death.0).fetch_optional(&mut database).await?;
+        .bind(attacker_character.as_slice()).bind(victim_character.as_slice()).bind(&death.0).fetch_optional(&mut database).await?;
     database.close().await?;
+        Ok(points)
+    }).await?;
     if points
         != Some(i32::from(
             oteryn_gameplay_combat_rules::pvp::skull::DAMAGE_POINTS_MILLI,
@@ -866,7 +978,8 @@ async fn pvp_journey(
     }
     // B has already proved its temple respawn; bring its new incarnation back into interest.
     bots::approach(bots, 1, 0, world, true).await?;
-    for bot in bots.iter_mut() {
+    for index in 0..bots.len() {
+        bots::on_bot(bots, index, async |bot| {
         let reply = bot
             .client()?
             .session_mut()
@@ -895,8 +1008,10 @@ async fn pvp_journey(
             "MP_CHECK MP01 attacker-skull-view PASS participant={} A_skull=white",
             bot.name
         ));
+        Ok(())
+        }).await?;
     }
-    let awarded = pvp_status(&mut bots[0]).await?;
+    let awarded = bots::on_bot(bots, 0, pvp_status).await?;
     let increment = oteryn_gameplay_combat_rules::pvp::skull::contributor_points(
         oteryn_gameplay_combat_rules::pvp::skull::PvpContributorKind::Damage,
         1,
@@ -904,12 +1019,63 @@ async fn pvp_journey(
     if awarded.points_milli != [u64::from(increment); 3] || awarded.skull != 3 {
         return Err(format!("MP01 single unjustified kill expected white skull and {increment} points;observed={awarded:?}").into());
     }
-    for bot in bots {
-        verify_pvp_state(bot).await?;
+    for index in 0..bots.len() {
+        bots::on_bot(bots, index, verify_pvp_state).await?;
     }
     evidence(&format!(
         "MP_CHECK MP01 death-frag PASS A=attributed-hit-and-new-kill B=damage-death-and-temple-respawn PG_death={} PG_points={points:?}",
         death.0
     ));
     Ok(())
+}
+
+fn proves_optional_world_refusal(actor_level: u32, target_level: u32, rejected: bool) -> bool {
+    use oteryn_gameplay_combat_rules::pvp::{
+        ExpertMode, PVP_MIN_LEVEL, PvpActor, PvpRefusal, PvpRelation, PvpTarget, WorldPvpType,
+        check_pvp_legality,
+    };
+    if !rejected || actor_level < PVP_MIN_LEVEL || target_level < PVP_MIN_LEVEL {
+        return false;
+    }
+    // Optional Worlds force Dove on the wire. Isolate the World rule as well, using the
+    // same legality function as dispatch and a control where all other gates allow harm.
+    let actor = PvpActor {
+        level: actor_level,
+        in_protection_zone: false,
+        on_no_pvp_tile: Some(false),
+        post_login_immune: false,
+        black_skull: false,
+        secure_mode: false,
+        expert_mode: ExpertMode::RedFist,
+    };
+    let target = PvpTarget {
+        level: target_level,
+        in_protection_zone: false,
+        on_no_pvp_tile: Some(false),
+        marked: false,
+    };
+    let relation = PvpRelation {
+        war_between: false,
+        same_party_or_guild: Some(false),
+        friendly_fire: false,
+        target_aggressor_of_actor: false,
+        target_aggressor_of_actor_group: false,
+    };
+    check_pvp_legality(WorldPvpType::Open, &actor, &target, &relation).is_ok()
+        && check_pvp_legality(WorldPvpType::Optional, &actor, &target, &relation)
+            == Err(PvpRefusal::WorldType)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn attack_refusal_below_the_pvp_level_cannot_prove_world_authority() {
+        let minimum = oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL;
+        assert!(!proves_optional_world_refusal(100, minimum - 1, true));
+        assert!(!proves_optional_world_refusal(minimum - 1, 100, true));
+        assert!(!proves_optional_world_refusal(100, minimum, false));
+        assert!(proves_optional_world_refusal(100, minimum, true));
+    }
 }

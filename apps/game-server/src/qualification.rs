@@ -1474,6 +1474,15 @@ fn node_boot_seam_against_running_node() -> TestResult {
             } else {
                 None
             };
+            let extra_accounts = if world_path.is_some() {
+                Some([
+                    [required("NODE_BOOT_EXTRA_ACCOUNT_0")?, required("NODE_BOOT_EXTRA_ACCOUNT_1")?],
+                    [required("NODE_BOOT_EXTRA_ACCOUNT_2")?, required("NODE_BOOT_EXTRA_ACCOUNT_3")?],
+                    [required("NODE_BOOT_EXTRA_ACCOUNT_4")?, required("NODE_BOOT_EXTRA_ACCOUNT_5")?],
+                ])
+            } else {
+                None
+            };
             let world = crate::node::uuid_bytes(&required("NODE_BOOT_WORLD_ID")?)
                 .ok_or("invalid NODE_BOOT_WORLD_ID")?;
             let channel = crate::node::uuid_bytes(&required("NODE_BOOT_CHANNEL_ID")?)
@@ -1486,7 +1495,11 @@ fn node_boot_seam_against_running_node() -> TestResult {
             let mut characters = Vec::new();
             let mut account_ids = std::collections::BTreeSet::new();
             let mut character_ids = std::collections::BTreeSet::new();
-            for account in accounts.iter().chain(packet_accounts.iter().flatten()) {
+            for account in accounts
+                .iter()
+                .chain(packet_accounts.iter().flatten())
+                .chain(extra_accounts.iter().flatten().flatten())
+            {
                 let account_id = crate::node::uuid_bytes(account)
                     .ok_or("invalid node-boot fixture AccountId")?;
                 if !account_ids.insert(account_id) {
@@ -1549,10 +1562,24 @@ fn node_boot_seam_against_running_node() -> TestResult {
                     .ok_or("World packet Accounts are not configured")?;
                 let packet_clients = SeamClients {
                     accounts: packet_accounts,
-                    characters: &characters[accounts.len()..],
+                    characters: &characters[2..4],
                     ..clients
                 };
-                for (role, pair) in [("core", &clients), ("packets", &packet_clients)] {
+                let extra_accounts = extra_accounts.as_ref().ok_or("extra World fixtures absent")?;
+                let extra: [SeamClients<'_>; 3] = std::array::from_fn(|index| SeamClients {
+                    accounts: &extra_accounts[index],
+                    characters: &characters[4 + 2 * index..6 + 2 * index],
+                    ..clients
+                });
+                let [mp_first, mp_second, sweep] = extra;
+                let mp = [mp_first, mp_second];
+                for (role, pair) in [
+                    ("core", &clients),
+                    ("packets", &packet_clients),
+                    ("mp_first", &mp[0]),
+                    ("mp_second", &mp[1]),
+                    ("sweep", &sweep),
+                ] {
                     evidence(&format!(
                         "node_boot_fixture role={role} character_0={} character_1={} accounts=distinct characters=distinct",
                         uuid_text(&pair.characters[0]),
@@ -1562,6 +1589,8 @@ fn node_boot_seam_against_running_node() -> TestResult {
                 Box::pin(client_world::journeys(
                     &clients,
                     &packet_clients,
+                    &mp,
+                    &sweep,
                     std::path::Path::new(&path),
                 ))
                 .await

@@ -5,8 +5,12 @@ use crate::map::overlay::TilePos;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::path::Path;
 
+#[path = "creature_sweep.rs"]
+mod creature_sweep;
 #[path = "general_stats.rs"]
 mod general_stats;
+#[path = "mp/mount.rs"]
+mod mp;
 
 include!("character_core.rs");
 include!("character_release.rs");
@@ -1900,10 +1904,24 @@ pub(crate) fn load_world(
     world: WorldId,
     channel: ChannelId,
 ) -> TestResult<&'static BundleWorld> {
-    static LOADED: std::sync::OnceLock<(WorldId, ChannelId, BundleWorld)> =
+    Ok(&load_qualification_world(data, pin, world, channel)?.world)
+}
+
+struct QualificationWorld {
+    world: BundleWorld,
+    rewards: std::sync::Arc<crate::content::creature_reward::CreatureRewardTable>,
+}
+
+fn load_qualification_world(
+    data: Vec<u8>,
+    pin: &serde_json::Value,
+    world: WorldId,
+    channel: ChannelId,
+) -> TestResult<&'static QualificationWorld> {
+    static LOADED: std::sync::OnceLock<(WorldId, ChannelId, QualificationWorld)> =
         std::sync::OnceLock::new();
     if LOADED.get().is_none() {
-        let booted = boot_world(data, pin, world, channel)?;
+        let booted = boot_qualification_world(data, pin, world, channel)?;
         let _ = LOADED.set((world, channel, booted));
     }
     match LOADED.get() {
@@ -1923,6 +1941,15 @@ fn boot_world(
     world: WorldId,
     channel: ChannelId,
 ) -> TestResult<BundleWorld> {
+    Ok(boot_qualification_world(data, pin, world, channel)?.world)
+}
+
+fn boot_qualification_world(
+    data: Vec<u8>,
+    pin: &serde_json::Value,
+    world: WorldId,
+    channel: ChannelId,
+) -> TestResult<QualificationWorld> {
     let digest = hex32(pin["digest"].as_str().ok_or("World digest")?)?;
     let checked = crate::map::boot::check(
         data,
@@ -1977,15 +2004,12 @@ fn boot_world(
     if rat.loot_table.entries.is_empty() {
         return Err("town hunt has no production loot table".into());
     }
-    crate::node::serve::boot_bundle_world(
-        checked,
-        world,
-        channel,
-        controller
-            .active()
-            .and_then(|active| active.native_gameplay()),
-    )
-    .map_err(|error| format!("production world loader: {error:?}").into())
+    let bundle = crate::node::serve::boot_bundle_world(checked, world, channel, Some(native))
+        .map_err(|error| format!("production world loader: {error:?}"))?;
+    Ok(QualificationWorld {
+        world: bundle,
+        rewards: std::sync::Arc::clone(native.reward_table()),
+    })
 }
 
 fn tile(position: ActorPosition) -> TestResult<TilePos> {
@@ -2233,60 +2257,6 @@ async fn reach_route_serviced(
     }))
 }
 
-const REACH_SEARCH_NODES: usize = 3_000_000;
-const REACH_CHUNK: usize = 20_000;
-
-/// Like `route` without its 160-tile and two-floor window: it searches the whole bundle (stairs,
-/// ladders and floor changes included) up to `REACH_SEARCH_NODES` tiles. The search yields to the
-/// connection every `REACH_CHUNK` expansions so liveness is served and the harness sees progress.
-/// `Ok(Err(searched))` means the goal is not reachable (or the cap was hit) after `searched` tiles.
-pub(super) async fn reach_route(
-    client: &mut oteryn_dev_client::DevClientSession,
-    world: &BundleWorld,
-    from: TilePos,
-    goal: impl Fn(TilePos) -> bool,
-) -> TestResult<Result<Vec<StepDirection>, usize>> {
-    let mut queue = VecDeque::from([from]);
-    let mut parents = BTreeMap::from([(from, None)]);
-    let mut expanded = 0usize;
-    while let Some(at) = queue.pop_front() {
-        if goal(at) {
-            let mut path = Vec::new();
-            let mut cursor = at;
-            while let Some(Some((previous, direction))) = parents.get(&cursor) {
-                path.push(*direction);
-                cursor = *previous;
-            }
-            path.reverse();
-            return Ok(Ok(path));
-        }
-        if parents.len() > REACH_SEARCH_NODES {
-            break;
-        }
-        expanded += 1;
-        if expanded.is_multiple_of(REACH_CHUNK) {
-            verdict::Harness::global().progress("route-search");
-            client.service_liveness(Duration::from_millis(1)).await?;
-        }
-        for direction in [
-            StepDirection::North,
-            StepDirection::East,
-            StepDirection::South,
-            StepDirection::West,
-        ] {
-            let Some(next) = destination(world, at, direction) else {
-                continue;
-            };
-            if parents.contains_key(&next) {
-                continue;
-            }
-            parents.insert(next, Some((at, direction)));
-            queue.push_back(next);
-        }
-    }
-    Ok(Err(parents.len()))
-}
-
 /// Use the production floor resolver over the production bundle's collision facts.
 fn destination(world: &BundleWorld, from: TilePos, direction: StepDirection) -> Option<TilePos> {
     use crate::map::floor::{Ground, resolve_landing};
@@ -2358,24 +2328,78 @@ fn town_route_retry_delay(
         .then_some(Duration::from_millis(500))
 }
 
+/// Run the privileged helper with a root-owned wall deadline as well as cancellation
+/// of the direct child. The Python script's socket deadline only starts after exec.
+fn fixture_process() -> tokio::process::Command {
+    let mut command = tokio::process::Command::new("sudo");
+    command.args(["-n", "timeout", "--kill-after=1s", "30s", "python3"]);
+    command.kill_on_drop(true);
+    command
+}
+
+struct FixtureSpawn {
+    wire: String,
+    entity: oteryn_dev_client::EntityRef,
+    actor_local_id: u32,
+}
+
+impl FixtureSpawn {
+    fn corpse_identity(&self, clients: &SeamClients<'_>) -> TestResult<[u8; 16]> {
+        use crate::foundation::{
+            ActorLocalGeneration, ActorLocalId, ActorRef, ExactActorRef, ScopeOwnershipGeneration,
+        };
+        let actor = ExactActorRef(ActorRef::from_owner_parts(
+            WorldId::decode(&clients.world)?,
+            ChannelId::decode(&clients.channel)?,
+            ScopeOwnershipGeneration::new(clients.scope_generation)
+                .map_err(|error| format!("invalid scope generation: {error:?}"))?,
+            ActorLocalId(self.actor_local_id),
+            ActorLocalGeneration(self.entity.generation),
+        ));
+        if actor.placement_identity() != self.entity.identity {
+            return Err("spawn receipt has inconsistent placement identity".into());
+        }
+        Ok(actor.corpse_identity())
+    }
+}
+
+fn parse_fixture_spawn(wire: String) -> Result<FixtureSpawn, String> {
+    let fields: Vec<_> = wire.split_ascii_whitespace().collect();
+    let ["spawned", identity, generation, local] = fields.as_slice() else {
+        return Err("invalid spawn receipt fields".into());
+    };
+    let identity = crate::node::operator_files::hex_bytes::<16>(identity)
+        .map_err(|_| "invalid spawn receipt identity")?;
+    let generation = generation
+        .parse()
+        .map_err(|_| "invalid spawn receipt generation")?;
+    let actor_local_id = local
+        .parse()
+        .map_err(|_| "invalid spawn receipt actor local id")?;
+    Ok(FixtureSpawn {
+        wire,
+        entity: oteryn_dev_client::EntityRef {
+            identity,
+            generation,
+        },
+        actor_local_id,
+    })
+}
+
 /// `spawn <session> <key>` through `provision.py --spawn`; Err carries the rejected token.
 /// Shared by `creature_sweep` and MP09 (both reach it through `use super::*`).
-async fn request_spawn(session: String, key: String) -> Result<String, String> {
+async fn request_spawn(session: String, key: String) -> Result<FixtureSpawn, String> {
     let socket = required("NODE_BOOT_CONTROL_SOCKET").map_err(|error| error.to_string())?;
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
-    let output = tokio::task::spawn_blocking(move || {
-        std::process::Command::new("sudo")
-            .args(["-n", "python3"])
-            .arg(script)
-            .args(["--socket", &socket, "--session", &session, "--spawn", &key])
-            .output()
-    })
-    .await
-    .map_err(|error| error.to_string())?
-    .map_err(|error| error.to_string())?;
+    let output = fixture_process()
+        .arg(script)
+        .args(["--socket", &socket, "--session", &session, "--spawn", &key])
+        .output()
+        .await
+        .map_err(|error| error.to_string())?;
     if output.status.success() {
-        return Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned());
+        return parse_fixture_spawn(String::from_utf8_lossy(&output.stdout).trim().to_owned());
     }
     let stderr = String::from_utf8_lossy(&output.stderr);
     Err(match stderr.split_once("reason=") {
@@ -2505,18 +2529,21 @@ pub(super) async fn logout_retrying_busy_observed(
 pub(super) async fn journeys(
     clients: &SeamClients<'_>,
     packet_clients: &SeamClients<'_>,
+    mp_clients: &[SeamClients<'_>; 2],
+    sweep_clients: &SeamClients<'_>,
     path: &Path,
 ) -> TestResult {
     let started = std::time::Instant::now();
     let bytes = std::fs::read(path)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(
+    let qualified = load_qualification_world(
         bytes.clone(),
         &pin,
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
+    let world = &qualified.world;
     evidence(&format!(
         "world_loader state=booted duration_ms={} start={TOWN:?}",
         started.elapsed().as_millis()
@@ -4791,20 +4818,26 @@ pub(super) async fn journeys(
             clients.accounts.len()
         ));
     }
-    if groups.runs("creature_sweep") {
-        #[path = "creature_sweep.rs"]
-        mod creature_sweep;
-        creature_sweep::run(clients, world, &metadata.spawns).await?;
-    }
-    if groups.runs("mp") {
-        #[path = "mp/mount.rs"]
-        mod mp;
-        mp::run(clients, packet_clients, world, &metadata.manifest.subareas).await;
-    }
+    let sweep_result = if groups.runs("creature_sweep") {
+        creature_sweep::run(sweep_clients, world, &qualified.rewards).await
+    } else {
+        Ok(())
+    };
+    let multiplayer_result = if groups.runs("mp") {
+        mp::run(
+            &mp_clients[0],
+            &mp_clients[1],
+            world,
+            &metadata.manifest.subareas,
+        )
+        .await
+    } else {
+        Ok(())
+    };
     // The core/profile pair has not inherited packet movement, loot or death.
     if !groups.runs("core") {
         evidence("e2e_groups core=skipped");
-        return Ok(());
+        return sweep_result.and(multiplayer_result);
     }
     let profile_result = profile_journey(clients, world, &bytes, &metadata.spawns).await;
     if let Err(error) = &profile_result {
@@ -4928,7 +4961,7 @@ pub(super) async fn journeys(
     ));
 
     drop(client);
-    profile_result
+    sweep_result.and(multiplayer_result).and(profile_result)
 }
 
 async fn profile_journey(
@@ -5927,4 +5960,68 @@ fn flr2_catalogue_admission() -> TestResult {
         "catalogue blocking stone must block movement"
     );
     Ok(())
+}
+
+#[test]
+fn qualification_mutating_groups_use_dedicated_fixtures() -> TestResult {
+    let (source, _) = include_str!("world.rs")
+        .split_once("fn qualification_mutating_groups")
+        .ok_or("fixture test marker missing")?;
+    let compact: String = source
+        .chars()
+        .filter(|character| !character.is_whitespace())
+        .collect();
+    assert!(compact.contains("creature_sweep::run(sweep_clients,"));
+    assert!(compact.contains("mp::run(&mp_clients[0],&mp_clients[1],"));
+    assert!(compact.contains("profile_journey(clients,"));
+    Ok(())
+}
+
+pub(super) async fn with_peer_service<T>(
+    step: impl std::future::Future<Output = T>,
+    mut service: impl AsyncFnMut() -> TestResult,
+) -> TestResult<T> {
+    use std::future::poll_fn;
+    use std::task::Poll;
+    let mut step = std::pin::pin!(step);
+    loop {
+        let mut tick = std::pin::pin!(service());
+        let mut outcome = None;
+        poll_fn(|context| {
+            if outcome.is_none()
+                && let Poll::Ready(result) = step.as_mut().poll(context)
+            {
+                outcome = Some(result);
+            }
+            // Complete the current read even if the other operation just completed.
+            tick.as_mut().poll(context)
+        })
+        .await?;
+        if let Some(outcome) = outcome {
+            return Ok(outcome);
+        }
+    }
+}
+
+#[test]
+fn qualification_peer_answers_probes_during_a_pending_observation() {
+    use std::future::{Future, poll_fn};
+    use std::task::{Context, Poll, Waker};
+
+    let serviced = std::cell::Cell::new(false);
+    let observation = poll_fn(|_| {
+        if serviced.get() {
+            Poll::Ready(91)
+        } else {
+            Poll::Pending
+        }
+    });
+    let task = with_peer_service(observation, async || {
+        serviced.set(true);
+        Ok(())
+    });
+    let mut task = std::pin::pin!(task);
+    let mut cx = Context::from_waker(Waker::noop());
+    assert!(matches!(task.as_mut().poll(&mut cx), Poll::Ready(Ok(91))));
+    assert!(serviced.get());
 }

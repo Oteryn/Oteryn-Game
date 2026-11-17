@@ -1,5 +1,6 @@
 //! Hotkey Equip over the real node; reference: `client_e2e/hotkey_equip.rs`.
 use super::*;
+use oteryn_protocol_oteryn::item_view::{CharacterInventory, EquippedItem, ItemHandle};
 pub(super) async fn hotkey_equip(
     client: &mut oteryn_dev_client::DevClientSession,
 ) -> TestResult<()> {
@@ -47,6 +48,14 @@ pub(super) async fn hotkey_equip(
     let definition = equippable
         .or_else(|| carried.first().copied())
         .ok_or("hotkey equip fixture item missing from inventory")?;
+    let carried_handles: Vec<_> = client
+        .inventory()
+        .ok_or("hotkey equip inventory missing")?
+        .entries
+        .iter()
+        .filter(|item| item.item_definition_ref.get() == definition)
+        .map(|item| item.handle)
+        .collect();
     let mut panel = client_ui::hotkey_equip::HotkeyEquipPanel {
         selected: true,
         tiered: client.selected_capabilities().contains(
@@ -105,12 +114,10 @@ pub(super) async fn hotkey_equip(
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
-        if let Some(equipped) = client.inventory().and_then(|inventory| {
-            inventory
-                .equipment
-                .iter()
-                .find(|equipped| equipped.item.item_definition_ref.get() == definition)
-        }) {
+        if let Some(equipped) = client
+            .inventory()
+            .and_then(|inventory| equipped_from_carry(inventory, definition, &carried_handles))
+        {
             evidence(&format!(
                 "mechanic=hotkey_equip state=equipped definition={definition} slot={:?}",
                 equipped.slot
@@ -213,4 +220,54 @@ fn pinned_profiles_classify_the_sword_as_equipment_and_the_rope_as_not() -> Test
         EquipmentClass::NotEquipment
     );
     Ok(())
+}
+
+fn equipped_from_carry<'a>(
+    inventory: &'a CharacterInventory,
+    definition: u32,
+    carried: &[ItemHandle],
+) -> Option<&'a EquippedItem> {
+    inventory.equipment.iter().find(|equipped| {
+        let item = &equipped.item;
+        item.item_definition_ref.get() == definition
+            && carried.contains(&item.handle)
+            && inventory
+                .entries
+                .iter()
+                .all(|entry| entry.handle != item.handle)
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemEntry};
+
+    #[test]
+    fn hotkey_requires_the_carried_copy_to_move() -> TestResult {
+        let stale = ItemEntry {
+            appearance_id: 0,
+            handle: std::num::NonZeroU64::MIN,
+            item_definition_ref: std::num::NonZeroU32::MIN,
+            count: std::num::NonZeroU32::MIN,
+            sub_type: 0,
+        };
+        let carried = ItemEntry {
+            handle: std::num::NonZeroU64::new(2).ok_or("zero handle")?,
+            ..stale
+        };
+        let mut inventory = CharacterInventory {
+            entries: vec![carried],
+            equipment: vec![EquippedItem {
+                slot: EquipmentSlot::Head,
+                item: stale,
+            }],
+            ..Default::default()
+        };
+        assert!(equipped_from_carry(&inventory, 1, &[carried.handle]).is_none());
+        inventory.entries = vec![stale];
+        inventory.equipment[0].item = carried;
+        assert!(equipped_from_carry(&inventory, 1, &[carried.handle]).is_some());
+        Ok(())
+    }
 }
