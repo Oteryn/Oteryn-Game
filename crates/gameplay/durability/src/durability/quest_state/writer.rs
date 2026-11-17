@@ -1932,6 +1932,17 @@ impl DurabilityRoot {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
                     }
+                    if request.transition_key == oteryn_gameplay_quests::quest::krailos_lake::START
+                        && (!matches!(request.cause, QuestCause::Command(_))
+                            || !super::super::world_event::changes::krailos_lake::advance(
+                                &mut tx,
+                                fence.runtime_scope.world_id(),
+                                None,
+                                oteryn_gameplay_quests::quest::krailos_lake::Action::Start,
+                            ).await?)
+                    {
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
                     if let (Some(callback),Some(admission),Some(tuple))=(&reward_callback,*reward_admission,reward_tuple)
                         && !super::super::reward_claim_mint::quest::apply(&mut tx,tuple,(&reward_root,&recovery),&node,fence,&request,callback,admission,reward_achievement.as_ref(),&catalogue,stored_state.is_none()).await?
                     { tx.rollback().await?;return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
@@ -2000,17 +2011,6 @@ impl DurabilityRoot {
                         && !super::super::world_event::changes::counters::benevola::consume(
                             &mut tx, permit, &recovery, &node, fence, &request, handover).await?
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
-                    if request.transition_key == oteryn_gameplay_quests::quest::krailos_lake::START
-                        && (!matches!(request.cause, QuestCause::Command(_))
-                            || !super::super::world_event::changes::krailos_lake::advance(
-                                &mut tx,
-                                fence.runtime_scope.world_id(),
-                                None,
-                                oteryn_gameplay_quests::quest::krailos_lake::Action::Start,
-                            ).await?)
-                    {
-                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
-                    }
                     if request.transition_key==oteryn_gameplay_quests::quest::hive_access::BUY {
                         let world=fence.runtime_scope.world_id();
                         let epoch:Option<String>=sqlx::query_scalar("SELECT reset_epoch::text FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid")
