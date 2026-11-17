@@ -609,6 +609,42 @@ fn vip_rows_project_saved_icon_and_description() -> TestResult {
         entries.get("vip.description.73").map(String::as_str),
         Some("Friend")
     );
+    let row = app
+        .world_mut()
+        .query::<(Entity, &Row)>()
+        .iter(app.world())
+        .find_map(|(entity, row)| (row.entry == 73).then_some(entity))
+        .ok_or("Alice")?;
+    app.world_mut()
+        .entity_mut(row)
+        .insert(bevy::picking::hover::Hovered(true));
+    let tooltip = app
+        .world_mut()
+        .query::<(Entity, &Name)>()
+        .iter(app.world())
+        .find_map(|(entity, name)| (name.as_str() == "vip.description.73").then_some(entity))
+        .ok_or("tooltip")?;
+    for (enabled, delay, expected) in [
+        (false, 0, Display::None),
+        (true, 1000, Display::None),
+        (true, 0, Display::Flex),
+    ] {
+        let prefs = &mut app
+            .world_mut()
+            .non_send_mut::<HostOwner>()
+            .settings
+            .preferences;
+        prefs.tooltips_enabled = enabled;
+        prefs.tooltip_delay_ms = delay;
+        app.update();
+        assert_eq!(
+            app.world()
+                .get::<Node>(tooltip)
+                .ok_or("tooltip node")?
+                .display,
+            expected
+        );
+    }
     publish(
         &outbox,
         &CONTACTS.replace("Friend\"", "Hunting partner\""),

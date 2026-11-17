@@ -211,6 +211,16 @@ pub(super) fn project(
         }
         // The status bar honours the HUD page's Status Bar column; the HUD column belongs to
         // the Conditions HUD pane (`PlayView::hud_conditions_text`).
+        let prefs = play.view.preferences();
+        if !prefs.special_condition_order.is_empty() || !prefs.condition_order.is_empty() {
+            let order = prefs.ordered_condition_keys();
+            next.sort_by_key(|icon| {
+                order
+                    .iter()
+                    .position(|key| key == &icon.key)
+                    .unwrap_or(usize::MAX)
+            });
+        }
         next.retain(|icon| {
             !play
                 .view

@@ -407,5 +407,19 @@ fn status_icons_follow_only_the_status_bar_column_for_every_condition() -> TestR
             .collect();
         assert_eq!(keys(&mut app)?, expected, "{key}");
     }
+    hide(&mut app, false, &[])?;
+    {
+        let mut host = app.world_mut().non_send_mut::<HostOwner>();
+        let play = host.play.as_mut().ok_or("play")?;
+        let mut prefs = play.view.preferences().clone();
+        prefs.special_condition_order = prefs.ordered_condition_keys();
+        prefs.special_condition_order.reverse();
+        play.view.set_preferences(prefs)?;
+    }
+    app.update();
+    assert_eq!(
+        keys(&mut app)?,
+        ["Rotten Blood", "Soul War", "Resting Area", "Poison"]
+    );
     Ok(())
 }

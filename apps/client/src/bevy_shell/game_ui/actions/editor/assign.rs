@@ -87,6 +87,17 @@ pub(super) fn toggle_multi(
 /// The object action the item fields describe, or `None` when they hold no valid object.
 fn object_action(action: Edit, values: &[String]) -> Option<BarAction> {
     let definition = values.get(1)?.trim().parse::<std::num::NonZeroU32>().ok()?;
+    if matches!(action, Edit::Equip) {
+        let tier = values.get(5)?.trim();
+        return Some(BarAction::Equip {
+            definition,
+            upgrade_tier: if tier.is_empty() {
+                0
+            } else {
+                tier.parse().ok()?
+            },
+        });
+    }
     let sub_type = match values
         .get(4)
         .map(|value| value.trim())
@@ -95,29 +106,22 @@ fn object_action(action: Edit, values: &[String]) -> Option<BarAction> {
         Some(value) => Some(value.parse::<u32>().ok()?),
         None => None,
     };
-    Some(if matches!(action, Edit::Equip) {
-        BarAction::Equip {
-            definition,
-            upgrade_tier: 0,
-        }
-    } else {
-        BarAction::Use {
-            definition,
-            sub_type,
-            mode: match action {
-                Edit::SelfActor => ItemUseMode::SelfActor,
-                Edit::Target => ItemUseMode::Target,
-                Edit::Cursor => ItemUseMode::Cursor,
-                Edit::Use => ItemUseMode::Use,
-                _ => ItemUseMode::CursorPosition,
-            },
-        }
+    Some(BarAction::Use {
+        definition,
+        sub_type,
+        mode: match action {
+            Edit::SelfActor => ItemUseMode::SelfActor,
+            Edit::Target => ItemUseMode::Target,
+            Edit::Cursor => ItemUseMode::Cursor,
+            Edit::Use => ItemUseMode::Use,
+            _ => ItemUseMode::CursorPosition,
+        },
     })
 }
 
 /// Applies one editor button; a multiaction draft collects objects instead of assigning them.
 pub(super) fn apply(
-    link: &crate::play::PlayLink,
+    owner: &mut HostOwner,
     slot: usize,
     action: Edit,
     values: &[String],
@@ -126,6 +130,10 @@ pub(super) fn apply(
     if slot >= oteryn_client_runtime::spell::ACTION_BAR_SLOTS {
         return REFUSED.into();
     }
+    let Some(play) = &owner.play else {
+        return REFUSED.into();
+    };
+    let link = &play.link;
     let saved = match action {
         Edit::AimTarget | Edit::AimFacing | Edit::AimCursor => link.bar_gesture(BarGesture::Aim {
             slot,
@@ -135,7 +143,32 @@ pub(super) fn apply(
                 _ => crate::play::SpellAim::Cursor,
             },
         }),
-        Edit::Key => link.bind_action_key(slot, &values[3]),
+        Edit::Key => {
+            owner.settings.sync_bar_actions(link);
+            let mut prefs = owner.settings.preferences.clone();
+            prefs.action_keys.0.remove(&slot);
+            let Some(binding) = slot_binding(slot) else {
+                return REFUSED.into();
+            };
+            let chord = values[3].trim().to_ascii_uppercase();
+            if matches!(
+                chord.as_str(),
+                "ESCAPE" | "ENTER" | "KEYPADENTER" | "NUMPADENTER"
+            ) {
+                return REFUSED.into();
+            }
+            let chord = if chord.is_empty() {
+                binding.default_chord
+            } else {
+                &chord
+            };
+            if prefs.rebind(binding.id, chord).is_err() {
+                return REFUSED.into();
+            }
+            owner.settings.apply(prefs);
+            owner.settings.sync_bar_actions(link);
+            true
+        }
         Edit::Clear => {
             *draft = None;
             link.clear_bar_action(slot);

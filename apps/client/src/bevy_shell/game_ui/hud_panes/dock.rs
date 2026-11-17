@@ -156,6 +156,7 @@ const SAVE_DELAY: Duration = Duration::from_secs(1);
 pub(super) struct Persistence {
     path: Option<PathBuf>,
     pending: Option<Duration>,
+    unsaved: std::collections::BTreeMap<PathBuf, (SidebarWidgets, Duration)>,
 }
 
 /// Loads the character's dock when the character changes (saving the previous one first),
@@ -168,12 +169,31 @@ pub(super) fn persist(
 ) {
     let path = owner.dock_layout_path();
     let now = time.elapsed();
+    // Keep the previous character's edits separate while a different dock is active.
+    let closing = owner.phase == crate::bevy_shell::owner::Phase::Closed;
+    state.unsaved.retain(|previous, (snapshot, attempted)| {
+        if Some(previous) == path.as_ref()
+            || (!closing && now.saturating_sub(*attempted) < SAVE_DELAY)
+        {
+            return true;
+        }
+        *attempted = now;
+        snapshot.save(previous).is_err()
+    });
     if path != state.path {
         if let Some(previous) = state.path.as_deref()
             && (state.pending.is_some() || widgets.is_changed())
             && let Err(error) = widgets.save(previous)
         {
             leprintln!("Could not save window layout: {error}", error = error);
+            let previous = previous.to_owned();
+            state.unsaved.insert(previous, (widgets.clone(), now));
+        }
+        if let Some((snapshot, _)) = path.as_ref().and_then(|path| state.unsaved.remove(path)) {
+            widgets.set_if_neq(snapshot);
+            state.path = path;
+            state.pending = Some(now);
+            return;
         }
         let next = match path.as_deref().map(SidebarWidgets::load) {
             Some(Ok(saved)) => saved,
@@ -188,14 +208,14 @@ pub(super) fn persist(
         state.pending = None;
         return;
     }
-    let Persistence { path, pending } = &mut *state;
+    let Persistence { path, pending, .. } = &mut *state;
     let Some(path) = path.as_deref() else {
         return;
     };
     if widgets.is_changed() {
         *pending = Some(now);
     }
-    if pending.is_some_and(|since| now.saturating_sub(since) >= SAVE_DELAY) {
+    if pending.is_some_and(|since| closing || now.saturating_sub(since) >= SAVE_DELAY) {
         if let Err(error) = widgets.save(path) {
             *pending = Some(now);
             leprintln!("Could not save window layout: {error}", error = error);

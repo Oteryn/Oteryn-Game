@@ -3,7 +3,7 @@ use crate::{
     combat_input::{CombatCommand, CombatReport},
     play::Stepper,
 };
-use bevy::ui::Pressed;
+use bevy::ui_widgets::Activate;
 use oteryn_client_runtime::{
     cyclopedia_character::{StoreSummary, TabView},
     raw_feature::FeatureCommand,
@@ -174,7 +174,7 @@ fn ankh_opens_ownership_and_penalty_details() -> TestResult {
             .next()
             .map(|(entity, _)| entity)
             .ok_or("ankh button")?;
-        app.world_mut().entity_mut(button).insert(Pressed);
+        app.world_mut().trigger(Activate { entity: button });
         app.update();
         let (text, node) = app
             .world_mut()
@@ -184,9 +184,8 @@ fn ankh_opens_ownership_and_penalty_details() -> TestResult {
         assert!(text.0.contains("The Spiritual Shielding: missing"));
         assert!(text.0.contains("red or black skulls"));
         assert!(text.0.contains("Exact next-death losses"));
-        app.world_mut().entity_mut(button).remove::<Pressed>();
         app.update();
-        app.world_mut().entity_mut(button).insert(Pressed);
+        app.world_mut().trigger(Activate { entity: button });
         app.update();
         assert_eq!(
             app.world_mut()

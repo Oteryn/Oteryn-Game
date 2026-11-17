@@ -31,11 +31,22 @@ fn captioned(app: &mut App, caption: &str) -> Result<Entity, Box<dyn std::error:
 #[test]
 fn assignment_buttons_reach_real_local_owner_and_reserved_key_validation() -> TestResult {
     let (mut app, mut commands) = super::super::tests::fixture()?;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .settings
+        .preferences
+        .rebind("local-spell-action-bar-spell-1", "CTRL+F1")?;
     let generation = app.world().non_send::<HostOwner>().generation();
     app.world_mut()
         .resource_mut::<EditorState>()
         .open(0, generation);
     app.update();
+    assert!(
+        app.world_mut()
+            .query::<(&Field, &EditableText)>()
+            .iter(app.world())
+            .any(|(field, text)| field.0 == 3 && text.value() == "CTRL+F1")
+    );
     set(&mut app, 2, "A real saved greeting");
     let save = control(&mut app, |edit| matches!(edit, Edit::Text))?;
     app.world_mut().trigger(Activate { entity: save });
@@ -71,6 +82,16 @@ fn assignment_buttons_reach_real_local_owner_and_reserved_key_validation() -> Te
     assert_eq!(
         app.world().resource::<EditorState>().message,
         "Saved action assignment"
+    );
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .settings
+            .preferences
+            .keybindings
+            .get("local-spell-action-bar-spell-1")
+            .map(String::as_str),
+        Some("SUPER+ALT+F12")
     );
     let clear = control(&mut app, |edit| matches!(edit, Edit::Clear))?;
     app.world_mut().trigger(Activate { entity: clear });
@@ -690,5 +711,106 @@ fn ninth_row_slot_accepts_an_assignment_through_the_editor() -> TestResult {
             .contains("Ninth row greeting")
     );
     assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn equip_editor_preserves_carried_assignment_tier() -> TestResult {
+    let (mut app, _) = super::super::tests::fixture()?;
+    let (link, _commands, outbox) = crate::play::play_channel();
+    outbox.bevy_hotkey_equip_items(vec![256]);
+    let expected = BarAction::Equip {
+        definition: 256u32.try_into()?,
+        upgrade_tier: 3,
+    };
+    assert!(link.assign_bar_action(0, expected.clone()));
+    let generation = {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.settings.sync_bar_actions(&link);
+        owner.play.as_mut().ok_or("play")?.link = link;
+        owner.generation()
+    };
+    app.world_mut()
+        .resource_mut::<EditorState>()
+        .open(0, generation);
+    app.update();
+    let equip = control(&mut app, |edit| matches!(edit, Edit::Equip))?;
+    app.world_mut().trigger(Activate { entity: equip });
+    let owner = &mut *app.world_mut().non_send_mut::<HostOwner>();
+    owner
+        .settings
+        .sync_bar_actions(&owner.play.as_ref().ok_or("play")?.link);
+    assert_eq!(
+        owner.settings.preferences.bar_actions.0.get(&0),
+        Some(&expected)
+    );
+    let multi = control(&mut app, |edit| matches!(edit, Edit::Multi))?;
+    app.world_mut().trigger(Activate { entity: multi });
+    app.world_mut().trigger(Activate { entity: equip });
+    app.world_mut().trigger(Activate { entity: multi });
+    let owner = &mut *app.world_mut().non_send_mut::<HostOwner>();
+    owner
+        .settings
+        .sync_bar_actions(&owner.play.as_ref().ok_or("play")?.link);
+    assert_eq!(
+        owner.settings.preferences.bar_actions.0.get(&0),
+        Some(&BarAction::Multi {
+            actions: vec![expected]
+        })
+    );
+    Ok(())
+}
+
+#[test]
+fn edited_chord_labels_and_executes_the_same_slot() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (mut app, mut commands) = super::super::tests::fixture()?;
+    let generation = {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner
+            .settings
+            .preferences
+            .rebind("local-spell-action-bar-spell-1", "CTRL+F1")?;
+        owner.generation()
+    };
+    app.world_mut()
+        .resource_mut::<EditorState>()
+        .open(0, generation);
+    app.update();
+    set(&mut app, 3, "SUPER+ALT+F12");
+    let key = control(&mut app, |edit| matches!(edit, Edit::Key))?;
+    app.world_mut().trigger(Activate { entity: key });
+    let close = control(&mut app, |edit| matches!(edit, Edit::Close))?;
+    app.world_mut().trigger(Activate { entity: close });
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<(&super::super::SlotHotkey, &Text)>()
+            .iter(app.world())
+            .any(|(slot, text)| slot.0 == 0 && text.0 == "M+A+F12")
+    );
+    for (key, modifiers, casts) in [
+        (58, Modifiers::one(Modifier::Control), false),
+        (
+            69,
+            Modifiers::one(Modifier::Super).with(Modifier::Alt),
+            true,
+        ),
+    ] {
+        let code = KeyCode::new(key)?;
+        let events =
+            [ButtonState::Pressed, ButtonState::Released].map(|state| NormalizedInputEvent::Key {
+                code,
+                state,
+                modifiers,
+                repeat: false,
+            });
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.route_input(&events, false);
+        let play = owner.play.as_mut().ok_or("play")?;
+        assert_eq!(play.view.tick(&play.link), Ok(()));
+        assert_eq!(commands.try_recv().ok().is_some_and(|command| matches!(command, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get()==71)), casts);
+        assert!(commands.try_recv().is_err());
+    }
     Ok(())
 }
