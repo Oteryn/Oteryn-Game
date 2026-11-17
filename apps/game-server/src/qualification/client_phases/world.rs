@@ -541,6 +541,11 @@ fn near_locker(world: &BundleWorld, at: TilePos) -> bool {
     })
 }
 
+fn depot_route(world: &BundleWorld, from: TilePos) -> TestResult<Vec<StepDirection>> {
+    route(world, from, |at| near_locker(world, at))
+        .ok_or_else(|| format!("no reachable authored depot locker from {from:?}").into())
+}
+
 fn town_route_retry_delay(
     disposition: StepDisposition,
     stationary: bool,
@@ -2861,8 +2866,7 @@ pub(super) async fn journeys(
     client_hireling::hireling(&mut client).await?;
     client_browse_field::browse_field(&mut client).await?;
     client_daily_boost::daily_boost(&mut client).await?;
-    let path = route(world, TOWN, |at| near_locker(world, at))
-        .ok_or("town has no reachable authored depot locker")?;
+    let path = depot_route(world, tile(client.world_spatial().actor_position)?)?;
     walk(&mut client, world, &path).await?;
     client_depot_search::depot_search(&mut client).await?;
     client_stash::stash(&mut client).await?;
@@ -3281,6 +3285,19 @@ pub(crate) fn smoke() -> TestResult {
     assert!(
         route(world, TOWN, |at| near_locker(world, at)).is_some(),
         "town depot must be reachable"
+    );
+    // M01/E2EF3 keep the non-temple relog cell; floor_journey returns to that cell.
+    // Replaying a path planned from TOWN there used to hit West at 32367,32227,7.
+    let mut at = destination(world, TOWN, StepDirection::North)
+        .ok_or("core non-temple relog cell must be reachable")?;
+    for direction in depot_route(world, at)? {
+        at = destination(world, at, direction).ok_or_else(|| {
+            format!("depot route has no qualified landing: from={at:?} direction={direction:?}")
+        })?;
+    }
+    assert!(
+        near_locker(world, at),
+        "core route must finish beside a depot locker"
     );
     let floor_path = route(world, TOWN, |at| at.floor != TOWN.floor)
         .ok_or("town floor-change route must be reachable")?;
