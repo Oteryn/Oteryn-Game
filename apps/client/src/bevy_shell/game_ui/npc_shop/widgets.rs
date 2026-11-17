@@ -130,6 +130,13 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
             ));
         });
     }
+    // The accepted trade intent has no backpack-purchase flag or packing price.
+    label(
+        commands,
+        skin,
+        shop_controls,
+        "Buy in backpacks: unavailable from this server. Purchases use your existing backpack.",
+    );
     action(
         commands,
         skin,

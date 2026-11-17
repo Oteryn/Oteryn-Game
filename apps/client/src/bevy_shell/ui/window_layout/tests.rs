@@ -486,3 +486,396 @@ fn layouts_load_beside_the_preferences_and_save_once_settled() -> TestResult {
     std::fs::remove_dir_all(&folder)?;
     Ok(())
 }
+
+#[test]
+fn zoom_stops_at_75_and_200_percent_and_a_saved_zoom_is_clamped() -> TestResult {
+    let screen = Vec2::new(4000., 4000.);
+    let mut market = layout("market")?;
+    for (requested, kept) in [(0.5, 0.75), (0.74, 0.75), (0.75, 0.75), (2., 2.), (2.1, 2.)] {
+        market.set_zoom(requested, screen);
+        assert_eq!(market.zoom, kept, "{requested}");
+    }
+    let mut saved = serde_json::to_value(WindowLayouts::default())?;
+    saved["market"]["zoom"] = serde_json::json!(0.1);
+    saved["npc"]["zoom"] = serde_json::json!(2.1);
+    let loaded: WindowLayouts = serde_json::from_value(saved)?;
+    assert_eq!(loaded.0.get("market").map(|layout| layout.zoom), Some(0.75));
+    assert_eq!(loaded.0.get("npc").map(|layout| layout.zoom), Some(2.));
+    Ok(())
+}
+
+#[test]
+fn reset_window_layout_restores_global_position_size_and_zoom_and_saves() -> TestResult {
+    let folder = std::env::temp_dir().join(format!("oteryn-window-reset-{}", std::process::id()));
+    let path = folder.join("windows.json");
+    let mut app = app(1920, 1080, 1.);
+    let root = app
+        .world_mut()
+        .spawn((WindowId("market"), Node::default(), UiTransform::default()))
+        .id();
+    app.update();
+    {
+        let mut layouts = app.world_mut().resource_mut::<WindowLayouts>();
+        let market = layouts.0.get_mut("market").ok_or("market")?;
+        market.resize(Vec2::new(900., 500.), Vec2::new(1920., 1080.));
+        market.set_zoom(1.5, Vec2::new(1920., 1080.));
+        market.offset = Vec2::new(-200., 40.);
+    }
+    app.update();
+    let moved = app.world().get::<UiTransform>(root).ok_or("transform")?;
+    assert_eq!(moved.translation, Val2::px(-200., 40.));
+
+    app.world_mut()
+        .resource_mut::<WindowLayouts>()
+        .reset(Some(&path))?;
+    app.update();
+    let layouts = app.world().resource::<WindowLayouts>();
+    assert_eq!(layouts.0, WindowLayouts::default().0);
+    assert_eq!(WindowLayouts::load(&path)?.0, WindowLayouts::default().0);
+    let transform = app.world().get::<UiTransform>(root).ok_or("transform")?;
+    assert_eq!(transform.translation, Val2::px(0., 0.));
+    let node = app.world().get::<Node>(root).ok_or("node")?;
+    assert_eq!(node.width, px(1000.));
+    assert_eq!(node.height, px(634.));
+    std::fs::remove_dir_all(folder)?;
+    Ok(())
+}
+
+mod stacking {
+    use super::super::{WindowLayer, WindowStack, install, menu, stack::BAND};
+    use super::TestResult;
+    use crate::bevy_shell::{
+        game_ui::{GameModal, modal::ModalGuard},
+        ui::Skins,
+    };
+    use bevy::{
+        input::mouse::AccumulatedMouseScroll,
+        picking::{
+            backend::HitData,
+            events::{Pointer, PointerClick, PointerPress},
+            pointer::{Location, PointerButton, PointerId},
+        },
+        prelude::*,
+        ui_widgets::Activate,
+    };
+
+    /// What each window's own Escape handler does: close only if the modal fence allows it.
+    fn close_front(
+        keys: Res<ButtonInput<KeyCode>>,
+        windows: Query<Entity, With<WindowLayer>>,
+        mut access: ParamSet<(ModalGuard, Query<&mut Node, With<WindowLayer>>)>,
+    ) {
+        if !keys.just_pressed(KeyCode::Escape) {
+            return;
+        }
+        let guard = access.p0();
+        let allowed: Vec<Entity> = windows
+            .iter()
+            .filter(|entity| guard.allows(*entity))
+            .collect();
+        let mut nodes = access.p1();
+        for entity in allowed {
+            if let Ok(mut node) = nodes.get_mut(entity) {
+                node.display = Display::None;
+            }
+        }
+    }
+
+    fn app() -> App {
+        let mut app = App::new();
+        app.add_plugins(MinimalPlugins)
+            .init_resource::<ButtonInput<KeyCode>>()
+            .init_resource::<AccumulatedMouseScroll>()
+            .insert_resource(UiScale(1.))
+            .add_systems(Update, close_front)
+            .configure_sets(
+                PostUpdate,
+                bevy::ui::UiSystems::Layout.before(bevy::ui::UiSystems::Stack),
+            );
+        crate::bevy_shell::game_ui::modal::install(&mut app);
+        install(&mut app);
+        app
+    }
+
+    /// A full-screen window overlay with its panel, as the market and the cyclopedia build them.
+    fn window(app: &mut App, id: &'static str, z: i32) -> (Entity, Entity) {
+        let overlay = app
+            .world_mut()
+            .spawn((
+                GameModal,
+                WindowLayer,
+                GlobalZIndex(z),
+                Node {
+                    display: Display::None,
+                    ..default()
+                },
+            ))
+            .id();
+        let (_, panel) = super::super::window(id, Node::default());
+        let panel = app
+            .world_mut()
+            .spawn((super::super::WindowId(id), panel, ChildOf(overlay)))
+            .id();
+        (overlay, panel)
+    }
+
+    fn show(app: &mut App, overlay: Entity) -> TestResult {
+        app.world_mut()
+            .get_mut::<Node>(overlay)
+            .ok_or("overlay")?
+            .display = Display::Flex;
+        app.update();
+        Ok(())
+    }
+
+    fn depth(app: &App, entity: Entity) -> Result<i32, String> {
+        app.world()
+            .get::<GlobalZIndex>(entity)
+            .map(|z| z.0)
+            .ok_or(format!("{entity} depth"))
+    }
+
+    fn open(app: &App, overlay: Entity) -> bool {
+        app.world()
+            .get::<Node>(overlay)
+            .is_some_and(|node| node.display != Display::None)
+    }
+
+    fn pointer() -> Pointer {
+        Pointer::new(
+            PointerId::Mouse,
+            Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: 1920,
+                    height: 1080,
+                },
+                position: Vec2::new(300., 200.),
+            },
+        )
+    }
+
+    fn press(app: &mut App, entity: Entity) {
+        app.world_mut().trigger(PointerPress {
+            entity,
+            pointer: pointer(),
+            button: PointerButton::Primary,
+            hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+            count: 1,
+        });
+        app.update();
+    }
+
+    fn escape(app: &mut App) {
+        let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
+        keys.release(KeyCode::Escape);
+        keys.clear();
+        keys.press(KeyCode::Escape);
+        app.update();
+        let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
+        keys.release(KeyCode::Escape);
+        keys.clear();
+    }
+
+    #[test]
+    fn several_windows_stay_open_together_between_the_hud_and_dialogs() -> TestResult {
+        let mut app = app();
+        let (market, _) = window(&mut app, "market", 157);
+        let (cyclopedia, _) = window(&mut app, "cyclopedia", 165);
+        let (options, _) = window(&mut app, "options", 157);
+        for overlay in [market, cyclopedia, options] {
+            show(&mut app, overlay)?;
+        }
+        assert!(
+            [market, cyclopedia, options]
+                .iter()
+                .all(|overlay| open(&app, *overlay))
+        );
+        let depths = [
+            depth(&app, market)?,
+            depth(&app, cyclopedia)?,
+            depth(&app, options)?,
+        ];
+        assert!(depths[0] < depths[1] && depths[1] < depths[2], "{depths:?}");
+        assert!(
+            depths
+                .iter()
+                .all(|z| (BAND.0..=BAND.1).contains(z) && *z < 150)
+        );
+        assert_eq!(app.world().resource::<WindowStack>().front(), Some(options));
+        Ok(())
+    }
+
+    #[test]
+    fn clicking_a_window_behind_brings_it_to_the_front() -> TestResult {
+        let mut app = app();
+        let (market, market_panel) = window(&mut app, "market", 157);
+        let (cyclopedia, _) = window(&mut app, "cyclopedia", 165);
+        show(&mut app, market)?;
+        show(&mut app, cyclopedia)?;
+        assert!(depth(&app, cyclopedia)? > depth(&app, market)?);
+
+        press(&mut app, market_panel);
+        assert_eq!(app.world().resource::<WindowStack>().front(), Some(market));
+        assert!(depth(&app, market)? > depth(&app, cyclopedia)?);
+        Ok(())
+    }
+
+    #[test]
+    fn focusing_a_control_in_a_window_behind_brings_it_to_the_front() -> TestResult {
+        let mut app = app();
+        let (market, market_panel) = window(&mut app, "market", 157);
+        let (cyclopedia, _) = window(&mut app, "cyclopedia", 165);
+        show(&mut app, market)?;
+        show(&mut app, cyclopedia)?;
+        let field = app
+            .world_mut()
+            .spawn((Node::default(), ChildOf(market_panel)))
+            .id();
+        app.world_mut()
+            .resource_mut::<bevy::input_focus::InputFocus>()
+            .set(field, bevy::input_focus::FocusCause::Navigated);
+        app.update();
+        assert_eq!(app.world().resource::<WindowStack>().front(), Some(market));
+        assert!(depth(&app, market)? > depth(&app, cyclopedia)?);
+        Ok(())
+    }
+
+    #[test]
+    fn escape_closes_only_the_front_window_then_the_next() -> TestResult {
+        let mut app = app();
+        let (market, market_panel) = window(&mut app, "market", 157);
+        let (cyclopedia, _) = window(&mut app, "cyclopedia", 165);
+        let (options, _) = window(&mut app, "options", 157);
+        for overlay in [market, cyclopedia, options] {
+            show(&mut app, overlay)?;
+        }
+        press(&mut app, market_panel);
+
+        escape(&mut app);
+        assert!(!open(&app, market));
+        assert!(open(&app, cyclopedia) && open(&app, options));
+        assert_eq!(app.world().resource::<WindowStack>().front(), Some(options));
+
+        escape(&mut app);
+        assert!(!open(&app, options));
+        assert!(open(&app, cyclopedia));
+
+        escape(&mut app);
+        assert!(!open(&app, cyclopedia));
+        assert_eq!(app.world().resource::<WindowStack>().front(), None);
+        Ok(())
+    }
+
+    fn skins() -> Skins {
+        Skins {
+            buttons: oteryn_client_ui_bevy::ButtonImages {
+                up: default(),
+                down: default(),
+            },
+            checked: default(),
+            unchecked: default(),
+            frame: default(),
+            inset: default(),
+            font: default(),
+        }
+    }
+
+    fn right_click(app: &mut App, entity: Entity) {
+        app.world_mut().trigger(PointerClick {
+            entity,
+            pointer: pointer(),
+            button: PointerButton::Secondary,
+            hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+            duration: std::time::Duration::ZERO,
+            count: 1,
+        });
+        app.update();
+    }
+
+    fn entry(app: &mut App, label: &str) -> Result<Entity, String> {
+        app.world_mut()
+            .query::<(Entity, &menu::Entry)>()
+            .iter(app.world())
+            .find_map(|(entity, entry)| {
+                matches!(entry, menu::Entry::Zoom(text, _) | menu::Entry::Reset(text) if *text == label)
+                    .then_some(entity)
+            })
+            .ok_or(format!("{label} entry"))
+    }
+
+    #[test]
+    fn the_window_menu_zooms_75_to_200_percent_and_resets_the_layout() -> TestResult {
+        let mut app = app();
+        app.insert_resource(skins());
+        let (market, panel) = window(&mut app, "market", 157);
+        show(&mut app, market)?;
+
+        right_click(&mut app, panel);
+        let labels: Vec<&str> = app
+            .world_mut()
+            .query::<&menu::Entry>()
+            .iter(app.world())
+            .map(|entry| match entry {
+                menu::Entry::Zoom(label, _) | menu::Entry::Reset(label) => *label,
+            })
+            .collect();
+        assert_eq!(
+            labels,
+            [
+                "Zoom 75%",
+                "Zoom 100%",
+                "Zoom 125%",
+                "Zoom 150%",
+                "Zoom 200%",
+                "Reset window layout"
+            ]
+        );
+        let zoom = |app: &App| {
+            app.world()
+                .resource::<super::super::WindowLayouts>()
+                .0
+                .get("market")
+                .map(|layout| layout.zoom)
+        };
+        for (label, value) in menu::ZOOMS {
+            if !app
+                .world_mut()
+                .query::<&menu::WindowMenu>()
+                .iter(app.world())
+                .any(|_| true)
+            {
+                right_click(&mut app, panel);
+            }
+            let button = entry(&mut app, label)?;
+            app.world_mut().trigger(Activate { entity: button });
+            app.update();
+            assert_eq!(zoom(&app), Some(value), "{label}");
+            assert_eq!(
+                app.world_mut()
+                    .query::<&menu::WindowMenu>()
+                    .iter(app.world())
+                    .count(),
+                0,
+                "{label} closes the menu"
+            );
+        }
+
+        right_click(&mut app, panel);
+        let reset = entry(&mut app, menu::RESET)?;
+        app.world_mut().trigger(Activate { entity: reset });
+        app.update();
+        assert_eq!(zoom(&app), Some(1.));
+
+        right_click(&mut app, panel);
+        press(&mut app, panel);
+        assert_eq!(
+            app.world_mut()
+                .query::<&menu::WindowMenu>()
+                .iter(app.world())
+                .count(),
+            0,
+            "a press outside closes the menu"
+        );
+        Ok(())
+    }
+}

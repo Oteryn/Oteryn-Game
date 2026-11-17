@@ -12,10 +12,32 @@ use bevy::{
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, io, path::Path};
 
+mod menu;
 mod resize;
-pub(in crate::bevy_shell) use resize::{ResizeCursor, anchor};
+mod stack;
+pub(in crate::bevy_shell) use resize::ResizeCursor;
+pub(in crate::bevy_shell) use stack::{OpenWindows, WindowLayer, WindowStack};
 
-pub(in crate::bevy_shell) const MIN_ZOOM: f32 = 0.5;
+/// Sizes, zoom, resize grips, persistence, the focus stack and the window menu.
+pub(in crate::bevy_shell) fn install(app: &mut App) {
+    app.init_resource::<WindowLayouts>()
+        .init_resource::<WindowStack>()
+        .add_observer(stack::raise_on_press)
+        .add_observer(menu::open)
+        .add_observer(menu::dismiss)
+        .add_systems(Update, (zoom, persist))
+        .add_systems(
+            PostUpdate,
+            (
+                (project, stack::project)
+                    .chain()
+                    .before(bevy::ui::UiSystems::Layout),
+                resize::anchor.after(bevy::ui::UiSystems::Layout),
+            ),
+        );
+}
+
+pub(in crate::bevy_shell) const MIN_ZOOM: f32 = 0.75;
 pub(in crate::bevy_shell) const MAX_ZOOM: f32 = 2.;
 
 /// The Global initial size (height `None` follows content) and the minimum, at 100%.
@@ -198,6 +220,11 @@ impl WindowLayouts {
             Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(Self::default()),
             Err(error) => Err(error),
         }
+    }
+    /// The window menu's Reset window layout: Global position, size and zoom, saved at once.
+    pub(in crate::bevy_shell) fn reset(&mut self, path: Option<&Path>) -> io::Result<()> {
+        *self = Self::default();
+        path.map_or(Ok(()), |path| self.save(path))
     }
     /// Writes beside the target and renames, so a crash never leaves half a file.
     pub(in crate::bevy_shell) fn save(&self, path: &Path) -> io::Result<()> {
@@ -451,6 +478,9 @@ pub(in crate::bevy_shell) fn project(
                 && let Some(entry) = layouts.0.get_mut(id.0)
             {
                 entry.offset = Vec2::new(x, y);
+            } else if changed && transform.translation != Val2::px(layout.offset.x, layout.offset.y)
+            {
+                transform.translation = Val2::px(layout.offset.x, layout.offset.y);
             }
         }
         if changed || id.is_added() {

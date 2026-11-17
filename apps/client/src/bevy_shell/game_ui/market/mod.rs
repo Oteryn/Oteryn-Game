@@ -81,6 +81,7 @@ fn setup(mut commands: Commands) {
     commands.spawn((
         Overlay,
         GameModal,
+        crate::bevy_shell::ui::window_layout::WindowLayer,
         GlobalZIndex(157),
         Node {
             display: Display::None,
@@ -91,7 +92,6 @@ fn setup(mut commands: Commands) {
             justify_content: JustifyContent::Center,
             ..default()
         },
-        BackgroundColor(Color::srgba(0., 0., 0., 0.45)),
     ));
 }
 // The projection reads the retained owner, hierarchy and text-focus owner together.

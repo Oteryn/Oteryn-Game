@@ -266,7 +266,23 @@ fn sell_only_catalogue_initially_selects_available_side() -> Result {
 }
 
 #[test]
-fn npc_dialog_uses_global_geometry_without_help_prose() -> Result {
+fn npc_shop_explains_backpack_purchase_contract_limit() -> Result {
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .add_systems(Startup, crate::bevy_shell::ui::setup)
+        .add_systems(Update, |mut commands: Commands, skins: Res<Skins>| {
+            widgets::build(&mut commands, &skins, 1);
+        });
+    app.update();
+    assert!(app.world_mut().query::<&Text>().iter(app.world()).any(|text|
+        text.0 == "Buy in backpacks: unavailable from this server. Purchases use your existing backpack."));
+    Ok(())
+}
+
+#[test]
+fn npc_dialog_uses_global_geometry() -> Result {
     let mut app = App::new();
     app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
         .init_asset::<Image>()
@@ -300,7 +316,7 @@ fn npc_dialog_uses_global_geometry_without_help_prose() -> Result {
         !app.world_mut()
             .query::<&Text>()
             .iter(app.world())
-            .any(|text| { text.0.starts_with("Buy in backpacks") || text.0 == "NPC response" })
+            .any(|text| text.0 == "NPC response")
     );
     Ok(())
 }

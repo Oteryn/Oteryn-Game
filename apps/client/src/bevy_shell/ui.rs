@@ -462,9 +462,16 @@ fn activate(
     controls: Query<&Control>,
     mut owner: NonSendMut<HostOwner>,
     modal: super::game_ui::modal::ModalGuard,
+    windows: window_layout::OpenWindows,
     mut manager: ResMut<toolbar::Manager>,
 ) {
-    if !modal.allows(event.entity) {
+    // Ordinary windows stay open together: the toolbar opens another over them.
+    let beside = windows.only_windows()
+        && controls.get(event.entity).is_ok_and(|control| {
+            !matches!(control, Control::Options)
+                && TOOLBAR.iter().any(|entry| entry.1.id() == control.id())
+        });
+    if !beside && !modal.allows(event.entity) {
         return;
     }
     if let Ok(control) = controls.get(event.entity) {
