@@ -87,9 +87,19 @@ fn postgres_case(case: Case) -> f::TestResult {
             f::runtime()
                 .map_err(f::debug)?
                 .block_on(async {
+                    // Qualify the content before opening the live authority harness.
+                    let (controller, _) =
+                        oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables(
+                            f::scope()?.world_id(),
+                            None,
+                        );
+                    let native = controller
+                        .active()
+                        .and_then(|g| g.native_gameplay())
+                        .ok_or("native")?;
                     let h =
                         f::Harness::create(admin, &format!("qaitems_{}", case.tag), true).await?;
-                    let result = exercise(&h, case).await;
+                    let result = exercise(&h, case, native).await;
                     let cleanup = h.cleanup().await;
                     result?;
                     cleanup?;
@@ -118,7 +128,11 @@ cases!(qaitems_boots_content, qaitems_boots_inventory, BOOTS);
 cases!(qaitems_poem_content, qaitems_poem_inventory, POEM);
 cases!(qaitems_lottery_content, qaitems_lottery_inventory, LOTTERY);
 
-async fn exercise(h: &f::Harness, case: Case) -> f::TestResult {
+async fn exercise(
+    h: &f::Harness,
+    case: Case,
+    native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+) -> f::TestResult {
     use oteryn_gameplay_items::item_ref_admission::generation_item_facts;
     let claim = reward_claim(case)?;
     let reward = &claim["placements"][0]["reward"]["items"][0];
@@ -133,15 +147,6 @@ async fn exercise(h: &f::Harness, case: Case) -> f::TestResult {
             .ok_or("item revision")?
             .into(),
     };
-    let (controller, _) =
-        oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables(
-            f::scope()?.world_id(),
-            None,
-        );
-    let native = controller
-        .active()
-        .and_then(|g| g.native_gameplay())
-        .ok_or("native")?;
     let weights = Weights(native);
     let seal = h.recovery.seal_current().map_err(f::debug)?;
     let authority = h
