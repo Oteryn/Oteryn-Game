@@ -60,7 +60,7 @@
       "inputs": [
         {
           "path": "content/items/definitions/items-33000-33499.json",
-          "sha256": "b996bcef2688937384067357cee7558ff5063b2a52c6092238b18ba8d5e80832"
+          "sha256": "88ac1699a81fa419afbbd234e5c348da1ee07550c82f9141b1e452b1479f938c"
         },
         {
           "path": "imports/tibiawiki/facts/items-stats.json",
