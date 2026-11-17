@@ -1261,7 +1261,11 @@ pub(super) async fn exercise(
             .await
             .map_err(|_| "fence")?
             .ok_or("fence")?;
-        sqlx::query(
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        let inserted = sqlx::query(
             "INSERT INTO game_character_quest_tracks \
                  (character_id,track_key,quest_key,value,committed_character_revision) \
              SELECT character_id,$2,$3,1,character_revision FROM game_character_roots \
@@ -1270,8 +1274,10 @@ pub(super) async fn exercise(
         .bind(fence.character_id.as_bytes().as_slice())
         .bind("oteryn:quest-progress/kv/bloodherb/claimed")
         .bind(&callback.quest)
-        .execute(&h.pool)
+        .execute(&mut *tx)
         .await?;
+        assert_eq!(inserted.rows_affected(), 1);
+        tx.commit().await?;
         owner
             .refresh_quest_session(admitted.game_session_id, false)
             .await;
