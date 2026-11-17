@@ -1329,7 +1329,11 @@ async fn apply_trade(
                 return Err(DurabilityError::InvalidStoredState);
             }
             if line.quantity_after == 0 {
-                let removed = sqlx::query(
+                let removed = if purchase.is_some_and(|purchase| purchase.audit.currency.as_ref().is_some_and(|currency| currency.inputs.iter().any(|input| input.item_instance_id == line.item_instance_id && input.nested))) {
+                    sqlx::query("DELETE FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid AND placement_ordinal=$2::text::numeric(20,0)")
+                        .bind(line.item_instance_id.as_slice()).bind(line.placement_ordinal.to_string()).execute(&mut **tx).await?
+                } else {
+                    sqlx::query(
                     "DELETE FROM game_item_container_entries \
                       WHERE item_instance_id = encode($1,'hex')::uuid \
                         AND parent_item_instance_id = encode($2,'hex')::uuid \
@@ -1339,7 +1343,8 @@ async fn apply_trade(
                 .bind(backpack.as_slice())
                 .bind(line.placement_ordinal.to_string())
                 .execute(&mut **tx)
-                .await?;
+                .await?
+                };
                 if removed.rows_affected() != 1 {
                     return Err(DurabilityError::InvalidStoredState);
                 }

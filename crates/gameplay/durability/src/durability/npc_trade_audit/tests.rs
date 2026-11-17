@@ -1275,6 +1275,7 @@ fn shopping_bag_purchase() -> OneItemNpcTradeV1 {
         }
     }
     value.purchase = Some(OneItemNpcBulkPurchaseV1 {
+        currency: None,
         offer_count: 1,
         in_backpacks: true,
         ignore_cap: false,

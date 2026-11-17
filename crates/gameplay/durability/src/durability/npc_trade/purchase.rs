@@ -12,7 +12,14 @@ use oteryn_gameplay_economy::npc_purchase::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PurchaseCurrency { pub facts: ItemDefinitionFacts, pub name: String }
+#[path = "purchase/currency.rs"]
+mod currency;
+pub use currency::currency_message;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PurchaseSelection {
+    pub currency: Option<PurchaseCurrency>,
     pub amount: u32,
     pub in_backpacks: bool,
     pub ignore_cap: bool,
@@ -36,8 +43,9 @@ pub(super) struct PreparedPurchase {
     pub(super) plan: Plan,
     pub(super) total: u64,
     pub(super) units: u32,
-    audit: OneItemNpcBulkPurchaseV1,
+    pub(super) audit: OneItemNpcBulkPurchaseV1,
     bag: Option<TypedDefinitionRef>,
+    currency: Option<PurchaseCurrency>,
     text: String,
 }
 impl PreparedPurchase {
@@ -48,6 +56,7 @@ impl PreparedPurchase {
             .find(|output| output.item_instance_id == line.item_instance_id)
     }
     pub(super) fn definition(&self, line: &NpcTradeLine) -> Option<&TypedDefinitionRef> {
+        if line.kind == NpcTradeLineKind::ItemBurn { return self.currency.as_ref().map(|currency| &currency.facts.definition); }
         self.audit
             .outputs
             .iter()
@@ -62,6 +71,7 @@ impl PreparedPurchase {
                 && let Some(after) = &mut line.after
             {
                 after.definition = Some(definition_message(definition));
+                if let Some(before) = &mut line.before { before.definition = Some(definition_message(definition)); }
             }
         }
     }
@@ -146,11 +156,12 @@ pub(super) async fn prepare(
     } else {
         0
     };
-    let total = request
+    let item_cost = request
         .unit_price
         .checked_mul(u64::from(selection.amount / request.offer_count))
-        .and_then(|cost| cost.checked_add(u64::from(bags) * 20))
         .ok_or(NpcTradeError::InvalidInput)?;
+    let total = (if selection.currency.is_some() { 0 } else { item_cost })
+        .checked_add(u64::from(bags) * 20).ok_or(NpcTradeError::InvalidInput)?;
     // Preserve the ordinary deterministic coin fee plan. Replace only its singleton item MINT.
     let mut plan = super::plan_buy(
         request,
@@ -182,7 +193,7 @@ pub(super) async fn prepare(
         .unwrap_or(0)
         .checked_add(1)
         .ok_or(NpcTradeError::DoesNotFit)?;
-    let main_free = capacity.saturating_sub(entries.len().saturating_sub(whole) + change);
+    let mut main_free = capacity.saturating_sub(entries.len().saturating_sub(whole) + change);
     let rows = super::super::item_transfer::load_carried_rows(&mut *tx, fence.character_id).await?;
     let mut carried = 0_u64;
     let mut ids = std::collections::BTreeSet::new();
@@ -238,6 +249,7 @@ pub(super) async fn prepare(
                 .ok_or(NpcTradeError::InvalidInput)?;
         }
     }
+    let currency = currency::plan(tx, fence, request, selection.currency.as_ref(), item_cost, &rows, &mut plan, &mut carried, &mut main_free).await?;
     let max_weight = super::super::item_transfer::read_derived_transfer_capacity_centi_oz(
         &mut *tx,
         fence.character_id,
@@ -431,6 +443,7 @@ pub(super) async fn prepare(
         return Err(NpcTradeError::CapacityExceeded);
     }
     let audit = OneItemNpcBulkPurchaseV1 {
+        currency,
         offer_count: request.offer_count,
         in_backpacks: selection.in_backpacks,
         ignore_cap: selection.ignore_cap,
@@ -445,7 +458,10 @@ pub(super) async fn prepare(
         units: selection.amount,
         audit,
         bag: bag.map(|bag| bag.definition),
-        text: purchase_message(selection.amount, &selection.item_name, bags, total),
+        text: selection.currency.as_ref().map_or_else(
+            || purchase_message(selection.amount, &selection.item_name, bags, total),
+            |currency| currency_message(selection.amount, &selection.item_name, item_cost, &currency.name, bags)),
+        currency: selection.currency.clone(),
     })
 }
 
@@ -454,8 +470,9 @@ pub(super) async fn store(
     request: &NpcTradeRequest,
     prepared: &PreparedPurchase,
 ) -> std::result::Result<(), DurabilityError> {
-    sqlx::query("INSERT INTO game_npc_purchase_details(transaction_id,in_backpacks,ignore_cap,stack_size,bag_count,response_text,offer_count) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5,$6,$7)")
-        .bind(request.transaction_id.as_slice()).bind(prepared.audit.in_backpacks).bind(prepared.audit.ignore_cap).bind(i32::try_from(prepared.audit.stack_size).map_err(|_|DurabilityError::InvalidStoredState)?).bind(prepared.bag.as_ref().map_or(0,|_|prepared.units.div_ceil(prepared.audit.stack_size).div_ceil(20)) as i32).bind(&prepared.text).bind(i64::from(request.offer_count)).execute(&mut **tx).await?;
+    sqlx::query("INSERT INTO game_npc_purchase_details(transaction_id,in_backpacks,ignore_cap,stack_size,bag_count,response_text,offer_count,currency_key,currency_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5,$6,$7,$8,$9)")
+        .bind(request.transaction_id.as_slice()).bind(prepared.audit.in_backpacks).bind(prepared.audit.ignore_cap).bind(i32::try_from(prepared.audit.stack_size).map_err(|_|DurabilityError::InvalidStoredState)?).bind(prepared.bag.as_ref().map_or(0,|_|prepared.units.div_ceil(prepared.audit.stack_size).div_ceil(20)) as i32).bind(&prepared.text).bind(i64::from(request.offer_count)).bind(prepared.currency.as_ref().map(|currency| &currency.facts.definition.production_key)).bind(prepared.currency.as_ref().map(|currency| &currency.facts.definition.revision_ref)).execute(&mut **tx).await?;
+    currency::store(tx, request, prepared).await?;
     for (index, output) in prepared.audit.outputs.iter().enumerate() {
         let line = prepared
             .plan

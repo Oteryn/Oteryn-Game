@@ -236,13 +236,14 @@ pub(super) async fn trade_mode(
     let (offer, coins, yasir_position) = {
         let runtime = admission.runtime.lock().await;
         let index = pinned_index(&runtime, admission.active_generation);
-        let offer = match admission.states.npc_conversations.trade_in(
+        let offer = match admission.states.npc_conversations.trade_in_mode(
             &admission.states.chat,
             &runtime,
             actor,
             session,
             &intent,
             index,
+            purchase.is_some(),
         ) {
             Ok(offer) => offer,
             Err(refusal) => return Err(Box::new(NpcTradeStep::Refused(*refusal))),
@@ -425,7 +426,7 @@ pub(super) async fn trade_mode(
         },
         full_charges,
         cause: NpcTradeCause {
-            npc_key: offer.npc_key,
+            npc_key: offer.npc_key.clone(),
             catalogue_revision: offer.catalogue_revision,
             offer_index: offer.offer_index,
             side: side_of(offer.side),
@@ -483,13 +484,14 @@ pub(super) async fn trade_mode(
         let Some(runtime) = purchase_runtime.as_mut() else {
             return Err(Box::new(NpcTradeStep::rejected()));
         };
-        if let Err(refusal) = admission.states.npc_conversations.trade_in(
+        if let Err(refusal) = admission.states.npc_conversations.trade_in_mode(
             &admission.states.chat,
             runtime,
             actor,
             session,
             &intent,
             pinned_index(runtime, admission.active_generation),
+            true,
         ) {
             return Err(Box::new(NpcTradeStep::Refused(*refusal)));
         }
@@ -546,7 +548,39 @@ pub(super) async fn trade_mode(
             bags,
             request.unit_price * u64::from(purchase.amount) + u64::from(bags) * 20,
         ));
+        let currency = if let Some(currency) = &offer.currency {
+            let definition = TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: currency.key.clone(),
+                revision_ref: currency.revision.clone(),
+            };
+            let facts = generation_item_facts(native, &definition)
+                .map_err(|_| Box::new(NpcTradeStep::rejected()))?;
+            let name = native
+                .item_policy(&definition.production_key, &definition.revision_ref)
+                .and_then(|policy| match &policy.record().semantics.presentation {
+                    Known(presentation) => match &presentation.name {
+                        Known(name) => Some(name.clone()),
+                        _ => None,
+                    },
+                    _ => None,
+                })
+                .ok_or_else(|| Box::new(NpcTradeStep::rejected()))?;
+            Some(npc_trade::purchase::PurchaseCurrency { facts, name })
+        } else {
+            None
+        };
+        if let Some(currency) = &currency {
+            purchase_text = Some(npc_trade::purchase::currency_message(
+                amount,
+                &name,
+                request.unit_price * u64::from(purchase.amount),
+                &currency.name,
+                bags,
+            ));
+        }
         let selection = npc_trade::purchase::PurchaseSelection {
+            currency,
             amount,
             in_backpacks: purchase.in_backpacks,
             ignore_cap: purchase.ignore_cap,

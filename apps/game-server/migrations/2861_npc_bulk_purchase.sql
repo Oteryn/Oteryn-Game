@@ -21,6 +21,9 @@ CREATE TABLE game_npc_purchase_details (
  transaction_id UUID PRIMARY KEY REFERENCES game_npc_trades(transaction_id),
  in_backpacks BOOLEAN NOT NULL, ignore_cap BOOLEAN NOT NULL,
  offer_count BIGINT NOT NULL CHECK(offer_count BETWEEN 1 AND 100),
+ currency_key TEXT, currency_revision TEXT,
+ CHECK((currency_key IS NULL)=(currency_revision IS NULL)),
+ CHECK(currency_key IS NULL OR game_item_coin_worth(currency_key) IS NULL),
  stack_size INTEGER NOT NULL CHECK(stack_size BETWEEN 1 AND 100),
  bag_count INTEGER NOT NULL CHECK(bag_count BETWEEN 0 AND 128),
  response_text TEXT NOT NULL CHECK(octet_length(response_text) BETWEEN 1 AND 1024),
@@ -43,6 +46,15 @@ CREATE TABLE game_npc_purchase_outputs (
 );
 CREATE INDEX game_npc_purchase_outputs_parent ON game_npc_purchase_outputs(parent_id);
 
+CREATE TABLE game_npc_purchase_currency_inputs (
+ transaction_id UUID NOT NULL REFERENCES game_npc_purchase_details(transaction_id),
+ item_instance_id UUID NOT NULL REFERENCES game_item_instances(item_instance_id),
+ parent_id UUID NOT NULL REFERENCES game_item_instances(item_instance_id),
+ nested BOOLEAN NOT NULL,
+ created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id(),
+ PRIMARY KEY(transaction_id,item_instance_id)
+);
+
 -- Re-prove all new mints, their exact locations and the native coin fee at commit time.
 CREATE FUNCTION game_npc_purchase_current(p_transaction UUID) RETURNS BOOLEAN
 LANGUAGE plpgsql SECURITY DEFINER AS $$
@@ -56,14 +68,14 @@ BEGIN
  IF NOT FOUND OR p.created_xact_id<>pg_current_xact_id() THEN RETURN FALSE; END IF;
  stacks:=(t.quantity+p.stack_size-1)/p.stack_size;
  bags:=CASE WHEN p.in_backpacks THEN (stacks+19)/20 ELSE 0 END;
- IF p.bag_count<>bags OR t.item_units<>t.quantity OR t.quantity%p.offer_count<>0 OR t.total_gold_units<>t.unit_price*(t.quantity/p.offer_count)+20*bags
+ IF p.bag_count<>bags OR t.item_units<>t.quantity OR t.quantity%p.offer_count<>0 OR t.total_gold_units<>(CASE WHEN p.currency_key IS NULL THEN t.unit_price*(t.quantity/p.offer_count) ELSE 0 END)+20*bags
   OR NOT EXISTS(SELECT 1 FROM game_item_container_slots WHERE character_id=t.character_id AND item_instance_id=t.backpack_item_instance_id AND world_id=t.world_id)
   OR (SELECT count(*) FROM game_npc_purchase_outputs WHERE transaction_id=p_transaction)<>stacks+bags
   OR (SELECT max(purchase_index) FROM game_npc_purchase_outputs WHERE transaction_id=p_transaction)<>stacks+bags-1
   OR (SELECT count(*) FROM game_npc_trade_lines WHERE transaction_id=p_transaction)<>t.line_count
   OR (SELECT max(line_ordinal) FROM game_npc_trade_lines WHERE transaction_id=p_transaction)<>t.line_count
   OR (SELECT count(*) FROM game_npc_trade_lines WHERE transaction_id=p_transaction AND line_kind=4)<>stacks+bags
-  OR EXISTS(SELECT 1 FROM game_npc_trade_lines WHERE transaction_id=p_transaction AND (line_kind=3 OR created_xact_id<>pg_current_xact_id()))
+  OR EXISTS(SELECT 1 FROM game_npc_trade_lines WHERE transaction_id=p_transaction AND (created_xact_id<>pg_current_xact_id()))
   OR (SELECT count(*) FROM game_item_instances WHERE minted_transaction_id=p_transaction)<>(SELECT count(*) FROM game_npc_trade_lines WHERE transaction_id=p_transaction AND line_kind IN(2,4))
  THEN RETURN FALSE; END IF;
  SELECT coalesce(sum((quantity_before-quantity_after)*coin_worth) FILTER(WHERE line_kind=1),0),coalesce(sum(quantity_after*coin_worth) FILTER(WHERE line_kind=2),0)
@@ -75,12 +87,32 @@ BEGIN
   OR EXISTS(SELECT 1 FROM game_npc_trade_lines l JOIN game_item_instances i USING(item_instance_id)
    WHERE l.transaction_id=p_transaction AND (i.world_id<>t.world_id OR i.quantity<>l.quantity_after OR i.lifecycle<>CASE WHEN l.quantity_after=0 THEN 2 ELSE 1 END
     OR (l.line_kind IN(1,2) AND game_item_coin_worth(i.definition_production_key) IS DISTINCT FROM l.coin_worth)
-    OR (l.line_kind=1 AND i.last_transaction_id IS DISTINCT FROM p_transaction)
+    OR (l.line_kind IN(1,3) AND i.last_transaction_id IS DISTINCT FROM p_transaction)
     OR (l.line_kind IN(2,4) AND (i.minted_transaction_id<>p_transaction OR i.last_transaction_id IS NOT NULL))
     OR (l.line_kind=2 AND (l.coin_worth=10000 OR l.quantity_after>99))))
  THEN RETURN FALSE; END IF;
  IF EXISTS(SELECT 1 FROM game_npc_trade_lines l WHERE l.transaction_id=p_transaction AND l.line_kind=2
   AND NOT EXISTS(SELECT 1 FROM game_item_container_entries e WHERE e.item_instance_id=l.item_instance_id AND e.parent_item_instance_id=t.backpack_item_instance_id AND e.character_id=t.character_id AND e.world_id=t.world_id AND e.placement_ordinal=l.placement_ordinal AND e.placed_transaction_id=p_transaction)) THEN RETURN FALSE; END IF;
+ IF (SELECT count(*) FROM game_npc_trade_lines WHERE transaction_id=p_transaction AND line_kind=3)<>
+    (SELECT count(*) FROM game_npc_purchase_currency_inputs WHERE transaction_id=p_transaction) THEN RETURN FALSE; END IF;
+ IF p.currency_key IS NULL THEN
+  IF EXISTS(SELECT 1 FROM game_npc_purchase_currency_inputs WHERE transaction_id=p_transaction) THEN RETURN FALSE; END IF;
+ ELSE
+  IF (SELECT coalesce(sum(quantity_before-quantity_after),0) FROM game_npc_trade_lines WHERE transaction_id=p_transaction AND line_kind=3)<>t.unit_price*(t.quantity/p.offer_count)
+   OR EXISTS(SELECT 1 FROM game_npc_purchase_currency_inputs c
+    LEFT JOIN game_npc_trade_lines l ON l.transaction_id=c.transaction_id AND l.item_instance_id=c.item_instance_id AND l.line_kind=3
+    JOIN game_item_instances i ON i.item_instance_id=c.item_instance_id
+    CROSS JOIN LATERAL game_item_loop_owner(c.parent_id) owner
+    WHERE c.transaction_id=p_transaction AND (l.item_instance_id IS NULL OR c.created_xact_id<>pg_current_xact_id()
+     OR i.definition_family<>'Item' OR i.definition_production_key<>p.currency_key OR i.definition_revision_ref<>p.currency_revision
+     OR owner.owner_character IS DISTINCT FROM t.character_id OR owner.depth NOT BETWEEN 0 AND 7
+     OR EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=i.item_instance_id)
+     OR EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=i.item_instance_id)
+     OR (l.quantity_after=0 AND (EXISTS(SELECT 1 FROM game_item_container_entries WHERE item_instance_id=i.item_instance_id) OR EXISTS(SELECT 1 FROM game_item_nested_entries WHERE item_instance_id=i.item_instance_id)))
+     OR (l.quantity_after>0 AND NOT (
+       (NOT c.nested AND EXISTS(SELECT 1 FROM game_item_container_entries e WHERE e.item_instance_id=i.item_instance_id AND e.parent_item_instance_id=c.parent_id AND e.placement_ordinal=l.placement_ordinal AND e.character_id=t.character_id AND e.world_id=t.world_id))
+       OR (c.nested AND EXISTS(SELECT 1 FROM game_item_nested_entries e WHERE e.item_instance_id=i.item_instance_id AND e.parent_item_instance_id=c.parent_id AND e.placement_ordinal=l.placement_ordinal AND e.world_id=t.world_id)))))) THEN RETURN FALSE; END IF;
+ END IF;
  n:=0;
  FOR o IN SELECT * FROM game_npc_purchase_outputs WHERE transaction_id=p_transaction ORDER BY purchase_index LOOP
   IF o.created_xact_id<>pg_current_xact_id() OR o.purchase_index<>n THEN RETURN FALSE; END IF;
@@ -117,7 +149,7 @@ BEGIN
  RETURN NULL;
 END $$;
 DO $$ DECLARE name TEXT; BEGIN
- FOREACH name IN ARRAY ARRAY['game_npc_purchase_details','game_npc_purchase_outputs'] LOOP
+ FOREACH name IN ARRAY ARRAY['game_npc_purchase_details','game_npc_purchase_outputs','game_npc_purchase_currency_inputs'] LOOP
   EXECUTE format('CREATE TRIGGER %I BEFORE UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION game_item_immutable()',name||'_immutable',name);
   EXECUTE format('CREATE TRIGGER %I BEFORE TRUNCATE ON %I FOR EACH STATEMENT EXECUTE FUNCTION game_item_reject_truncate()',name||'_no_truncate',name);
   EXECUTE format('CREATE TRIGGER %I BEFORE INSERT ON %I FOR EACH ROW EXECUTE FUNCTION game_item_stamp_created_xact_id()',name||'_stamp',name);
@@ -138,11 +170,17 @@ DO $$ DECLARE body TEXT; name TEXT; extension TEXT; BEGIN
   EXECUTE regexp_replace(body,'BEGIN','BEGIN '||extension);
  END LOOP;
 END $$;
+DO $$ DECLARE body TEXT; name TEXT; BEGIN
+ FOREACH name IN ARRAY ARRAY['game_item_container_entry_removal_proven','game_item_nested_entry_proven'] LOOP
+  SELECT pg_get_functiondef((name||'()')::regprocedure) INTO STRICT body;
+  EXECUTE regexp_replace(body,'BEGIN','BEGIN IF TG_OP=''DELETE'' AND EXISTS(SELECT 1 FROM game_npc_purchase_currency_inputs c JOIN game_npc_trade_lines l USING(transaction_id,item_instance_id) JOIN game_npc_trades t USING(transaction_id) JOIN game_item_instances i ON i.item_instance_id=c.item_instance_id WHERE c.item_instance_id=OLD.item_instance_id AND c.parent_id=OLD.parent_item_instance_id AND l.placement_ordinal=OLD.placement_ordinal AND l.line_kind=3 AND l.quantity_after=0 AND i.lifecycle=2 AND i.last_transaction_id=t.transaction_id AND c.created_xact_id=pg_current_xact_id() AND t.created_xact_id=pg_current_xact_id() AND game_npc_purchase_current(t.transaction_id)) THEN RETURN NULL; END IF;');
+ END LOOP;
+END $$;
 DO $$ BEGIN
  EXECUTE format('ALTER FUNCTION game_npc_purchase_current(UUID) SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $$;
-REVOKE ALL ON game_npc_purchase_details,game_npc_purchase_outputs FROM PUBLIC;
-GRANT SELECT,INSERT ON game_npc_purchase_details,game_npc_purchase_outputs TO oteryn_game_runtime;
-GRANT SELECT ON game_npc_purchase_details,game_npc_purchase_outputs TO oteryn_game_control;
+REVOKE ALL ON game_npc_purchase_details,game_npc_purchase_outputs,game_npc_purchase_currency_inputs FROM PUBLIC;
+GRANT SELECT,INSERT ON game_npc_purchase_details,game_npc_purchase_outputs,game_npc_purchase_currency_inputs TO oteryn_game_runtime;
+GRANT SELECT ON game_npc_purchase_details,game_npc_purchase_outputs,game_npc_purchase_currency_inputs TO oteryn_game_control;
 REVOKE ALL ON FUNCTION game_npc_purchase_current(UUID),game_npc_purchase_guard() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION game_npc_purchase_current(UUID),game_npc_purchase_guard() TO oteryn_game_runtime;

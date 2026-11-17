@@ -387,6 +387,23 @@ impl NpcConversations {
         intent: &NpcTradeIntent,
         items: Option<&ItemDefinitionIndex>,
     ) -> Result<NpcTradeOffer, Box<NpcTradeRefusal>> {
+        self.trade_in_mode(chat, runtime, actor, session, intent, items, false)
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "additive purchase admission preserves legacy currency refusal"
+    )]
+    pub(super) fn trade_in_mode(
+        &self,
+        chat: &ChatRuntime,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        intent: &NpcTradeIntent,
+        items: Option<&ItemDefinitionIndex>,
+        purchase: bool,
+    ) -> Result<NpcTradeOffer, Box<NpcTradeRefusal>> {
         use NpcIntentDisposition as Disposition;
         let Some(speaker) = service_context::speaker_position(runtime, actor, session) else {
             return Err(Box::new(NpcTradeRefusal::only(Disposition::Rejected)));
@@ -465,10 +482,11 @@ impl NpcConversations {
         if offer.side != intent.side || offer.unit_price != intent.expected_unit_price {
             return Err(Box::new(stale()));
         }
-        if !entry.offers().contains(source) || source.currency.is_some() {
+        if !entry.offers().contains(source) || (source.currency.is_some() && !purchase) {
             return Err(Box::new(rejected()));
         }
         Ok(NpcTradeOffer {
+            currency: source.currency.clone(),
             sub_type: source.sub_type,
             npc_key: npc_key.to_owned(),
             catalogue_revision: intent.catalogue_revision,

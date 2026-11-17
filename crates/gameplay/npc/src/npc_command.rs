@@ -140,6 +140,7 @@ pub fn projected<'a>(
 /// The offer a trade intent names, as the server catalogue holds it at the window's revision.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcTradeOffer {
+    pub currency: Option<crate::content::ProjectV2DefinitionRef>,
     /// Item subtype from the server offer; never the transaction quantity.
     pub sub_type: Option<u16>,
     pub npc_key: String,

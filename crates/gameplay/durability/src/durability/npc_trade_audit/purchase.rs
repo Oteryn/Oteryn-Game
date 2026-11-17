@@ -5,6 +5,8 @@ use oteryn_gameplay_economy::npc_purchase::{SHOPPING_BAG_PRICE, SHOPPING_BAG_SLO
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemNpcBulkPurchaseV1 {
+    #[prost(message, optional, tag = "8")]
+    pub currency: Option<OneItemNpcPurchaseCurrencyV1>,
     #[prost(uint32, tag = "7")]
     pub offer_count: u32,
     #[prost(bool, tag = "1")]
@@ -19,6 +21,23 @@ pub struct OneItemNpcBulkPurchaseV1 {
     pub bag_definition: Option<OneItemTypedDefinitionRevisionV1>,
     #[prost(message, repeated, tag = "6")]
     pub outputs: Vec<OneItemNpcBulkPurchaseOutputV1>,
+}
+
+#[derive(Clone, PartialEq, Eq, Message)]
+pub struct OneItemNpcPurchaseCurrencyV1 {
+    #[prost(message, optional, tag = "1")]
+    pub definition: Option<OneItemTypedDefinitionRevisionV1>,
+    #[prost(message, repeated, tag = "2")]
+    pub inputs: Vec<OneItemNpcPurchaseCurrencyInputV1>,
+}
+#[derive(Clone, PartialEq, Eq, Message)]
+pub struct OneItemNpcPurchaseCurrencyInputV1 {
+    #[prost(bytes = "vec", tag = "1")]
+    pub item_instance_id: Vec<u8>,
+    #[prost(bytes = "vec", tag = "2")]
+    pub parent: Vec<u8>,
+    #[prost(bool, tag = "3")]
+    pub nested: bool,
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]
@@ -68,9 +87,9 @@ pub(super) fn check(
     } else {
         0
     };
-    if value
+    if (if purchase.currency.is_some() { Some(0) } else { value
         .unit_price
-        .checked_mul(u64::from(value.quantity / count))
+        .checked_mul(u64::from(value.quantity / count)) })
         .and_then(|cost| cost.checked_add(u64::from(bags) * SHOPPING_BAG_PRICE))
         != Some(value.total_gold_units)
         || purchase.outputs.len() != usize::try_from(stacks + bags).map_err(|_| bad())?
@@ -87,6 +106,21 @@ pub(super) fn check(
     } else if purchase.bag_definition.is_some() {
         return Err(bad());
     }
+    let burns: Vec<_> = value.lines.iter().filter(|line| line.kind == LINE_ITEM_BURN).collect();
+    if let Some(currency) = &purchase.currency {
+        check_definition(currency.definition.as_ref())?;
+        let definition = currency.definition.as_ref().ok_or_else(bad)?;
+        if definition.family != "Item" || Coin::from_production_key(&definition.production_key).is_some() || burns.len() != currency.inputs.len() { return Err(bad()); }
+        let mut spent = 0_u64;
+        for (line,input) in burns.iter().zip(&currency.inputs) {
+            check_uuid_v7(&input.parent)?;
+            let before = line.before.as_ref().ok_or_else(bad)?;
+            if before.item_instance_id != input.item_instance_id || before.definition.as_ref() != Some(definition)
+                || value.lines.iter().filter(|other| line_item(other) == line_item(line)).count() != 1 { return Err(bad()); }
+            spent = spent.checked_add(u64::from(check_burn(line,&value.world_id)?)).ok_or_else(bad)?;
+        }
+        if Some(spent) != value.unit_price.checked_mul(u64::from(value.quantity/count)) { return Err(bad()); }
+    } else if !burns.is_empty() { return Err(bad()); }
     let first_item = value
         .lines
         .iter()
@@ -195,7 +229,7 @@ pub(super) fn check(
     normalized.purchase = None;
     normalized.quantity = 1;
     normalized.unit_price = value.total_gold_units;
-    normalized.lines.retain(|line| line.kind != LINE_ITEM_MINT);
+    normalized.lines.retain(|line| !matches!(line.kind, LINE_ITEM_MINT | LINE_ITEM_BURN));
     let mut output = (*item_lines.last().ok_or_else(bad)?).clone();
     output.placement_ordinal = normalized
         .lines
