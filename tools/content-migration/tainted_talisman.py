@@ -10,7 +10,10 @@ import json
 import quest_reward_item_semantics as reward
 
 # Star herb and antlers already have native Hireling/Grizzly owners.
-IDS = {22008: ('antler talisman', 240, False)}
+IDS = {
+    22008: ('antler talisman', 240, False),
+    22009: ('sacred antler talisman', 240, False),
+}
 
 
 def apply_admissions(definitions, root):

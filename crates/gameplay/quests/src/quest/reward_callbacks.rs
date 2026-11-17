@@ -498,6 +498,9 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
+    include_str!(
+        "../../../../../content/quests/native-reward-callbacks/tainted-soul-redemption.json"
+    ),
 ];
 
 /// The current immutable catalogue's explicit authored callbacks plus the retained source owners.
@@ -1048,7 +1051,9 @@ fn validate_document_with_capacity(
                 != c.cosmetic_targets().count()
             || c.cosmetic_targets()
                 .any(|r| !slug(&r.outfit, "oteryn:outfit.", b"_", 160) || r.addons > 3)
-            || (c.keywords.is_empty() && c.world_claim.is_none() && c.key != TAINTED_SOUL_REDEMPTION)
+            || (c.keywords.is_empty()
+                && c.world_claim.is_none()
+                && c.key != TAINTED_SOUL_REDEMPTION)
             || c.keywords.len() > 8
             || c.keywords.iter().collect::<BTreeSet<_>>().len() != c.keywords.len()
             || c.keywords.iter().any(|s| {
@@ -1076,7 +1081,7 @@ fn validate_document_with_capacity(
             || c.failure_reply.iter().any(|line| {
                 line.is_empty() || line.len() > 512 || line.chars().any(char::is_control)
             })
-            || c.reply.is_empty()
+            || (c.reply.is_empty() && c.key != TAINTED_SOUL_REDEMPTION)
             || c.achievement_progress.len() > 8
             || c.achievement_progress
                 .iter()

@@ -602,7 +602,11 @@ def generate() -> dict[str, str]:
     names = ("project", "manifest", "content.lock")
     docs = [load_json(ROOT / f"content/{name}.json") for name in names]
     for name, doc in zip(
-        names, registered(*docs, len(records), sorted(outputs)), strict=True
+        names,
+        registered(*docs, len(records), [
+            *outputs, 'content/quests/native-reward-callbacks/tainted-soul-redemption.json',
+        ]),
+        strict=True,
     ):
         outputs[f"content/{name}.json"] = registry(doc)
     outputs[DIRECTORY_INDEX] = (

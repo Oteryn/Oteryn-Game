@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/tainted-souls/freed",
+      "quest": "oteryn:quest.the_tainted_soul",
+      "initial": 0,
+      "min": 0,
+      "max": 100,
+      "writable": true,
+      "sources": ["https://tibia.fandom.com/index.php?curid=75293&oldid=1127765#Freeing_the_Souls"]
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/tainted-soul-redemption",
+      "quest": "oteryn:quest.the_tainted_soul",
+      "npc": "",
+      "keywords": [],
+      "topic": 0,
+      "next_topic": 0,
+      "carried_item": "oteryn:item.tibia.i22009",
+      "creature_target": "oteryn:creature.tainted_soul",
+      "capture_creature": true,
+      "storage": [],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/tainted-souls/freed",
+          "from": {"kind": "between", "minimum": 0, "maximum": 99},
+          "effect": {"kind": "add", "value": 1}
+        }
+      ],
+      "take": [],
+      "reply": [],
+      "present": [{"item": "oteryn:item.tibia.i22009", "count": 1}],
+      "sources": ["https://tibia.fandom.com/index.php?curid=75293&oldid=1127765#Freeing_the_Souls"]
+    }
+  ]
+}
