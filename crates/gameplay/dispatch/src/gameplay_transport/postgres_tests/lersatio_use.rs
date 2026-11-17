@@ -131,7 +131,15 @@ pub(super) async fn exercise(
     );
     assert_eq!(map.facts.expire_movement_items(due - 1), 0);
     assert_eq!(map.facts.object_revision(key), 1);
-    assert_eq!(map.facts.expire_movement_items(due), 1);
+    let until_reset = due
+        .checked_sub(owner.owner_now().get())
+        .ok_or("reset already overdue")?;
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_micros(until_reset))
+        .ok_or("reset clock")?;
+    let map = owner.bundle_map().ok_or("mirror map")?;
+    assert_eq!(map.facts.expire_movement_items(owner.owner_now().get()), 1);
     assert_eq!(
         map.facts.object_revision(key),
         2,
