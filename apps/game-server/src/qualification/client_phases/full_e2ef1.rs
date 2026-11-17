@@ -1,5 +1,5 @@
 // E2EF1: native movement commands against node_boot's production-loaded world.
-// Mount as the provisioning phase: run BEFORE its control-socket fixtures.
+// Provision the profile peer before movement rows can initialize its progression on re-admission.
 use super::*;
 #[path = "provision.rs"]
 mod original;
@@ -14,13 +14,14 @@ pub(super) fn item_reference(
     original::item_reference(index, id)
 }
 pub(super) async fn provision(
-    mut client: oteryn_dev_client::DevClientSession,
+    client: oteryn_dev_client::DevClientSession,
     clients: &SeamClients<'_>,
     index: usize,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     if index != 0 {
-        return Err("E2EF1 must precede the first profile provisioning".into());
+        return Err("E2EF1 requires the first profile Character".into());
     }
+    let mut client = original::provision(client, clients, index).await?;
     e2ef1::logout(&mut client).await?;
     drop(client);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
@@ -35,8 +36,7 @@ pub(super) async fn provision(
     let mut movement = e2ef1::run(movement, clients, world).await?;
     e2ef1::logout(&mut movement).await?;
     drop(movement);
-    let client = connect_character(clients, 0x91, index).await?;
-    original::provision(client, clients, index).await
+    connect_character(clients, 0x91, index).await
 }
 mod e2ef1 {
     use super::*;
