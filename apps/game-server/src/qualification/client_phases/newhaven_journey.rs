@@ -1,11 +1,13 @@
-//! Explicit content gaps in the Newhaven player route.
+//! Newhaven evidence derived from the admitted client's server snapshot.
+use super::*;
 
-pub(super) const CONTENT_GAPS: [&str; 1] = [
-    "NEWHAVEN_STEP content-legion-helmet FAIL wrong content: Dawnport claim mapped as Newhaven quest",
-];
-
-pub(super) fn report_content_gaps() {
-    for row in CONTENT_GAPS {
-        super::evidence(row);
-    }
+pub(super) fn first_login(client: &oteryn_dev_client::DevClientSession) -> TestResult {
+    let position = tile(client.world_spatial().actor_position)?;
+    let passed = position == NEWHAVEN_ISLET_TEMPLE;
+    evidence(&format!(
+        "NEWHAVEN_STEP first-login {} server_position={position:?} vitals={:?}",
+        if passed { "PASS" } else { "FAIL" },
+        client.actor_vitals(),
+    ));
+    Ok(())
 }

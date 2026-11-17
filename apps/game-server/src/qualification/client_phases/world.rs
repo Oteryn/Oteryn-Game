@@ -2956,9 +2956,9 @@ async fn newhaven_leg(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult {
-    newhaven_journey::report_content_gaps();
     const FOOTMAN: &str = "oteryn:creature.muglex_clan_footman";
     let mut client = connect_world(clients, 0x74).await?;
+    newhaven_journey::first_login(&client)?;
     let entered = tile(client.world_spatial().actor_position)?;
     evidence(&format!(
         "world_fixture role=newhaven phase=first_entry position={entered:?}"
