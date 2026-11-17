@@ -292,6 +292,20 @@ mod e2ef1 {
         Err("no reachable exact authored target within town budget".into())
     }
 
+    /// Floor 8 is the first underground floor; floors are stored negated (the town is -7).
+    const FLOOR_8: i8 = -8;
+    /// Walk the nearest step-reachable real descent (stairs, hole or automatic floor chain)
+    /// to floor 8 inside the compiled regions; returns the tile the descent started from.
+    async fn descend(client: &mut DevClientSession, world: &BundleWorld) -> TestResult<TilePos> {
+        let from = tile(client.world_spatial().actor_position)?;
+        let path = route(world, from, |at| at.floor == FLOOR_8)
+            .ok_or("no step-reachable descent to floor 8 within the compiled regions")?;
+        walk(client, world, &path).await?;
+        if tile(client.world_spatial().actor_position)?.floor != FLOOR_8 {
+            return Err("descent did not reach floor 8".into());
+        }
+        Ok(from)
+    }
     /// Walk back to `to` over real server-confirmed steps.
     async fn return_to(
         client: &mut DevClientSession,
@@ -872,10 +886,15 @@ mod e2ef1 {
             })
             .ok_or("door approach is diagonal; cardinal crossing required")?;
         let before = client.world_spatial().actor_position;
-        if client.step_retrying(direction).await?.disposition != StepDisposition::Blocked
+        let outcome = client.step_retrying(direction).await?;
+        if outcome.disposition != StepDisposition::Blocked
             || client.world_spatial().actor_position != before
         {
-            return Err("closed door collision did not block".into());
+            return Err(format!(
+                "closed door collision did not block: door={object:?} from={before:?} step={outcome:?} now={:?}",
+                client.world_spatial().actor_position
+            )
+            .into());
         }
         toggle(client, world, object, revision, UseDisposition::Committed).await?;
         // The oracle keeps immutable closed-door collision. Here only the server
@@ -961,20 +980,28 @@ mod e2ef1 {
                 evidence(&format!("E2EF1_GAP row=M05 case={case} error={error}"));
             }
         }
-        let object = approach(
-            client,
-            world,
-            objects,
-            |o| o.appearance == 1628 && world.facts().doors().at(o.at),
-            1,
-        )
-        .await?;
-        let before = client.world_spatial().actor_position;
-        toggle(client, world, object, 0, UseDisposition::Locked).await?;
-        if client.world_spatial().actor_position != before {
-            return Err("locked door use moved actor".into());
+        // The nearest authored locked door (1628) lies on floor 8, below the town.
+        let surface = descend(client, world).await?;
+        let refusal: TestResult = async {
+            let object = approach(
+                client,
+                world,
+                objects,
+                |o| o.appearance == 1628 && world.facts().doors().at(o.at),
+                1,
+            )
+            .await?;
+            let before = client.world_spatial().actor_position;
+            toggle(client, world, object, 0, UseDisposition::Locked).await?;
+            if client.world_spatial().actor_position != before {
+                return Err("locked door use moved actor".into());
+            }
+            checks.pass("locked-refusal", object);
+            Ok(())
         }
-        checks.pass("locked-refusal", object);
+        .await;
+        let returned = return_to(client, world, surface).await;
+        refusal.and(returned)?;
         if !families_ok {
             return Err("one or more door families incomplete".into());
         }
@@ -991,6 +1018,8 @@ mod e2ef1 {
         let reference = provisioning::item_reference(&index, 3003)?;
         let rope = client.inventory().and_then(|i| i.entries.iter().find(|entry| entry.item_definition_ref == reference)).copied().ok_or("FAIL: ordinarily acquired rope content:oteryn:item.tibia.i3003 absent; starter_grant.rs grants only a backpack; fixture provisioning forbidden for full evidence")?;
         checks.pass("carried-rope", rope);
+        // Rope spots are on floor 8, below the town; go down first.
+        descend(client, world).await?;
         // Production rope resolver's exact ground and top item source ids.
         let object = approach(
             client,
