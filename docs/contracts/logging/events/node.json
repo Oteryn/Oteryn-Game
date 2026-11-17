@@ -301,6 +301,29 @@
       "note": "Seeded from current server code."
     },
     {
+      "event": "qualification_fixture_refused",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "reason",
+        "session",
+        "profile"
+      ],
+      "codes": [],
+      "note": "Qualification fixture preparation refused; session and profile only past the early refusal."
+    },
+    {
+      "event": "qualification_spawn_refused",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "reason",
+        "detail"
+      ],
+      "codes": [],
+      "note": "Qualification fixture spawn refused; detail is bounded to 200 characters."
+    },
+    {
       "event": "quest_catalogue",
       "level": "info",
       "span": false,
