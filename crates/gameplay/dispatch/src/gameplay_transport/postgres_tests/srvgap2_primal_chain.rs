@@ -211,7 +211,11 @@ async fn scenario(admin: String, run_tag: Option<u8>) -> TestResult<u8> {
         .activity_runtimes
         .register_template(&template)
         .map_err(|_| "register source template")?;
-    let instance = super::activity_runtime::allocate_ready_instance(&h, run_tag.unwrap_or(*SEARCH_TAGS.start())).await?;
+    let instance = super::activity_runtime::allocate_ready_instance(
+        &h,
+        run_tag.unwrap_or(*SEARCH_TAGS.start()),
+    )
+    .await?;
     let origin_session = admitted.game_session_id;
     let (_, reply, barrier) = super::boss_activity::exchange_command(
         &owner,
