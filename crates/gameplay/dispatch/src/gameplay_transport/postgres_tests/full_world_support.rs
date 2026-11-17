@@ -181,6 +181,29 @@ pub(super) async fn relogin_as(
     account: [u8; 16],
     successor: [u8; 16],
 ) -> TestResult<GameSessionId> {
+    Ok(relogin_as_with_request(h, character, account, successor)
+        .await?
+        .0)
+}
+
+pub(super) async fn relogin_request(
+    h: &Harness,
+) -> TestResult<(
+    GameSessionId,
+    crate::foundation::fresh_admission_durability::FreshAdmissionCommitRequestV1,
+)> {
+    relogin_as_with_request(h, id(41), id(40), id(110)).await
+}
+
+async fn relogin_as_with_request(
+    h: &Harness,
+    character: [u8; 16],
+    account: [u8; 16],
+    successor: [u8; 16],
+) -> TestResult<(
+    GameSessionId,
+    crate::foundation::fresh_admission_durability::FreshAdmissionCommitRequestV1,
+)> {
     use crate::durability::admission_authority_guards::AdmissionGuardStore;
     use crate::foundation::admission_authority_publication::{
         AdmissionAuthorityGuardKeyV1 as Key, AdmissionAuthorityGuardStateV1 as State,
@@ -275,7 +298,7 @@ pub(super) async fn relogin_as(
             .generation(),
         3
     );
-    Ok(next_session)
+    Ok((next_session, next))
 }
 
 // Shared lexical fixture: the controller, authority and owner borrow each other. Keeping
