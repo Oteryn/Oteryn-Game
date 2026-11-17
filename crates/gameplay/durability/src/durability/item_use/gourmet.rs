@@ -35,6 +35,27 @@ pub struct GourmetUseRequest {
     pub conditions: GourmetConditions,
 }
 
+/// Both donor actions use special-foods-cooldown. Read the two receipt owners
+/// under the Character root lock so either action can start the shared window.
+pub(in crate::durability) async fn special_food_on_cooldown(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: CurrentCharacterItemFence,
+) -> Result<bool, DurabilityError> {
+    Ok(sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_hireling_gourmet_state
+          WHERE character_id=encode($1,'hex')::uuid
+            AND cooldown_until>public.game_daily_effect_now())
+         OR EXISTS(SELECT 1 FROM game_item_consume_transform_records
+          WHERE character_id=encode($1,'hex')::uuid
+            AND recipe='oteryn:novelty-item.sweet-mangonaise'
+            AND occurred_at > (extract(epoch FROM clock_timestamp()) * 1000)::bigint - $2)",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(i64::from(GOURMET_COOLDOWN_SECONDS) * 1_000)
+    .fetch_one(&mut **tx)
+    .await?)
+}
+
 fn checked_id(request: &GourmetUseRequest) -> Result<u32> {
     request.item.validate()?;
     if !matches!(request.item.kind, ItemUseKind::HirelingFood { .. })
@@ -211,10 +232,9 @@ impl DurabilityRoot {
             }
             let before=snapshot(&mut tx,fence.character_id.as_bytes(),true).await?;
             if !transition_allowed(before,request.conditions,Some(item_id)) {return Ok(Err(ItemUseError::StaleState));}
-            let cooling:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_hireling_gourmet_state \
-                WHERE character_id=encode($1,'hex')::uuid AND cooldown_until>public.game_daily_effect_now())")
-                .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
-            if cooling {return Ok(Err(ItemUseError::Cooldown));}
+            if special_food_on_cooldown(&mut tx, fence).await? {
+                return Ok(Err(ItemUseError::Cooldown));
+            }
             let tuple=tx.tuple();
             let outcome=match write(&mut tx,&fence,&request.item,tuple).await {
                 Ok(ItemUseOutcome::Written{shape})=>ItemUseOutcome::Written{shape},
