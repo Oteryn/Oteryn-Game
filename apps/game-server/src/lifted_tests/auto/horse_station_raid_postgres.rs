@@ -16,19 +16,25 @@ fn horse_station_postgres_scheduler_fires_only_while_loose() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || -> Result<(), String> {
-            runtime().map_err(|error| error.to_string())?.block_on(async {
-                let h = Harness::create(admin, "horse_station_raid", false).await?;
-                let result = exercise(&h).await;
-                let cleanup = h.cleanup().await;
-                result?;
-                cleanup?;
-                Ok::<(), Box<dyn std::error::Error>>(())
-            }).map_err(|error| error.to_string())
+            runtime()
+                .map_err(|error| error.to_string())?
+                .block_on(async {
+                    let h = Harness::create(admin, "horse_station_raid", false).await?;
+                    let result = exercise(&h).await;
+                    let cleanup = h.cleanup().await;
+                    result?;
+                    cleanup?;
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                })
+                .map_err(|error| error.to_string())
         })?
         .join()
         .map_err(|_| "horse station raid thread")?
         .map_err(Box::<dyn std::error::Error>::from)?;
-    println!("PASS horse_station_postgres_scheduler_fires_only_while_loose elapsed_ms={}", started.elapsed().as_millis());
+    println!(
+        "PASS horse_station_postgres_scheduler_fires_only_while_loose elapsed_ms={}",
+        started.elapsed().as_millis()
+    );
     Ok(())
 }
 async fn exercise(h: &Harness) -> TestResult {
@@ -42,7 +48,9 @@ async fn exercise(h: &Harness) -> TestResult {
     let selected = raid.select([7; 32], id(81)).map_err(debug)?;
     assert_eq!(selected.areas.len(), 2);
     assert_eq!(selected.definition.waves.len(), 1);
-    let wild: u16 = selected.definition.waves[0].entries.iter()
+    let wild: u16 = selected.definition.waves[0]
+        .entries
+        .iter()
         .filter(|entry| entry.creature.as_str() == "oteryn:creature.wild_horse")
         .map(|entry| entry.count)
         .sum();
@@ -91,35 +99,97 @@ async fn exercise(h: &Harness) -> TestResult {
         }],
     };
     for _ in 0..2 {
-        assert!(h.root.check_raid_schedules(&authority, &h.node, request.clone()).await?.firings.is_empty());
+        assert!(
+            h.root
+                .check_raid_schedules(&authority, &h.node, request.clone())
+                .await?
+                .firings
+                .is_empty()
+        );
         request.now_ms += 60_000;
     }
     sqlx::query("INSERT INTO game_horse_stations(world_id,loose_until_ms) VALUES(encode($1,'hex')::uuid,$2)")
         .bind(world.as_bytes().as_slice())
         .bind(request.now_ms + 4 * 24 * 3_600_000)
         .execute(&h.pool).await?;
-    assert_eq!(h.root.check_raid_schedules(&authority, &h.node, request.clone()).await?.firings.len(), 1);
+    assert_eq!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, request.clone())
+            .await?
+            .firings
+            .len(),
+        1
+    );
     let firing = request.candidates[0].firing_id;
-    let wave = h.root.advance_raid_run(&h.node, firing, channel, request.generation,
-        request.candidates[0].definition.clone(), request.now_ms).await?.ok_or("wave")?;
+    let wave = h
+        .root
+        .advance_raid_run(
+            &h.node,
+            firing,
+            channel,
+            request.generation,
+            request.candidates[0].definition.clone(),
+            request.now_ms,
+        )
+        .await?
+        .ok_or("wave")?;
     let CommittedRaidAction::Wave { creatures, .. } = wave.action else {
         return Err("first effect must be the horse wave".into());
     };
     assert_eq!(creatures.len(), 24);
-    assert_eq!(creatures.iter().filter(|plan| plan.creature.as_str() == "oteryn:creature.wild_horse").count(), 6);
-    let outcomes = creatures.into_iter().map(|plan| RaidPlacementOutcome {
-        identity: plan.identity,
-        placed: false,
-    }).collect();
-    h.root.acknowledge_raid_effect(&h.node, wave.identity, outcomes, request.now_ms).await?;
-    let complete = h.root.advance_raid_run(&h.node, firing, channel, request.generation,
-        request.candidates[0].definition.clone(), request.now_ms).await?.ok_or("completion")?;
-    assert_eq!(complete.action, CommittedRaidAction::Complete { cleanup: false });
-    h.root.acknowledge_raid_effect(&h.node, complete.identity, Vec::new(), request.now_ms).await?;
+    assert_eq!(
+        creatures
+            .iter()
+            .filter(|plan| plan.creature.as_str() == "oteryn:creature.wild_horse")
+            .count(),
+        6
+    );
+    let outcomes = creatures
+        .into_iter()
+        .map(|plan| RaidPlacementOutcome {
+            identity: plan.identity,
+            placed: false,
+        })
+        .collect();
+    h.root
+        .acknowledge_raid_effect(&h.node, wave.identity, outcomes, request.now_ms)
+        .await?;
+    let complete = h
+        .root
+        .advance_raid_run(
+            &h.node,
+            firing,
+            channel,
+            request.generation,
+            request.candidates[0].definition.clone(),
+            request.now_ms,
+        )
+        .await?
+        .ok_or("completion")?;
+    assert_eq!(
+        complete.action,
+        CommittedRaidAction::Complete { cleanup: false }
+    );
+    h.root
+        .acknowledge_raid_effect(&h.node, complete.identity, Vec::new(), request.now_ms)
+        .await?;
     request.candidates[0].firing_id = id(82);
     request.now_ms += 10_740_000;
-    assert!(h.root.check_raid_schedules(&authority, &h.node, request.clone()).await?.firings.is_empty());
+    assert!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, request.clone())
+            .await?
+            .firings
+            .is_empty()
+    );
     request.now_ms += 60_000;
-    assert_eq!(h.root.check_raid_schedules(&authority, &h.node, request).await?.firings.len(), 1);
+    assert_eq!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, request)
+            .await?
+            .firings
+            .len(),
+        1
+    );
     Ok(())
 }
