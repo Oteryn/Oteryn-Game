@@ -38,7 +38,8 @@ def outputs(root):
         rule('inquisitor', ['inquisitor'], [66], [], [], '65-66'),
         rule('join-offer', ['join'], [69], [topic(2)], [guard('questline', 'lt', 1)], '67-71'),
         rule('join-noop', ['join'], [], [], [guard('questline', 'ge', 1)], '67-71'),
-        rule('bless-refuse', ['blessing', 'bless'], [77], [topic(0)], [guard('questline', 'ne', 25)], '72-79'),
+        # Global spoiler 34108/1092599 unlocks the service at the final report.
+        rule('bless-refuse', ['blessing', 'bless'], [77], [topic(0)], [guard('questline', 'lt', 23)], '72-79'),
         rule('flask-refuse', ['flask', 'special flask'], [85], [topic(0)], [guard('questline', 'lt', 12)], '80-87'),
         rule('mission-offer', words, [90], [topic(2)], [guard('questline', 'lt', 1)], '88-91'),
         rule('mission-start', words, [94, 95], [set_value('questline', 2), set_value('mission01', 1), topic(0)], [guard('questline', 'eq', 1)], '92-99'),

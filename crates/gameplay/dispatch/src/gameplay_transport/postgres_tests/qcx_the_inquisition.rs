@@ -4,7 +4,7 @@ use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
-use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
+use crate::gameplay_transport::connection::FirstEntryOutcome;
 use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
@@ -172,4 +172,21 @@ fn scenario() -> TestResult {
         drop(seal);
         harness.cleanup().await
     })
+}
+
+#[test]
+fn henricus_blessing_is_available_after_report_before_claim() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let start = std::time::Instant::now();
+    let result = super::kill_reward_e2e::scenario_thread::run("qcx-inquisition-blessing", || {
+        super::henricus::scenario(false, 23)
+    });
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED qcx-inquisition-blessing duration={:?} success={}",
+        start.elapsed(),
+        result.is_ok()
+    );
+    result
 }
