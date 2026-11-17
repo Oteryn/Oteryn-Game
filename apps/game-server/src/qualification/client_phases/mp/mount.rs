@@ -5,6 +5,7 @@ mod bots;
 mod diagnostics;
 mod mp01_party_pvp;
 mod mp09_party_xp;
+mod observations;
 
 pub(super) async fn run(
     core: &SeamClients<'_>,

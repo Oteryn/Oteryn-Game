@@ -3,21 +3,25 @@
 //! base XP per target is the authored creature `experience` in content/creatures/definitions (see HUNT_TARGET);
 //! src/creatures/players/grouping/party.cpp:548-594 (level, distance, activity);
 //! config.lua.dist:302 (share range multiplier 1.5, hence the 2/3 level rule).
+use super::observations::{analyser_fact, committed_swing};
 use super::*;
 use bots::{Bot, attack_target, party};
-use oteryn_dev_client::{EntityKind, SessionEvent, client_ui::cyclopedia_character as panel};
+use oteryn_dev_client::{
+    EntityDetail, EntityKind, EntityRef, SessionEvent, client_ui::cyclopedia_character as panel,
+};
 use oteryn_protocol_oteryn::{
+    analyser::AnalyserFact,
+    attack::{ChaseMode, FightMode, FightModes},
     cyclopedia_character as character,
     party::PartyIntent,
     party_skull,
-    presentation::{PresentationEventKind, PresentationValueKind},
 };
 
 /// Hunt target (key, shown name, base XP), spawned next to the leader through provision.py --spawn. Experience is the
 /// authored `experience` of the bonelord record (`oteryn:creature.bonelord`, creatures-*-00000-00499.json).
 const HUNT_TARGET: (&str, &str, u64) = ("oteryn:creature.bonelord", "bonelord", 170);
 
-const XP_SOURCE: &str = "crates/gameplay/social-rules/src/shared_experience_split.rs:128 (server three-vocation bonus=60%; Crystal=70%)";
+const XP_SOURCE: &str = "crates/gameplay/social-rules/src/shared_experience_split.rs:122";
 
 fn check(case: &str, result: TestResult<String>, failures: &mut Vec<String>) -> bool {
     match result {
@@ -117,9 +121,9 @@ pub(super) async fn run(
                 );
                 for index in 0..3 {
                     let actual = end[index].checked_sub(start[index]);
-                    let expected = crystal_share(pool);
+                    let expected = native_three_vocation_share(pool);
                     let detail = format!(
-                        "bot={index} actual={actual:?} expected={expected} base={pool} vocations=3 bonus=70% ceil({pool}*170/300);Crystal data/events/scripts/party.lua:73-91;source:{XP_SOURCE}"
+                        "bot={index} actual={actual:?} expected={expected} base={pool} vocations=3 native_bonus=60% crystal_bonus=70%;source:{XP_SOURCE}"
                     );
                     check(
                         &format!("shared-xp-{index}"),
@@ -136,7 +140,7 @@ pub(super) async fn run(
                 let cause = error.to_string();
                 check("all-contributed-kill", Err(error), &mut failures);
                 for index in 0..3 {
-                    check(&format!("shared-xp-{index}"), Err(format!("expected=ceil(base*170/300) actual=unproven;encounter_reply={cause};source:{XP_SOURCE}").into()), &mut failures);
+                    check(&format!("shared-xp-{index}"), Err(format!("expected=ceil(base*160/300) actual=unproven;encounter_reply={cause};source:{XP_SOURCE}").into()), &mut failures);
                 }
             }
         }
@@ -296,8 +300,8 @@ async fn profile_roles(core: &SeamClients<'_>, packets: &SeamClients<'_>) -> Tes
     ))
 }
 
-fn crystal_share(pool: u64) -> u64 {
-    (pool * 170).div_ceil(300)
+fn native_three_vocation_share(pool: u64) -> u64 {
+    (pool * 160).div_ceil(300)
 }
 
 async fn bounded<T>(
@@ -563,114 +567,104 @@ async fn encounter(
         start[index] = stats(bot).await?.0;
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(150);
-    let named = |e: &oteryn_dev_client::WorldSpatialEntity| {
-        e.kind == EntityKind::Creature
-            && e.display_name.is_some_and(|label| {
-                label
-                    .as_str()
-                    .is_ok_and(|shown| shown.eq_ignore_ascii_case(name))
-            })
-    };
-    let existing: std::collections::BTreeSet<_> = bots[0]
-        .client()?
-        .world_entities()
-        .into_iter()
-        .flat_map(|entities| entities.iter())
-        .filter(|e| named(e))
-        .map(|e| e.entity)
-        .collect();
     let session = uuid_text(bots[0].client()?.join_snapshot().game_session_id.as_bytes());
     let answer = request_spawn(session, key.to_owned())
         .await
         .map_err(|reason| format!("hunt target spawn rejected:{reason};source:tools/qualification/node_boot/provision.py"))?;
+    let target = spawned_entity(&answer)?;
     evidence(&format!(
         "MP_CHECK MP09 hunt-route PASS target={name} base_xp={pool} spawn_answer={answer} leader={leader:?}"
     ));
-    let mut target = None;
-    bots::wait_observation(bots, deadline, "visible spawned hunt target", |bots, _| {
-        let client = bots[0].session.as_ref().ok_or("A closed")?;
-        let player = client.world_spatial().actor_position;
-        target = client.world_entities().and_then(|entities| {
-            entities
-                .iter()
-                .filter(|e| {
-                    named(e)
-                        && !existing.contains(&e.entity)
-                        && e.position.floor == player.floor
-                        && matches!(
-                            e.detail,
-                            oteryn_dev_client::EntityDetail::Actor {
-                                health_percent: 100,
-                                ..
-                            } | oteryn_dev_client::EntityDetail::ActorWithIcons {
-                                health_percent: 100,
-                                ..
-                            }
-                        )
-                })
-                .min_by_key(|e| {
-                    e.position
-                        .x
-                        .abs_diff(player.x)
-                        .max(e.position.y.abs_diff(player.y))
-                })
-                .map(|e| e.entity)
-        });
-        Ok(target.is_some())
-    })
+    bots::wait_observation(
+        bots,
+        deadline,
+        "spawned hunt target visible to all members",
+        |bots, _| {
+            Ok(bots.iter().all(|bot| {
+                bot.session
+                    .as_ref()
+                    .and_then(|client| client.world_entities())
+                    .and_then(|entities| entities.get(&target))
+                    .is_some_and(|entity| entity.kind == EntityKind::Creature)
+            }))
+        },
+    )
     .await?;
-    let target = target.ok_or("hunt target entity absent")?;
-    evidence(&format!(
-        "MP_CHECK MP09 hunt-target-found PASS name={name} entity={target:?}"
-    ));
-    let attackers = [bots[0].own()?, bots[1].own()?, bots[2].own()?];
-    for bot in bots.iter_mut() {
-        let modes = oteryn_protocol_oteryn::attack::FightModes {
-            chase: oteryn_protocol_oteryn::attack::ChaseMode::Chase,
-            ..oteryn_protocol_oteryn::attack::FightModes::DEFAULT
-        };
-        let reply = bot.client()?.session_mut().set_fight_modes(&modes).await?;
+
+    let modes = FightModes {
+        fight_mode: FightMode::Offensive,
+        chase: ChaseMode::Chase,
+        ..FightModes::DEFAULT
+    };
+    let mut hits = [false; 3];
+    // Each session receives its own committed melee damage as an analyser Impact. Give
+    // it exactly one target and stop it after proof so peers get their turns before death.
+    for index in 0..bots.len() {
+        let client = bots[index].client()?;
+        let reply = client.session_mut().set_fight_modes(&modes).await?;
         if reply.status != CommandStatus::Accepted
             || reply.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
         {
-            return Err(format!("chase modes reply={reply:?};source:crates/gameplay/dispatch/src/gameplay_transport/attack.rs:1").into());
+            return Err(format!("hunt fight modes refused: {reply:?}").into());
         }
-        attack_target(bot, Some(&target)).await?;
+        bots::pump(bots).await?;
+        let client = bots[index].client()?;
+        let after = client.last_server_sequence();
+        let health_before = client
+            .world_entities()
+            .and_then(|view| view.get(&target))
+            .and_then(|entity| hunt_health(entity.detail))
+            .ok_or("spawned target health absent before swing")?;
+        attack_target(&mut bots[index], Some(&target)).await?;
+        let (mut selected, mut damaged) = (false, false);
+        bots::wait_observation(bots, deadline, "member lands committed damage on the hunt target", |bots, events| {
+            let client = bots[index].session.as_ref().ok_or("hunter closed")?;
+            let target_view = client.world_entities().and_then(|view| view.get(&target))
+                .ok_or_else(|| format!("spawned target left hunter {index}'s view before all contributions: {hits:?}"))?;
+            let actor = client.world_spatial().actor_position;
+            let in_range = actor.floor == target_view.position.floor
+                && actor.x.abs_diff(target_view.position.x).max(actor.y.abs_diff(target_view.position.y)) <= 1;
+            selected |= events[index].iter().any(|event| {
+                matches!(event, SessionEvent::ActorCombatState(delta)
+                    if delta.server_sequence > after && delta.value.target == Some(target) && delta.value.modes == modes)
+            });
+            damaged |= events[index].iter().any(|event| committed_swing(event, after));
+            Ok(in_range && selected && damaged
+                && hunt_health(target_view.detail).is_some_and(|health| health < health_before))
+        }).await?;
+        hits[index] = true;
+        evidence(&format!(
+            "MP_CHECK MP09 hunt-contribution PASS participant={} target={target:?}",
+            bots[index].name
+        ));
+        attack_target(&mut bots[index], None).await?;
     }
-    evidence("MP_CHECK MP09 hunt-attack-started PASS all three bots attacking in chase mode");
-    let mut hits = [false; 3];
-    // Diagnostics for a removed target: every value text on it, and its last shown health.
-    let (mut texts_on_target, mut other_texts, mut sources, mut last_health) =
-        (0_u32, 0_u32, Vec::new(), None);
-    bots::wait_observation(bots, deadline, "all three damage the hunt target and kill", |bots, events| {
-        for stream in events {
-            for event in stream {
-                let SessionEvent::Presentation(delta) = event else { continue };
-                for event in &delta.value {
-                    if let PresentationEventKind::ValueText { kind, target: victim, attacker, primary, .. } = event.kind {
-                        if victim == target {
-                            texts_on_target += 1;
-                            if sources.len() < 6 { sources.push(format!("{kind:?}/{:?}/{}", attacker.map(|a| attackers.iter().position(|own| *own == a)), primary.value)); }
-                        } else { other_texts += 1; }
-                    }
-                    let PresentationEventKind::ValueText { kind, target: victim, attacker: Some(source), primary, .. } = event.kind else { continue };
-                    if victim != target || primary.value == 0 || !matches!(kind, PresentationValueKind::DamageDealt | PresentationValueKind::DamageOthers) { continue; }
-                    if !attackers.contains(&source) { return Err(format!("foreign damage on the hunt target reply={event:?};cannot assume the full {pool}-XP party pool").into()); }
-                    for (index, attacker) in attackers.iter().enumerate() { hits[index] |= source == *attacker; }
-                }
-            }
-        }
-        if let Some(shown) = bots[0].session.as_ref().and_then(|c| c.world_entities()).and_then(|e| e.get(&target).copied())
-            && let oteryn_dev_client::EntityDetail::Actor { health_percent, .. } | oteryn_dev_client::EntityDetail::ActorWithIcons { health_percent, .. } = shown.detail
-        {
-            last_health = Some((health_percent, shown.position));
-        }
-        let gone = bots[0].session.as_ref().and_then(|c| c.world_entities()).is_some_and(|e| e.get(&target).is_none());
-        if gone && !hits.iter().all(|hit| *hit) { return Err(format!("hunt target removed before all contributions;attributed_damage={hits:?};texts_on_target={texts_on_target};other_texts={other_texts};sources={sources:?};last_health={last_health:?};source:crates/gameplay/dispatch/src/gameplay_transport/attack/shared_experience.rs:52").into()); }
-        Ok(gone && hits.iter().all(|hit| *hit))
-    }).await?;
+
+    bots::pump(bots).await?;
+    let after = bots
+        .iter_mut()
+        .map(|bot| Ok(bot.client()?.last_server_sequence()))
+        .collect::<TestResult<Vec<_>>>()?;
+    // Each member has contributed. A single attacker finishes the same target.
+    attack_target(&mut bots[0], Some(&target)).await?;
+    let mut killed = false;
+    bots::wait_observation(bots, deadline, "committed hunt kill", |bots, events| {
+        killed |= events.iter().zip(&after).any(|(stream, sequence)| {
+            stream.iter().any(|event| {
+                analyser_fact(event, *sequence, |fact| {
+                    matches!(fact, AnalyserFact::Kill { .. })
+                })
+            })
+        });
+        let leader = bots[0].session.as_ref().ok_or("leader closed")?;
+        Ok(killed
+            && leader
+                .world_entities()
+                .is_some_and(|view| view.get(&target).is_none()))
+    })
+    .await?;
     evidence(&format!(
-        "MP_CHECK MP09 hunt-kill PASS target gone;attributed_damage={hits:?}"
+        "MP_CHECK MP09 hunt-kill PASS committed kill;attributed_damage={hits:?}"
     ));
     for bot in bots.iter_mut() {
         attack_target(bot, None).await?;
@@ -690,4 +684,26 @@ async fn encounter(
         bots::pump(bots).await?;
     }
     Ok((start, end, hits, pool))
+}
+
+fn spawned_entity(answer: &str) -> TestResult<EntityRef> {
+    let fields: Vec<_> = answer.split_ascii_whitespace().collect();
+    let ["spawned", identity, generation] = fields.as_slice() else {
+        return Err(format!("invalid hunt spawn response: {answer}").into());
+    };
+    let identity = crate::node::operator_files::hex_bytes::<16>(identity)
+        .map_err(|_| "invalid hunt spawn identity")?;
+    let generation = generation.parse::<std::num::NonZeroU64>()?.get();
+    Ok(EntityRef {
+        identity,
+        generation,
+    })
+}
+
+fn hunt_health(detail: EntityDetail) -> Option<u8> {
+    match detail {
+        EntityDetail::Actor { health_percent, .. }
+        | EntityDetail::ActorWithIcons { health_percent, .. } => Some(health_percent),
+        _ => None,
+    }
 }

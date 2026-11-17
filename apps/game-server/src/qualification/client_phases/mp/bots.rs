@@ -1,5 +1,6 @@
 //! Real admissions and protocol actions. The sole setup writer is root provision.py.
 use super::diagnostics::{logout_failure_cause, logout_failure_detail, role_context};
+use super::observations::while_servicing_liveness;
 use super::*;
 use oteryn_dev_client::client_runtime::party as party_client;
 use oteryn_dev_client::{DevClientSession, EntityRef, SessionEvent};
@@ -150,27 +151,19 @@ async fn connect_into<'p, 'a>(
     Ok(())
 }
 
-/// Runs one long step of a single bot while every other admitted bot keeps servicing liveness
-/// (the server drops a silent session after about 12s). The step future is polled until it
-/// completes; a service slice runs only between polls, never cancelling a half-read frame.
+/// Service already-admitted peers throughout a long step, even when either side
+/// is still reading a frame.
 async fn with_liveness<T>(
     others: &mut [Bot<'_, '_>],
     stage: &str,
     step: impl std::future::Future<Output = T>,
 ) -> TestResult<T> {
-    let mut step = std::pin::pin!(step);
-    let mut slice = tokio::time::interval(Duration::from_millis(250));
-    slice.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
-    loop {
-        tokio::select! {
-            biased;
-            result = &mut step => return Ok(result),
-            _ = slice.tick() => {
-                verdict::Harness::global().progress("mp-admissions");
-                pump_at(others, stage).await?;
-            }
-        }
-    }
+    while_servicing_liveness(step, async || {
+        verdict::Harness::global().progress("mp-admissions");
+        pump_at(others, stage).await?;
+        Ok(())
+    })
+    .await
 }
 
 async fn connect_bot(bot: &mut Bot<'_, '_>, tag: u8, stage: &str) -> TestResult {
@@ -531,6 +524,12 @@ async fn logout_all(bots: &mut [Bot<'_, '_>]) -> TestResult {
 
 pub(super) async fn relog_all(bots: &mut [Bot<'_, '_>]) -> TestResult {
     logout_all(bots).await?;
+    // A logout reply only closes the client exchange. Complete every prior holder's
+    // durable release before starting any new session's liveness clock.
+    for bot in bots.iter() {
+        let released = wait_character_released(bot.pair, bot.index).await;
+        bot.contextualize("relog-terminal-release", released)?;
+    }
     for index in 0..bots.len() {
         let (readmitted, current) = bots.split_at_mut(index);
         let bot = current.first_mut().ok_or("relog bot absent")?;

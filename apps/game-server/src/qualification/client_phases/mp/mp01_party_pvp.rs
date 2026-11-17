@@ -1,9 +1,12 @@
 //! MP01: on the no-PvP World, three party members and a separately admitted, unprovisioned
 //! victim; on the Open PvP World (its own node), a provisioned attacker kills a provisioned victim.
+use super::observations::is_temple_arrival;
 use super::*;
 use bots::{Bot, attack_target, party};
 use oteryn_dev_client::{SessionEvent, client_ui::cyclopedia_character as panel};
-use oteryn_protocol_oteryn::{cyclopedia_character as character, party_skull, pvp_expert};
+use oteryn_protocol_oteryn::{
+    attack::FightMode, cyclopedia_character as character, party_skull, pvp_expert,
+};
 
 fn check(step: &str, result: TestResult, failures: &mut Vec<String>) -> bool {
     match result {
@@ -613,6 +616,13 @@ async fn pvp_world_rows(
         url: &fixture.url,
         ..*core
     };
+    let cells = (|| {
+        let room = crate::content::qualify_selected_native_gameplay_room(
+            crate::foundation::WorldId::decode(&pair.world)?,
+            native_input()?,
+        )?;
+        TestResult::Ok(world.movement_cells(room.movement_cells())?)
+    })();
     let (mut bots, setup) = tokio::time::timeout(
         Duration::from_secs(180),
         bots::connect_bots(&[
@@ -635,7 +645,10 @@ async fn pvp_world_rows(
         );
         check(
             "pvp-combat",
-            bounded("pvp-combat", 480, pvp_journey(&mut bots, world, towns)).await,
+            bounded("pvp-combat", 480, async {
+                pvp_journey(&mut bots, world, towns, &cells?).await
+            })
+            .await,
             failures,
         );
         check(
@@ -684,6 +697,7 @@ async fn pvp_journey(
     bots: &mut [Bot<'_, '_>],
     world: &BundleWorld,
     towns: &oteryn_world_bundle::subarea::Table,
+    cells: &crate::content::NativeEntryMovementCells,
 ) -> TestResult {
     let mut database = sqlx::PgConnection::connect(bots[1].pair.url).await?;
     let home: Option<i32> = sqlx::query_scalar(
@@ -754,35 +768,54 @@ async fn pvp_journey(
             .into());
         }
     }
+    let combat_tile = |at: TilePos| {
+        cells
+            .spell_tiles()
+            .lookup(
+                cells.scope(),
+                crate::content::LogicalCell {
+                    x: i32::from(at.x),
+                    y: i32::from(at.y),
+                    z: -i32::from(at.floor),
+                },
+            )
+            .is_ok_and(|facts| !facts.flags().protection_zone && facts.no_pvp_zone() == Some(false))
+    };
     let from = tile(bots[1].client()?.world_spatial().actor_position)?;
+    let attacker_start = tile(bots[0].client()?.world_spatial().actor_position)?;
+    let directions = [
+        StepDirection::North,
+        StepDirection::East,
+        StepDirection::South,
+        StepDirection::West,
+    ];
     let path = route(world, from, |at| {
-        world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_some_and(|t| !t.protection_zone())
-            && [
-                StepDirection::North,
-                StepDirection::East,
-                StepDirection::South,
-                StepDirection::West,
-            ]
-            .iter()
-            .any(|d| {
-                destination(world, at, *d).is_some_and(|p| {
-                    world
-                        .base()
-                        .tile(p.x, p.y, p.floor)
-                        .is_some_and(|t| !t.protection_zone())
+        at != temple
+            && at != attacker_start
+            && combat_tile(at)
+            && directions.iter().any(|direction| {
+                destination(world, at, *direction).is_some_and(|neighbor| {
+                    neighbor.floor == at.floor
+                        && neighbor.x.abs_diff(at.x) + neighbor.y.abs_diff(at.y) == 1
+                        && combat_tile(neighbor)
                 })
             })
     })
-    .ok_or("no reachable non-PZ combat pair in pinned world")?;
+    .ok_or("no reachable PvP-enabled combat pair in pinned world")?;
     bots::walk_bot(bots, 1, world, &path).await?;
-    bots::approach(bots, 0, 1, world, true).await?;
+    let victim_tile = tile(bots[1].client()?.world_spatial().actor_position)?;
+    let path = route(world, attacker_start, |at| {
+        at.floor == victim_tile.floor
+            && at.x.abs_diff(victim_tile.x) + at.y.abs_diff(victim_tile.y) == 1
+            && combat_tile(at)
+    })
+    .ok_or("no reachable adjacent PvP-enabled attacker tile")?;
+    bots::walk_bot(bots, 0, world, &path).await?;
     let attacker = bots[0].own()?;
     let victim = bots[1].own()?;
     let mode = pvp_expert::ExpertFightModes {
         modes: oteryn_protocol_oteryn::attack::FightModes {
+            fight_mode: FightMode::Offensive,
             secure: false,
             ..oteryn_protocol_oteryn::attack::FightModes::DEFAULT
         },
@@ -816,23 +849,28 @@ async fn pvp_journey(
         }
         Ok(false)
     }).await?;
+    let victim_client = bots[1].client()?;
+    let temple_position = spatial_basis::current(victim_client)?.position(temple);
+    let after = victim_client.last_server_sequence();
+    victim_client.take_events();
     attack_target(&mut bots[0], Some(&victim)).await?;
-    let mut victim_damaged = false;
-    let mut attacker_saw_hit = false;
-    // A level-100 victim takes many melee hits; its own regeneration is part of the fight.
-    bots::wait_observation(bots, tokio::time::Instant::now() + Duration::from_secs(360), "MP01 lethal hit and temple respawn", |bots, events| {
-        for event in &events[0] {
-            if let SessionEvent::Presentation(delta) = event {
-                attacker_saw_hit |= delta.value.iter().any(|event| matches!(event.kind,
-                    oteryn_protocol_oteryn::presentation::PresentationEventKind::ValueText { target, attacker: Some(source), .. }
-                    if target == victim && source == attacker));
+    let mut temple_event = false;
+    bots::wait_observation(
+        bots,
+        tokio::time::Instant::now() + Duration::from_secs(360),
+        "MP01 lethal hit and temple respawn",
+        |bots, events| {
+            for event in &events[1] {
+                temple_event |= is_temple_arrival(event, after, temple_position);
             }
-        }
-        for event in &events[1] { if let SessionEvent::ActorVitals(delta) = event { victim_damaged |= delta.value.health < delta.value.max_health; } }
-        let client = bots[1].session.as_ref().ok_or("victim closed")?;
-        Ok(victim_damaged && attacker_saw_hit && tile(client.world_spatial().actor_position)? == temple
-            && client.actor_vitals().is_some_and(|v| v.health == v.max_health))
-    }).await?;
+            let client = bots[1].session.as_ref().ok_or("victim closed")?;
+            Ok(temple_event
+                && client
+                    .actor_vitals()
+                    .is_some_and(|v| v.health > 0 && v.health == v.max_health))
+        },
+    )
+    .await?;
     attack_target(&mut bots[0], None).await?;
     let death = latest_death(&bots[1])
         .await?
@@ -854,7 +892,15 @@ async fn pvp_journey(
         return Err("MP01 A kill view / B death view lack new attributed death".into());
     }
     let mut database = sqlx::PgConnection::connect(bots[0].pair.url).await?;
-    let points: Option<i32> = sqlx::query_scalar("SELECT points_milli FROM game_character_unjustified_points WHERE character_id=encode($1,'hex')::uuid AND victim_character_id=encode($2,'hex')::uuid AND death_occurrence_id=$3::text::uuid")
+    // The death owner ranks the final player first and classifies the actual lethal source.
+    let points: Option<i32> = sqlx::query_scalar(
+        "SELECT p.points_milli FROM game_character_unjustified_points p \
+         JOIN game_public_death_classifications c USING (death_occurrence_id) \
+         JOIN game_public_death_killers k USING (death_occurrence_id) \
+         WHERE p.character_id=encode($1,'hex')::uuid AND p.victim_character_id=encode($2,'hex')::uuid \
+         AND p.death_occurrence_id=$3::text::uuid AND c.pvp AND c.killer_key='player' \
+         AND k.ordinal=0 AND k.kind='player' AND k.character_id=p.character_id",
+    )
         .bind(bots[0].character.as_slice()).bind(bots[1].character.as_slice()).bind(&death.0).fetch_optional(&mut database).await?;
     database.close().await?;
     if points
