@@ -53,6 +53,8 @@ fn app() -> std::result::Result<Fixture, Box<dyn std::error::Error>> {
             },
             frame: Handle::default(),
             font: Handle::default(),
+            checked: Handle::default(),
+            unchecked: Handle::default(),
         })
         .init_resource::<InputFocus>()
         .add_systems(Update, project);
@@ -280,15 +282,24 @@ fn combined_menu_preserves_base_look_and_real_name_and_old_choices_cannot_replac
                 trade: None,
                 browse: None,
                 npc: None,
+                player: Some("Visible player".into()),
+                attack: None,
             },
         );
     }
     app.update();
+    // Tibia Global names no header row: the real name rides on the player entries.
     assert!(
         app.world_mut()
             .query::<&Text>()
             .iter(app.world())
-            .any(|text| text.0 == "Visible player")
+            .any(|text| text.0 == "Message to Visible player")
+    );
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "Invite to Party")
     );
     assert!(
         app.world_mut()
@@ -392,7 +403,7 @@ fn player_context_starts_fresh_trade_picker() -> Result {
         .non_send_mut::<HostOwner>()
         .request_world_context(TileCoord::new(101, 100));
     app.update();
-    choose(&mut app, "Trade with")?;
+    choose(&mut app, "Trade with Visible player")?;
     let owner = app.world().non_send::<HostOwner>();
     let panel = owner.play.as_ref().ok_or("play")?.link.player_trade_panel();
     assert!(panel.open);

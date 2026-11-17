@@ -181,6 +181,7 @@ impl SettingsState {
             custom_choices: Vec::new(),
             custom_choices_refreshed: None,
             pending_chat_mode: None,
+            chat_mode_seen: None,
             chat_context: None,
             help_report_pending: false,
             control_input: super::super::controls::ControlInput::default(),

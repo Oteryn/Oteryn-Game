@@ -30,6 +30,7 @@ impl PlayLink {
         oteryn_client_ui::chat::dialog_entries(
             mailbox.chat_private.list.as_ref(),
             mailbox.chat_public.rooms,
+            oteryn_client_ui::chat_guild_room::available(&mailbox.chat),
         )
     }
     /// OpenChannelList (Ctrl+O): show the channel list dialog next to the console.
@@ -126,6 +127,16 @@ impl PlayLink {
     pub fn chat_console_mode(&self) {
         cycle_mode(&mut lock(&self.mailbox));
     }
+    /// Sets the chat mode, as restored from the character's preferences.
+    pub fn chat_set_mode(&self, mode: ComposerMode) {
+        let mut mailbox = lock(&self.mailbox);
+        mailbox.chat.console.mode = mode;
+        mailbox.chat.console.auto_focus = false;
+    }
+    /// Chat Auto: the chat input took (or gave back) the keyboard.
+    pub fn chat_auto_focus(&self, focused: bool) {
+        lock(&self.mailbox).chat.console.auto_focus = focused;
+    }
     pub fn chat_communication(
         &self,
         list: Option<CommunicationList>,
@@ -151,11 +162,8 @@ pub(in crate::play) fn toggle_filter(mailbox: &mut Mailbox) {
     mailbox.chat.console.show_messages = !mailbox.chat.console.show_messages;
 }
 pub(in crate::play) fn cycle_mode(mailbox: &mut Mailbox) {
-    mailbox.chat.console.mode = match mailbox.chat.console.mode {
-        ComposerMode::On => ComposerMode::Off,
-        ComposerMode::Off => ComposerMode::Temporary,
-        ComposerMode::Temporary => ComposerMode::On,
-    };
+    mailbox.chat.console.mode = mailbox.chat.console.mode.next();
+    mailbox.chat.console.auto_focus = false;
 }
 pub(in crate::play) fn edit_lists(
     mailbox: &mut Mailbox,
@@ -268,6 +276,7 @@ pub(in crate::play) fn dialog_confirm(
     let entries = oteryn_client_ui::chat::dialog_entries(
         mailbox.chat_private.list.as_ref(),
         mailbox.chat_public.rooms,
+        oteryn_client_ui::chat_guild_room::available(&mailbox.chat),
     );
     match mailbox.chat.console.dialog.confirm(&entries) {
         Some(DialogAction::Entry(entry)) => {

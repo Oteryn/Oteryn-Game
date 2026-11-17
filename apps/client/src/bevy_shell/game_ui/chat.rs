@@ -15,6 +15,8 @@ use oteryn_client_ui_bevy as source;
 mod channels;
 mod commands;
 #[cfg(test)]
+mod layout_tests;
+#[cfg(test)]
 mod mirror_tests;
 mod submission;
 #[cfg(test)]
@@ -161,6 +163,12 @@ fn install_history(app: &mut App) {
 struct ChatRoot;
 #[derive(Component)]
 struct Tabs;
+/// The tab bar: scroll buttons, the tabs, and the channel list and close buttons.
+#[derive(Component)]
+struct TabRow;
+/// The input row: mode button, text field and Chat On/Off.
+#[derive(Component)]
+struct ComposeRow;
 #[derive(Component)]
 struct Transcript;
 #[derive(Component)]
@@ -184,8 +192,9 @@ enum Field {
 #[derive(Clone)]
 enum Action {
     ComposerMode,
-    Send,
     Mode,
+    PreviousTab,
+    NextTab,
     Channels,
     Close,
     Conversation,
@@ -203,7 +212,18 @@ pub(super) fn install(app: &mut App) {
     app.init_resource::<ChatState>()
         .init_resource::<bevy::clipboard::Clipboard>()
         .add_systems(Startup, widgets::setup.after(super::setup))
-        .add_systems(Update, (keyboard, project, mirror).chain())
+        .add_systems(
+            Update,
+            (
+                keyboard,
+                project,
+                mirror,
+                widgets::tab_colors,
+                widgets::placeholder,
+                widgets::auto_release,
+            )
+                .chain(),
+        )
         .add_systems(
             PostUpdate,
             submission::finish.after(bevy::text::EditableTextSystems),
@@ -272,6 +292,13 @@ fn keyboard(
                 if let Some(entity) = focused {
                     if let Ok((_, field, mut text)) = fields.get_mut(entity) {
                         request(&owner, &mut state, entity, *field, &mut text, false);
+                        // Chat Auto: sending hands the keyboard back to the game.
+                        if *field == Field::Message
+                            && play.link.chat_panel().console.mode
+                                == oteryn_client_ui::chat::ComposerMode::Auto
+                        {
+                            focus.clear();
+                        }
                     }
                 } else if play.link.chat_panel().console.can_send() {
                     for (entity, field, _) in &fields {
@@ -360,6 +387,7 @@ fn project(
     transcripts: Query<Entity, With<TranscriptRoot>>,
     mut captions: Query<&mut Text, Without<Transcript>>,
     mode_buttons: Query<&Children, With<ModeButton>>,
+    mut icons: Query<&mut crate::bevy_shell::gameplay_dialogs::art::ArtIcon>,
     chat_mode_buttons: Query<&Children, With<ChatModeButton>>,
     guard: ModalGuard,
     tabs: Query<Entity, With<Tabs>>,
@@ -405,6 +433,21 @@ fn project(
             }
         }
         play.link.open_chat();
+        // Tibia Global opens Local Chat, Server Log and Loot; Local Chat stays selected.
+        let panel = play.link.chat_panel();
+        let mut opened = false;
+        for tab in [
+            oteryn_client_ui::chat::ChannelTab::ServerLog,
+            oteryn_client_ui::chat::ChannelTab::Loot,
+        ] {
+            if !panel.console.channels.contains(&tab) {
+                play.link.chat_open_entry(&ChannelEntry::Local(tab));
+                opened = true;
+            }
+        }
+        if opened {
+            play.link.chat_console_tab(ConsoleTab::All);
+        }
     }
     let panel = play.link.chat_panel();
     let mut changed = false;
@@ -441,17 +484,11 @@ fn project(
             }
         }
     }
-    let mode = match state.mode {
-        Mode::Say => "Say",
-        Mode::Whisper => "Whisper",
-        Mode::Yell => "Yell",
-        Mode::Guild => "Guild",
-        Mode::Private => "Private",
-    };
     let composer_mode = match panel.console.mode {
         oteryn_client_ui::chat::ComposerMode::On => "Chat On",
-        oteryn_client_ui::chat::ComposerMode::Off => "Chat Off",
-        oteryn_client_ui::chat::ComposerMode::Temporary => "Chat Once",
+        oteryn_client_ui::chat::ComposerMode::Auto => "Chat Auto",
+        oteryn_client_ui::chat::ComposerMode::Off
+        | oteryn_client_ui::chat::ComposerMode::Temporary => "Chat Off",
     };
     for children in &chat_mode_buttons {
         for child in children {
@@ -462,21 +499,18 @@ fn project(
             }
         }
     }
+    let mode = widgets::mode_art(state.mode);
     for children in &mode_buttons {
         for child in children {
-            if let Ok(mut text) = captions.get_mut(*child)
-                && text.0 != mode
+            if let Ok(mut icon) = icons.get_mut(*child)
+                && icon.0 != mode
             {
-                text.0 = mode.into();
+                icon.0 = mode;
             }
         }
     }
-    let mut current_tabs = vec![
-        commands::Tab::Fixed(ConsoleTab::All),
-        commands::Tab::Fixed(ConsoleTab::Local),
-        commands::Tab::Fixed(ConsoleTab::Private),
-        commands::Tab::Fixed(ConsoleTab::Guild),
-    ];
+    // Local Chat is the one fixed tab; opened channels follow it.
+    let mut current_tabs = vec![commands::Tab::Fixed(ConsoleTab::All)];
     current_tabs.extend(
         panel
             .console
@@ -504,16 +538,9 @@ fn project(
                     Action::Tab(tab.clone()),
                     owner.generation(),
                 );
-                commands.entity(button).insert(Node {
-                    width: px(width),
-                    height: px(widgets::TAB_HEIGHT),
-                    min_height: px(widgets::TAB_HEIGHT),
-                    border: UiRect::all(px(1.)),
-                    flex_shrink: 0.,
-                    align_items: AlignItems::Center,
-                    justify_content: JustifyContent::Center,
-                    ..default()
-                });
+                commands
+                    .entity(button)
+                    .insert(widgets::fixed(Vec2::new(width, widgets::TAB_HEIGHT)));
                 if selected(tab) {
                     commands.entity(button).insert(bevy::ui::Checked);
                 }
@@ -537,7 +564,7 @@ fn project(
     }
     for (entity, field, text) in &mut fields {
         let disabled = owner.modal_active()
-            || (*field == Field::Message && !panel.console.can_send())
+            || (*field == Field::Message && !panel.console.accepts_input())
             || (*field == Field::Recipient && !panel.console.dialog.open);
         if disabled {
             commands
@@ -553,6 +580,12 @@ fn project(
         }
         if *field == Field::Message {
             let focused = focus.get() == Some(entity) && !disabled && guard.allows(entity);
+            // Chat Auto hands the keyboard to the chat only while the input holds the focus.
+            if panel.console.mode == oteryn_client_ui::chat::ComposerMode::Auto
+                && panel.console.auto_focus != focused
+            {
+                play.link.chat_auto_focus(focused);
+            }
             if text.value() != state.value.as_str() || state.focus != focused {
                 state.value = text.value().to_string();
                 state.focus = focused;

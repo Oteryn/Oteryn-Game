@@ -617,7 +617,6 @@ fn ninth_row_slot_accepts_an_assignment_through_the_editor() -> TestResult {
             .find_map(|(entity, control)| {
                 let same = match (*control, wanted) {
                     (ActionControl::Slot(a), ActionControl::Slot(b))
-                    | (ActionControl::Toggle(a), ActionControl::Toggle(b))
                     | (ActionControl::Lock(a), ActionControl::Lock(b)) => a == b,
                     _ => false,
                 };
@@ -625,8 +624,17 @@ fn ninth_row_slot_accepts_an_assignment_through_the_editor() -> TestResult {
             })
             .ok_or("action control")
     };
-    let toggle = control_of(&mut app, ActionControl::Toggle(8))?;
-    app.world_mut().trigger(Activate { entity: toggle });
+    // Bars are shown from the options (UI-B); the bar's own control is only its lock.
+    {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        let mut preferences = owner.settings.preferences.clone();
+        preferences.bar_layout.rows[8].enabled = true;
+        owner.settings.apply(preferences);
+        let owner = &mut *owner;
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        owner.settings.sync_bar_actions(link);
+    }
+    app.update();
     let lock = control_of(&mut app, ActionControl::Lock(8))?;
     app.world_mut().trigger(Activate { entity: lock });
     app.update();
@@ -650,6 +658,17 @@ fn ninth_row_slot_accepts_an_assignment_through_the_editor() -> TestResult {
             duration: std::time::Duration::ZERO,
             count: 1,
         });
+    app.update();
+    // The secondary click opens the slot menu (UI-B); its Set Text entry opens the editor.
+    let set_text = app
+        .world_mut()
+        .query::<(Entity, &super::super::MenuEntry)>()
+        .iter(app.world())
+        .find_map(|(entity, entry)| {
+            (entry.choice == super::super::MenuChoice::SetText).then_some(entity)
+        })
+        .ok_or("Set Text")?;
+    app.world_mut().trigger(Activate { entity: set_text });
     app.update();
     assert!(app.world().resource::<EditorState>().active());
     set(&mut app, 2, "Ninth row greeting");

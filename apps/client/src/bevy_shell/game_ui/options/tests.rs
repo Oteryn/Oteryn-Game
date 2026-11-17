@@ -471,3 +471,66 @@ fn hud_resource_toggles_edit_apply_and_save_each_display() -> TestResult {
     let _ = std::fs::remove_file(&path);
     result
 }
+
+#[test]
+fn action_bar_options_show_one_bar_at_a_time() -> TestResult {
+    let mut app = app(Page::ActionBars, None)?;
+    let checkbox = app
+        .world_mut()
+        .spawn(Control::Check("action_bars.left_1"))
+        .observe(toggle)
+        .id();
+    app.world_mut().trigger(ValueChange {
+        source: checkbox,
+        value: true,
+        is_final: true,
+    });
+    let ok = app.world_mut().spawn(Control::Ok).observe(activate).id();
+    app.world_mut().trigger(Activate { entity: ok });
+    let (link, _, _) = crate::play::play_channel();
+    let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+    owner.settings.sync_bar_actions(&link);
+    let enabled = link.bar_layout().rows.map(|row| row.enabled);
+    assert_eq!(
+        enabled,
+        [true, true, false, false, false, false, false, false, false],
+        "only the first left bar joins the default bottom bar"
+    );
+    let rows = metadata::rows(Page::ActionBars);
+    for (id, index) in [
+        ("action_bars.bottom_1", 0),
+        ("action_bars.bottom_2", 3),
+        ("action_bars.bottom_3", 4),
+        ("action_bars.left_2", 5),
+        ("action_bars.left_3", 6),
+        ("action_bars.right_1", 2),
+        ("action_bars.right_2", 7),
+        ("action_bars.right_3", 8),
+    ] {
+        let row = rows.iter().find(|row| row.id == id).ok_or(id)?;
+        let mut p = owner.settings.preferences.clone();
+        assert!(row.set(&mut p, Value::Check(!enabled[index])));
+        let changed: Vec<_> = (0..9)
+            .filter(|&i| p.bar_layout.rows[i].enabled != enabled[i])
+            .collect();
+        assert_eq!(changed, vec![index], "{id} toggles exactly one bar");
+    }
+    for (id, side) in [
+        ("action_bars.bottom_all", [0, 3, 4]),
+        ("action_bars.left_all", [1, 5, 6]),
+        ("action_bars.right_all", [2, 7, 8]),
+    ] {
+        let row = rows.iter().find(|row| row.id == id).ok_or(id)?;
+        let mut p = owner.settings.preferences.clone();
+        assert!(row.set(&mut p, Value::Check(true)));
+        assert_eq!(row.value(&p), Value::Check(true));
+        let on: Vec<_> = (0..9).filter(|&i| p.bar_layout.rows[i].enabled).collect();
+        let mut expected: Vec<usize> = side.to_vec();
+        expected.extend([0, 1].into_iter().filter(|i| !side.contains(i)));
+        expected.sort_unstable();
+        assert_eq!(on, expected, "{id} shows the whole side");
+        assert!(row.set(&mut p, Value::Check(false)));
+        assert!(side.iter().all(|&i| !p.bar_layout.rows[i].enabled));
+    }
+    Ok(())
+}

@@ -32,21 +32,22 @@ pub(super) struct Projection<'w, 's> {
         's,
         (&'static SlotCaption, &'static mut Text),
         (
-            Without<ToolCaption>,
             Without<CooldownLine>,
             Without<ActionHint>,
+            Without<SlotHotkey>,
         ),
     >,
-    tools: Query<
+    hotkeys: Query<
         'w,
         's,
-        (&'static ToolCaption, &'static mut Text),
+        (&'static SlotHotkey, &'static mut Text),
         (
-            Without<SlotCaption>,
             Without<CooldownLine>,
             Without<ActionHint>,
+            Without<SlotCaption>,
         ),
     >,
+    locks: Query<'w, 's, (&'static ChildOf, &'static mut art::ArtIcon)>,
     hints: Query<
         'w,
         's,
@@ -55,9 +56,12 @@ pub(super) struct Projection<'w, 's> {
             With<ActionHint>,
             Without<CooldownLine>,
             Without<SlotCaption>,
-            Without<ToolCaption>,
+            Without<SlotHotkey>,
         ),
     >,
+    scale: Option<Res<'w, ModuleScale>>,
+    /// The registered binding of each action-bar slot, by slot index.
+    bindings: Local<'s, Option<Vec<Option<crate::play::PreferenceBinding>>>>,
     hovered: Query<'w, 's, (&'static Hovered, &'static ActionControl)>,
 }
 
@@ -73,6 +77,12 @@ pub(super) fn project(
     let layout = play.link.bar_layout();
     let labels = play.link.spell_slot_labels();
     let tips = play.link.spell_slot_tooltips();
+    let zoom = ui
+        .scale
+        .as_ref()
+        .map_or(1., |scale| scale.get(Module::ActionBars));
+    let slot_size = SLOT_SIZE * zoom;
+    let scroll_size = SCROLL_SIZE * zoom;
     let mut capacities = [12; 9];
     for (entity, bar, mut node, computed, parent) in &mut ui.rows {
         let row = &layout.rows[bar.0];
@@ -87,16 +97,19 @@ pub(super) fn project(
         } else {
             FlexDirection::Row
         };
-        node.width = if side { px(SLOT_SIZE) } else { percent(100.) };
-        node.height = if side { percent(100.) } else { px(SLOT_SIZE) };
+        node.width = if side { px(slot_size) } else { percent(100.) };
+        node.height = if side { percent(100.) } else { px(slot_size) };
+        node.min_height = if side { px(0.) } else { px(slot_size) };
         let available = if side {
             computed.size().y
         } else {
             computed.size().x
         } * computed.inverse_scale_factor;
         if available > 0. {
-            capacities[bar.0] =
-                ((available - 38.) / (SLOT_SIZE + SLOT_GAP)).floor().max(1.) as usize;
+            capacities[bar.0] = ((available - 2. * (scroll_size + SLOT_GAP))
+                / (slot_size + SLOT_GAP))
+                .floor()
+                .max(1.) as usize;
         }
         let display = if row.enabled && owner.settings.preferences.action_bar.visible {
             Display::Flex
@@ -111,8 +124,8 @@ pub(super) fn project(
         generation.0 = owner.generation();
         if let ActionControl::Scroll(bar, _) = control {
             let side = layout.rows[*bar].dock != crate::play::BarDock::Bottom;
-            node.width = px(if side { SLOT_SIZE } else { 17. });
-            node.height = px(if side { 17. } else { SLOT_SIZE });
+            node.width = px(if side { slot_size } else { scroll_size });
+            node.height = px(if side { scroll_size } else { slot_size });
             node.min_height = node.height;
             node.flex_shrink = 0.;
         }
@@ -146,27 +159,43 @@ pub(super) fn project(
             text.0 = compact;
         }
     }
-    for (tool, mut text) in &mut ui.tools {
-        let caption = match tool.0 {
-            ActionControl::Toggle(bar) => format!(
-                "{} {}",
-                bar + 1,
-                if layout.rows[bar].enabled {
-                    "on"
-                } else {
-                    "off"
-                }
-            ),
-            ActionControl::Lock(bar) => if layout.rows[bar].locked {
-                "Locked"
-            } else {
-                "Edit"
+    let bindings = ui.bindings.get_or_insert_with(|| {
+        let mut slots = vec![None; ROW_SLOTS * 9];
+        for binding in crate::play::preference_bindings().unwrap_or_default() {
+            let slot = binding
+                .id
+                .strip_prefix("local-spell-action-bar-spell-")
+                .and_then(|slot| slot.parse::<usize>().ok())
+                .and_then(|slot| slot.checked_sub(1));
+            if let Some(entry) = slot.and_then(|slot| slots.get_mut(slot)) {
+                *entry = Some(binding);
             }
-            .into(),
-            _ => continue,
+        }
+        slots
+    });
+    for (hotkey, mut text) in &mut ui.hotkeys {
+        let chord = bindings
+            .get(hotkey.0)
+            .and_then(Option::as_ref)
+            .map_or("", |binding| {
+                owner.settings.preferences.binding_chord(binding)
+            });
+        let label = hotkey_label(chord);
+        if text.0 != label {
+            text.0 = label;
+        }
+    }
+    for (parent, mut icon) in &mut ui.locks {
+        let Ok((ActionControl::Lock(bar), _, _)) = ui.controls.get(parent.parent()) else {
+            continue;
         };
-        if text.0 != caption {
-            text.0 = caption;
+        let slot = if layout.rows[*bar].locked {
+            ArtSlot::ActionBarLocked
+        } else {
+            ArtSlot::ActionBarUnlocked
+        };
+        if icon.0 != slot {
+            icon.0 = slot;
         }
     }
     let hint = ui
@@ -189,4 +218,23 @@ pub(super) fn project(
             text.0.clone_from(&hint);
         }
     }
+}
+
+/// The corner label of a slot chord: "F1", "C+F1" for Ctrl+F1, "S+A" for Shift+A.
+pub(super) fn hotkey_label(chord: &str) -> String {
+    let mut parts: Vec<&str> = chord.split('+').filter(|part| !part.is_empty()).collect();
+    let Some(key) = parts.pop() else {
+        return String::new();
+    };
+    let mut label = String::new();
+    for modifier in parts {
+        label.push_str(match modifier {
+            "CTRL" | "CONTROL" => "C+",
+            "SHIFT" => "S+",
+            "ALT" => "A+",
+            _ => "M+",
+        });
+    }
+    label.push_str(key);
+    label
 }

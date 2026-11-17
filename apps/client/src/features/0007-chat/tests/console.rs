@@ -32,6 +32,7 @@ fn console_controls_preserve_tab_filters_and_temporary_mode_reaches_session_once
                 link.chat_console_tab(ConsoleTab::Private);
                 assert!(!link.chat_panel().console.show_messages);
                 link.chat_console_mode();
+                assert_eq!(link.chat_panel().console.mode, ComposerMode::Auto);
                 link.chat_text("hello".into());
                 link.chat_request(Mode::Say, "");
                 assert!(
@@ -41,7 +42,8 @@ fn console_controls_preserve_tab_filters_and_temporary_mode_reaches_session_once
                         .is_empty()
                 );
                 link.chat_console_mode();
-                assert_eq!(link.chat_panel().console.mode, ComposerMode::Temporary);
+                assert_eq!(link.chat_panel().console.mode, ComposerMode::Off);
+                link.chat_set_mode(ComposerMode::Temporary);
                 link.chat_request(Mode::Say, "");
                 wait_for(&link, |panel| !panel.pending).await?;
                 assert_eq!(

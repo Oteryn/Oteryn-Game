@@ -358,4 +358,7 @@ pub(super) fn page(
         let entity = help::wrap(commands, skins, *row, entity);
         commands.entity(parent).add_child(entity);
     }
+    if page == Page::ActionBars {
+        super::bar_clear::build(commands, parent, skins);
+    }
 }

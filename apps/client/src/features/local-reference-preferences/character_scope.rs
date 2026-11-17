@@ -48,6 +48,8 @@ impl SettingsState {
         self.preferences = selected.preferences;
         self.feedback = selected.feedback;
         self.character = character;
+        // The next play frame restores this character's saved chat mode.
+        self.chat_mode_seen = None;
         self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         self.skills_edit = self.battle_edit;
         self.item_hotkeys_edit = self.battle_edit;

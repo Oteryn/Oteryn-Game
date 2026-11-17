@@ -391,6 +391,7 @@ fn n004_alt_click_attacks_a_creature_then_stops_when_it_is_the_target()
         &[target],
     )?;
     assert!(!view.attack_toggle_click(TileCoord::new(0, 0), &link));
+    assert_eq!(view.attack_context(tile, &link), Some(false));
     assert!(view.attack_toggle_click(tile, &link));
     assert!(matches!(
         commands.try_recv()?,
@@ -402,11 +403,17 @@ fn n004_alt_click_attacks_a_creature_then_stops_when_it_is_the_target()
         modes: FightModes::DEFAULT,
         in_fight: true,
     });
+    // The context menu then offers Stop Attack on the current target.
+    assert_eq!(view.attack_context(tile, &link), Some(true));
     assert!(view.attack_toggle_click(tile, &link));
     assert!(matches!(
         commands.try_recv()?,
         crate::combat_input::PlayCommand::Combat(CombatCommand::Stop)
     ));
+    // An NPC is never attackable, so its menu has no Attack.
+    view.entities[0].kind = EntityKind::Npc;
+    assert_eq!(view.attack_context(tile, &link), None);
+    assert!(!view.attack_toggle_click(tile, &link));
     Ok(())
 }
 
@@ -462,6 +469,7 @@ fn alt_click_attacks_a_player_but_not_the_local_actor_and_honours_the_world_inpu
         &targets,
     )?;
     view.set_own_identity(own.identity);
+    assert_eq!(view.attack_context(TileCoord::new(3, 1), &link), None);
     assert!(!view.attack_toggle_click(TileCoord::new(3, 1), &link));
     assert!(commands.try_recv().is_err());
     assert!(view.attack_toggle_click(TileCoord::new(2, 1), &link));

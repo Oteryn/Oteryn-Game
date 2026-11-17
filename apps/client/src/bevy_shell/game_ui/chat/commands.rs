@@ -28,8 +28,9 @@ pub(super) fn select(link: &PlayLink, tab: &Tab) {
         Tab::Channel(target) => {
             let panel = link.chat_panel();
             if let Some(index) = panel.console.channels.iter().position(|tab| tab == target) {
-                let target = index + 4;
                 let count = panel.console.tab_count();
+                // Opened channels follow the fixed tabs.
+                let target = index + count - panel.console.channels.len();
                 for _ in 0..(target + count - panel.console.tab_index()) % count {
                     link.chat_channel_cycle(true);
                 }

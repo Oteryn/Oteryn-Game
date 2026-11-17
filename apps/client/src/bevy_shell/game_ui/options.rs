@@ -13,6 +13,7 @@ use oteryn_client_ui_bevy as source;
 
 mod audio_device;
 mod audio_feedback;
+mod bar_clear;
 mod commands;
 mod conditions;
 #[cfg(test)]

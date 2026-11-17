@@ -956,9 +956,12 @@ fn item_context_menu_near_the_bottom_keeps_every_row_inside_the_viewport() -> Re
             )
         })
         .count();
-    assert_eq!(rows, 8, "Write… and Timed item… are shown");
-    // Eight 20-pixel rows, seven 2-pixel gaps and 5-pixel padding on both edges.
-    let bottom = position.y + 8. * 20. + 7. * 2. + 10.;
+    assert_eq!(
+        rows, 7,
+        "Write ... and Timed item ... are shown; Tibia has no Cancel row"
+    );
+    // Seven 16-pixel entries, six 3-pixel gaps and 4-pixel popup padding on both edges.
+    let bottom = position.y + 7. * 16. + 6. * 3. + 8.;
     assert!(bottom <= height, "menu ends at {bottom}, viewport {height}");
     Ok(())
 }

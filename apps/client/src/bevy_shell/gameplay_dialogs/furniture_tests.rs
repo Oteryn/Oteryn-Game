@@ -53,6 +53,8 @@ fn app() -> Result<Fixture> {
             },
             frame: Handle::default(),
             font: Handle::default(),
+            checked: Handle::default(),
+            unchecked: Handle::default(),
         })
         .init_resource::<InputFocus>()
         .add_systems(Update, project);
@@ -177,7 +179,7 @@ fn wrap_on_clicked_item_lists_house_furniture_and_wraps_the_chosen_one() -> Resu
     let (mut app, mut commands, outbox) = app()?;
     outbox.bevy_property_items_selected();
     open_context(&mut app);
-    choose(&mut app, "Wrap / Unwrap")?;
+    choose(&mut app, "Wrap/Unwrap")?;
     let query = feature(&mut commands)?;
     assert_eq!((query.capability, query.kind), (207, 402));
     assert_eq!(house_wrap::decode_catalogue_query(&query.payload), Some(0));

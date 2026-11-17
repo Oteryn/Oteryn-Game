@@ -68,6 +68,7 @@ pub fn channel_request(panel: &mut ChatPanel) -> Option<ChatIntent> {
             mode: ChatSpeechMode::Say,
             text,
         },
+        ChannelTab::Guild => return crate::chat_guild_room::request(panel),
         ChannelTab::Room(room) => ChatIntent::Room { room, text },
         ChannelTab::Private(channel_id) => ChatIntent::PrivateChannel(
             oteryn_client_runtime::chat_private_channel::PrivateChannelIntent::Say {
@@ -255,6 +256,7 @@ pub fn close_current(
             command
         }
         ChannelTab::Conversation(_)
+        | ChannelTab::Guild
         | ChannelTab::Loot
         | ChannelTab::ServerLog
         | ChannelTab::Npc => {

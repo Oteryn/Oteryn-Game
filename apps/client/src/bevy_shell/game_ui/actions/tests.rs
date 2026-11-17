@@ -209,6 +209,38 @@ fn unlocking_and_selecting_slot_opens_shared_editor_without_casting() -> TestRes
         count: 1,
     });
     app.update();
+    // The secondary click opens the Tibia slot menu; its Assign Spell entry opens the editor.
+    let mut labels = Vec::new();
+    let mut assign = None;
+    for (entity, entry) in app
+        .world_mut()
+        .query::<(Entity, &MenuEntry)>()
+        .iter(app.world())
+    {
+        labels.push(entry.choice);
+        if entry.choice == MenuChoice::AssignSpell {
+            assign = Some(entity);
+        }
+    }
+    assert_eq!(labels.len(), 8);
+    for choice in [
+        MenuChoice::AssignSpell,
+        MenuChoice::AssignObject,
+        MenuChoice::SetText,
+        MenuChoice::EditHotkey,
+        MenuChoice::Clear,
+        MenuChoice::Lock,
+        MenuChoice::Hide,
+        MenuChoice::ResetZoom,
+    ] {
+        assert!(labels.contains(&choice), "{choice:?}");
+    }
+    assert!(!app.world().resource::<editor::EditorState>().active());
+    app.world_mut().trigger(Activate {
+        entity: assign.ok_or("Assign Spell")?,
+    });
+    app.update();
+    assert!(app.world().resource::<SlotMenu>().0.is_none());
     assert!(app.world().resource::<editor::EditorState>().active());
     assert!(commands.try_recv().is_err());
     // Disconnect clears the session-bound edit and its text focus.
@@ -464,6 +496,203 @@ fn side_bars_project_their_dock_and_vertical_capacity() -> TestResult {
         } else {
             assert_eq!(node.flex_direction, FlexDirection::Row);
         }
+    }
+    Ok(())
+}
+
+#[test]
+fn slot_menu_lists_tibia_entries_and_the_bar_lock_state() {
+    let labels = |locked| {
+        menu_items(locked)
+            .into_iter()
+            .map(|(item, _)| match item {
+                popup::Item::Entry { label, checked, .. } => {
+                    format!(
+                        "{label}{}",
+                        checked.map_or("", |on| if on { " [x]" } else { " [ ]" })
+                    )
+                }
+                popup::Item::Separator => "-".to_owned(),
+            })
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        labels(true),
+        [
+            "Assign Spell",
+            "Assign Object",
+            "Set Text",
+            "Edit Hotkey",
+            "Clear",
+            "-",
+            "Lock Action Bar [x]",
+            "Hide Action Bar",
+            "-",
+            "Reset Zoom",
+        ]
+    );
+    assert_eq!(labels(false)[6], "Lock Action Bar [ ]");
+}
+
+#[test]
+fn each_bar_has_a_twelve_by_sixteen_lock_and_no_configuration_row() -> TestResult {
+    let (mut app, _) = fixture()?;
+    let mut locks = app
+        .world_mut()
+        .query::<(&ActionControl, &Node, &Children)>();
+    let mut found = Vec::new();
+    for (control, node, children) in locks.iter(app.world()) {
+        if let ActionControl::Lock(bar) = control {
+            found.push(*bar);
+            assert_eq!((node.width, node.height), (px(12.), px(16.)));
+            assert!(
+                children
+                    .iter()
+                    .any(|child| app.world().get::<art::ArtIcon>(child).is_some())
+            );
+        }
+    }
+    found.sort_unstable();
+    assert_eq!(found, (0..9).collect::<Vec<_>>());
+    // The removed "1 on / Locked" row left no text captions behind.
+    let captions: Vec<String> = app
+        .world_mut()
+        .query::<&Text>()
+        .iter(app.world())
+        .map(|text| text.0.clone())
+        .collect();
+    assert!(
+        !captions
+            .iter()
+            .any(|text| text == "Locked" || text.ends_with(" on"))
+    );
+    Ok(())
+}
+
+#[test]
+fn hotkey_labels_abbreviate_modifiers_like_the_tibia_bar() {
+    assert_eq!(projection::hotkey_label("F1"), "F1");
+    assert_eq!(projection::hotkey_label("CTRL+F2"), "C+F2");
+    assert_eq!(projection::hotkey_label("SHIFT+ALT+3"), "S+A+3");
+    assert_eq!(projection::hotkey_label("SUPER+J"), "M+J");
+    assert_eq!(projection::hotkey_label(""), "");
+}
+
+#[test]
+fn slots_show_their_bound_hotkey_and_follow_a_150_percent_bar_zoom() -> TestResult {
+    use crate::bevy_shell::gameplay_dialogs::scale::{self, Module, ModuleScale};
+    let (mut app, _) = fixture()?;
+    let mut zoom = ModuleScale::default();
+    zoom.set(Module::ActionBars, 1.5);
+    app.insert_resource(zoom)
+        .add_systems(PostUpdate, scale::apply);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .settings
+        .preferences
+        .rebind("local-spell-action-bar-spell-1", "CTRL+F1")?;
+    app.update();
+    let label = app
+        .world_mut()
+        .query::<(&SlotHotkey, &Text)>()
+        .iter(app.world())
+        .find_map(|(hotkey, text)| (hotkey.0 == 0).then(|| text.0.clone()))
+        .ok_or("slot hotkey")?;
+    assert_eq!(label, "C+F1");
+    let first = slot(&mut app, 0)?;
+    let node = app.world().get::<Node>(first).ok_or("slot node")?;
+    assert_eq!((node.width, node.height), (px(51.), px(51.)));
+    Ok(())
+}
+
+#[test]
+fn clear_on_a_bar_without_assignments_is_refused_visibly() -> TestResult {
+    let (mut app, mut commands) = fixture()?;
+    let generation = {
+        let owner = app.world().non_send::<HostOwner>();
+        owner
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .bar_gesture(BarGesture::Configure {
+                bar: 3,
+                dock: crate::play::BarDock::Bottom,
+                enabled: true,
+                locked: false,
+            });
+        owner.generation()
+    };
+    let entry = app
+        .world_mut()
+        .spawn(MenuEntry {
+            slot: 3 * ROW_SLOTS,
+            generation,
+            choice: MenuChoice::Clear,
+        })
+        .observe(menu_action)
+        .id();
+    app.world_mut().trigger(Activate { entity: entry });
+    let editor = app.world().resource::<editor::EditorState>();
+    assert!(editor.active(), "the refusal is shown in the slot editor");
+    assert!(editor.message().starts_with("Choose a valid"));
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn each_side_shows_an_enabled_bar_on_its_own_dock() -> TestResult {
+    for (bar, dock) in [
+        (3, crate::play::BarDock::Bottom),
+        (5, crate::play::BarDock::Left),
+        (7, crate::play::BarDock::Right),
+    ] {
+        let (mut app, _) = fixture()?;
+        {
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            let mut preferences = owner.settings.preferences.clone();
+            preferences.bar_layout.rows[bar].enabled = true;
+            owner.settings.apply(preferences);
+            let owner = &mut *owner;
+            let link = &owner.play.as_ref().ok_or("play")?.link;
+            owner.settings.sync_bar_actions(link);
+        }
+        app.update();
+        app.update();
+        let anchor = app
+            .world_mut()
+            .query::<(Entity, &DockAnchor)>()
+            .iter(app.world())
+            .find_map(|(entity, anchor)| (anchor.0 == dock).then_some(entity))
+            .ok_or("anchor")?;
+        let mut shown = Vec::new();
+        for (row, node, parent) in app
+            .world_mut()
+            .query::<(&BarRow, &Node, &ChildOf)>()
+            .iter(app.world())
+        {
+            if node.display != Display::None {
+                shown.push(row.0);
+            }
+            if row.0 == bar {
+                assert_eq!(parent.parent(), anchor, "bar {bar} sits on its dock");
+                let vertical = dock != crate::play::BarDock::Bottom;
+                assert_eq!(
+                    node.flex_direction,
+                    if vertical {
+                        FlexDirection::Column
+                    } else {
+                        FlexDirection::Row
+                    }
+                );
+            }
+        }
+        shown.sort_unstable();
+        assert_eq!(
+            shown,
+            vec![0, bar],
+            "only the default and the enabled bar show"
+        );
     }
     Ok(())
 }

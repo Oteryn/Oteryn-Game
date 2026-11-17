@@ -45,7 +45,7 @@ fn c0495_tabs_read_owners_channel_with_participants_and_notices() {
     panel.console.open_channel(ChannelTab::Private(300));
     panel.apply_extras("Ari", Some(&list()), extras());
     let labels = panel.console.tab_labels();
-    assert_eq!(labels[4..], ["Ari's channel", "Bo's channel"]);
+    assert_eq!(labels[1..], ["Ari's channel", "Bo's channel"]);
     let text = panel_text(&panel);
     assert!(text.contains("Participants: Ari, Bo"), "{text}");
     assert!(text.contains("Cy has joined the channel"), "{text}");
@@ -74,7 +74,7 @@ fn c0495_without_the_capability_the_tab_reads_channel_and_id() {
     let mut panel = ChatPanel::default();
     panel.console.open_channel(ChannelTab::Private(300));
     panel.apply_extras("Ari", Some(&list()), ChatExtras::default());
-    assert_eq!(panel.console.tab_labels()[4], "Channel 300");
+    assert_eq!(panel.console.tab_labels()[1], "Channel 300");
     let text = panel_text(&panel);
     assert!(!text.contains("Participants"), "{text}");
     assert!(panel.console.channel_notices.is_empty());

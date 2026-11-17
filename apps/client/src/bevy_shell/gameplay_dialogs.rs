@@ -32,6 +32,12 @@ enum Content {
         trade: Option<(TileCoord, oteryn_session::EntityRef)>,
         browse: Option<(TileCoord, i16)>,
         npc: Option<(TileCoord, oteryn_session::EntityRef)>,
+        /// The name of the clicked player other than the own character.
+        player: Option<String>,
+        /// The clicked creature or player Alt+click would attack.
+        /// The clicked player or monster Alt+click would attack (never the own character or
+        /// an NPC), and whether it is the current target.
+        attack: Option<(TileCoord, bool)>,
     },
 }
 #[derive(Clone, Copy, Component)]
@@ -49,6 +55,11 @@ enum Choice {
     NpcTrade,
     Rotate,
     Wrap,
+    Attack,
+    Message,
+    Vip,
+    Ignore,
+    CopyName,
 }
 impl Dialogs {
     pub fn active(&self) -> bool {
@@ -56,6 +67,19 @@ impl Dialogs {
     }
     pub fn clear(&mut self) {
         self.pending = None;
+    }
+    /// The player name of the pending context menu `id`.
+    fn context_player_name(&self, id: u64) -> Option<String> {
+        match self.pending.as_ref().filter(|request| request.id == id)? {
+            Request {
+                content:
+                    Content::Context {
+                        player: Some(name), ..
+                    },
+                ..
+            } => Some(name.clone()),
+            _ => None,
+        }
     }
     fn open(&mut self, generation: u64, content: Content) {
         let Some(id) = self.next.checked_add(1) else {
@@ -108,6 +132,23 @@ impl HostOwner {
             })
             .map(|play| (tile, play.view.satellite_player().2));
         let npc = npc::target(self, tile).map(|entity| (tile, entity));
+        let player = self
+            .play
+            .as_ref()
+            .and_then(|play| play.view.party_context_target(tile)?.1);
+        let attack = self
+            .play
+            .as_ref()
+            .filter(|_| {
+                menu.as_ref().is_some_and(|menu| {
+                    matches!(
+                        menu.target,
+                        oteryn_client_ui::world_interaction::menu::Target::Creature(_)
+                    )
+                })
+            })
+            .and_then(|play| play.view.attack_context(tile, &play.link))
+            .map(|attacking| (tile, attacking));
         if self.phase == Phase::Playing
             && (menu.is_some()
                 || npc.is_some()
@@ -127,6 +168,8 @@ impl HostOwner {
                     trade,
                     browse,
                     npc,
+                    player,
+                    attack,
                 },
             );
         }
@@ -164,6 +207,8 @@ impl HostOwner {
                     trade: None,
                     browse: None,
                     npc: None,
+                    player: None,
+                    attack: None,
                 },
             );
         }
@@ -245,7 +290,43 @@ impl HostOwner {
                 },
                 Choice::Talk | Choice::NpcTrade,
             ) => npc::talk(self, tile, entity, matches!(choice, Choice::NpcTrade)),
-            (_, Choice::Cancel) => true,
+            (_, Choice::Cancel | Choice::CopyName) => true,
+            (
+                Content::Context {
+                    attack: Some((tile, _)),
+                    ..
+                },
+                Choice::Attack,
+            ) => self
+                .play
+                .as_ref()
+                .is_some_and(|play| play.view.attack_toggle_click(tile, &play.link)),
+            (
+                Content::Context {
+                    player: Some(name), ..
+                },
+                Choice::Message | Choice::Vip | Choice::Ignore,
+            ) => self.play.as_ref().is_some_and(|play| {
+                if play.view.gameplay_input_blocked(&play.link) {
+                    return false;
+                }
+                match choice {
+                    Choice::Message => play.link.chat_open_conversation(&name),
+                    Choice::Vip => {
+                        play.link
+                            .vip_request(oteryn_client_ui::vip::Intent::Add(name));
+                        true
+                    }
+                    _ => {
+                        play.link.chat_communication(
+                            Some(oteryn_client_ui::chat::CommunicationList::Ignore),
+                            &name,
+                            true,
+                        );
+                        true
+                    }
+                }
+            }),
             (Content::Logout, Choice::Logout) => self.play.as_mut().is_some_and(|play| {
                 play.view.logout();
                 true
@@ -319,11 +400,19 @@ struct Skin {
     buttons: source::ButtonImages,
     frame: Handle<Image>,
     font: Handle<Font>,
+    checked: Handle<Image>,
+    unchecked: Handle<Image>,
 }
 
 pub(super) fn install(app: &mut App) {
     app.add_systems(Startup, setup)
-        .add_systems(Update, (escape.after(super::input::route), project).chain());
+        .add_systems(Update, (escape.after(super::input::route), project).chain())
+        .init_resource::<scale::ModuleScale>()
+        .add_systems(Update, (art::project, popup::layout, scale::zoom))
+        .add_systems(
+            PostUpdate,
+            scale::apply.before(bevy::ui::UiSystems::Prepare),
+        );
 }
 fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     commands.insert_resource(Skin {
@@ -333,6 +422,8 @@ fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         },
         frame: assets.load("images/skin/classic/dialog-frame-borderimage.png"),
         font: assets.load("fonts/verdanab.ttf"),
+        checked: assets.load("images/skin/classic/checkbox-checked.png"),
+        unchecked: assets.load("images/skin/classic/checkbox-unchecked.png"),
     });
     commands.spawn((
         Overlay,
@@ -382,17 +473,27 @@ fn activate(
     replies: Query<&Reply>,
     mut owner: NonSendMut<HostOwner>,
     modal: super::game_ui::modal::ModalGuard,
+    clipboard: Option<ResMut<bevy::clipboard::Clipboard>>,
 ) {
     if !modal.allows(event.entity) {
         return;
     }
     if let Ok(reply) = replies.get(event.entity) {
+        if matches!(reply.choice, Choice::CopyName)
+            && let Some(mut clipboard) = clipboard
+            && let Some(name) = owner.dialogs.context_player_name(reply.id)
+        {
+            let _ = clipboard.set_text(name);
+        }
         owner.choose_dialog(reply.id, reply.choice);
     }
 }
 
+pub(super) mod art;
 mod npc;
+pub(super) mod popup;
 mod projection;
+pub(super) mod scale;
 use projection::project;
 
 #[cfg(test)]
