@@ -18,6 +18,7 @@ struct Case {
     appearance: u16,
     reward: &'static str,
     quantity: u32,
+    text: Option<&'static str>,
 }
 
 fn definition(key: &str) -> TypedDefinitionRef {
@@ -29,9 +30,9 @@ fn definition(key: &str) -> TypedDefinitionRef {
 }
 
 fn execute(case: Case, marker: &'static str) -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
@@ -53,6 +54,7 @@ fn scenario(case: Case) -> TestResult {
         appearance,
         reward,
         quantity,
+        text,
     } = case;
     run(async |admin| {
         let harness =
@@ -232,6 +234,13 @@ fn scenario(case: Case) -> TestResult {
             let item = &bag.entries[0].item;
             assert_eq!(item.definition.production_key, reward);
             assert_eq!(item.quantity, quantity);
+            let stored_text: Option<String> = sqlx::query_scalar(
+                "SELECT text FROM game_item_texts WHERE item_instance_id=encode($1,'hex')::uuid",
+            )
+            .bind(item.item_instance_id.as_slice())
+            .fetch_optional(&harness.pool)
+            .await?;
+            assert_eq!(stored_text.as_deref(), text);
             if let Some(first) = original {
                 assert_eq!(item.item_instance_id, first);
             } else {
@@ -259,6 +268,7 @@ fn qready2_purple_tome_quest_1() -> TestResult {
             appearance: 2436,
             reward: "oteryn:item.tibia.i2822",
             quantity: 1,
+            text: Some("You see a map of our world Tibia"),
         },
         "QREADY2_PURPLE_TOME_QUEST_1",
     )
@@ -274,6 +284,7 @@ fn qready2_purple_tome_quest_2() -> TestResult {
             appearance: 2436,
             reward: "oteryn:item.tibia.i2823",
             quantity: 1,
+            text: Some("You see a map of the surface of the Fields of Glory. There are many red lines and two golden points on it. You wonder what their meaning is."),
         },
         "QREADY2_PURPLE_TOME_QUEST_2",
     )
@@ -289,6 +300,7 @@ fn qready2_purple_tome_quest_3() -> TestResult {
             appearance: 2438,
             reward: "oteryn:item.tibia.i2848",
             quantity: 1,
+            text: None,
         },
         "QREADY2_PURPLE_TOME_QUEST_3",
     )

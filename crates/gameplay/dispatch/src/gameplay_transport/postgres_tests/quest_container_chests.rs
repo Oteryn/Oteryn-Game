@@ -17,6 +17,7 @@ enum Case {
     Authored,
     Bear,
     Key,
+    PlainContainer,
     Choice,
     ChoiceDoor,
     ChoiceCaptured,
@@ -123,6 +124,12 @@ fn definition(key: &str) -> TypedDefinitionRef {
         production_key: key.into(),
         revision_ref: "definition-r1".into(),
     }
+}
+
+const PLAIN_PARCHMENT: &str = "Survey notes\nKeep the original café spelling.\n";
+
+pub(super) fn plain_container_scenario() -> TestResult {
+    execute(Case::PlainContainer, "RCAUTH_PLAIN_CONTAINER")
 }
 
 fn scenario(case: Case) -> TestResult {
@@ -243,6 +250,16 @@ fn scenario_case(
                 ("oteryn:item.tibia.i3558", 1, 0),
             ],
         ),
+        Case::PlainContainer => (
+            "oteryn:reward-claim.rcauth.filled_bag",
+            (32146, 32097, -11),
+            6114,
+            "oteryn:item.tibia.i2853",
+            vec![
+                ("oteryn:item.tibia.i2835", 1, 0),
+                ("oteryn:item.tibia.i3031", 40, 0),
+            ],
+        ),
         _ => (
             "oteryn:reward-claim.kv.bear_chest1",
             (32146, 32097, -11),
@@ -338,7 +355,35 @@ fn scenario_case(
             source_world(chest, unique, appearance, 0)?
         };
         let mut authored_shard = None;
-        let report = if matches!(case, Case::Authored) {
+        let report = if matches!(case, Case::PlainContainer) {
+            let item = |id| serde_json::json!({
+                "family": "Item", "key": format!("oteryn:item.tibia.i{id}"),
+                "revision": "definition-r1"
+            });
+            let shard = serde_json::json!({"records":[{"definition":{
+                "identity":{"key":claim,"revision":"reward-claim-r1"},
+                "readiness":"ready",
+                "quest":{"family":"Quest","key":"oteryn:quest.bear_room_quest","revision":"quest-r1"},
+                "provenance":{"pilot_key":"rcauth","pilot_revision":"reward-claim-r1"},
+                "claim":{"per":"character","repeat":{"kind":"once"}},
+                "placements":[{
+                    "appearance_tibia_id":2472,
+                    "source_binding":{
+                        "project_position":{"x":chest.0,"y":chest.1,"z":-chest.2},
+                        "legacy_unique_ids":[{"server":"crystalserver","unique_id":unique}]
+                    },
+                    "reward":{"container":item(2853),"items":[
+                        {"count":1,"item":item(2835),"written_text":{"text":PLAIN_PARCHMENT}},
+                        {"count":40,"item":item(3031)}
+                    ]}
+                }]
+            }}]}).to_string();
+            let report = crate::content::world_reward_claims::bind_reward_claims(
+                world.base().as_ref(), &[&shard], &|_| true,
+            )?;
+            authored_shard = Some(shard);
+            report
+        } else if matches!(case, Case::Authored) {
             // Exercise an authored selector on a real map without borrowing a source UID.
             let mut definition = None;
             for shard in crate::content::world_reward_claims::REWARD_CLAIM_SHARDS {
@@ -874,6 +919,16 @@ fn scenario_case(
                     (SELECT count(DISTINCT created_xact_id::text) FROM game_item_audit_outbox WHERE item_instance_id=encode($2,'hex')::uuid OR item_instance_id IN (SELECT item_instance_id FROM game_item_nested_entries WHERE parent_item_instance_id=encode($2,'hex')::uuid))")
                     .bind(claim).bind(root.item_instance_id.as_slice()).fetch_one(&harness.pool).await?;
                 assert_eq!(counts, (1, 1, 1 + expected.len() as i64, 1));
+                if matches!(case, Case::PlainContainer) {
+                    let text: String = sqlx::query_scalar(
+                        "SELECT t.text FROM game_item_texts t JOIN game_item_nested_entries e \
+                         USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid",
+                    )
+                    .bind(root.item_instance_id.as_slice())
+                    .fetch_one(&harness.pool)
+                    .await?;
+                    assert_eq!(text, PLAIN_PARCHMENT);
+                }
                 if let Some(chest) = catalogue {
                     let texts: Vec<(String, String)> = sqlx::query_as("SELECT i.definition_production_key,t.text \
                         FROM game_item_texts t JOIN game_item_instances i USING(item_instance_id) \

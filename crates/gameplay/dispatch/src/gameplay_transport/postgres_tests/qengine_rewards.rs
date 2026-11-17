@@ -1477,7 +1477,7 @@ pub(super) async fn exercise(
         );
     }
     if let Some(reward) = &callback.give {
-        let minted:(String,i64)=sqlx::query_as("SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts m JOIN game_item_instances i USING(item_instance_id) WHERE m.claim_production_key=$1").bind(&callback.key).fetch_one(&h.pool).await?;
+        let minted:(String,i64)=sqlx::query_as("SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts m JOIN game_item_instances i USING(item_instance_id) WHERE m.command_id=$1::text::numeric").bind(command.to_string()).fetch_one(&h.pool).await?;
         assert_eq!(minted, (reward.item.clone(), i64::from(reward.count)));
     }
     if let Some(achievement) = &callback.achievement {
@@ -1511,6 +1511,51 @@ pub(super) async fn exercise(
         NpcIntentDisposition::Ok
     );
     assert_eq!(counts(h).await?, after);
+    if key.starts_with("rcauth/") {
+        let input = callback.take.first().ok_or("exchange input")?;
+        let reward = callback.give.as_ref().ok_or("exchange reward")?;
+        let quantity = |key: &str| {
+            sqlx::query_scalar::<_, i64>(
+                "SELECT coalesce(sum(i.quantity),0)::bigint FROM game_item_container_entries e \
+                 JOIN game_item_instances i USING(item_instance_id) \
+                 WHERE i.lifecycle=1 AND i.definition_production_key=$1",
+            )
+            .bind(key.to_owned())
+            .fetch_one(&h.pool)
+        };
+        assert_eq!(quantity(&input.item).await?, 0);
+        assert_eq!(quantity(&reward.item).await?, 1);
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|_| "fence")?
+            .ok_or("fence")?;
+        super::quest_world_callbacks::input_item(
+            owner,
+            fence.item_fence(),
+            &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                position: at,
+                item: input.item.clone(),
+                count: input.count,
+            },
+            246,
+            true,
+        )
+        .await?;
+        assert_eq!(quantity(&input.item).await?, 1);
+        let repeatable = key == "rcauth/lee-delle-honey-flower";
+        let (disposition, _, _) = wire_grant(owner, admitted, npc, &callback).await?;
+        assert_eq!(
+            disposition,
+            if repeatable {
+                NpcIntentDisposition::Ok
+            } else {
+                NpcIntentDisposition::Rejected
+            },
+        );
+        assert_eq!(quantity(&input.item).await?, i64::from(!repeatable));
+        assert_eq!(quantity(&reward.item).await?, 1 + i64::from(repeatable));
+    }
     if name == "qengine-rewards-l1-yalaharian-base-palimuth-villain" {
         assert_eq!(
             super::classic_quests::progress(
