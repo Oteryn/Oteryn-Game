@@ -6,6 +6,7 @@ use super::super::super::spell_access_facts::{
 use super::super::NativeCastDispatch;
 use super::*;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
+use oteryn_protocol_oteryn::refusal_detail::RefusalDetail;
 
 const FAMILIAR_RESCUE_TRACK: &str = "oteryn:quest-progress/between-the-lines/familiar-rescue";
 
@@ -724,9 +725,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .read_character_quest_state(self.character, fence.character_id)
                 .await
                 .ok()?;
-            if quest_state.character_revision() != Some(fence.expected_character_revision)
-                || familiar_is_captured(quest_state.tracks().get(FAMILIAR_RESCUE_TRACK).copied())
-            {
+            if quest_state.character_revision() != Some(fence.expected_character_revision) {
+                return Some(SpellCastOutcome::rejected());
+            }
+            if familiar_is_captured(quest_state.tracks().get(FAMILIAR_RESCUE_TRACK).copied()) {
+                self.states.chat.push_party_spell_feedback(
+                    session,
+                    RefusalDetail::NotPossible.reference_message(),
+                );
                 return Some(SpellCastOutcome::rejected());
             }
         }
