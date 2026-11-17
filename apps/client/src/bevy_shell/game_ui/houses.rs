@@ -23,6 +23,7 @@ struct HouseWindow {
     generation: Option<u64>,
     open: bool,
     root: Option<Entity>,
+    redraw: bool,
     model: Option<Panel>,
     fields: [String; 7],
     request: Option<usize>,
@@ -106,13 +107,20 @@ fn project(
         .filter(|_| state.open)
         .map(|play| play.link.house_panel());
     if let Some(panel) = &projected
+        && !state.redraw
         && state.model.as_ref() == Some(&panel.model)
         && state.fields == panel.fields
         && state.ownership == ownership
     {
         return;
     }
+    // Ownership review and map controls can redraw the same form. Only carry its
+    // editors across that presentation change while the underlying house is unchanged.
     let rebuilding = state.root.is_some();
+    let same_house = projected
+        .as_ref()
+        .is_some_and(|panel| state.model.as_ref() == Some(&panel.model));
+    state.redraw = false;
     if let Some(root) = state.root.take() {
         if focus.get().is_some_and(|entity| fields.contains(entity)) {
             focus.clear();
@@ -143,7 +151,9 @@ fn project(
     let mut editors = panel.fields.clone();
     if rebuilding {
         for (field, text) in &fields {
-            if panel.fields[field.0] == state.fields[field.0] {
+            if (same_house || !matches!(field.0, 2 | 4 | 6))
+                && panel.fields[field.0] == state.fields[field.0]
+            {
                 editors[field.0] = text.value().to_string();
             }
         }
@@ -184,7 +194,7 @@ fn activate(
     }
     if control.selection == Some(CLOSE_MAP) {
         state.map = false;
-        state.model = None;
+        state.redraw = true;
     } else if let Some(selection) = control.selection {
         state.request = Some(selection);
     } else {
@@ -237,7 +247,7 @@ fn finish(
         }
         state.map = !play.link.house_map(&values[2]).is_empty();
         state.review = None;
-        state.model = None;
+        state.redraw = true;
         return;
     }
     if selection >= 20 {
@@ -294,9 +304,10 @@ fn finish(
             }
             _ => {}
         }
-        state.model = None;
+        state.redraw = true;
     } else {
         submit(&play.link, model, &state.fields, values, selection);
+        state.model = None;
         state.review = None;
     }
 }
