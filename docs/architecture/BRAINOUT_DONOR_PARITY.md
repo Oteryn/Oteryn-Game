@@ -70,19 +70,19 @@ with Ground/inventory destinations and donor weight 1500.
 All assertions are mounted in
 `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/brainout.rs`.
 The dedicated mount in
-`apps/game-server/tests/support/authority_cases/brainout.rs:306` drives the same
+`apps/game-server/tests/support/authority_cases/brainout.rs:307` drives the same
 framed production `serve_admitted` path and reuses every assertion.
 
 | Criterion | Test and assertion evidence in shared `brainout.rs` |
 |---|---|
-| Both inputs consumed; one Ground 19078; Mission09 set | `brainout_ground_reward_atomic_replay_postgres:29`; state/output assertions at `:329-350` |
-| One input refuses with no loss or progress | Same test; rollback assertions at `:270-286` |
-| Full inventory preserves donor Ground result and inventory contents | `brainout_ground_reward_full_inventory_postgres:37`; twenty real nonstackable entries at `:304` |
-| Replay applies once; a new command cannot repeat | Atomic test; replay assertions at `:351-365` |
-| Wrong quest state refuses without changing Mission09 | `brainout_ground_reward_wrong_quest_postgres:45`; assertions at `:307-324` |
-| Original east control also works | `brainout_ground_reward_east_control_postgres:53` |
-| Whole-stack input removal | `brainout_ground_reward_whole_stacks_postgres:61`; same success/replay assertions |
-| Public schema accepts the production plan and rejects five invalid variants | `brainout_ground_output_schema_rejects_unbound_or_mixed_outputs:372` |
+| Both inputs consumed; one Ground 19078; Mission09 set | `brainout_ground_reward_atomic_replay_postgres:30`; state/output assertions at `:335-359` |
+| One input refuses with no loss or progress | Same test; rollback assertions at `:278-292` |
+| Full inventory preserves donor Ground result and inventory contents | `brainout_ground_reward_full_inventory_postgres:38`; twenty real nonstackable entries at `:312` |
+| Replay applies once; a new command cannot repeat | Atomic test; replay assertions at `:360-372` |
+| Wrong quest state refuses without changing Mission09 | `brainout_ground_reward_wrong_quest_postgres:46`; assertions at `:315-332` |
+| Original east control also works | `brainout_ground_reward_east_control_postgres:54` |
+| Whole-stack input removal | `brainout_ground_reward_whole_stacks_postgres:62`; same success/replay assertions |
+| Public schema accepts the production plan and rejects five invalid variants | `brainout_ground_output_schema_rejects_unbound_or_mixed_outputs:380` |
 
 The first real PG red ran 35.38 seconds: one-input refusal passed, but two-input
 USE was rejected. The east control reproduced it in 27.25 seconds. Diagnostic
@@ -93,8 +93,8 @@ ordinary custody owner facts. The atomic/replay PG case subsequently passed.
 
 | Local check | Recorded result |
 |---|---|
-| Quest-authoring checks | Earlier full runner passed; final-input rerun pending |
-| Quest-authoring unit-tests | Earlier 1464 tests passed, 8 existing skips; final-input rerun pending |
+| Quest-authoring checks | Passed on final inputs: full checks runner |
+| Quest-authoring unit-tests | Passed on final inputs: all 182 modules, 1464 tests, 8 existing skips |
 | Quest item-profile unit tests | All 24 passed in 535.43 seconds |
 | Regenerated provider and NPC model | One new profile, no existing-profile changes/removals; NPC service-count test target passed |
 | Content-tree validation | Passed on final inputs: 19 domains, 39 systems, 100 nodes |
