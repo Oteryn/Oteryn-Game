@@ -167,7 +167,6 @@
       "topic": 0,
       "next_topic": 0,
       "completes": true,
-      "experience": 10000,
       "storage": [
         {
           "track": "oteryn:quest-progress/chosen/killing_in_the_name_of/phase",
@@ -194,18 +193,14 @@
         }
       ],
       "take": [],
-      "give": {
-        "item": "oteryn:item.tibia.i3035",
-        "count": 50,
-        "contents": []
-      },
+      "give": null,
       "outfit": null,
       "achievement": null,
       "reply": [
-        "Your hunting campaign is complete. You receive 10,000 experience and 5,000 gold."
+        "Your hunting campaign is complete."
       ],
       "sources": [
-        "OTERYN_AUTHORED_APPROXIMATION: chosen Killing in the Name of... Quest recipe, stages s1-s11; exact currency value normalized by the native coin owner.",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen Killing in the Name of... Quest itinerary, stages s1-s11; completion adds no XP or items to the source task and boss rewards.",
         "content/quests/definitions/quests-00100-00199.json#/records/64/definition/oteryn_recipe/payload/recipe",
         "https://tibia.fandom.com/index.php?curid=36695&oldid=843864"
       ]

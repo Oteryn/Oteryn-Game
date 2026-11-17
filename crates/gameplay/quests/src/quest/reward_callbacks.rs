@@ -2449,9 +2449,20 @@ mod lane_tests {
 
     #[test]
     fn reward_amount_is_part_of_the_quest_definition_hash() -> Result<(), String> {
-        let before = parse(include_str!(
+        let mut before = parse(include_str!(
             "../../../../../content/quests/chosen-reward-callbacks.json"
         ))?;
+        // A synthetic payout keeps this hash test independent of live rewards.
+        before.first_mut().ok_or("callback")?.give = Some(ItemReward {
+            premium: false,
+            item: "oteryn:item.tibia.i3035".into(),
+            count: 50,
+            contents: vec![],
+            key_number: None,
+            backpack_outputs: vec![],
+            text: None,
+            additional: vec![],
+        });
         let mut changed = before.clone();
         changed
             .first_mut()
