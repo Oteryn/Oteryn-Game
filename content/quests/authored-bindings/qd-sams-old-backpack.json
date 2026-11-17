@@ -19,7 +19,7 @@
     {
      "key": "oteryn:quest-progress/quest/u7_5/sams_old_backpack/sams_old_backpack_npc",
      "initial": 0,
-     "minimum": 0,
+     "minimum": -1,
      "maximum": 3
     },
     {
