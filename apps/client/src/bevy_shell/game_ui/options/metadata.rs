@@ -20,10 +20,11 @@ pub(super) enum Page {
     Misc,
     Gameplay,
     Screenshots,
+    Diagnostics,
 }
 impl Page {
     pub const BASIC_NAV: [Self; 1] = [Self::Basic];
-    pub const ADVANCED: [Self; 15] = [
+    pub const ADVANCED: [Self; 16] = [
         Self::Controls,
         Self::GeneralHotkeys,
         Self::Interface,
@@ -39,6 +40,7 @@ impl Page {
         Self::Misc,
         Self::Gameplay,
         Self::Screenshots,
+        Self::Diagnostics,
     ];
     pub const fn label(self) -> &'static str {
         match self {
@@ -58,6 +60,7 @@ impl Page {
             Self::Misc => "Misc.",
             Self::Gameplay => "Gameplay",
             Self::Screenshots => "Screenshots",
+            Self::Diagnostics => "Diagnostics",
         }
     }
     pub const fn child(self) -> bool {
@@ -151,6 +154,7 @@ macro_rules! number {
 }
 
 mod controls;
+mod diagnostics;
 mod graphics;
 mod interface;
 mod miscellaneous;
@@ -173,6 +177,7 @@ pub(super) fn rows(page: Page) -> &'static [Row] {
         Page::UiSounds => &sound::UI,
         Page::Misc => &miscellaneous::MAIN,
         Page::Gameplay => &miscellaneous::GAMEPLAY,
+        Page::Diagnostics => &diagnostics::ROWS,
         Page::Screenshots => &[check!(
             "screenshots.game-only",
             "Capture game area only",

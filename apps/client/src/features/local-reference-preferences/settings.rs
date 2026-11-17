@@ -10,6 +10,9 @@ pub use game_window::GameWindowPreferences;
 #[path = "action_bar.rs"]
 mod action_bar;
 pub use action_bar::ActionBarPreferences;
+#[path = "diagnostics_options.rs"]
+mod diagnostics_options;
+pub use diagnostics_options::DiagnosticsPreferences;
 #[path="miscellaneous.rs"]
 mod miscellaneous;
 pub use miscellaneous::MiscellaneousPreferences;
@@ -218,6 +221,8 @@ pub struct ReferencePreferences {
     #[serde(default)]
     pub screenshots: ScreenshotPreferences,
     #[serde(default)]
+    pub diagnostics: DiagnosticsPreferences,
+    #[serde(default)]
     pub archive_bindings: crate::play::feature_0287_actor_spell_catalog::view::ArchiveBindings,
     #[serde(default)]
     pub spellbook_filter: crate::play::feature_0287_actor_spell_catalog::view::SpellbookFilter,
@@ -341,6 +346,7 @@ impl Default for ReferencePreferences {
             archive_bindings: Default::default(),
             frames: Default::default(),
             screenshots: Default::default(),
+            diagnostics: Default::default(),
             arcs: Default::default(),
             minimap: Default::default(),
             shortcuts: shortcuts::default_shortcuts(),

@@ -28,7 +28,7 @@ required-features = ["bevy-shell"]
 bevy-shell = ["dep:bevy", "dep:oteryn-client-ui-bevy", "dep:rodio", "oteryn-input-platform/native-winit"]
 
 [dependencies]
-bevy = { version = "=0.20.1", optional = true, default-features = false, features = ["std", "async_executor", "bevy_asset", "bevy_winit", "bevy_render", "bevy_core_pipeline", "bevy_sprite_render", "bevy_ui_render", "bevy_ui_widgets", "ui_picking", "png", "x11", "system_clipboard"] }
+bevy = { version = "=0.20.1", optional = true, default-features = false, features = ["std", "async_executor", "bevy_asset", "bevy_winit", "bevy_render", "bevy_core_pipeline", "bevy_sprite_render", "bevy_ui_render", "bevy_ui_widgets", "ui_picking", "png", "x11", "system_clipboard", "bevy_log", "default_font"] }
 oteryn-client-assets = { version = "=0.1.0", path = "../../crates/client-assets" }
 oteryn-client-domain = { version = "=0.1.0", path = "../../crates/client-domain" }
 oteryn-client-runtime = { version = "=0.1.0", path = "../../crates/client-runtime" }
@@ -58,7 +58,7 @@ zip = { version = "=9.5.0", default-features = false, features = ["deflate"] }
 
 [target.'cfg(windows)'.dependencies]
 # The Windows client is the Bevy host: the same pins as the optional `bevy-shell` set above.
-bevy = { version = "=0.20.1", default-features = false, features = ["std", "async_executor", "bevy_asset", "bevy_winit", "bevy_render", "bevy_core_pipeline", "bevy_sprite_render", "bevy_ui_render", "bevy_ui_widgets", "ui_picking", "png", "x11", "system_clipboard"] }
+bevy = { version = "=0.20.1", default-features = false, features = ["std", "async_executor", "bevy_asset", "bevy_winit", "bevy_render", "bevy_core_pipeline", "bevy_sprite_render", "bevy_ui_render", "bevy_ui_widgets", "ui_picking", "png", "x11", "system_clipboard", "bevy_log", "default_font"] }
 oteryn-client-ui-bevy = { version = "=0.1.0", path = "../../crates/client-ui-bevy" }
 oteryn-input-platform = { version = "=0.1.0", path = "../../crates/input-platform", features = ["native-winit"] }
 rodio = { version = "=0.21.1", default-features = false, features = ["playback", "vorbis", "wav"] }

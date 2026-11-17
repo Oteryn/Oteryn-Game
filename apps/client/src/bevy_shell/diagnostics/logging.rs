@@ -1,0 +1,398 @@
+//! Client log output: one redacted formatter feeding stderr, a rolling daily file and the
+//! in-memory ring a crash file reads.
+use crate::crash_report::{LineLevel, Utc, record_log_line, redact};
+use bevy::log::{
+    Level,
+    tracing::Metadata,
+    tracing_subscriber::{
+        EnvFilter, Registry, fmt, layer::SubscriberExt, reload, util::SubscriberInitExt,
+    },
+};
+use std::{
+    fs,
+    io::{self, Write},
+    path::{Path, PathBuf},
+    sync::{Arc, Mutex, OnceLock, PoisonError},
+    time::SystemTime,
+};
+
+/// Daily files kept, the current one included.
+pub(super) const KEEP_FILES: usize = 7;
+/// The total size of the log directory.
+pub(super) const TOTAL_CAP: u64 = 50 * 1024 * 1024;
+/// A full filter for the whole process; it replaces the Options level while set.
+pub(super) const ENV_OVERRIDE: &str = "OTERYN_LOG";
+
+/// `logs/client-YYYY-MM-DD.log`, at most `keep` files and `cap` bytes together.
+pub(super) struct RollingFile {
+    directory: PathBuf,
+    keep: usize,
+    cap: u64,
+    state: Mutex<FileState>,
+}
+#[derive(Default)]
+struct FileState {
+    date: String,
+    file: Option<fs::File>,
+    size: u64,
+    budget: u64,
+    capped: bool,
+}
+const CAPPED: &str = "log size cap reached; further lines today go to the crash ring only\n";
+
+impl RollingFile {
+    pub fn new(directory: PathBuf, keep: usize, cap: u64) -> Self {
+        Self {
+            directory,
+            keep: keep.max(1),
+            cap,
+            state: Mutex::default(),
+        }
+    }
+    pub fn directory(&self) -> &Path {
+        &self.directory
+    }
+    pub fn write_text(&self, now: SystemTime, text: &str) -> io::Result<()> {
+        self.write_dated(&Utc::at(now).date(), text)
+    }
+    pub(super) fn write_dated(&self, date: &str, text: &str) -> io::Result<()> {
+        let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
+        if state.file.is_none() || state.date != date {
+            fs::create_dir_all(&self.directory)?;
+            let name = format!("client-{date}.log");
+            let file = fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(self.directory.join(&name))?;
+            let size = file.metadata()?.len();
+            let others = self.prune(&name)?;
+            *state = FileState {
+                date: date.to_owned(),
+                file: Some(file),
+                size,
+                budget: self.cap.saturating_sub(others),
+                capped: false,
+            };
+        }
+        if state.capped {
+            return Ok(());
+        }
+        let length = text.len() as u64;
+        let state = &mut *state;
+        let Some(file) = state.file.as_mut() else {
+            return Ok(());
+        };
+        if state.size + length + CAPPED.len() as u64 > state.budget {
+            state.capped = true;
+            if state.size + CAPPED.len() as u64 <= state.budget {
+                file.write_all(CAPPED.as_bytes())?;
+                state.size += CAPPED.len() as u64;
+            }
+            return Ok(());
+        }
+        file.write_all(text.as_bytes())?;
+        state.size += length;
+        Ok(())
+    }
+    /// Removes the oldest other files beyond the count, then until the others use at most half
+    /// of the cap; returns the size the others keep.
+    fn prune(&self, current: &str) -> io::Result<u64> {
+        let mut others = Vec::new();
+        for entry in fs::read_dir(&self.directory)? {
+            let entry = entry?;
+            let Ok(name) = entry.file_name().into_string() else {
+                continue;
+            };
+            if name != current && name.starts_with("client-") && name.ends_with(".log") {
+                others.push((name, entry.metadata()?.len()));
+            }
+        }
+        others.sort();
+        let mut total: u64 = others.iter().map(|(_, size)| size).sum();
+        let mut excess = others.len().saturating_sub(self.keep - 1);
+        for (name, size) in &others {
+            if excess == 0 && total <= self.cap / 2 {
+                break;
+            }
+            fs::remove_file(self.directory.join(name))?;
+            total -= size;
+            excess = excess.saturating_sub(1);
+        }
+        Ok(total)
+    }
+}
+
+/// One formatted event is redacted once, then written to every sink.
+#[derive(Clone)]
+pub(super) struct Sink {
+    file: Option<Arc<RollingFile>>,
+    stderr: bool,
+}
+pub(super) struct SinkWriter {
+    sink: Sink,
+    level: LineLevel,
+    buffer: Vec<u8>,
+}
+impl<'a> fmt::MakeWriter<'a> for Sink {
+    type Writer = SinkWriter;
+    fn make_writer(&'a self) -> SinkWriter {
+        SinkWriter {
+            sink: self.clone(),
+            level: LineLevel::Other,
+            buffer: Vec::new(),
+        }
+    }
+    fn make_writer_for(&'a self, meta: &Metadata<'_>) -> SinkWriter {
+        let level = match *meta.level() {
+            Level::ERROR => LineLevel::Error,
+            Level::WARN => LineLevel::Warn,
+            _ => LineLevel::Other,
+        };
+        SinkWriter {
+            sink: self.clone(),
+            level,
+            buffer: Vec::new(),
+        }
+    }
+}
+impl Write for SinkWriter {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        self.buffer.extend_from_slice(bytes);
+        Ok(bytes.len())
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+impl Drop for SinkWriter {
+    fn drop(&mut self) {
+        if self.buffer.is_empty() {
+            return;
+        }
+        let text = redact(&String::from_utf8_lossy(&self.buffer));
+        if self.sink.stderr {
+            let _ = io::stderr().write_all(text.as_bytes());
+        }
+        if let Some(file) = &self.sink.file {
+            // A full disk must not take the game down with it; the ring still keeps the line.
+            let _ = file.write_text(SystemTime::now(), &text);
+        }
+        let mut level = self.level;
+        for line in text.lines() {
+            record_log_line(level, line);
+            level = LineLevel::Other;
+        }
+    }
+}
+
+/// The filter for an Options level (`warn`, `info` or `debug`) over Bevy's noise defaults.
+pub(super) fn level_filter(level: &str) -> EnvFilter {
+    EnvFilter::builder().parse_lossy(format!("{level},{}", bevy::log::DEFAULT_FILTER))
+}
+
+/// The formatter every sink shares: UTC timestamp, level, target, thread name and id.
+pub(super) fn format_layer<S>(sink: Sink) -> impl bevy::log::tracing_subscriber::Layer<S>
+where
+    S: bevy::log::tracing::Subscriber
+        + for<'span> bevy::log::tracing_subscriber::registry::LookupSpan<'span>,
+{
+    fmt::layer()
+        .with_ansi(false)
+        .with_target(true)
+        .with_thread_names(true)
+        .with_thread_ids(true)
+        .with_writer(sink)
+}
+
+/// The production formatter over one file sink at info, for tests that read what was logged.
+#[cfg(test)]
+pub(super) fn test_subscriber(file: &Arc<RollingFile>) -> impl bevy::log::tracing::Subscriber {
+    Registry::default()
+        .with(level_filter("info"))
+        .with(format_layer(Sink {
+            file: Some(Arc::clone(file)),
+            stderr: false,
+        }))
+}
+
+struct Control {
+    handle: reload::Handle<EnvFilter, Registry>,
+    environment: bool,
+    directory: Option<PathBuf>,
+}
+static CONTROL: OnceLock<Control> = OnceLock::new();
+
+/// Installs the process-wide subscriber once; the file sink lives in `base/logs`. Returns the
+/// filter source, for the startup line.
+pub(in crate::bevy_shell) fn install(base: Option<&Path>, level: &str) -> &'static str {
+    let environment = std::env::var(ENV_OVERRIDE)
+        .ok()
+        .filter(|value| !value.trim().is_empty());
+    let filter = match &environment {
+        Some(value) => EnvFilter::builder().parse_lossy(value),
+        None => level_filter(level),
+    };
+    let (filter, handle) = reload::Layer::new(filter);
+    let file = base.map(|base| {
+        Arc::new(RollingFile::new(
+            base.join(crate::crash_report::LOG_DIRECTORY),
+            KEEP_FILES,
+            TOTAL_CAP,
+        ))
+    });
+    let directory = file.as_ref().map(|file| file.directory().to_path_buf());
+    let sink = Sink { file, stderr: true };
+    let installed = Registry::default()
+        .with(filter)
+        .with(format_layer(sink))
+        .try_init()
+        .is_ok();
+    if installed {
+        let _ = CONTROL.set(Control {
+            handle,
+            environment: environment.is_some(),
+            directory,
+        });
+    }
+    if environment.is_some() {
+        ENV_OVERRIDE
+    } else {
+        "Options"
+    }
+}
+
+/// Applies an Options level unless `OTERYN_LOG` set the filter.
+pub(in crate::bevy_shell) fn set_level(level: &str) {
+    if let Some(control) = CONTROL.get()
+        && !control.environment
+    {
+        let _ = control.handle.reload(level_filter(level));
+    }
+}
+
+/// The directory of the rolling log files, once logging is installed.
+pub(in crate::bevy_shell) fn directory() -> Option<PathBuf> {
+    CONTROL.get().and_then(|control| control.directory.clone())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bevy::log::tracing;
+
+    type TestResult = Result<(), Box<dyn std::error::Error>>;
+
+    fn temp(name: &str) -> PathBuf {
+        let directory = std::env::temp_dir().join(format!(
+            "oteryn-logs-{name}-{}-{:?}",
+            std::process::id(),
+            std::thread::current().id()
+        ));
+        let _ = fs::remove_dir_all(&directory);
+        directory
+    }
+    fn names(directory: &Path) -> io::Result<Vec<String>> {
+        let mut names: Vec<_> = fs::read_dir(directory)?
+            .filter_map(Result::ok)
+            .filter_map(|entry| entry.file_name().into_string().ok())
+            .collect();
+        names.sort();
+        Ok(names)
+    }
+
+    #[test]
+    fn the_log_file_is_created_per_utc_day_under_logs() -> TestResult {
+        let directory = temp("create").join("logs");
+        let file = RollingFile::new(directory.clone(), KEEP_FILES, TOTAL_CAP);
+        file.write_text(SystemTime::now(), "first line\n")?;
+        file.write_dated("2030-01-02", "next day\n")?;
+        let today = format!("client-{}.log", Utc::at(SystemTime::now()).date());
+        assert_eq!(
+            names(&directory)?,
+            vec![today.clone(), "client-2030-01-02.log".into()]
+        );
+        assert_eq!(fs::read_to_string(directory.join(today))?, "first line\n");
+        fs::remove_dir_all(directory.parent().ok_or("parent")?)?;
+        Ok(())
+    }
+
+    #[test]
+    fn rotation_keeps_the_newest_seven_files() -> TestResult {
+        let directory = temp("keep");
+        fs::create_dir_all(&directory)?;
+        for day in 1..=9 {
+            fs::write(
+                directory.join(format!("client-2030-01-0{day}.log")),
+                "old\n",
+            )?;
+        }
+        fs::write(directory.join("unrelated.txt"), "keep me")?;
+        let file = RollingFile::new(directory.clone(), KEEP_FILES, TOTAL_CAP);
+        file.write_dated("2030-01-10", "new\n")?;
+        let expected: Vec<String> = (4..=9)
+            .map(|day| format!("client-2030-01-0{day}.log"))
+            .chain(["client-2030-01-10.log".into(), "unrelated.txt".into()])
+            .collect();
+        assert_eq!(names(&directory)?, expected);
+        fs::remove_dir_all(directory)?;
+        Ok(())
+    }
+
+    #[test]
+    fn the_total_size_stays_under_the_cap() -> TestResult {
+        let directory = temp("cap");
+        fs::create_dir_all(&directory)?;
+        fs::write(directory.join("client-2030-01-01.log"), vec![b'a'; 300])?;
+        fs::write(directory.join("client-2030-01-02.log"), vec![b'b'; 300])?;
+        let file = RollingFile::new(directory.clone(), KEEP_FILES, 1_000);
+        for index in 0..100 {
+            file.write_dated("2030-01-03", &format!("line {index:04}\n"))?;
+        }
+        // The older file goes so the others use at most half; today stops at the budget.
+        assert_eq!(
+            names(&directory)?,
+            vec!["client-2030-01-02.log", "client-2030-01-03.log"]
+        );
+        let total: u64 = fs::read_dir(&directory)?
+            .filter_map(Result::ok)
+            .filter_map(|entry| entry.metadata().ok())
+            .map(|metadata| metadata.len())
+            .sum();
+        assert!(total <= 1_000, "{total}");
+        let today = fs::read_to_string(directory.join("client-2030-01-03.log"))?;
+        assert!(today.starts_with("line 0000\n"));
+        assert!(today.ends_with(CAPPED));
+        fs::remove_dir_all(directory)?;
+        Ok(())
+    }
+
+    #[test]
+    fn formatted_lines_carry_time_level_target_thread_and_are_redacted() -> TestResult {
+        let directory = temp("format");
+        let file = Arc::new(RollingFile::new(directory.clone(), KEEP_FILES, TOTAL_CAP));
+        let subscriber = test_subscriber(&file);
+        std::thread::Builder::new()
+            .name("format-test".into())
+            .spawn(move || {
+                tracing::subscriber::with_default(subscriber, || {
+                    tracing::warn!(target: "oteryn_test", "login failed password=hunter2");
+                    tracing::debug!(target: "oteryn_test", "hidden at info");
+                });
+            })?
+            .join()
+            .map_err(|_| "logging thread")?;
+        let text = fs::read_to_string(
+            directory.join(format!("client-{}.log", Utc::at(SystemTime::now()).date())),
+        )?;
+        let line = text.lines().next().ok_or("one line")?;
+        let stamp = line.split_whitespace().next().ok_or("stamp")?;
+        assert!(stamp.ends_with('Z') && stamp.contains('T'), "{line}");
+        assert!(line.contains(" WARN "), "{line}");
+        assert!(line.contains("format-test"), "{line}");
+        assert!(line.contains("oteryn_test:"), "{line}");
+        assert!(line.contains("password=[redacted]") && !line.contains("hunter2"));
+        assert!(!text.contains("hidden at info"));
+        fs::remove_dir_all(directory)?;
+        Ok(())
+    }
+}

@@ -1,9 +1,25 @@
-//! Minimal crash evidence. Panic text, environment values and memory are never collected.
+//! Local crash evidence.
+//!
+//! A panic writes `crashes/crash-<UTC timestamp>.log` in the client user-data directory: the
+//! panic message and location, a backtrace, the build, OS and graphics adapter, the lifecycle
+//! state, the open windows and the last 200 log lines. Every text passes [`redact`] first, and
+//! the file stays on this computer. The consent-gated delivery report (`pending-crash.txt`)
+//! still carries only the build, OS and source location: no panic text, account data, memory or
+//! environment values.
 use std::{
     fs::OpenOptions,
     io::{self, Write},
     path::{Path, PathBuf},
 };
+
+mod local_log;
+mod redaction;
+pub use local_log::{
+    CRASH_DIRECTORY, CrashContext, LOG_DIRECTORY, LineLevel, LogCounters, RECENT_LINES, Utc,
+    log_counters, recent_log_lines, record_log_line, set_crash_context, take_unseen_crash,
+    user_data_directory,
+};
+pub use redaction::redact;
 
 const STARTUP_LOG: &str = "startup.log";
 const LAUNCHER_EXIT_CODE: &str = "launcher-exit-code.txt";
@@ -98,10 +114,17 @@ fn pending_path() -> Option<PathBuf> {
         .parent()
         .map(|p| p.join("pending-crash.txt"))
 }
-/// Install once at process startup; retain the first crash until the user reviews it.
+/// Install once at process startup: write the local crash log, and retain the first crash
+/// report until the user reviews it.
 pub fn install_hook() {
     let previous = std::panic::take_hook();
+    let crashes = local_log::user_data_directory().map(|base| base.join(CRASH_DIRECTORY));
     std::panic::set_hook(Box::new(move |info| {
+        if let Some(directory) = &crashes
+            && let Ok(path) = local_log::record_panic(directory, info)
+        {
+            let _ = writeln!(io::stderr(), "Oteryn crash log saved at {}", path.display());
+        }
         if let Some(path) = pending_path() {
             if let Some(parent) = path.parent() {
                 let _ = std::fs::create_dir_all(parent);
