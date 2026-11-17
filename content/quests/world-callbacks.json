@@ -7782,6 +7782,57 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/sea-serpent-crane",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 31942,
+            "y": 31041,
+            "floor": -6
+          },
+          "ordinal": 1,
+          "appearance": 3496
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/quest_line",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/bait",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i939",
+        "count": 1,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": "The bait is already set. Go up to the lookout and check the telescope!",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/actions_bait.lua:4-20"
+      ],
+      "requires_world_admission": true
+    },
+    {
       "key": "oteryn:quest-callback/sea-serpent-lookout-down",
       "quest": "oteryn:quest.the_hunt_for_the_sea_serpent",
       "trigger": "step_in",
@@ -7842,6 +7893,84 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/movements_teleports.lua:1-50"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/sea-serpent-telescope",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 31942,
+            "y": 31045,
+            "floor": -2
+          },
+          "ordinal": 2,
+          "appearance": 938
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/quest_line",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/bait",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/direction",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/success_switch",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/access",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/native/sea-serpent/telescope-outcome",
+          "minimum": 0,
+          "maximum": 16,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/actions_bait.lua:22-83"
+      ],
+      "native_rule": {
+        "kind": "sea_serpent_telescope"
+      }
     },
     {
       "key": "oteryn:quest-callback/secret-library-darashia-challenge-return",

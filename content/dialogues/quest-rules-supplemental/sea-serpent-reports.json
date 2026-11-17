@@ -1,0 +1,382 @@
+{
+  "schema": 1,
+  "program_key": "oteryn:quest-npc-program.sea-serpent-reports",
+  "quest": "oteryn:quest.tibia_tales",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/quest_line",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:115-154"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/direction",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:115-154"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/success_switch",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:115-154"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/sea-serpent/straight/match",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.captain_haba",
+      "trigger": "say",
+      "keywords": [
+        "straight"
+      ],
+      "any_message": false,
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/quest_line",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/direction",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "STRAIGHT AHED! WE GOT FOLLOWING WINDS, LETS'S GO!!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/success_switch",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/direction",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:115-124"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/sea-serpent/straight/reset",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.captain_haba",
+      "trigger": "say",
+      "keywords": [
+        "straight"
+      ],
+      "any_message": false,
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/quest_line",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/direction",
+          "op": "ne",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "STRAIGHT AHED! WE GOT FOLLOWING WINDS, LETS'S GO!!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/success_switch",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/direction",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:115-124"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/sea-serpent/starboard/match",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.captain_haba",
+      "trigger": "say",
+      "keywords": [
+        "starboard"
+      ],
+      "any_message": false,
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/quest_line",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/direction",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "SET FULL SAILS! SEA SERPENT ON THE STARBOARD SIDE!!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/success_switch",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/direction",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:125-134"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/sea-serpent/starboard/reset",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.captain_haba",
+      "trigger": "say",
+      "keywords": [
+        "starboard"
+      ],
+      "any_message": false,
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/quest_line",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/direction",
+          "op": "ne",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "SET FULL SAILS! SEA SERPENT ON THE STARBOARD SIDE!!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/success_switch",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/direction",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:125-134"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/sea-serpent/larboard/match",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.captain_haba",
+      "trigger": "say",
+      "keywords": [
+        "larboard"
+      ],
+      "any_message": false,
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/quest_line",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/direction",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "SET FULL SAILS! SEA SERPENT ON THE LARBOARD SIDE!!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/success_switch",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/direction",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:135-144"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/sea-serpent/larboard/reset",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.captain_haba",
+      "trigger": "say",
+      "keywords": [
+        "larboard"
+      ],
+      "any_message": false,
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/quest_line",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/direction",
+          "op": "ne",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "SET FULL SAILS! SEA SERPENT ON THE LARBOARD SIDE!!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/success_switch",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/direction",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:135-144"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/sea-serpent/speed/match",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.captain_haba",
+      "trigger": "say",
+      "keywords": [
+        "speed"
+      ],
+      "any_message": false,
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/quest_line",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/direction",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "IS THAT ALL?!? SPEED UP, TIGHTEN THE MAINSAIL!!!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/success_switch",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/direction",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:145-154"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/sea-serpent/speed/reset",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.captain_haba",
+      "trigger": "say",
+      "keywords": [
+        "speed"
+      ],
+      "any_message": false,
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/quest_line",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/direction",
+          "op": "ne",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "IS THAT ALL?!? SPEED UP, TIGHTEN THE MAINSAIL!!!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/success_switch",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/direction",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_haba_open_sea.lua:145-154"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/captain_haba_open_sea.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "a06808aeeb1253c574b3faf276de014c1837ac7c018357402ce24bceb7e15d92"
+    }
+  ]
+}

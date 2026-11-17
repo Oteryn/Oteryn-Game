@@ -77,6 +77,10 @@ NATIVE_TRACKS = {
         'oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/temp',
         'oteryn:quest-progress/quest/u11_40/cults_of_tibia/barkless/objects',
     ),
+    'sea_serpent_telescope': tuple(
+        'oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/' + name
+        for name in ('quest_line', 'bait', 'direction', 'success_switch', 'access')
+    ) + ('oteryn:quest-progress/native/sea-serpent/telescope-outcome',),
     'unnatural_dance': (
         'oteryn:quest-progress/quest/u8_54/unnatural_selection/dance_status',
         'oteryn:quest-progress/quest/u8_54/unnatural_selection/mission03',
@@ -97,6 +101,11 @@ NATIVE_BINDINGS = {
         ),
         'ranges': ((0, 7), (0, 2147483647), (0, 2147483647)),
         'source': 'data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:',
+    },
+    'sea_serpent_telescope': {
+        'trigger': 'use', 'action': None, 'positions': ((31942, 31045, -2),),
+        'ranges': ((1, 1), (0, 1), (0, 4), (0, 1), (0, 1), (0, 16)),
+        'source': 'data-global/scripts/quests/the_hunt_for_the_sea_serpent/actions_bait.lua:',
     },
     'unnatural_dance': {
         'trigger': 'step_in', 'action': None,
@@ -195,22 +204,32 @@ def validate_native(callback, context):
     require(isinstance(rule, dict), context + ': native_rule must be an object')
     kind = rule.get('kind')
     require(isinstance(kind, str) and kind in NATIVE_TRACKS, context + ': unknown native rule')
-    parameter, low, high, owner = (
-        ('symbol', 0, 12, QUEST_OWNERS['cults_of_tibia']) if kind == 'cults_symbol'
-        else ('tile', 1, 9, QUEST_OWNERS['unnatural_selection'])
-    )
-    fields(rule, {'kind', parameter}, {'kind', parameter}, context + ': native_rule')
-    require(integer(rule[parameter], low, high) and callback['quest'] == owner,
-            context + ': invalid native identifier or owner')
-    storage = callback['storage']
-    require(len(storage) == 3 and {entry['track'] for entry in storage} == set(NATIVE_TRACKS[kind])
-            and all(entry.get('preserve') is True for entry in storage),
-            context + ': native rule requires exactly three preserved tracks')
     binding = NATIVE_BINDINGS[kind]
-    expected = binding['positions'][rule[parameter] - low]
     selector = callback['selector']
+    telescope = kind == 'sea_serpent_telescope'
+    if telescope:
+        fields(rule, {'kind'}, {'kind'}, context + ': native_rule')
+        expected = None
+        position = dict(zip(('x', 'y', 'floor'), binding['positions'][0]))
+        native = {'position': position, 'ordinal': 2, 'appearance': 938}
+        require(callback['key'] == 'oteryn:quest-callback/sea-serpent-telescope'
+                and selector.get('native') == native, context + ': invalid telescope binding')
+    else:
+        parameter, low, high, owner = (
+            ('symbol', 0, 12, QUEST_OWNERS['cults_of_tibia']) if kind == 'cults_symbol'
+            else ('tile', 1, 9, QUEST_OWNERS['unnatural_selection'])
+        )
+        fields(rule, {'kind', parameter}, {'kind', parameter}, context + ': native_rule')
+        require(integer(rule[parameter], low, high) and callback['quest'] == owner,
+                context + ': invalid native identifier or owner')
+        expected = dict(zip(('x', 'y', 'floor'), binding['positions'][rule[parameter] - low]))
+    storage = callback['storage']
+    require(len(storage) == len(NATIVE_TRACKS[kind])
+            and {entry['track'] for entry in storage} == set(NATIVE_TRACKS[kind])
+            and all(entry.get('preserve') is True for entry in storage),
+            context + ': native rule requires its exact preserved tracks')
     require(callback['trigger'] == binding['trigger']
-            and selector.get('position') == dict(zip(('x', 'y', 'floor'), expected))
+            and selector.get('position') == expected
             and selector.get('action') == binding['action']
             and selector.get('unique') is None and selector.get('appearance') is None,
             context + ': native selector differs from pinned source')
@@ -397,13 +416,18 @@ def validate_callback(callback, directory):
     fields(callback, CALLBACK_REQUIRED, CALLBACK_FIELDS, context)
     key = callback['key']
     require(valid_key(key) and key.startswith('oteryn:quest-callback/'), context + ': foreign or invalid key')
-    require(QUEST_OWNERS[directory] is not None and callback['quest'] == QUEST_OWNERS[directory],
+    owner = QUEST_OWNERS[directory]
+    if directory == 'the_hunt_for_the_sea_serpent' and key in (
+        'oteryn:quest-callback/sea-serpent-crane', 'oteryn:quest-callback/sea-serpent-telescope',
+    ):
+        owner = QUEST_OWNERS['tibia_tales']
+    require(owner is not None and callback['quest'] == owner,
             key + ': foreign quest owner or owner not qualified')
     require(callback['trigger'] in ('use', 'step_in', 'step_out'), key + ': invalid trigger')
     selector = callback['selector']
     selector_fields = {'position', 'unique', 'action', 'appearance', 'native'}
     fields(selector, set(), selector_fields, key + ': selector')
-    require(any(selector.get(field) is not None for field in ('position', 'unique', 'action')),
+    require(any(selector.get(field) is not None for field in ('position', 'unique', 'action', 'native')),
             key + ': selector requires position, unique or action')
     if selector.get('position') is not None:
         position(selector['position'], key + ': selector')
@@ -513,7 +537,11 @@ def validate_callback(callback, directory):
         seen.add(location)
     item = callback.get('item_on_target')
     if item is not None:
-        fields(item, {'item', 'count'}, {'item', 'count', 'replacement', 'target_replacement', 'reusable', 'alternatives', 'on_step'}, key + ': item_on_target')
+        fields(item, {'item', 'count'}, {'item', 'count', 'replacement', 'target_replacement', 'reusable', 'alternatives', 'on_step', 'selected_instance'}, key + ': item_on_target')
+        selected = item.get('selected_instance', False)
+        require(type(selected) is bool and (not selected or (
+            callback['trigger'] == 'use' and callback.get('requires_world_admission') is True
+            and callback['selector'].get('native') is not None)), key + ': invalid selected instance')
         automatic = item.get('on_step', False)
         require(type(automatic) is bool, key + ': invalid automatic STEP input')
         trigger_matches = (callback['trigger'] == 'use' and not automatic) or (
