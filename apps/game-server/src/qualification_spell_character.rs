@@ -153,12 +153,23 @@ pub(super) async fn prepare_character_with_policy<const N: usize>(
         .read_character_build_state(authority, character)
         .await
         .map_err(debug)?;
+    let progression = root
+        .read_character_progression(authority, character)
+        .await
+        .map_err(debug)?;
     if before.vocation() != NO_VOCATION
-        || root
-            .read_character_progression(authority, character)
-            .await
-            .map_err(debug)?
-            .is_some()
+        || progression.as_ref().is_some_and(|state| {
+            // Admission initializes revision 1 without earning progress. Every XP,
+            // build or death write advances it, even if XP later returns to zero.
+            state.character_revision.get() != 1
+                || state.level != 1
+                || state.context != policy.context
+                || state.policy_revision != policy.policy_revision
+                || state.reward_revision != policy.reward_revision
+                || !policy.thresholds.first().is_some_and(|first| {
+                    first.level == 1 && state.total_experience == first.minimum_experience
+                })
+        })
     {
         return Err("spell fixture requires a fresh disposable Character".into());
     }
@@ -184,19 +195,27 @@ pub(super) async fn prepare_character_with_policy<const N: usize>(
             .map_err(debug)?
             .revision,
     };
-    root.initialize_character_progression(
-        authority,
-        node,
-        fence,
-        ProgressionInitializationRequest {
-            context: context.clone(),
-            policy_revision: policy.policy_revision.clone(),
-            reward_revision: policy.reward_revision.clone(),
-            policy: policy.clone(),
-        },
-    )
-    .await
-    .map_err(debug)?;
+    if progression
+        .as_ref()
+        .is_some_and(|state| state.character_revision != fence.expected_character_revision)
+    {
+        return Err("spell fixture requires a fresh disposable Character".into());
+    }
+    if progression.is_none() {
+        root.initialize_character_progression(
+            authority,
+            node,
+            fence,
+            ProgressionInitializationRequest {
+                context: context.clone(),
+                policy_revision: policy.policy_revision.clone(),
+                reward_revision: policy.reward_revision.clone(),
+                policy: policy.clone(),
+            },
+        )
+        .await
+        .map_err(debug)?;
+    }
     if level > 1 {
         slot.commit_experience(
             root,
