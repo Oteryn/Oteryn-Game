@@ -7,7 +7,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
-const NPC: &str = "oteryn:npc.riddler";
+pub(super) const NPC: &str = "oteryn:npc.riddler";
 const PREFIX: &str = "oteryn:quest-progress/quest/u7_24/the_paradox_tower/";
 
 const SCENARIO: &str = "qengine-rewards-questpc4-paradox-story-riddler-wire";

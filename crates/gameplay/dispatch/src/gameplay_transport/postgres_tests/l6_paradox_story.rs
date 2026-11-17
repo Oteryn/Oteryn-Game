@@ -188,10 +188,14 @@ async fn install(
     let model = catalogue.service_model_for_project().map_err(debug)?;
     let allowed: std::collections::BTreeSet<_> =
         model.npcs().keys().map(|r| r.key.clone()).collect();
-    owner
-        .states
-        .chat
-        .install_npc_talk(Arc::new(NpcTalkBook::from_model(&model)));
+    // Like bundle admission, opt the source-program NPC into native conversation
+    // focus. Placement alone does not give this Dialogue-only NPC a talk entry.
+    let book = if riddler_wire {
+        NpcTalkBook::from_model_with_native_quests(&model, &[super::l6_paradox_riddler_wire::NPC])
+    } else {
+        NpcTalkBook::from_model(&model)
+    };
+    owner.states.chat.install_npc_talk(Arc::new(book));
     owner.states.chat.admit(
         admitted.game_session_id,
         "Paradox pilgrim",
