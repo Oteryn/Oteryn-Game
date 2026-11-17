@@ -487,6 +487,24 @@ pub(super) async fn consume(
     {
         return Ok(false);
     }
+    use oteryn_gameplay_quests::quest::krailos_lake::{Action, POUR, PURIFY};
+    let lake_action = match callback.key.as_str() {
+        POUR => Some(Action::Pour),
+        PURIFY => Some(Action::Purify),
+        _ => None,
+    };
+    if let Some(action) = lake_action
+        && (!matches!(request.cause, super::quest_state::QuestCause::Use(_))
+            || !super::world_event::changes::krailos_lake::advance(
+                tx,
+                world_id,
+                Some(context.reset_epoch),
+                action,
+            )
+            .await?)
+    {
+        return Ok(false);
+    }
     // M03: promotion is a permanent Character purchase, not a client vocation
     // name or copied quest storage. The outer writer holds the Character root.
     if callback.admission.as_ref().is_some_and(|a| a.promotion)
