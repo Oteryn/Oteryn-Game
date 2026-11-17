@@ -1210,7 +1210,7 @@ async fn open_corpse(
 
 /// Provision the level-1000 knight build once (the fenced fixture command), then reuse it. The
 /// fixture is one-shot per character: a refusal on a character that already reads the sweep level
-/// means "already provisioned". The default profile is `sweep` (`NODE_BOOT_PROFILE` overrides it)
+/// means "already provisioned". The default profile is `sweep` (`OTERYN_E2E_SWEEP_PROFILE` overrides it; run.sh always exports `NODE_BOOT_PROFILE`)
 /// and the ruthless axe (item 6553) is wielded through the player's own protocol, as MP01 does,
 /// whether the build was just provisioned or already present: a bare-fisted player cannot kill
 /// the larger species.
@@ -1225,7 +1225,7 @@ async fn prepare_player(
     }
     let mut client = session.take().ok_or("session absent")?;
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
-    let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sweep".into());
+    let profile = std::env::var("OTERYN_E2E_SWEEP_PROFILE").unwrap_or_else(|_| "sweep".into());
     let game_session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
