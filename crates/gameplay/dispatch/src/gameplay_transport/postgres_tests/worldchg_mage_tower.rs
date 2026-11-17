@@ -63,7 +63,25 @@ async fn scenario(admin: String) -> TestResult {
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = controller.active();
     let mut admitted = deps.admitted;
+    admitted.first_entry = crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(debug)?
+        .ok_or("current gameplay fence")?;
+    admitted.item_fence = Some(fence.item_fence());
+    let character =
+        crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?;
+    let lease = crate::foundation::CharacterLease::new(character, fence.character_lease_generation)
+        .map_err(debug)?;
+    owner
+        .runtime
+        .lock()
+        .await
+        .bind_attacker_lease(deps.actor, admitted.game_session_id, lease)
+        .map_err(debug)?;
     owner.admit_progression_session(&mut admitted).await;
+    deps.initialize(&owner).await;
     let native = owner
         .active_generation
         .and_then(|g| g.native_gameplay())
