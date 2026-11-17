@@ -111,6 +111,10 @@ fn l6_paradox_story_native_out_of_order() -> TestResult {
 fn l6_paradox_story_native_lesson_guard_and_replay() -> TestResult {
     run("qengine-rewards-questpc4-paradox-story-lesson-guard")
 }
+#[test]
+fn l6_paradox_story_native_legacy_progress_and_catch_up() -> TestResult {
+    run("qengine-rewards-questpc4-paradox-story-legacy")
+}
 pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot::BundleWorld> {
     super::l6_world_pickups::native_scene(native, crops()?, &[])
 }
@@ -396,6 +400,17 @@ async fn source_tracks(h: &Harness) -> TestResult<std::collections::BTreeMap<Str
     Ok(rows.into_iter().collect())
 }
 
+async fn legacy_source_gap(h: &Harness) -> TestResult {
+    // Prior main wrote the same trusted personal story and receipts, but no
+    // source tracks. Recreate that stored gap without changing those receipts.
+    sqlx::query("DELETE FROM game_character_quest_tracks WHERE track_key IN ($1,$2)")
+        .bind(SOURCE_HUGO)
+        .bind(SOURCE_MATH)
+        .execute(&h.pool)
+        .await?;
+    Ok(())
+}
+
 async fn assert_riddler_accepts_learned_story(h: &Harness) -> TestResult {
     use oteryn_gameplay_quests::quest::npc_rules::{
         NpcInventorySnapshot, NpcRuleCatalog, NpcRuleInput, NpcRuleTrigger,
@@ -518,6 +533,9 @@ pub(super) async fn exercise(
     );
     assert_eq!(progress(h).await?, 1);
     assert_eq!(source_tracks(h).await?.get(SOURCE_HUGO), Some(&1));
+    if name.ends_with("-legacy") {
+        legacy_source_gap(h).await?;
+    }
     if name.ends_with("lesson-guard") {
         let before = snapshot(h).await?;
         relocate(owner, admitted, 4).await?;
@@ -553,6 +571,9 @@ pub(super) async fn exercise(
             "only the exact ordered contact advances the story"
         );
         assert_eq!(source_tracks(h).await?.get(SOURCE_HUGO), Some(&expected));
+        if name.ends_with("-legacy") {
+            legacy_source_gap(h).await?;
+        }
     }
     let before = snapshot(h).await?;
     relocate(owner, admitted, 1).await?;
@@ -588,7 +609,27 @@ pub(super) async fn exercise(
             .collect::<Vec<_>>()
     );
     assert_eq!(progress(h).await?, 5);
-    assert_riddler_accepts_learned_story(h).await?;
+    if name.ends_with("-legacy") {
+        legacy_source_gap(h).await?;
+        let before = snapshot(h).await?;
+        conversation(owner, admitted, npcs[4], &["hi", "math"]).await?;
+        let after = snapshot(h).await?;
+        assert_eq!(after["achievements"], before["achievements"]);
+        assert_eq!(after["grants"], before["grants"]);
+        assert_eq!(progress(h).await?, 5);
+        // A later source finale must survive a repeated compatibility contact.
+        sqlx::query("UPDATE game_character_quest_tracks SET value=2 WHERE track_key=$1")
+            .bind(SOURCE_MATH)
+            .execute(&h.pool)
+            .await?;
+        conversation(owner, admitted, npcs[4], &["hi", "math"]).await?;
+        assert_eq!(source_tracks(h).await?.get(SOURCE_MATH), Some(&2));
+        let after = snapshot(h).await?;
+        assert_eq!(after["achievements"], before["achievements"]);
+        assert_eq!(after["grants"], before["grants"]);
+    } else {
+        assert_riddler_accepts_learned_story(h).await?;
+    }
     let achievements: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1",
     )
