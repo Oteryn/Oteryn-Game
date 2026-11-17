@@ -757,6 +757,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/qready1-crafts.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/sea-serpent.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/feaster-phase-routes.json"
     ))?);
     callbacks.extend(super::carried_step::callbacks());

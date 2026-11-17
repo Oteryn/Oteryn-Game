@@ -19,6 +19,11 @@ SOURCE_REVISION = 'zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddef
 SOURCE_PREFIX = 'crystal:201189f871d23597b82caf88fd611454a2ddefb8:'
 INPUT_DIRECTORY = Path('tools/content-schema/quest-authoring/batches/quests4')
 CALLBACK_OUTPUT = Path('content/quests/world-callbacks.json')
+SEA_SERPENT_OUTPUT = Path('content/quests/world-callbacks/sea-serpent.json')
+SEA_SERPENT_CALLBACKS = frozenset({
+    'oteryn:quest-callback/sea-serpent-crane',
+    'oteryn:quest-callback/sea-serpent-telescope',
+})
 NPC_OUTPUT_DIRECTORY = Path('content/dialogues/quest-sources')
 QUEST_ORDER = (
     'cults_of_tibia', 'dreamers_challenge_quest', 'elemental_spheres',
@@ -417,9 +422,7 @@ def validate_callback(callback, directory):
     key = callback['key']
     require(valid_key(key) and key.startswith('oteryn:quest-callback/'), context + ': foreign or invalid key')
     owner = QUEST_OWNERS[directory]
-    if directory == 'the_hunt_for_the_sea_serpent' and key in (
-        'oteryn:quest-callback/sea-serpent-crane', 'oteryn:quest-callback/sea-serpent-telescope',
-    ):
+    if directory == 'the_hunt_for_the_sea_serpent' and key in SEA_SERPENT_CALLBACKS:
         owner = QUEST_OWNERS['tibia_tales']
     require(owner is not None and callback['quest'] == owner,
             key + ': foreign quest owner or owner not qualified')
@@ -674,11 +677,21 @@ def expected_files(root, selected=None, available=False):
     merged = copy.deepcopy(seed)
     merged['callbacks'] = retained
     outputs = {}
+    sea_serpent = []
     for packet in packets:
         excluded = {row['key'] for row in packet['runtime_exclusions']}
-        merged['callbacks'].extend(copy.deepcopy(callback) for callback in packet['callbacks'] if callback['key'] not in excluded)
+        for callback in packet['callbacks']:
+            if callback['key'] in excluded:
+                continue
+            target = sea_serpent if callback['key'] in SEA_SERPENT_CALLBACKS else merged['callbacks']
+            target.append(copy.deepcopy(callback))
         outputs[NPC_OUTPUT_DIRECTORY / (packet['quest_directory'] + '.json')] = encoded(packet['npc_source'])
-    require(len(merged['callbacks']) <= MAX_CALLBACKS, f'callback cap is {MAX_CALLBACKS}, reserving one dynamic altar')
+    if sea_serpent:
+        outputs[SEA_SERPENT_OUTPUT] = encoded({
+            'schema': 1, 'callbacks': sorted(sea_serpent, key=lambda callback: callback['key']),
+        })
+    require(len(merged['callbacks']) + len(sea_serpent) <= MAX_CALLBACKS,
+            f'callback cap is {MAX_CALLBACKS}, reserving one dynamic altar')
     merged['callbacks'].sort(key=lambda callback: callback['key'])
     outputs[CALLBACK_OUTPUT] = encoded(merged)
     return outputs

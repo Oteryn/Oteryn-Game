@@ -252,7 +252,9 @@ def _requested_inputs(root, extra_keys=()):
         for row in json.loads(path.read_bytes())['bindings']
     }
     keys.update(extra_keys)
-    for callback in callbacks['callbacks']:
+    sea_serpent = root / 'content/quests/world-callbacks/sea-serpent.json'
+    hunt_callbacks = json.loads(sea_serpent.read_bytes())['callbacks'] if sea_serpent.is_file() else []
+    for callback in (*callbacks['callbacks'], *hunt_callbacks):
         item = callback.get('item_on_target')
         if item:
             keys.add(item['item'])
