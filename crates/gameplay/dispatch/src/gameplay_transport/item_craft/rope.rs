@@ -219,6 +219,9 @@ fn resolve_item_lift(
     let Some((from, to)) = plan else {
         return Some(Err(UseDisposition::NotPossible));
     };
+    if at.map.facts.house_id(hole).is_some() || at.map.facts.house_id(from).is_some() {
+        return Some(Err(UseDisposition::NotPossible));
+    }
     let native = admission.active_generation?.native_gameplay()?;
     let item = view::compose_tile(ground.overlay(), &facts, from)
         .ok()
@@ -234,8 +237,15 @@ fn resolve_item_lift(
                 let (key, revision) = index.definition_at(reference)?;
                 let policy = native.item_policy(key, revision)?;
                 use crate::content::ReferenceItemField as Fact;
-                matches!(&policy.record().semantics.physical, Fact::Known(physical)
-                    if physical.movable == Fact::Known(true))
+                use crate::content::native_gameplay::NativeItemDestination;
+                let record = policy.record();
+                (record.admission.materializable
+                    && record
+                        .admission
+                        .legal_destinations
+                        .contains(&NativeItemDestination::Ground)
+                    && matches!(&record.semantics.physical, Fact::Known(physical)
+                        if physical.movable == Fact::Known(true)))
                 .then_some(item)
             })
         });

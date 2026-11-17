@@ -61,7 +61,8 @@ async fn scenario(admin: String) -> TestResult {
         .movement_cells(deps.room.movement_cells())
         .map_err(debug)?;
     let world = deps.admitted.world_id;
-    let frame = map.frame_binding_digest(world);
+    let room = super::rust_lottery::bundle_action_room(pin.qualified_room(), &map, world, &cells)?;
+    let frame = room.frame_binding().digest();
     let start = MovementLocalPosition {
         x: i32::from(HOLE.x) - 1,
         y: i32::from(HOLE.y),
@@ -73,14 +74,10 @@ async fn scenario(admin: String) -> TestResult {
         pin.identity().server_artifact_digest(),
         pin.identity().client_artifact_digest(),
         frame,
-        map.map_revision_digest(),
+        room.map_revision_digest(),
         (start.x, start.y, start.floor),
     );
-    deps = Dependencies::with_content(
-        channel_pin,
-        pin.qualified_room().clone(),
-        native.spell_book().clone(),
-    )?;
+    deps = Dependencies::with_content(channel_pin, room.clone(), native.spell_book().clone())?;
     deps.runtime
         .lock()
         .await
@@ -89,6 +86,7 @@ async fn scenario(admin: String) -> TestResult {
     let mut owner = deps.owner(&harness, &authority);
     owner.active_generation = Some(active);
     owner.movement_cells = (&cells).into();
+    owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&room));
     deps.initialize(&owner).await;
 
     let current =
