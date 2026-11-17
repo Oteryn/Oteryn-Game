@@ -283,9 +283,9 @@ pub async fn credit(
     } else {
         None
     };
-    if character.is_none() {
+    let Some(credited_character) = character else {
         return Ok(CreditOutcome::Refused);
-    }
+    };
     let mut values = states(tx, world, true).await?;
     let serialized = serde_json::to_vec(&(
         authority.epoch,
@@ -328,6 +328,12 @@ pub async fn credit(
         if seen[index]
             || before.epoch != authority.epoch
             || before.credit_generation != event.counter_generations[index]
+        {
+            return Ok(CreditOutcome::Refused);
+        }
+        if kind == CounterKind::TheirMastersVoice
+            && credit == Credit::VoiceMage
+            && !voice_eligible(tx, world, authority.epoch, credited_character).await?
         {
             return Ok(CreditOutcome::Refused);
         }
