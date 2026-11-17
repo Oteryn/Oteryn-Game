@@ -60,6 +60,7 @@ const fn geometry(width: f32, height: Option<f32>, min: [f32; 2]) -> Geometry {
 pub(in crate::bevy_shell) const WINDOWS: &[(&str, Geometry)] = &[
     ("bestiary", geometry(940., Some(650.), [660., 460.])),
     ("bosstiary", geometry(650., None, [460., 300.])),
+    ("chat", geometry(640., Some(200.), [320., 120.])),
     ("cyclopedia", geometry(700., Some(538.), [560., 400.])),
     ("cyclopedia_items", geometry(820., Some(620.), [580., 430.])),
     ("cyclopedia_map", geometry(700., None, [490., 300.])),
@@ -72,6 +73,15 @@ pub(in crate::bevy_shell) const WINDOWS: &[(&str, Geometry)] = &[
     ("item_details", geometry(482., None, [340., 300.])),
     ("journal", geometry(785., Some(620.), [550., 430.])),
     ("market", geometry(1000., Some(634.), [800., 480.])),
+    ("minimap", geometry(176., None, [176., 130.])),
+    (
+        "module.analytics_selector",
+        geometry(176., None, [176., 38.]),
+    ),
+    ("module.battle_list", geometry(176., None, [176., 38.])),
+    ("module.containers", geometry(176., None, [176., 38.])),
+    ("module.skills", geometry(176., None, [176., 38.])),
+    ("module.vip", geometry(176., None, [176., 38.])),
     ("npc", geometry(600., None, [420., 350.])),
     ("options", geometry(685., Some(534.), [560., 420.])),
     ("outfit", geometry(760., None, [530., 300.])),
@@ -262,6 +272,10 @@ impl WindowLayouts {
         std::fs::rename(staging, path)
     }
 }
+
+/// The window menu's Reset window layout, for layout state kept outside `WindowLayouts`.
+#[derive(Event, Clone, Copy, Debug)]
+pub(in crate::bevy_shell) struct LayoutReset;
 
 /// Marks a window root whose node follows its `WindowLayouts` entry.
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
@@ -520,7 +534,9 @@ pub(in crate::bevy_shell) fn project(
     for (entity, mut font, line, base) in &mut fonts {
         let base = match base {
             Some(base) if changed => *base,
-            None if font.is_added() => {
+            // Text spawned outside a window (a docked region) takes its base when the region
+            // moves into one, which marks the layouts changed.
+            None if font.is_added() || changed => {
                 let FontSize::Px(size) = font.font_size else {
                     continue;
                 };

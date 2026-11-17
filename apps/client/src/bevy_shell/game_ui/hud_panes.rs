@@ -3,7 +3,13 @@
 //! and a bottom edge that resizes the content. Widgets live in the widget pane of a sidebar
 //! column; the 9x27 arrows beside the game window add and remove the optional sidebars.
 use super::{
-    super::{owner::HostOwner, ui::Skins},
+    super::{
+        owner::HostOwner,
+        ui::{
+            Skins,
+            window_layout::{Scaled, WindowId, WindowLayouts},
+        },
+    },
     art,
     modal::ModalGuard,
 };
@@ -16,6 +22,9 @@ use bevy::{
     ui_widgets::{Activate, Button},
 };
 use oteryn_client_ui_bevy as source;
+
+mod dock;
+pub(in crate::bevy_shell) mod float;
 
 /// SidebarWidget.qml geometry.
 pub(super) const HEADER: f32 = 15.;
@@ -85,7 +94,8 @@ impl Widget {
     }
 }
 /// The column a widget is docked in.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub(super) enum Dock {
     Left,
     Extra,
@@ -105,6 +115,8 @@ pub(super) struct Entry {
     pub open: bool,
     pub minimised: bool,
     pub height: Option<f32>,
+    /// Floating in its own window instead of its dock.
+    pub floating: bool,
 }
 /// The open set, order, dock, minimised state and content height of every widget, and the
 /// optional sidebars.
@@ -113,6 +125,8 @@ pub(in crate::bevy_shell) struct SidebarWidgets {
     pub(super) entries: Vec<Entry>,
     pub(super) left: bool,
     pub(super) extra: bool,
+    /// The regions (minimap, chat) floating in their own window.
+    pub(super) floating: Vec<&'static str>,
 }
 impl Default for SidebarWidgets {
     fn default() -> Self {
@@ -125,10 +139,12 @@ impl Default for SidebarWidgets {
                     open: widget.open_by_default(),
                     minimised: false,
                     height: widget.content_height(),
+                    floating: false,
                 })
                 .collect(),
             left: false,
             extra: false,
+            floating: Vec::new(),
         }
     }
 }
@@ -161,6 +177,7 @@ impl SidebarWidgets {
         };
         let mut entry = self.entries.remove(index);
         entry.dock = dock;
+        entry.floating = false;
         let at = before
             .and_then(|before| self.entries.iter().position(|entry| entry.widget == before))
             .or_else(|| {
@@ -214,6 +231,7 @@ struct Resize {
 }
 #[derive(Component, Clone, Copy, PartialEq, Eq, Debug)]
 enum TitleButton {
+    Float(Widget),
     Minimise(Widget),
     Close(Widget),
 }
@@ -225,9 +243,20 @@ pub(super) struct SidebarArrow {
 
 pub(super) fn install(app: &mut App) {
     art::install(app);
-    app.init_resource::<SidebarWidgets>()
-        .add_systems(Update, (project, super::super::ui::toolbar::grid::project))
+    app.add_message::<bevy::input::keyboard::KeyboardInput>()
+        .init_resource::<SidebarWidgets>()
+        .add_systems(
+            Update,
+            (
+                dock::persist,
+                (project, float::project).chain(),
+                float::escape,
+                super::super::ui::toolbar::grid::project,
+            ),
+        )
         .add_observer(activate)
+        .add_observer(dock::reset)
+        .add_observer(float::toggle)
         .add_observer(cancel);
 }
 
@@ -242,6 +271,8 @@ pub(super) fn frame(
         .spawn((
             WidgetFrame(widget),
             Name::new(widget.title()),
+            WindowId(widget.window_id()),
+            Scaled::default(),
             source::frame(skins.frame.clone(), [BORDER; 4]),
             Node {
                 width: percent(100.),
@@ -284,6 +315,7 @@ pub(super) fn frame(
         .id();
     commands.entity(bar).add_child(title);
     for (button, key) in [
+        (TitleButton::Float(widget), "widget-float"),
         (TitleButton::Minimise(widget), "widget-minimise"),
         (TitleButton::Close(widget), "widget-close"),
     ] {
@@ -391,40 +423,52 @@ fn activate(
         return;
     };
     match *button {
+        TitleButton::Float(widget) => {
+            if let Some(entry) = state.entry_mut(widget) {
+                entry.floating = !entry.floating;
+                entry.minimised = false;
+            }
+        }
         TitleButton::Minimise(widget) => {
             if let Some(entry) = state.entry_mut(widget) {
                 entry.minimised = !entry.minimised;
             }
         }
-        TitleButton::Close(widget) => {
-            // Battle and VIP close through the same owner the control buttons use, so the
-            // VIP subscription ends and the setting is saved.
-            if let Some(id @ ("battle" | "vip")) = widget.panel() {
-                if owner.settings.preferences.panel_visible(id)
-                    || owner
-                        .play
-                        .as_ref()
-                        .is_some_and(|play| id == "vip" && play.link.vip_is_open())
-                {
-                    super::super::ui::toolbar::open_toolbar(
-                        &mut owner,
-                        super::super::ui::Control::Panel(id),
-                    );
-                }
-            } else {
-                state.set_open(widget, false);
-            }
+        TitleButton::Close(widget) => close(&mut owner, &mut state, widget),
+    }
+}
+/// Battle and VIP close through the same owner the control buttons use, so the VIP
+/// subscription ends and the setting is saved.
+fn close(owner: &mut HostOwner, state: &mut SidebarWidgets, widget: Widget) {
+    if let Some(id @ ("battle" | "vip")) = widget.panel() {
+        if owner.settings.preferences.panel_visible(id)
+            || owner
+                .play
+                .as_ref()
+                .is_some_and(|play| id == "vip" && play.link.vip_is_open())
+        {
+            super::super::ui::toolbar::open_toolbar(owner, super::super::ui::Control::Panel(id));
         }
+    } else {
+        state.set_open(widget, false);
     }
 }
 
-fn move_start(mut event: On<PointerDragStart>, mut bars: Query<&mut TitleBar>, guard: ModalGuard) {
+fn move_start(
+    mut event: On<PointerDragStart>,
+    mut bars: Query<&mut TitleBar>,
+    state: Res<SidebarWidgets>,
+    guard: ModalGuard,
+) {
     if event.button != PointerButton::Primary || !guard.allows(event.entity) {
         return;
     }
     if let Ok(mut bar) = bars.get_mut(event.entity) {
         bar.pointer = Some(event.pointer.id);
-        event.propagate(false);
+        // A floating module's title also moves its window; a drop on a pane docks it.
+        if !state.entry(bar.widget).is_some_and(|entry| entry.floating) {
+            event.propagate(false);
+        }
     }
 }
 /// Drops a dragged widget into the widget pane under the pointer, before the first widget
@@ -487,6 +531,7 @@ fn resize_start(
     mut event: On<PointerDragStart>,
     mut handles: Query<&mut Resize>,
     bodies: Query<(&Body, &ComputedNode)>,
+    layouts: Option<Res<WindowLayouts>>,
     guard: ModalGuard,
 ) {
     if event.button != PointerButton::Primary || !guard.allows(event.entity) {
@@ -500,6 +545,7 @@ fn resize_start(
         .iter()
         .find(|(body, _)| body.0 == widget)
         .map(|(_, node)| node.size().y * node.inverse_scale_factor)
+        .map(|height| height / dock::zoom(layouts.as_deref(), widget))
         .filter(|height| height.is_finite())
     else {
         return;
@@ -511,6 +557,7 @@ fn resize(
     mut event: On<PointerDrag>,
     handles: Query<&Resize>,
     scale: Res<UiScale>,
+    layouts: Option<Res<WindowLayouts>>,
     mut state: ResMut<SidebarWidgets>,
 ) {
     let Ok(handle) = handles.get(event.entity) else {
@@ -527,7 +574,9 @@ fn resize(
         return;
     }
     if let Some(entry) = state.entry_mut(handle.widget) {
-        entry.height = Some((start + event.distance.y / scale.0).clamp(MIN_CONTENT, MAX_CONTENT));
+        let zoom = dock::zoom(layouts.as_deref(), handle.widget);
+        entry.height =
+            Some((start + event.distance.y / (scale.0 * zoom)).clamp(MIN_CONTENT, MAX_CONTENT));
     }
     event.propagate(false);
 }
@@ -568,6 +617,7 @@ fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
     state: Res<SidebarWidgets>,
+    layouts: Option<Res<WindowLayouts>>,
     sidebar: Option<Res<super::Sidebar>>,
     frames: Query<(Entity, &WidgetFrame)>,
     mut nodes: ParamSet<(
@@ -587,9 +637,15 @@ fn project(
         };
         let minimised = state.entry(frame.0).is_some_and(|entry| entry.minimised);
         let height = if minimised { px(MINIMISED) } else { Val::Auto };
-        if node.display != display || node.height != height {
+        let grow = if state.entry(frame.0).is_some_and(|entry| entry.floating) {
+            1.
+        } else {
+            0.
+        };
+        if node.display != display || node.height != height || node.flex_grow != grow {
             node.display = display;
             node.height = height;
+            node.flex_grow = grow;
         }
     }
     for (body, mut node) in &mut nodes.p1() {
@@ -601,10 +657,24 @@ fn project(
         } else {
             Display::Flex
         };
-        let height = entry.height.map_or(Val::Auto, px);
-        if node.display != display || node.height != height {
+        let zoom = dock::zoom(layouts.as_deref(), body.0);
+        let fills = entry.floating
+            && layouts
+                .as_deref()
+                .and_then(|layouts| layouts.0.get(body.0.window_id()))
+                .is_some_and(|layout| layout.size.is_some());
+        let (height, grow) = if fills {
+            (Val::Auto, 1.)
+        } else {
+            (
+                entry.height.map_or(Val::Auto, |height| px(height * zoom)),
+                0.,
+            )
+        };
+        if node.display != display || node.height != height || node.flex_grow != grow {
             node.display = display;
             node.height = height;
+            node.flex_grow = grow;
         }
     }
     for (handle, mut node) in &mut nodes.p2() {
@@ -629,6 +699,9 @@ fn project(
             }
         }
     }
+    // `replace_children` skips the relationship hook for added children, so a widget moving
+    // between panes leaves its old pane first; otherwise the old pane's replace detaches it.
+    let mut replaced = Vec::with_capacity(3);
     for (pane, dock) in [
         (sidebar.left_widgets, Dock::Left),
         (sidebar.extra_widgets, Dock::Extra),
@@ -641,7 +714,7 @@ fn project(
         let mut desired: Vec<Entity> = state
             .entries
             .iter()
-            .filter(|entry| entry.dock == dock)
+            .filter(|entry| entry.dock == dock && !entry.floating)
             .filter_map(|entry| {
                 frames
                     .iter()
@@ -656,8 +729,14 @@ fn project(
         );
         desired.extend(current.iter().filter(|entity| fills.contains(**entity)));
         if desired != current {
-            commands.entity(pane).replace_children(&desired);
+            for arriving in desired.iter().filter(|entity| !current.contains(entity)) {
+                commands.entity(*arriving).remove::<ChildOf>();
+            }
+            replaced.push((pane, desired));
         }
+    }
+    for (pane, desired) in replaced {
+        commands.entity(pane).replace_children(&desired);
     }
 }
 

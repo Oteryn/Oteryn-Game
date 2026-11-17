@@ -293,6 +293,37 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     let analyzers = region(&mut commands);
     let analytics = region(&mut commands);
     let console_splitter = layout::spawn(&mut commands, chat, "console");
+    // The minimap and the chat float as windows of their own and dock back in place.
+    commands
+        .entity(minimap)
+        .insert(hud_panes::float::Floatable {
+            id: hud_panes::float::MINIMAP,
+            home: panel,
+            index: 0,
+            companion: None,
+        });
+    commands.entity(chat).insert(hud_panes::float::Floatable {
+        id: hud_panes::float::CHAT,
+        home: main,
+        index: 4,
+        companion: Some(console_splitter),
+    });
+    let chat_float = art::fixed(&mut commands, &skins.font, "chat-float", Vec2::splat(14.));
+    commands.entity(chat_float).insert((
+        Name::new("Chat float"),
+        bevy::ui_widgets::Button,
+        hud_panes::float::FloatToggle(hud_panes::float::CHAT),
+        GlobalZIndex(1),
+    ));
+    commands
+        .entity(chat_float)
+        .entry::<Node>()
+        .and_modify(|mut node| {
+            node.position_type = PositionType::Absolute;
+            node.right = px(2.);
+            node.top = px(2.);
+        });
+    commands.entity(chat).add_child(chat_float);
     let arrows =
         |commands: &mut Commands, side: hud_panes::Side| hud_panes::arrows(commands, &skins, side);
     let left_arrows = arrows(&mut commands, hud_panes::Side::Left);

@@ -2,7 +2,10 @@
 mod markers;
 mod mouse;
 use super::{
-    super::{owner::HostOwner, ui::Skins},
+    super::{
+        owner::HostOwner,
+        ui::{Skins, window_layout::Scaled},
+    },
     GameRegions, art,
 };
 use bevy::{
@@ -79,6 +82,11 @@ fn project(
     let panel = commands
         .spawn((
             Name::new("Minimap"),
+            // A floating minimap follows its own window zoom.
+            Scaled {
+                height: Some(VIEWPORT.y),
+                ..default()
+            },
             Node {
                 width: percent(100.),
                 height: px(VIEWPORT.y),
@@ -91,6 +99,11 @@ fn project(
     let viewport = commands
         .spawn((
             Name::new("Minimap viewport"),
+            Scaled {
+                width: Some(VIEWPORT.x),
+                height: Some(VIEWPORT.y),
+                ..default()
+            },
             Node {
                 width: px(VIEWPORT.x),
                 height: px(VIEWPORT.y),
@@ -109,9 +122,14 @@ fn project(
             mouse::DragState::default(),
             ImageNode::new(state.image.clone()),
             RelativeCursorPosition::default(),
+            Scaled {
+                width: Some(SIZE.x as f32),
+                height: Some(SIZE.y as f32),
+                ..default()
+            },
             Node {
                 position_type: PositionType::Absolute,
-                left: px(-CROP),
+                left: percent(-CROP / VIEWPORT.x * 100.),
                 width: px(SIZE.x as f32),
                 height: px(SIZE.y as f32),
                 ..default()
@@ -238,6 +256,13 @@ fn navigation_controls(commands: &mut Commands, skins: &Skins, panel: Entity, ge
         })
         .id();
     commands.entity(panel).add_child(buttons);
+    let float = art::fixed(commands, &skins.font, "minimap-float", Vec2::splat(20.));
+    commands.entity(float).insert((
+        Name::new("Minimap float"),
+        bevy::ui_widgets::Button,
+        super::hud_panes::float::FloatToggle(super::hud_panes::float::MINIMAP),
+    ));
+    commands.entity(buttons).add_child(float);
     for (key, action) in [
         ("minimap-floor-up", Some(Nav::FloorUp)),
         ("minimap-zoom-in", Some(Nav::ZoomIn)),

@@ -64,19 +64,17 @@ fn app() -> Result<(App, crate::play::Outbox), Box<dyn std::error::Error>> {
     Ok((app, outbox))
 }
 fn select(app: &mut App, tool: Tool) -> TestResult {
-    // The selector is the button with the tool's title; the sidebar Skills widget also has an
-    // "Experience" caption, which is not a button.
+    // The selector button's caption; the skills widget also has an "Experience" row label.
     let selector = app
         .world_mut()
         .query::<(&Text, &ChildOf)>()
         .iter(app.world())
-        .filter(|(text, _)| text.0 == tool.title())
-        .map(|(_, parent)| parent.parent())
-        .find(|parent| {
+        .filter(|(_, parent)| {
             app.world()
-                .get::<bevy::ui_widgets::Button>(*parent)
+                .get::<bevy::input_focus::tab_navigation::TabIndex>(parent.parent())
                 .is_some()
         })
+        .find_map(|(text, parent)| (text.0 == tool.title()).then_some(parent.parent()))
         .ok_or("selector")?;
     app.world_mut().trigger(Activate { entity: selector });
     app.update();
