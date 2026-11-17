@@ -506,8 +506,18 @@ async fn ready(
     world: &BundleWorld,
     session: &mut Option<DevClientSession>,
 ) -> TestResult {
+    // A dead transport (a death or an earlier failed exchange) is reconnected once, after the
+    // server released the character; the build is re-checked below either way.
+    if let Some(client) = session.as_mut()
+        && client
+            .service_liveness(Duration::from_millis(50))
+            .await
+            .is_err()
+    {
+        *session = None;
+    }
     if session.is_none() {
-        *session = Some(connect_character(clients, 0x80, CORE_CHARACTER).await?);
+        reconnect(clients, session).await?;
     }
     prepare_player(clients, session).await?;
     if is_low(session) {
@@ -524,10 +534,22 @@ async fn ready(
         let mut client = session.take().ok_or("session absent")?;
         release(&mut client).await?;
         drop(client);
-        *session = Some(connect_character(clients, 0x80, CORE_CHARACTER).await?);
+        reconnect(clients, session).await?;
     }
     let client = session.as_mut().ok_or("session absent")?;
     leave_protection_zone(client, world).await
+}
+
+/// Admit the sweep character again once the server released the previous session (a dropped
+/// session is never logged out, so the release wait is what proves the slot is free).
+async fn reconnect(
+    clients: &SeamClients<'_>,
+    session: &mut Option<DevClientSession>,
+) -> TestResult {
+    *session = None;
+    wait_character_released(clients, CORE_CHARACTER).await?;
+    *session = Some(connect_character(clients, 0x80, CORE_CHARACTER).await?);
+    Ok(())
 }
 
 fn is_low(session: &Option<DevClientSession>) -> bool {
@@ -764,6 +786,7 @@ async fn hunt(
     }
     let combat_started = tokio::time::Instant::now();
     let kill_deadline = combat_started + Duration::from_secs(KILL_SECONDS);
+    let mut died = false;
     let gone = loop {
         client
             .service_liveness(Duration::from_millis(50))
@@ -771,6 +794,13 @@ async fn hunt(
             .map_err(|error| failure("kill", "unkillable", format!("liveness:{error}")))?;
         verdict::Harness::global().progress("creature-sweep-combat");
         client.take_events();
+        if client
+            .actor_vitals()
+            .is_some_and(|vitals| vitals.max_health > 0 && vitals.health == 0)
+        {
+            died = true;
+            break false;
+        }
         match client
             .world_entities()
             .and_then(|entities| entities.get(&target.entity))
@@ -793,6 +823,16 @@ async fn hunt(
         .x
         .abs_diff(player.x)
         .max(last_position.y.abs_diff(player.y));
+    if died {
+        let detail = format!(
+            "player health reached 0 after {:.1}s;damage_observed={damaged};creature_health_percent={last_health};last_position={last_position:?};player={player:?};vitals={:?}",
+            combat_started.elapsed().as_secs_f64(),
+            client.actor_vitals()
+        );
+        // The dead session is dropped without logout; the next species reconnects after release.
+        *session = None;
+        return Err(failure("kill", "player_died", detail));
+    }
     if !gone {
         let _ = client.session_mut().attack_target(None).await;
         return Err(failure(
@@ -1064,8 +1104,9 @@ async fn open_corpse(
 
 /// Provision the level-100 build once (the fenced fixture command), then reuse it. The fixture is
 /// one-shot per character: a refusal on a character that already reads level 100 means "already
-/// provisioned". The weapon is not equipped: the fixture's axe record has unknown level and
-/// vocations, so the server refuses the slot; the sweep fights with what the profile carries.
+/// provisioned". The default profile is `knight` (`NODE_BOOT_PROFILE` overrides it) and the axe
+/// (item 3276) is wielded through the player's own protocol, as MP01 does, whether the build was
+/// just provisioned or already present: a bare-fisted player cannot kill the larger species.
 async fn prepare_player(
     clients: &SeamClients<'_>,
     session: &mut Option<DevClientSession>,
@@ -1073,11 +1114,11 @@ async fn prepare_player(
     let client = session.as_mut().ok_or("session absent")?;
     let (_, level) = read_stats(client).await?;
     if level >= SWEEP_LEVEL {
-        return Ok(());
+        return ensure_axe(client).await;
     }
     let mut client = session.take().ok_or("session absent")?;
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
-    let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sorcerer".into());
+    let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "knight".into());
     let game_session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
@@ -1106,18 +1147,48 @@ async fn prepare_player(
     drop(client);
     let mut fresh = connect_character(clients, 0x70, CORE_CHARACTER).await?;
     let (_, level) = read_stats(&mut fresh).await?;
-    *session = Some(fresh);
     if level < SWEEP_LEVEL {
+        *session = Some(fresh);
         return Err(format!(
             "node-boot fenced build provisioning failed (fixture exit ok={}, level {level})",
             status.success()
         )
         .into());
     }
+    let equipped = ensure_axe(&mut fresh).await;
+    *session = Some(fresh);
+    equipped?;
     evidence(&format!(
-        "creature_sweep provisioned level={level} fixture_ok={} weapon=none_equipped",
+        "creature_sweep provisioned level={level} fixture_ok={} weapon=axe",
         status.success()
     ));
+    Ok(())
+}
+
+/// Wield the axe (item 3276) unless it is already worn; a refusal is an error with the server's
+/// detail. Same protocol path as MP01 (`mp/mp01_party_pvp.rs`, axe equip).
+async fn ensure_axe(client: &mut DevClientSession) -> TestResult {
+    let definitions = provisioning::item_index()?;
+    let axe = provisioning::item_reference(&definitions, 3276)?;
+    let wielded = client.inventory().is_some_and(|inventory| {
+        inventory
+            .equipment
+            .iter()
+            .any(|entry| entry.item.item_definition_ref == axe)
+    });
+    if wielded {
+        return Ok(());
+    }
+    let equipped = client.session_mut().equip_item_definition(axe).await?;
+    if equipped.status != CommandStatus::Accepted
+        || equipped.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
+    {
+        let detail = client.session_mut().last_refusal_detail();
+        return Err(format!(
+            "axe equip refused:{equipped:?};refusal_detail={detail:?};axe_ref={axe}"
+        )
+        .into());
+    }
     Ok(())
 }
 
