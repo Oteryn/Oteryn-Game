@@ -92,7 +92,7 @@ async fn provision_as(bot: &mut Bot<'_, '_>, profile: &str) -> TestResult {
     let profile = profile.to_owned();
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
-    let status = tokio::task::spawn_blocking(move || {
+    let output = tokio::task::spawn_blocking(move || {
         std::process::Command::new("sudo")
             .args(["-n", "python3"])
             .arg(script)
@@ -104,12 +104,15 @@ async fn provision_as(bot: &mut Bot<'_, '_>, profile: &str) -> TestResult {
                 "--profile",
                 &profile,
             ])
-            .status()
+            .output()
     })
     .await??;
-    if !status.success() {
+    if !output.status.success() {
+        let diagnostic =
+            String::from_utf8_lossy(&output.stderr[output.stderr.len().saturating_sub(2048)..]);
         return Err(format!(
-            "provision.py status={status};source:tools/qualification/node_boot/provision.py:1"
+            "provision.py status={};diagnostic={diagnostic:?};source:tools/qualification/node_boot/provision.py:32",
+            output.status,
         )
         .into());
     }
