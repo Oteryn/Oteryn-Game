@@ -38,6 +38,7 @@ const RASHID: &str = "oteryn:npc.rashid";
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Case {
     Bags,
+    Bank,
     Stackable,
     Unfunded,
     Obtain,
@@ -45,6 +46,15 @@ enum Case {
     Drop,
     Capacity,
     Compat,
+}
+
+#[test]
+fn npc_buy_in_backpacks_uses_bank_once() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    std::thread::Builder::new().stack_size(256 << 20)
+        .spawn(move || scenario(admin, Case::Bank).map_err(|error| error.to_string()))?
+        .join().map_err(|_| "bank purchase scenario thread panicked")??;
+    Ok(())
 }
 
 #[test]
@@ -426,7 +436,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
             }
         };
 
-        let coins = if case == Case::Unfunded {
+        let coins = if matches!(case, Case::Unfunded | Case::Bank) {
             ("oteryn:item.tibia.i3031", 90)
         } else {
             ("oteryn:item.tibia.i3035", 10)
@@ -487,6 +497,11 @@ fn scenario(admin: String, case: Case) -> TestResult {
             sqlx::query("UPDATE game_character_progression_state SET level=$2 WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).bind(if matches!(case,Case::Drop|Case::Capacity){1_i64}else{1000_i64}).execute(&mut *tx).await?;
             if matches!(case, Case::Drop | Case::Capacity) {
                 sqlx::query("WITH minted AS (INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) SELECT game_character_uuid_v7(),encode($1,'hex')::uuid,'Item','oteryn:item.tibia.i3264','definition-r1',1,1,game_character_uuid_v7() FROM generate_series(1,20) RETURNING item_instance_id) INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) SELECT item_instance_id,encode($1,'hex')::uuid,encode($2,'hex')::uuid,row_number() OVER(),item_instance_id FROM minted").bind(id(42).as_slice()).bind(target.as_slice()).execute(&mut *tx).await?;
+            }
+            if case == Case::Bank {
+        sqlx::query("INSERT INTO game_account_bank_operations(operation_occurrence_id,transaction_id,event_id,kind,request_binding,acting_character_id,account_id,world_id,channel_id,runtime_scope_ownership_generation,amount,outcome,occurred_at,envelope_sha256,committed_at,planned_platinum_item_instance_id,planned_gold_item_instance_id,backpack_item_instance_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,sha256('seed'),encode($4,'hex')::uuid,encode($5,'hex')::uuid,encode($6,'hex')::uuid,encode($7,'hex')::uuid,1,100000,0,1,sha256('seed'),0,encode($8,'hex')::uuid,encode($9,'hex')::uuid,encode($10,'hex')::uuid)").bind(id(235).as_slice()).bind(id(232).as_slice()).bind(id(234).as_slice()).bind(id(41).as_slice()).bind(id(40).as_slice()).bind(id(42).as_slice()).bind(id(43).as_slice()).bind(id(236).as_slice()).bind(id(237).as_slice()).bind(id(238).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_account_bank_entries(entry_id,transaction_id,account_id,world_id,kind,amount,balance_before,balance_after,acting_character_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1,100000,0,100000,encode($5,'hex')::uuid)").bind(id(233).as_slice()).bind(id(232).as_slice()).bind(id(40).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_account_bank_balances(account_id,world_id,balance,last_entry_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,100000,encode($3,'hex')::uuid)").bind(id(40).as_slice()).bind(id(42).as_slice()).bind(id(233).as_slice()).execute(&mut *tx).await?;
             }
             tx.commit().await?;
         }
@@ -624,14 +639,14 @@ fn scenario(admin: String, case: Case) -> TestResult {
                 first_buy = 5;
             }
             let amount = match case {
-                Case::Bags | Case::Unfunded => 45,
+                Case::Bags | Case::Unfunded | Case::Bank => 45,
                 Case::Stackable => 250,
                 Case::Drop => 3,
                 _ => 1,
             };
             let intent = make(
                 amount,
-                matches!(case, Case::Bags | Case::Stackable | Case::Unfunded),
+                matches!(case, Case::Bags | Case::Stackable | Case::Unfunded | Case::Bank),
                 case != Case::Capacity,
             );
             let encoded = encode_npc_purchase(&intent).map_err(debug)?;
@@ -673,7 +688,13 @@ fn scenario(admin: String, case: Case) -> TestResult {
                     _ => 0,
                 };
                 let cost = i64::from(amount) * 2 + bags * 20;
-                assert_eq!(gold(&h).await?, funds - cost);
+                assert_eq!(gold(&h).await?, if case == Case::Bank { 0 } else { funds - cost });
+                if case == Case::Bank {
+                    let balance: i64 = sqlx::query_scalar("SELECT balance FROM game_account_bank_balances WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid").bind(id(40).as_slice()).bind(id(42).as_slice()).fetch_one(&h.pool).await?;
+                    assert_eq!(balance, 100000 - (cost - funds));
+                    let debits: i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_bank_entries WHERE kind=5").fetch_one(&h.pool).await?;
+                    assert_eq!(debits, 1);
+                }
                 let after = footprint(&h).await?;
                 let (replayed, replay_text) = exchange(
                     &owner,
@@ -687,7 +708,13 @@ fn scenario(admin: String, case: Case) -> TestResult {
                 assert_eq!(replayed, CommandStatus::DuplicateReplay);
                 assert_eq!(replay_text, text);
                 assert_eq!(footprint(&h).await?, after);
-                assert_eq!(gold(&h).await?, funds - cost);
+                assert_eq!(gold(&h).await?, if case == Case::Bank { 0 } else { funds - cost });
+                if case == Case::Bank {
+                    let balance: i64 = sqlx::query_scalar("SELECT balance FROM game_account_bank_balances WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid").bind(id(40).as_slice()).bind(id(42).as_slice()).fetch_one(&h.pool).await?;
+                    assert_eq!(balance, 100000 - (cost - funds));
+                    let debits: i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_bank_entries WHERE kind=5").fetch_one(&h.pool).await?;
+                    assert_eq!(debits, 1);
+                }
                 if matches!(case, Case::Bags | Case::Stackable) {
                     let counts:Vec<i64>=sqlx::query_scalar("SELECT count(e.item_instance_id) FROM game_npc_purchase_outputs o LEFT JOIN game_item_nested_entries e ON e.parent_item_instance_id=o.item_instance_id WHERE o.is_bag GROUP BY o.purchase_index ORDER BY o.purchase_index").fetch_all(&h.pool).await?;
                     assert_eq!(
