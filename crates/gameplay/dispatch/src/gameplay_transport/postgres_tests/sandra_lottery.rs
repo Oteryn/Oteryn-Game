@@ -469,10 +469,18 @@ pub(super) async fn exercise_outcome(
     assert_eq!(prize, i64::from(win));
     let replay = owner
         .root
-        .reconcile_npc_program(authority, fence.character_id, request)
+        .commit_character_npc_program(
+            authority,
+            owner.holder,
+            &owner.spell_lane_permit().await.ok_or("NPC permit")?,
+            fence,
+            request,
+            owner.quest_catalogue.clone().ok_or("catalogue")?,
+            &weights,
+            &owner.premium_coordinator,
+        )
         .await
-        .map_err(super::fixture::debug)?
-        .ok_or("receipt")?;
+        .map_err(super::fixture::debug)?;
     assert!(matches!(
         replay.transition,
         QuestTransitionOutcome::AlreadyCommitted(_)
@@ -560,4 +568,23 @@ fn sandra_lottery_refuses_unrelated_rewards_before_inventory_mutation() -> super
     }
     assert!(valid_ticket_effects(&base));
     Ok(())
+}
+
+#[test]
+fn sandra_lottery_postgres_odds_table_equals_donor_values() -> super::TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run("sandra-lottery-odds", || {
+        super::quest_world_callbacks::scenario(
+            "sandra-lottery-odds",
+            oteryn_gameplay_quests::quest::world_callbacks::Position {
+                x: 33294,
+                y: 31677,
+                floor: -15,
+            },
+            false,
+        )
+    })
 }

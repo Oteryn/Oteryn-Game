@@ -26,7 +26,7 @@ fn scenario_case(
     let sandra_win = name == "sandra-lottery-win";
     let sandra_blank = name == "sandra-lottery-blank";
     let sandra_full = name == "sandra-lottery-full";
-    let sandra_lottery = sandra_win || sandra_blank || sandra_full || name == "sandra-lottery-missing";
+    let sandra_lottery = sandra_win || sandra_blank || sandra_full || matches!(name, "sandra-lottery-missing" | "sandra-lottery-odds");
     let name = if sandra_lottery { "npc-item-exchanges" } else { name };
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
