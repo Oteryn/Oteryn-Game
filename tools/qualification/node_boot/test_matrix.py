@@ -170,6 +170,18 @@ class EvidenceTests(unittest.TestCase):
         self.assertIn("g-f4-f5-f6: World shard ran no scenario", problems)
         self.assertIn("rows-010-015: no result evidence", problems)
         self.assertNotIn("basic: World shard ran no scenario", problems)
+        # The gates report MISSING rows without failing on them; the rest stays fatal.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for s in shards[:3]:
+                (root / f"{prefix}{s['name']}").mkdir()
+                log = self.write(tmp, "log", self.LOG if s["name"] == "g-core" else "NODE_BOOT_RESULT=NODE_BOOT_PASS\n")
+                result = matrix.extract(log, name=s["name"], entry="node_boot", exit_code=0, seconds=600)
+                (root / f"{prefix}{s['name']}" / "result.json").write_text(json.dumps(result))
+            markdown, problems = matrix.summarize(shards, root, prefix, missing_fatal=False)
+        self.assertNotIn("g-core: 1 MISSING scenario(s)", problems)
+        self.assertIn("g-f4-f5-f6: World shard ran no scenario", problems)
+        self.assertIn("rows-010-015: no result evidence", problems)
 
     def test_summary_passes_complete_evidence_and_reports_overlap(self):
         shards = matrix.plan("custom", groups="core;f4")

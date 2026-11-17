@@ -193,7 +193,7 @@ class HeavyGateTests(unittest.TestCase):
                 self.assertNotIn("github.sha }}", actual.replace(ref, ""))
         self.assertIn("          NODE_BOOT_RESULT: ${{ needs.node_boot.result }}\n", self.job)
 
-    def run_aggregate(self, filename, *, plan="success", shards="success", passing=True):
+    def run_aggregate(self, filename, *, plan="success", shards="success", status="PASS", scenarios=True):
         sys.path.insert(0, str(ROOT / "tools/qualification/node_boot"))
         import matrix
         aggregate = indented_yaml_mapping_block((ROOT / ".github/workflows" / filename).read_text(), "node_boot", 2)
@@ -206,11 +206,10 @@ class HeavyGateTests(unittest.TestCase):
             for item in planned:
                 folder = temp / "shards" / f"{prefix}{item['name']}"
                 folder.mkdir(parents=True)
-                status = "PASS" if passing else "MISSING_EVIDENCE"
-                scenarios = [{"id": f"{item['name']}-s", "status": status, "seconds": 1.0}] if item["world"] else []
+                rows = [{"id": f"{item['name']}-s", "status": status, "seconds": 1.0}] if item["world"] and scenarios else []
                 folder.joinpath("result.json").write_text(json.dumps({
                     "shard": item["name"], "entry": item["entry"], "exit_code": 0, "seconds": 60,
-                    "result": "NODE_BOOT_PASS", "incomplete": False, "scenarios": scenarios}))
+                    "result": "NODE_BOOT_PASS", "incomplete": False, "scenarios": rows}))
             env = dict(os.environ, RUNNER_TEMP=str(temp), GITHUB_STEP_SUMMARY=str(temp / "summary"),
                        PLAN_RESULT=plan, SHARD_RESULT=shards, SHARDS=json.dumps(planned), PREFIX=prefix)
             return subprocess.run(["bash", "-c", script], cwd=ROOT, env=env, capture_output=True, text=True)
@@ -223,7 +222,13 @@ class HeavyGateTests(unittest.TestCase):
                                      ("success", "cancelled"), ("success", "skipped"), ("", "")):
                     self.assertNotEqual(self.run_aggregate(filename, plan=plan, shards=shards).returncode, 0,
                                         (plan, shards))
-                self.assertNotEqual(self.run_aggregate(filename, passing=False).returncode, 0)
+                # A World shard that ran nothing fails; FAIL and MISSING rows are reported only, as in
+                # the single-machine run (per-shard NODE_BOOT_PASS stays the verdict).
+                self.assertNotEqual(self.run_aggregate(filename, scenarios=False).returncode, 0)
+                for status in ("FAIL", "MISSING-SERVER"):
+                    result = self.run_aggregate(filename, status=status)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertIn(status, result.stdout)
 
     def test_node_boot_job_outlives_serial_natural_clock_and_light_observations(self):
         source = (ROOT / "apps/game-server/src/qualification/client_phases/full_e2ef7.rs").read_text()

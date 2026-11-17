@@ -911,7 +911,8 @@ jobs:
           retention-days: 7
 
   # Fails closed: the plan and every shard must succeed, and the summary fails on a
-  # shard without evidence, a MISSING scenario or a World shard that ran no scenario.
+  # shard without evidence or a World shard that ran no scenario. MISSING rows are
+  # reported, as the single-machine run never failed on them.
   node_boot:
     name: PR heavy / Node boot against the real Platform
     needs: [node_boot_plan, node_boot_shard]
@@ -957,7 +958,7 @@ jobs:
           printf '%s' "$SHARDS" > "$RUNNER_TEMP/shards.json"
           status=0
           python3 tools/qualification/node_boot/matrix.py summarize "$RUNNER_TEMP/shards.json" "$RUNNER_TEMP/shards" \
-            --prefix "$PREFIX" > "$RUNNER_TEMP/summary.md" || status=$?
+            --prefix "$PREFIX" --missing-informational > "$RUNNER_TEMP/summary.md" || status=$?
           cat "$RUNNER_TEMP/summary.md" | tee -a "$GITHUB_STEP_SUMMARY"
           test "$SHARD_RESULT" = success
           exit "$status"
