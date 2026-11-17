@@ -309,7 +309,7 @@ async fn quiver_arrows(
     )
     .bind(clients.characters[1].as_slice())
     .bind(clients.world.as_slice())
-    .bind(slot as i16)
+    .bind(durable_quiver_slot(slot))
     .fetch_one(&mut connection)
     .await?;
     Ok((instance.as_slice().try_into()?, arrows))
@@ -402,4 +402,16 @@ fn quiver_custody_rejects_credit_from_a_different_instance() -> TestResult {
     assert!(quiver_credit(([1; 16], 0), ([2; 16], 10)).is_err());
     assert_eq!(quiver_credit(([1; 16], 2), ([1; 16], 12))?, 10);
     Ok(())
+}
+
+fn durable_quiver_slot(slot: oteryn_protocol_oteryn::item_view::EquipmentSlot) -> i16 {
+    use oteryn_protocol_oteryn::item_view::EquipmentSlot::*;
+    match slot {
+        Head => 1, Armor => 2, Legs => 3, Feet => 4, RightHand => 5,
+        LeftHand => 6, Necklace => 7, Ring => 8, Ammo => 10,
+    }
+}
+#[test]
+fn round2_quiver_query_uses_durable_left_hand_code() {
+    assert_eq!(durable_quiver_slot(oteryn_protocol_oteryn::item_view::EquipmentSlot::LeftHand), 6);
 }

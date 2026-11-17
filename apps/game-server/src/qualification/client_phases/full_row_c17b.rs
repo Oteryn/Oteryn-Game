@@ -381,6 +381,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if visible_after_relog {
         return Err("step=fresh-admission-condition observed=caster-visible need=reloaded-invisibility-condition".into());
     }
+    // Send the fresh actor identity directly to attack authority. Delayed
+    // delivery of an entity frame cannot make its visible actor untargetable.
+    let refused = observer.session_mut().attack_target(Some(&fresh_ref)).await?;
+    let target_refused = refused.disposition == AttackIntentDisposition::TargetNotVisible
+        && tokio::time::Instant::now() < expected_expiry;
+    if !target_refused {
+        return Err(format!("fresh caster did not refuse targeting while invisibility should be active: {refused:?}").into());
+    }
     let deadline = tokio::time::Instant::now()
         + Duration::from_millis(u64::try_from(remaining)?)
         + Duration::from_secs(10);
@@ -410,7 +418,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             break published.filter(|_| tokio::time::Instant::now() >= expected_expiry);
         }
     };
-    if !invisibility_persisted(visible_after_relog, published.is_some()) {
+    if !fresh_invisibility_evidence(!visible_after_relog, published.is_some(), target_refused) {
         return Err("step=fresh-admission-condition need=fresh-entity-publication-after-invisibility-expiry".into());
     }
     row.pass(
@@ -456,4 +464,14 @@ fn invisibility_requires_fresh_entity_publication_after_expiry() {
     assert!(!invisibility_persisted(false, false));
     assert!(!invisibility_persisted(true, true));
     assert!(invisibility_persisted(false, true));
+}
+
+fn fresh_invisibility_evidence(hidden: bool, published: bool, target_refused: bool) -> bool {
+    target_refused && invisibility_persisted(!hidden, published)
+}
+
+#[test]
+fn round2_delayed_visible_actor_does_not_prove_invisibility() {
+    assert!(!fresh_invisibility_evidence(true, true, false));
+    assert!(fresh_invisibility_evidence(true, true, true));
 }

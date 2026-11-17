@@ -141,8 +141,8 @@ async fn journey(clients: &SeamClients<'_>, chest: &Chest) -> TestResult {
         Ok(()) => claim(&mut client, planner, chest, &label, ordinal, reference).await,
         Err(error) => Err(error),
     };
-    let _ = client.session_mut().logout().await;
-    result
+    let logout = final_logout(&mut client).await;
+    result.and(logout)
 }
 
 /// The character's level, read from the GeneralStats tab.
@@ -264,14 +264,40 @@ async fn setup(
             &mut passages,
         )
         .await?;
-        let reply = travel::use_map_object(client, &planner.door_placement(door)?).await?;
+        let placement = planner.door_placement(door)?;
+        let ordinal = *placement.last().ok_or("empty level-door placement")?;
+        let mut revision = client.world_object_overlay().iter()
+            .find(|entry| entry.placement == placement).map_or(0, |entry| entry.revision);
+        if let Some(map) = client.session_mut().world_map_snapshot() {
+            revision = door_revision(&map.tiles, door, ordinal).unwrap_or(revision);
+        }
+        for event in client.take_events() {
+            if let oteryn_dev_client::SessionEvent::WorldMap(delta) = event {
+                revision = door_revision(&delta.value.tiles, door, ordinal).unwrap_or(revision);
+            }
+        }
+        let reply = client.use_object(&placement, revision).await?.disposition;
         if reply != UseDisposition::Committed {
             return Err(format!(
                 "{label} level {after} same-door positive control returned {reply:?}"
             )
             .into());
         }
-        let restored = travel::use_map_object(client, &planner.door_placement(door)?).await?;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        let new_revision = loop {
+            let updated = client.take_events().into_iter().filter_map(|event| {
+                if let oteryn_dev_client::SessionEvent::WorldMap(delta) = event {
+                    door_revision(&delta.value.tiles, door, ordinal)
+                } else { None }
+            }).max().or_else(|| client.world_object_overlay().iter()
+                .find(|entry| entry.placement == placement).map(|entry| entry.revision));
+            if let Some(updated) = revised_door(revision, updated) { break updated; }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("{label} opened level door without publishing its new revision").into());
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
+        };
+        let restored = client.use_object(&placement, new_revision).await?.disposition;
         if restored != UseDisposition::Committed {
             return Err(format!(
                 "{label} same-door positive control could not restore door: {restored:?}"
@@ -297,24 +323,21 @@ pub(super) async fn provision(
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
-    let task = tokio::task::spawn_blocking(move || {
-        std::process::Command::new("sudo")
-            .args(["-n", "python3"])
-            .arg(script)
-            .args([
-                "--socket",
-                &socket,
-                "--session",
-                &session,
-                "--profile",
-                &profile,
-            ])
-            .status().map_err(|error| error.to_string())
-    });
-    let status = wait_fixture_command(task, async || {
+    let mut child = FixtureProcess(std::process::Command::new("sudo")
+        .args(["-n", "timeout", "--kill-after=1s", "20s", "python3"])
+        .arg(script)
+        .args(["--socket", &socket, "--session", &session, "--profile", &profile])
+        .spawn()?);
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(22);
+    let status = loop {
+        if let Some(status) = child.0.try_wait()? { break status; }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("{label} fixture command exceeded its deadline").into());
+        }
+        verdict::Harness::global().progress("fixture provisioning liveness");
         client.service_liveness(Duration::from_millis(100)).await?;
-        Ok(())
-    }).await?;
+        client.take_events();
+    };
     if !status.success() {
         return Err(format!("{label} node-boot fenced build provisioning failed").into());
     }
@@ -446,7 +469,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, chest: &Chest) {
 
 pub(super) fn q03a_route<T>(row: &str, plan: Result<T, String>) -> TestResult<Result<T, String>> {
     match plan {
-        Err(reason) if row == "Q03a" => {
+        Err(reason) if row == "Q03a" && reason.starts_with("every reachable tile of the search box exhausted") => {
             Err(format!("MISSING {row} from-town route: {reason}").into())
         }
         outcome => Ok(outcome),
@@ -457,7 +480,60 @@ pub(super) fn q03a_route<T>(row: &str, plan: Result<T, String>) -> TestResult<Re
 fn q03a_admission_depends_on_current_route() {
     let reachable = q03a_route("Q03a", Ok(()));
     assert!(matches!(reachable, Ok(Ok(()))));
-    let unreachable = q03a_route::<()>("Q03a", Err("current planner failure".into())).map(|_| ());
+    let unreachable = q03a_route::<()>("Q03a", Err("every reachable tile of the search box exhausted (10 settled)".into())).map(|_| ());
     assert_eq!(row_status(&unreachable), "MISSING");
-    assert!(unreachable.is_err_and(|error| error.to_string().contains("current planner failure")));
+    assert!(unreachable.is_err_and(|error| error.to_string().contains("10 settled")));
+}
+
+#[test]
+fn round2_planner_limit_is_not_missing_content() {
+    let limited = q03a_route::<()>("Q03a", Err("search limit of 20 tiles hit after 20 settled".into()))
+        .and_then(|planned| Ok(planned?));
+    assert_eq!(row_status(&limited), "FAIL");
+}
+
+fn revised_door(previous: u64, observed: Option<u64>) -> Option<u64> {
+    observed.filter(|revision| *revision > previous)
+}
+
+#[test]
+fn round2_door_restore_waits_for_the_new_revision() {
+    assert_eq!(revised_door(1, None), None);
+    assert_eq!(revised_door(1, Some(1)), None);
+    assert_eq!(revised_door(1, Some(2)), Some(2));
+}
+
+fn door_revision(tiles: &[oteryn_protocol_oteryn::world_map::MapTile], door: TilePos, ordinal: u8) -> Option<u64> {
+    use oteryn_protocol_oteryn::world_map::MapOrigin;
+    let tile = tiles.iter().find(|tile| (tile.position.x, tile.position.y, tile.position.floor)
+        == (i32::from(door.x), i32::from(door.y), i16::from(door.floor)))?;
+    tile.items.iter().find_map(|item| match item.origin {
+        MapOrigin::BaseOrdinal { ordinal: actual, object_revision } if actual == ordinal => Some(object_revision),
+        _ => None,
+    })
+}
+
+struct FixtureProcess(std::process::Child);
+
+impl Drop for FixtureProcess {
+    fn drop(&mut self) {
+        if !matches!(self.0.try_wait(), Ok(Some(_))) {
+            let _ = self.0.kill();
+            let _ = self.0.wait();
+        }
+    }
+}
+
+#[test]
+fn round2_cancelled_provisioning_reaps_the_child() -> TestResult {
+    let process = FixtureProcess(std::process::Command::new("sleep").arg("30").spawn()?);
+    let pid = process.0.id().to_string();
+    drop(process);
+    let proc = std::path::Path::new("/proc").join(&pid);
+    let still_running = proc.exists();
+    if still_running {
+        std::process::Command::new("kill").args(["-KILL", &pid]).status()?;
+    }
+    assert!(!still_running);
+    Ok(())
 }

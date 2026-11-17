@@ -194,7 +194,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, bytes: &[u8]) -
     evidence(&format!(
         "M06_CHECK step=5 action=fresh-admission-quest-USE observed={quest_replay:?}"
     ));
-    let _ = fresh.session_mut().logout().await?;
+    final_logout(&mut fresh).await?;
 
     if !direct_ok {
         return Err(format!("step-1 observed={direct:?}; expected Locked without movement").into());

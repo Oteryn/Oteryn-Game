@@ -210,17 +210,14 @@ use super::full_row_i18a::{browse_entry, browse_open, drop_first, here, require_
 use oteryn_dev_client::{ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome};
 use oteryn_protocol_oteryn::container_tree as tree;
 
-fn view_of(selected: &[u32], payload: &[u8]) -> TestResult<tree::ContainerViews> {
-    selected_container_views(selected, payload)
-        .map_err(|error| format!("step=views-decode observed={error:?}").into())
-}
-
 async fn view_intent(
     client: &mut DevClientSession,
     intent: tree::ContainerViewIntent,
 ) -> TestResult<(tree::ContainerViewOutcome, Vec<tree::ContainerView>)> {
     let payload = tree::encode_container_view_intent(&intent)
         .map_err(|error| format!("step=view-encode observed={error:?}"))?;
+    client.take_events();
+    let before = client.last_server_sequence();
     let reply = client
         .session_mut()
         .gated_command(
@@ -231,14 +228,11 @@ async fn view_intent(
         .await?;
     let outcome = tree::decode_container_view_result(&reply.payload)
         .map_err(|error| format!("step=view-reply observed={error:?}"))?;
-    let delta = client
-        .session_mut()
-        .read_gated_delta(
-            tree::STATE_DOMAIN_CONTAINER_VIEWS,
-            tree::DELTA_TYPE_CONTAINER_VIEWS_V1,
-        )
-        .await?;
-    Ok((outcome, view_of(client.selected_capabilities(), &delta.payload)?.views))
+    if reply.status != CommandStatus::Accepted || outcome != tree::ContainerViewOutcome::Opened {
+        return Err(format!("step=container-view observed={:?}/{outcome:?}", reply.status).into());
+    }
+    let views = super::full_row_i18a::wait_container_views(client, before).await?;
+    Ok((outcome, views.views))
 }
 
 /// Moves a browse entry into the main backpack and waits for the inventory credit.

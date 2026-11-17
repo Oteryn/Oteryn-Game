@@ -222,7 +222,8 @@ fn adjacent_creature(client: &DevClientSession) -> Option<oteryn_dev_client::Ent
 
 /// The spawn creature whose content health is the lowest one that a spell hit cannot cap, else the
 /// healthiest reachable one; the measurement gate below still refuses any possibly capped sample.
-fn pick_creature(
+async fn pick_creature(
+    client: &mut DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
     from: TilePos,
@@ -230,6 +231,10 @@ fn pick_creature(
 ) -> TestResult<(String, u64)> {
     let mut found: Vec<(String, u64)> = Vec::new();
     for creature in &spawns.creatures {
+        client.service_liveness(Duration::from_millis(1)).await?;
+        client.take_events();
+        verdict::Harness::global().progress("spawn-search");
+
         let Some(hp) = health.get(&creature.key).copied() else { continue };
         let points: Vec<_> = spawns
             .sources
@@ -286,6 +291,7 @@ impl Hunt<'_> {
     /// attributes to that cast (events sharing the decision ordinal of the caster's SpellWords).
     async fn cast_damage(&self, client: &mut DevClientSession, spell: NonZeroU32) -> TestResult<u64> {
         let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+        within_stage(deadline, "spell damage sample", async {
         loop {
             let victim = self.target(client).await?;
             let own = own_entity(client)?;
@@ -314,6 +320,7 @@ impl Hunt<'_> {
             }
             return Ok(damage);
         }
+        }).await
     }
 }
 
@@ -407,15 +414,17 @@ async fn acquire(
     verdict::Harness::global().bounded_wait(hunt_deadline, "bounded-observation");
     let mut hunts = 0_u32;
     loop {
-        let have = player_gold(client).await?;
+        let have = within_stage(hunt_deadline, "earned gold", player_gold(client)).await?;
         if have >= price {
             break;
         }
         if tokio::time::Instant::now() >= hunt_deadline {
             return Err(format!("needed=player-earned-gold>={price};have={have};route=npc-trade:{seller};ordinary-hunts={hunts}-in-120s").into());
         }
-        travel_to_spawn(client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-        client_hunt::hunt(client).await?;
+        within_stage(hunt_deadline, "earned gold hunt", async {
+            travel_to_spawn(client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+            client_hunt::hunt(client).await
+        }).await?;
         hunts += 1;
     }
     let (npc_entry, path) = reachable(&seller, tile(client.world_spatial().actor_position)?)
@@ -504,19 +513,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let mut client = connect_world(clients, 0xc2).await?;
     let from = tile(client.world_spatial().actor_position)?;
-    // The route search over every spawn takes long enough that an unserviced connection misses
-    // its liveness probe and the server drops it (C12 Broken pipe), so it runs off this task.
-    let search = {
-        let spawns = metadata.spawns.clone();
-        let health = creature_health()?;
-        tokio::task::spawn_blocking(move || {
-            pick_creature(world, &spawns, from, &health).map_err(|error| error.to_string())
-        })
-    };
-    while !search.is_finished() {
-        client.service_liveness(Duration::from_millis(250)).await?;
-    }
-    let (creature, health) = search.await??;
+    let (creature, health) = pick_creature(&mut client, world, &metadata.spawns, from, &creature_health()?).await?;
     let hunt = Hunt { world, spawns: &metadata.spawns, creature, health };
 
     let baseline = samples(&hunt, &mut client, spell).await?;
@@ -620,4 +617,29 @@ mod tests {
         }));
         Ok(())
     }
+}
+
+async fn within_stage<T>(
+    deadline: tokio::time::Instant,
+    stage: &str,
+    work: impl Future<Output = TestResult<T>>,
+) -> TestResult<T> {
+    let result = tokio::time::timeout_at(deadline, work).await;
+    if tokio::time::Instant::now() >= deadline {
+        return Err(format!("{stage} exceeded its stage deadline").into());
+    }
+    result?
+}
+
+#[test]
+fn round2_nested_stage_work_cannot_report_late_success() -> TestResult {
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        let deadline = tokio::time::Instant::now() + Duration::from_millis(1);
+        let result = within_stage(deadline, "test hunt", async {
+            tokio::time::sleep(Duration::from_millis(20)).await;
+            Ok(())
+        }).await;
+        assert!(result.is_err());
+        Ok(())
+    })
 }

@@ -280,6 +280,9 @@ async fn idle_rate(
     client: &mut DevClientSession,
     seconds: u64,
 ) -> TestResult<(Option<f64>, Option<f64>)> {
+    let me = own(client)?;
+    let mut combat = Vec::new();
+    client.take_events();
     let first = *client.actor_vitals().ok_or("vitals-absent")?;
     let (mut hp, mut mp, mut last) = (0_u64, 0_u64, first);
     let (mut hp_capped, mut mp_capped) = (
@@ -289,7 +292,9 @@ async fn idle_rate(
     let deadline = tokio::time::Instant::now() + Duration::from_secs(seconds);
     while tokio::time::Instant::now() < deadline {
         client.service_liveness(Duration::from_millis(100)).await?;
-        client.take_events();
+        for event in client.take_events() {
+            collect(&event, me, &mut combat);
+        }
         let now = *client.actor_vitals().ok_or("vitals-absent")?;
         hp_capped |= now.health >= now.max_health;
         mp_capped |= now.mana >= now.max_mana;
@@ -297,9 +302,10 @@ async fn idle_rate(
         mp += u64::from(now.mana.saturating_sub(last.mana));
         last = now;
     }
+    let combat = combat.iter().any(|(_, victim, attacker, _)| *victim == me || *attacker == Some(me));
     Ok((
-        idle_baseline(hp, seconds, hp_capped),
-        idle_baseline(mp, seconds, mp_capped),
+        idle_baseline(hp, seconds, !idle_observation_usable(hp_capped, combat)),
+        idle_baseline(mp, seconds, !idle_observation_usable(mp_capped, combat)),
     ))
 }
 
@@ -457,6 +463,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if !after_restore.same(&with) {
         return Err("re-equipping the stripped items did not restore the projections".into());
     }
+    if with.off(Stat::LifeLeech) > 0 || with.off(Stat::ManaLeech) > 0 {
+        let safe = route(world, tile(client.world_spatial().actor_position)?, |at|
+            world.base().tile(at.x, at.y, at.floor).is_some_and(|cell| cell.protection_zone()))
+            .ok_or("no reachable protection zone for idle regeneration sample")?;
+        walk(&mut client, world, &safe).await?;
+    }
+    if with.off(Stat::ManaLeech) > 0 { spend_mana_for_sample(&mut client).await?; }
     let (idle_hp, idle_mp) = idle_rate(&mut client, 8).await?;
     if base_hits.len() >= 6 && base_taken > 0 {
         row.pass(
@@ -469,6 +482,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let base_max = base_hits.iter().copied().max().unwrap_or(0);
 
     let engaged = reachable_monster(&mut client, world, &metadata.spawns).await?;
+    if with.off(Stat::ManaLeech) > 0 { spend_mana_for_sample(&mut client).await?; }
     let hunt = fight(&mut client, engaged, FIGHT_SECONDS * 2, 40).await?;
     let hits = hunt.own_hits(me);
 
@@ -632,4 +646,24 @@ fn capped_vitals_cannot_establish_an_idle_regeneration_rate() {
     assert_eq!(idle_baseline(0, 8, true), None);
     assert_eq!(idle_baseline(0, 8, false), Some(0.0));
     assert_eq!(idle_baseline(16, 8, false), Some(2.0));
+}
+
+fn idle_observation_usable(capped: bool, combat: bool) -> bool {
+    !capped && !combat
+}
+
+#[test]
+fn round2_idle_regeneration_rejects_combat_observations() {
+    assert!(idle_observation_usable(false, false));
+    assert!(!idle_observation_usable(false, true));
+    assert!(!idle_observation_usable(true, false));
+}
+
+async fn spend_mana_for_sample(client: &mut DevClientSession) -> TestResult {
+    use oteryn_dev_client::{ChatIntent, ChatSpeechMode};
+    let before = *client.actor_vitals().ok_or("vitals absent before mana probe")?;
+    if before.mana < before.max_mana { return Ok(()); }
+    let reply = client.chat(&ChatIntent::Say { mode:ChatSpeechMode::Say, text:"utevo lux".into() }).await?;
+    if reply.status != CommandStatus::Accepted { return Err(format!("mana probe speech refused: {reply:?}").into()); }
+    settle(client, "mana debit from Light", |client| client.actor_vitals().is_some_and(|now| now.mana < before.mana)).await
 }

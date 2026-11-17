@@ -432,7 +432,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             after.1,
         ),
     );
-    let _ = accepted_logout(&mut client).await;
+    accepted_logout(&mut client).await?;
     Ok(())
 }
 

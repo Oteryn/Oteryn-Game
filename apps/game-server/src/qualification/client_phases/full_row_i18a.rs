@@ -92,11 +92,6 @@ use oteryn_protocol_oteryn::browse_field as browse;
 use oteryn_protocol_oteryn::container_tree as tree;
 use oteryn_protocol_oteryn::item_view::{ItemEntry, ItemHandle, WorldTilePosition};
 
-fn view_of(selected: &[u32], payload: &[u8]) -> TestResult<tree::ContainerViews> {
-    selected_container_views(selected, payload)
-        .map_err(|error| format!("step=views-decode observed={error:?}").into())
-}
-
 pub(super) async fn browse_open(
     client: &mut DevClientSession,
     at: WorldTilePosition,
@@ -104,6 +99,8 @@ pub(super) async fn browse_open(
     let payload =
         browse::encode_browse_field_intent(&browse::BrowseFieldIntent::Open { position: at })
             .map_err(|error| format!("step=browse-encode observed={error:?}"))?;
+    client.take_events();
+    let before = client.last_server_sequence();
     let reply = client
         .session_mut()
         .gated_command(
@@ -120,14 +117,7 @@ pub(super) async fn browse_open(
     if outcome != tree::ContainerViewOutcome::Opened {
         return Ok((outcome, None));
     }
-    let delta = client
-        .session_mut()
-        .read_gated_delta(
-            tree::STATE_DOMAIN_CONTAINER_VIEWS,
-            tree::DELTA_TYPE_CONTAINER_VIEWS_V1,
-        )
-        .await?;
-    let view = view_of(client.selected_capabilities(), &delta.payload)?
+    let view = wait_container_views(client, before).await?
         .views
         .into_iter()
         .find(|view| view.browse.is_some_and(|page| page.position == at));
@@ -278,6 +268,8 @@ pub(super) fn require_browse(
 pub(super) async fn close_browse(client: &mut DevClientSession, view_id: u8) -> TestResult {
     let payload = tree::encode_container_view_intent(&tree::ContainerViewIntent::Close { view_id })
         .map_err(|error| format!("step=close-browse encode={error:?}"))?;
+    client.take_events();
+    let before = client.last_server_sequence();
     let reply = client
         .session_mut()
         .gated_command(
@@ -291,14 +283,7 @@ pub(super) async fn close_browse(client: &mut DevClientSession, view_id: u8) -> 
     if reply.status != CommandStatus::Accepted || outcome != tree::ContainerViewOutcome::Closed {
         return Err(format!("step=close-browse observed={:?}/{outcome:?}", reply.status).into());
     }
-    let delta = client
-        .session_mut()
-        .read_gated_delta(
-            tree::STATE_DOMAIN_CONTAINER_VIEWS,
-            tree::DELTA_TYPE_CONTAINER_VIEWS_V1,
-        )
-        .await?;
-    let still_open = view_of(client.selected_capabilities(), &delta.payload)?
+    let still_open = wait_container_views(client, before).await?
         .views
         .iter()
         .any(|view| view.view_id == view_id);
@@ -311,9 +296,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let t0 = tile(client.world_spatial().actor_position)?;
     let at = here(&client);
     let dropped = drop_first(&mut client, None).await?;
-    let away = route(world, t0, |tile| {
+    let away = route_with(world, t0, |tile| {
         tile.floor == t0.floor && tile.x.abs_diff(t0.x).max(tile.y.abs_diff(t0.y)) >= 4
-    })
+    }, |at| keeps_drop_projected(at, t0))
     .ok_or("step=walk-away observed=no-route;needed:walkable-tiles-around-the-town-start")?;
     walk(&mut client, world, &away).await?;
     let (far, view) = browse_open(&mut client, at).await?;
@@ -321,9 +306,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("step=browse-far observed={far:?};needed=TooFar").into());
     }
     let now = tile(client.world_spatial().actor_position)?;
-    let back = route(world, now, |tile| {
+    let back = route_with(world, now, |tile| {
         tile.floor == t0.floor && tile.x.abs_diff(t0.x).max(tile.y.abs_diff(t0.y)) <= 1
-    })
+    }, |at| keeps_drop_projected(at, t0))
     .ok_or("step=walk-back observed=no-route")?;
     walk(&mut client, world, &back).await?;
     let (near, view) = browse_open(&mut client, at).await?;
@@ -373,4 +358,47 @@ fn browse_entry_selects_exact_dropped_instance() {
         browse_entry(&[first], first.item_definition_ref, handle),
         None
     );
+}
+
+fn observed_views(events: Vec<SessionEvent>, after: u64) -> Option<tree::ContainerViews> {
+    events.into_iter().rev().find_map(|event| match event {
+        SessionEvent::ContainerViews(delta) if delta.server_sequence > after => Some(delta.value),
+        _ => None,
+    })
+}
+
+#[test]
+fn round2_browse_observes_views_among_other_domain_events() {
+    let events = vec![
+        SessionEvent::Inventory(oteryn_dev_client::AppliedDelta {
+            server_sequence: 11, base_revision: 1, new_revision: 2,
+            value: oteryn_dev_client::CharacterInventory::default(),
+        }),
+        SessionEvent::ContainerViews(oteryn_dev_client::AppliedDelta {
+            server_sequence: 12, base_revision: 2, new_revision: 3,
+            value: tree::ContainerViews { views: vec![] },
+        }),
+    ];
+    assert!(observed_views(events, 10).is_some());
+}
+
+fn keeps_drop_projected(origin: TilePos, drop: TilePos) -> bool {
+    let at = |tile: TilePos| ActorPosition { x:i32::from(tile.x), y:i32::from(tile.y), floor:i16::from(tile.floor) };
+    oteryn_protocol_oteryn::world_map::in_window(at(origin), at(drop))
+}
+
+#[test]
+fn round2_browse_walk_excludes_tiles_outside_drop_projection() {
+    let drop = TilePos { x: 100, y: 100, floor: -7 };
+    assert!(keeps_drop_projected(TilePos {x: 104, ..drop}, drop));
+    assert!(!keeps_drop_projected(TilePos {x: 120, ..drop}, drop));
+}
+
+pub(super) async fn wait_container_views(client: &mut DevClientSession, after: u64) -> TestResult<tree::ContainerViews> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        if let Some(views) = observed_views(client.take_events(), after) { return Ok(views); }
+        if tokio::time::Instant::now() >= deadline { return Err("missing container-view update".into()); }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
 }

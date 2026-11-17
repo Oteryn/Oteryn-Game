@@ -61,7 +61,7 @@ pub(super) async fn hunt_named(
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut damaged = false;
     let mut last_position = target.position;
-    let corpse = loop {
+    let corpse = 'hunt: loop {
         client.service_liveness(Duration::from_millis(100)).await?;
         for event in client.take_events() {
             if let oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta) = event {
@@ -73,19 +73,30 @@ pub(super) async fn hunt_named(
                 {
                     last_position = updated.position;
                 }
-                damaged |= delta.value.update.iter().any(|entry| entry.entity == target.entity && matches!(entry.detail, EntityDetail::Actor { health_percent, .. } if health_percent < 100));
+                damaged |= delta.value.update.iter().any(|entry| entry.entity == target.entity
+                    && matches!(entry.detail, EntityDetail::Actor { health_percent, .. }
+                        | EntityDetail::ActorWithIcons { health_percent, .. } if health_percent < 100));
+                if name.is_some() && delta.value.leave.contains(&target.entity) {
+                    let mut corpses = delta.value.enter.iter().filter(|entry| {
+                        entry.kind == EntityKind::Corpse
+                            && entry.position == last_position
+                            && !prior_corpses.contains(&entry.entity)
+                    });
+                    if let (Some(corpse), None) = (corpses.next(), corpses.next()) {
+                        break 'hunt *corpse;
+                    }
+                }
             }
         }
-        if let Some(corpse) = client
-            .world_entities()
-            .and_then(|entities| {
-                entities.iter().find(|entry| {
-                    entry.kind == EntityKind::Corpse
-                        && entry.position == last_position
-                        && (name.is_none() || !prior_corpses.contains(&entry.entity))
+        if name.is_none()
+            && let Some(corpse) = client
+                .world_entities()
+                .and_then(|entities| {
+                    entities.iter().find(|entry| {
+                        entry.kind == EntityKind::Corpse && entry.position == last_position
+                    })
                 })
-            })
-            .copied()
+                .copied()
         {
             break corpse;
         }
@@ -100,13 +111,8 @@ pub(super) async fn hunt_named(
     {
         return Err("hunt did not observe damage and target removal".into());
     }
-    let EntityDetail::Object {
-        item_handle: Some(handle),
-        ..
-    } = corpse.detail
-    else {
-        return Err("hunt corpse has no server-issued item handle".into());
-    };
+    let handle =
+        corpse_handle(corpse.detail).ok_or("hunt corpse has no server-issued item handle")?;
     let used = client.use_item(handle).await?;
     if used.status != CommandStatus::Accepted
         || used.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
@@ -206,4 +212,26 @@ fn a_nearby_other_creature_cannot_count_as_court_warlock() {
     assert!(!matches_target_name(Some("Court Warlock"), Some("Rat")));
     assert!(!matches_target_name(Some("Court Warlock"), None));
     assert!(matches_target_name(None, Some("Rat")));
+}
+
+fn corpse_handle(detail: oteryn_dev_client::EntityDetail) -> Option<oteryn_dev_client::ItemHandle> {
+    match detail {
+        oteryn_dev_client::EntityDetail::Object { item_handle, .. }
+        | oteryn_dev_client::EntityDetail::ObjectWithAppearance { item_handle, .. } => item_handle,
+        _ => None,
+    }
+}
+
+#[test]
+fn round2_appearance_corpse_retains_its_item_handle() {
+    use oteryn_dev_client::{EntityDetail, ItemHandle};
+    assert_eq!(
+        corpse_handle(EntityDetail::ObjectWithAppearance {
+            item_definition_ref: 1,
+            quantity: 1,
+            item_handle: Some(ItemHandle::MIN),
+            appearance_id: std::num::NonZeroU16::MIN,
+        }),
+        Some(ItemHandle::MIN)
+    );
 }

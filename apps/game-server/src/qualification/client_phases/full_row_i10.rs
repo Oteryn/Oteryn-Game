@@ -402,7 +402,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let before_logout = inventory_state(&client)?;
     let session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
-    let fresh = connect_world(clients, 0xb1).await?;
+    let mut fresh = connect_world(clients, 0xb1).await?;
     let vessel_ref = provisioning::item_reference(&index, VESSEL)?;
     if fresh.join_snapshot().game_session_id == session
         || inventory_state(&fresh)? != before_logout
@@ -413,7 +413,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             "step=fresh-admission observed=durable-furniture-or-inventory-state-changed".into(),
         );
     }
-    Ok(())
+    final_logout(&mut fresh).await
 }
 
 async fn wait_for_kit_count(

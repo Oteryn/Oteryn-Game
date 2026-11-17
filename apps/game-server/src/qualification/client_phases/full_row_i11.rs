@@ -93,15 +93,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         before_bread + 1,
     )
     .await?;
-    let refusal_source = client
-        .inventory()
-        .and_then(|inventory| {
-            inventory.entries.iter().find(|entry| {
-                entry.item_definition_ref != bread && entry.item_definition_ref != dough
-            })
-        })
-        .ok_or("step-3_observed=no-unsupported-carried-item")?
-        .handle;
+    // The bread just produced is a known inert operand for the oven.
+    let refusal_source = client.inventory()
+        .and_then(|inventory| inventory.entries.iter().find(|entry| oven_refusal_source(entry.item_definition_ref, bread)))
+        .ok_or("step=unsupported-use observed=missing-baked-bread")?.handle;
     let after_bake = client.inventory().cloned();
     let refusal = use_ingredient(&mut client, refusal_source, None, Some(oven)).await?;
     if refusal != UseDisposition::NothingToUse {
@@ -112,13 +107,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step-3_observed=unsupported-use-mutated-inventory".into());
     }
     logout(&mut client).await?;
-    let reloaded = connect_character(clients, 0xb9, 0).await?;
+    let mut reloaded = connect_character(clients, 0xb9, 0).await?;
     if quantity(&reloaded, dough)? != before_dough - 1
         || quantity(&reloaded, bread)? != before_bread + 1
     {
         return Err("step-4_observed=baked-quantities-not-durable".into());
     }
-    Ok(())
+    final_logout(&mut reloaded).await
 }
 
 async fn acquire_dough(
@@ -354,5 +349,19 @@ async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult 
     {
         return Err("step-4_observed=logout-refused".into());
     }
+    Ok(())
+}
+
+fn oven_refusal_source(item: NonZeroU32, bread: NonZeroU32) -> bool {
+    item == bread
+}
+
+#[test]
+fn round2_oven_probe_selects_bread_over_a_fluid_vessel() -> TestResult {
+    let index = provisioning::item_index()?;
+    let bread = provisioning::item_reference(&index, BREAD)?;
+    let dough = provisioning::item_reference(&index, DOUGH)?;
+    let vessel = provisioning::item_reference(&index, VESSEL)?;
+    assert_eq!([vessel, bread, dough].into_iter().find(|item| oven_refusal_source(*item, bread)), Some(bread));
     Ok(())
 }

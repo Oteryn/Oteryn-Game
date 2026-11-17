@@ -280,7 +280,7 @@ fn validate_success(
         )
         .into());
     }
-    if !returns {
+    if !returns || !went_forward(down) {
         return Err(format!(
             "step=3-down command={} original={:?} observed={down:?} server-needed=one-forward-tile-to-original-floor",
             down.command, up.before_position
@@ -342,10 +342,9 @@ fn levitate_landings(
     let one_floor = start.floor.checked_add(step) == Some(upper.floor);
     let one_tile = (upper.x.abs_diff(start.x) == 1 && upper.y == start.y)
         || (upper.y.abs_diff(start.y) == 1 && upper.x == start.x);
-    let returns = down_from == upper
-        && lower.floor == start.floor
-        && i64::from(lower.x) - i64::from(upper.x) == i64::from(upper.x) - i64::from(start.x)
-        && i64::from(lower.y) - i64::from(upper.y) == i64::from(upper.y) - i64::from(start.y);
+    let down_one_tile = (lower.x.abs_diff(down_from.x) == 1 && lower.y == down_from.y)
+        || (lower.y.abs_diff(down_from.y) == 1 && lower.x == down_from.x);
+    let returns = down_from == upper && lower.floor == start.floor && down_one_tile;
     (one_floor, one_tile, returns)
 }
 
@@ -372,7 +371,7 @@ fn levitate_requires_upward_and_forward_landings() {
     );
     let wrong_floor = ActorPosition { floor: -8, ..upper };
     assert!(!levitate_landings(start, wrong_floor, wrong_floor, landing).0);
-    assert!(!levitate_landings(start, upper, upper, start).2);
+    assert!(!levitate_landings(start, upper, upper, ActorPosition { x: 25, ..start }).2);
     let legacy_start = ActorPosition { floor: 7, ..start };
     let legacy_upper = ActorPosition { floor: 6, ..upper };
     let legacy_landing = ActorPosition {
@@ -383,4 +382,11 @@ fn levitate_requires_upward_and_forward_landings() {
         levitate_landings(legacy_start, legacy_upper, legacy_upper, legacy_landing),
         (true, true, true)
     );
+}
+
+#[test]
+fn round2_down_landing_can_reverse_heading() {
+    let start = ActorPosition { x: 20, y: 20, floor: -7 };
+    let upper = ActorPosition { x: 21, floor: -6, ..start };
+    assert!(levitate_landings(start, upper, upper, start).2);
 }

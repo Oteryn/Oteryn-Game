@@ -296,7 +296,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=relog observed=session/xp/loot-mismatch xp={after_xp:?}->{durable_xp:?} need=durable-state").into());
     }
     row.pass("relog-xp-loot", "fresh-session-identical-xp-and-loot");
-    let _ = fresh.session_mut().logout().await;
+    final_logout(&mut fresh).await?;
     Ok(())
 }
 

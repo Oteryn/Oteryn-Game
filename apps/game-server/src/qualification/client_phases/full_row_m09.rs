@@ -453,6 +453,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step 4 skinning prerequisite after completed fishing/refusal: observed={error}; server needs a reachable player acquisition route for oteryn:item.tibia.i5908"), error) })?;
     let knife =
         carried(&client, knife_ref).ok_or("step 4 bought knife missing from native inventory")?;
+    let mut skin_error = Some("step 4 four valid skinning rolls produced no material".to_owned());
+    for attempt in 1..=4 {
     let corpse = hunt_corpse(&mut client, world, &bytes).await?;
     let corpse_handle = match corpse.detail {
         oteryn_dev_client::EntityDetail::Object {
@@ -475,7 +477,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let skin_reply = use_on(&mut client, knife.handle, MapUseTarget::Item(corpse_handle)).await?;
     settle(&mut client).await?;
     let after_skin = inventory_signature(&client)?;
-    let skin_error = if skin_reply == (CommandStatus::Accepted, UseDisposition::Committed) {
+    skin_error = if skin_reply == (CommandStatus::Accepted, UseDisposition::Committed) {
         let spent_definition = client
             .world_entities()
             .and_then(|entities| entities.iter().find(|entry| entry.entity == corpse.entity))
@@ -501,18 +503,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 .map(|entry| u64::from(entry.1))
                 .sum::<u64>()
         };
-        if spent_definition != spent_ref.get()
-            || !skinning_effect(
-                corpse_definition,
-                spent_definition,
-                tally(&before_skin),
-                tally(&after_skin),
-            )
-        {
-            return Err(format!(
-                "step 4 skinning needs an authored spent corpse and material grant; corpse={corpse_definition}->{spent_definition} yield={} {}->{}",
+        match skin_attempt(corpse_definition, spent_definition, tally(&before_skin), tally(&after_skin)) {
+            Some(true) if spent_definition == spent_ref.get() => {}
+            Some(false) if spent_definition == spent_ref.get() && before_skin == after_skin => {
+                evidence(&format!("M09_CHECK skinning attempt={attempt} outcome=spent-without-yield"));
+                continue;
+            }
+            _ => return Err(format!(
+                "step 4 skinning state mismatch; corpse={corpse_definition}->{spent_definition} yield={} {}->{}",
                 reward.item, tally(&before_skin), tally(&after_skin)
-            ).into());
+            ).into()),
         }
         row.pass(
             "skinning-replies-and-deltas",
@@ -548,6 +548,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             "step 4 native skinning attempt observed reply={skin_reply:?}; server needs this reachable corpse race to expose an admitted skinning rule"
         ))
     };
+
+    break;
+    }
 
     let old_session = client.join_snapshot().game_session_id;
     let durable = inventory_signature(&client)?;
@@ -643,6 +646,8 @@ async fn hunt_corpse(
     .ok_or("step 4 no reachable ordinary creature spawn")?;
     walk(client, world, &path).await?;
     let at = client.world_spatial().actor_position;
+    let spawn_deadline = tokio::time::Instant::now() + Duration::from_secs(65);
+    let target = loop {
     let target = client
         .world_entities()
         .and_then(|entities| {
@@ -661,8 +666,13 @@ async fn hunt_corpse(
                         <= 1
             })
         })
-        .copied()
-        .ok_or("step 4 combat endpoint has no served creature")?;
+        .copied();
+        if let Some(target) = target { break target; }
+        if tokio::time::Instant::now() >= spawn_deadline {
+            return Err("step 4 combat endpoint has no served Minotaur".into());
+        }
+        settle(client).await?;
+    };
     let previous_corpses: BTreeSet<_> = client
         .world_entities()
         .into_iter()
@@ -751,6 +761,7 @@ fn bait_drain_bounds_consecutive_casts_without_progress() -> TestResult {
     Ok(())
 }
 
+#[cfg(test)]
 fn skinning_effect(original: u32, spent: u32, before_yield: u64, after_yield: u64) -> bool {
     original != spent && before_yield.checked_add(1) == Some(after_yield)
 }
@@ -760,4 +771,17 @@ fn skinning_requires_the_expected_material_credit() {
     assert!(!skinning_effect(10, 11, 3, 3));
     assert!(!skinning_effect(10, 10, 3, 4));
     assert!(skinning_effect(10, 11, 3, 4));
+}
+
+fn skin_attempt(original: u32, spent: u32, before: u64, after: u64) -> Option<bool> {
+    if original == spent { return None; }
+    if before.checked_add(1) == Some(after) { return Some(true); }
+    (before == after).then_some(false)
+}
+#[test]
+fn round2_spent_corpse_without_yield_is_a_retryable_roll() {
+    assert_eq!(skin_attempt(10, 11, 3, 3), Some(false));
+    assert_eq!(skin_attempt(10, 11, 3, 4), Some(true));
+    assert_eq!(skin_attempt(10, 10, 3, 3), None);
+    assert_eq!(skin_attempt(10, 11, 3, 5), None);
 }

@@ -327,10 +327,11 @@ fn field_at(
     at: ActorPosition,
     reference: std::num::NonZeroU32,
 ) -> Option<bool> {
-    tiles.iter().find(|tile| tile.position == at).map(|tile| {
-        tile.items
+    tiles.iter().find(|tile| tile.position == at).and_then(|tile| {
+        let present = tile.items
             .iter()
-            .any(|item| item.definition == MapDefinition::Item(reference))
+            .any(|item| item.definition == MapDefinition::Item(reference));
+        (present || !tile.more).then_some(present)
     })
 }
 
@@ -413,4 +414,13 @@ fn field_cast_preserves_both_deltas_after_the_cast() {
     let mut frames = [None; 2];
     cast_frames([(false, 10), (true, 12), (false, 13)], 11, &mut frames);
     assert_eq!(frames, [Some(13), Some(12)]);
+}
+
+#[test]
+fn round2_truncated_tile_cannot_prove_field_absence() {
+    let at = ActorPosition { x: 1, y: 2, floor: -7 };
+    let tile = oteryn_protocol_oteryn::world_map::MapTile {
+        position: at, items: vec![], more: true, ground_speed: 100,
+    };
+    assert_eq!(field_at(&[tile], at, std::num::NonZeroU32::MIN), None);
 }

@@ -185,6 +185,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("fresh admission lost durable position/health: position={:?} vitals={:?}", client.world_spatial().actor_position, client.actor_vitals()).into());
     }
     row.pass(5, "fresh admission retained dry position and damaged health");
-    let _ = client.session_mut().logout().await?;
+    final_logout(&mut client).await?;
     Ok(())
 }

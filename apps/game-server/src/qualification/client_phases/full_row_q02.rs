@@ -452,7 +452,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .await,
     );
-    let _ = client.session_mut().logout().await;
+    row.check("logout", final_logout(&mut client).await.map(|()| "accepted".into()));
     if row.failed > 0 {
         return Err(format!("{} Q02 step(s) failed", row.failed).into());
     }

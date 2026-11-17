@@ -2002,6 +2002,15 @@ fn route(
     from: TilePos,
     goal: impl Fn(TilePos) -> bool,
 ) -> Option<Vec<StepDirection>> {
+    route_with(world, from, goal, |_| true)
+}
+
+fn route_with(
+    world: &BundleWorld,
+    from: TilePos,
+    goal: impl Fn(TilePos) -> bool,
+    traversable: impl Fn(TilePos) -> bool,
+) -> Option<Vec<StepDirection>> {
     let mut queue = VecDeque::from([from]);
     let mut parents = BTreeMap::from([(from, None)]);
     while let Some(at) = queue.pop_front() {
@@ -2027,6 +2036,7 @@ fn route(
             if next.x.abs_diff(from.x) > 160
                 || next.y.abs_diff(from.y) > 160
                 || next.floor.abs_diff(from.floor) > 2
+                || !traversable(next)
                 || parents.contains_key(&next)
             {
                 continue;
@@ -5873,4 +5883,28 @@ fn flr2_catalogue_admission() -> TestResult {
         "catalogue blocking stone must block movement"
     );
     Ok(())
+}
+
+async fn final_logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
+    require_final_logout_result(client.session_mut().logout().await?.result)
+}
+
+fn require_final_logout_result(
+    result: Option<oteryn_protocol_oteryn::logout::LogoutResult>,
+) -> TestResult {
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("final logout requires Accepted, observed {result:?}").into());
+    }
+    Ok(())
+}
+
+#[test]
+fn round2_final_logout_requires_accepted_release() {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    assert!(require_final_logout_result(Some(LogoutResult::Accepted)).is_ok());
+    assert!(require_final_logout_result(Some(LogoutResult::Busy)).is_err());
+    assert!(
+        require_final_logout_result(Some(LogoutResult::InFight { retry_after_ms: 1 })).is_err()
+    );
+    assert!(require_final_logout_result(None).is_err());
 }
