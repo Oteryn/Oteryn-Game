@@ -386,6 +386,14 @@ async fn exercise(
     );
     let inventory:Vec<String>=sqlx::query_scalar("SELECT i.definition_production_key FROM game_item_instances i JOIN game_reward_claim_mint_receipts m USING(item_instance_id) JOIN game_item_container_entries e USING(item_instance_id) WHERE m.claim_production_key=$1 AND e.character_id=m.character_id").bind(case.claim).fetch_all(&h.pool).await?;
     assert_eq!(inventory, vec![format!("oteryn:item.tibia.i{}", case.item)]);
+    if case.item == 5956 {
+        let stored: (String,bool,bool) = sqlx::query_as("SELECT t.text,t.writer_character_id IS NULL,t.text=r.root_text AND r.root_text=v.root_text FROM game_item_texts t JOIN game_reward_claim_mint_receipts r USING(item_instance_id) JOIN game_reward_claim_mint_reservations v ON v.transaction_id=r.transaction_id WHERE r.claim_production_key=$1").bind(case.claim).fetch_one(&h.pool).await?;
+        assert_eq!(
+            stored,
+            (bound.root_text.clone().ok_or("lottery text")?, true, true)
+        );
+        assert_eq!(h.count("game_item_text_write_receipts").await?, 0);
+    }
     // The same durable command must replay without a second item or receipt.
     assert_eq!(
         owner
