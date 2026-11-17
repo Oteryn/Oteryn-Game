@@ -9,14 +9,14 @@ mod event_fixture;
 
 #[test]
 fn worldchg_voice_mage_qualification_death_and_empty_restoration() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("worldchg-voice", scenario)
+    super::kill_reward_e2e::scenario_thread::run("worldchg-voice", move || scenario(admin))
 }
 
-fn scenario() -> TestResult {
-    run(async |admin| {
+fn scenario(admin: String) -> TestResult {
+    run(async move |_| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "worldchg_voice", false, false).await?;
         let world = WorldId::decode(&id(42)).map_err(debug)?;
@@ -214,14 +214,16 @@ fn scenario() -> TestResult {
 
 #[test]
 fn worldchg_voice_server_save_retires_unexpired_dungeon_progress() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("worldchg-voice-save", save_scenario)
+    super::kill_reward_e2e::scenario_thread::run("worldchg-voice-save", move || {
+        save_scenario(admin)
+    })
 }
 
-fn save_scenario() -> TestResult {
-    run(async |admin| {
+fn save_scenario(admin: String) -> TestResult {
+    run(async move |_| {
         reset();
         let h =
             Harness::create_with_admission_seed(admin, "worldchg_voice_save", false, false).await?;

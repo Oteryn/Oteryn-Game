@@ -430,6 +430,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .cursor(self.root, self.character)
                 .await
                 .map_err(|_| ())?;
+            // The entire dungeon fits in one bundle region. The immutable map already
+            // contains the daily fungus roll and stays unchanged as players gobble tiles.
             let base = self.bundle_map().ok_or(())?.overlay.base();
             let dungeon_tiles = (33306..=33369)
                 .flat_map(|x| (31847..=31919).map(move |y| (x, y)))
