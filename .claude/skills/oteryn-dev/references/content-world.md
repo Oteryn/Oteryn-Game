@@ -26,6 +26,11 @@ content digests are derived from committed inputs.
   `*_profiles.py` refreshers), commit, then regenerate once: the refreshers compare
   against `HEAD`, so an uncommitted repin costs a run, and fixing one blocker per run took
   seven regenerations (about 80 minutes). Do not build cargo tests while it runs (OOM).
+  The scan also covers the imbuement binding evidence and candidate catalogue pins, not only
+  `*-profiles.json`. Before any run of 20 minutes or more: in a shallow clone, fetch the base
+  commits the refreshers read their Git baseline from (`git fetch --unshallow`); after a
+  container restart, reinstall `tools/content-schema/*/requirements.txt` (rfc3339-validator and
+  zstandard went missing mid-run); and plan for the second, idempotency run to change files.
 - The Item tree materializer reapplies the Summer, Primal and encounter corpse overlays before
   hashing its output. After materializing an Item admission change, regenerate the native loot facts
   with `python3 tools/content-schema/native-gameplay/build_full_spell_artifact.py --refresh-loot-tables`
