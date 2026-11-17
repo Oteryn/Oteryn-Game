@@ -618,7 +618,7 @@ fn srx3_native_object_pixels_use_explicit_resource_not_opaque_definition_referen
         },
     };
     let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
-    scene.set_presentations_from(std::slice::from_ref(&entry), 0, Some(root))?;
+    scene.set_presentations_from(std::slice::from_ref(&entry), 0, Some(root.clone()))?;
     assert!(
         scene.native_item_rendered_at(at, 42),
         "actual pinned39529 cells must draw the opaque Item reference42"
@@ -629,6 +629,50 @@ fn srx3_native_object_pixels_use_explicit_resource_not_opaque_definition_referen
             .iter()
             .all(|draw| draw.cell > MARKER_CELL)
     );
+    let origin = oteryn_session::ActorPosition { floor: -6, ..at };
+    entry.entity.position = oteryn_session::ActorPosition {
+        x: at.x - 1,
+        y: at.y - 1,
+        floor: -7,
+    };
+    let world = World::from_live_map(&oteryn_session::world_map::WorldMapViewSnapshot {
+        header: oteryn_session::world_map::MapViewHeader {
+            origin,
+            first_visible_floor: -6,
+            content_generation: [0; 32],
+            bundle_digest: [0; 32],
+            reset_epoch: 1,
+        },
+        tiles: vec![oteryn_session::world_map::MapTile {
+            position: entry.entity.position,
+            ground_speed: 100,
+            more: false,
+            items: vec![],
+        }],
+    })?;
+    let mut layered = Scene::centered_on(
+        Arc::new(world),
+        Some(TileCoord::new(0, 0)),
+        tile,
+        StepDir::South,
+        &[],
+    )?;
+    layered.set_presentations_from(std::slice::from_ref(&entry), -6, Some(root))?;
+    let object = layered
+        .object_draws
+        .first()
+        .ok_or(BatchError::InvalidView)?;
+    let uv = layered.atlas().uv_rect(object.2[0].cell)?;
+    assert_eq!(
+        layered
+            .sprites()
+            .instances()
+            .iter()
+            .filter(|quad| quad.uv == uv)
+            .count(),
+        1
+    );
+    entry.entity.position = at;
     entry.entity.detail = EntityDetail::Object {
         item_definition_ref: 39529,
         quantity: 1,

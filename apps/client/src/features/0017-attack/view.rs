@@ -7,6 +7,8 @@ use crate::play::{PlayLink, mailbox::lock};
 mod preferences;
 #[cfg(test)]
 pub use preferences::BattleSort;
+#[cfg(bevy_shell)]
+pub(crate) use preferences::health;
 pub(crate) use preferences::next_edit;
 pub use preferences::{
     BattleListPreferences, BattleListsState, GuildFilter, default_lists, validate_lists,

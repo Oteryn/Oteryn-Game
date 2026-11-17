@@ -77,7 +77,8 @@ pub fn validate_lists(lists: &[BattleListPreferences]) -> bool {
 
 pub fn health(row: &WorldSpatialEntity) -> u8 {
     match row.detail {
-        EntityDetail::Actor { health_percent, .. } => health_percent,
+        EntityDetail::Actor { health_percent, .. }
+        | EntityDetail::ActorWithIcons { health_percent, .. } => health_percent,
         _ => 0,
     }
 }

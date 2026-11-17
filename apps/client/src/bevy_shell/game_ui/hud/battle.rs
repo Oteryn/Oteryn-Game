@@ -3,7 +3,7 @@
 //! admitted session and target generation.
 use super::*;
 use crate::play::feature_0017_attack::view::BattleListPreferences;
-use oteryn_session::{EntityDetail, WorldSpatialEntity};
+use oteryn_session::WorldSpatialEntity;
 #[derive(Default)]
 pub(super) struct Snapshot {
     generation: Option<u64>,
@@ -227,10 +227,7 @@ pub(super) fn project(
         .collect::<std::collections::BTreeMap<_, _>>();
     for (fill, mut node, mut color) in &mut health {
         if let Some(row) = by_entity.get(&fill.0) {
-            let percent_health = match row.detail {
-                EntityDetail::Actor { health_percent, .. } => health_percent,
-                _ => 0,
-            };
+            let percent_health = crate::play::battle_row_health(row);
             let width = percent(f32::from(percent_health.min(100)));
             if node.width != width {
                 node.width = width;
@@ -427,10 +424,7 @@ pub(super) fn project(
                 Pickable::IGNORE,
             ))
             .id();
-        let health = match row.detail {
-            EntityDetail::Actor { health_percent, .. } => health_percent,
-            _ => 0,
-        };
+        let health = crate::play::battle_row_health(row);
         let fill = commands
             .spawn((
                 HealthFill(row.entity),
@@ -561,3 +555,7 @@ mod combat_tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "../../../features/0017-attack/tests/bevy_health.rs"]
+mod tests;

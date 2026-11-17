@@ -28,16 +28,31 @@ impl Outbox {
         {
             events.drain(..index);
         }
-        // A fresh destination snapshot contains spatial and other projections before
-        // domain 99. Only live messages before that receipt belong to the old stream.
-        let replacement = events.iter().rposition(|event| {
-            matches!(event, SessionEvent::GatedSnapshotReplaced(delta)
-                if delta.value.domain_id == oteryn_session::activity_scope::STATE_DOMAIN_ACTIVITY_SCOPE)
-        });
-        if let Some(index) = replacement {
+        // A full replacement puts its snapshot events before the domain records.
+        // The join MOTD shares the replacement sequence and does not advance a revision.
+        let replacement = events
+            .iter()
+            .enumerate()
+            .rev()
+            .find_map(|(index, event)| match event {
+                SessionEvent::GatedSnapshotReplaced(delta)
+                    if delta.value.domain_id
+                        == oteryn_session::activity_scope::STATE_DOMAIN_ACTIVITY_SCOPE =>
+                {
+                    Some((index, delta.server_sequence))
+                }
+                _ => None,
+            });
+        if let Some((index, sequence)) = replacement {
             events
-                .extract_if(..index, |event| {
-                    matches!(event, SessionEvent::ServerMessage(_))
+                .extract_if(..index, |event| match event {
+                    SessionEvent::ServerMessage(delta) => {
+                        delta.server_sequence != sequence
+                            || delta.base_revision != delta.new_revision
+                    }
+                    // Presentation cues are transient and never part of a join snapshot.
+                    SessionEvent::Presentation(_) => true,
+                    _ => false,
                 })
                 .for_each(drop);
         }

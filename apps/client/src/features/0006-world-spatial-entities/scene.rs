@@ -142,13 +142,28 @@ impl Scene {
                 {
                     continue;
                 }
-                if entity.position.floor == floor
+                let shift = i32::from(entity.position.floor) - i32::from(floor);
+                let draw_floor = if shift == 0 {
+                    i32::from(floor)
+                } else {
+                    i32::from(self.world.center().2) + shift
+                };
+                if let (Ok(draw_floor), Some(x), Some(y)) = (
+                    i16::try_from(draw_floor),
+                    entity.position.x.checked_sub(shift),
+                    entity.position.y.checked_sub(shift),
+                ) && (shift == 0 || self.world.draw_floors().contains(&draw_floor))
                     && let Some(draws) =
                         self.cache
                             .world_item(appearance_id, entity.position, quantity)
                 {
+                    let projected = oteryn_session::ActorPosition {
+                        x,
+                        y,
+                        floor: draw_floor,
+                    };
                     self.object_draws
-                        .push((entity.position, item_definition_ref, draws));
+                        .push((projected, item_definition_ref, draws));
                 }
                 continue;
             }

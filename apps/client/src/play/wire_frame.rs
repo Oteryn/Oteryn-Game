@@ -90,6 +90,17 @@ fn entity_native(frame: WireFrame, entity: &mut WorldSpatialEntity) {
 }
 
 impl Mailbox {
+    pub(super) fn seed_wire_frame(
+        &mut self,
+        wire: Option<ActorPosition>,
+        origin: Option<ActorPosition>,
+    ) {
+        if let (Some(wire), Some(origin)) = (wire, origin) {
+            self.wire.observe_wire(wire);
+            self.wire.observe_origin(origin);
+        }
+    }
+
     pub(super) const fn wire_frame(&self) -> WireFrame {
         self.wire.frame
     }

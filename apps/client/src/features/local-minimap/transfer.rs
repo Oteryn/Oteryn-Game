@@ -114,12 +114,10 @@ impl Saved {
         if self.version != 1
             || self.cells.len() > MAX_CELLS
             || self.markers.len() > MAX_MARKERS
-            || self.cells.iter().any(|[f, x, y, c]| {
-                !(-15..=0).contains(f)
-                    || !(0..=65535).contains(x)
-                    || !(0..=65535).contains(y)
-                    || u8::try_from(*c).is_err()
-            })
+            || self
+                .cells
+                .iter()
+                .any(|[f, x, y, c]| !super::cache_position(*f, *x, *y) || u8::try_from(*c).is_err())
             || self.markers.iter().any(|m| {
                 !(0..=65535).contains(&m.x)
                     || !(0..=65535).contains(&m.y)

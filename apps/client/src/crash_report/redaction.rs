@@ -43,6 +43,34 @@ fn identifier(byte: u8) -> bool {
     byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'-'
 }
 
+fn skip_horizontal_space(bytes: &[u8], mut start: usize) -> usize {
+    while bytes
+        .get(start)
+        .is_some_and(|byte| matches!(byte, b' ' | b'\t'))
+    {
+        start += 1;
+    }
+    start
+}
+
+fn line_end(bytes: &[u8], start: usize) -> usize {
+    bytes[start..]
+        .iter()
+        .position(|byte| matches!(byte, b'\r' | b'\n'))
+        .map_or(bytes.len(), |offset| start + offset)
+}
+
+fn quoted_end(bytes: &[u8], mut cursor: usize, quote: u8) -> usize {
+    while let Some(&byte) = bytes.get(cursor) {
+        match byte {
+            byte if byte == quote => return cursor,
+            b'\\' => cursor += 2,
+            _ => cursor += 1,
+        }
+    }
+    bytes.len()
+}
+
 fn value_end(bytes: &[u8], start: usize) -> usize {
     bytes[start..]
         .iter()
@@ -65,7 +93,11 @@ fn redact_urls(text: &str) -> String {
             .map_or(0, |index| index + 1);
         let scheme = text[scheme_start..marker].to_ascii_lowercase();
         let authority = marker + 3;
-        let end = value_end(bytes, authority);
+        // URL user information permits RFC 3986 sub-delimiters, including commas.
+        let end = bytes[authority..]
+            .iter()
+            .position(|byte| byte.is_ascii_whitespace() || b"\"<>".contains(byte))
+            .map_or(bytes.len(), |offset| authority + offset);
         if text[authority..].starts_with(MASK) {
             search = authority + MASK.len();
             continue;
@@ -114,7 +146,10 @@ fn redact_pairs(text: &str) -> String {
             continue;
         }
         let mut cursor = index;
-        if cursor < bytes.len() && matches!(bytes[cursor], b'"' | b'\'') {
+        let quoted_key = bytes
+            .get(cursor)
+            .is_some_and(|byte| matches!(byte, b'"' | b'\''));
+        if quoted_key {
             cursor += 1;
         }
         while cursor < bytes.len() && bytes[cursor] == b' ' {
@@ -123,28 +158,35 @@ fn redact_pairs(text: &str) -> String {
         if cursor >= bytes.len() || !matches!(bytes[cursor], b'=' | b':') {
             continue;
         }
-        cursor += 1;
-        while cursor < bytes.len() && matches!(bytes[cursor], b' ' | b'"' | b'\'') {
+        let header = bytes[cursor] == b':' && !quoted_key;
+        cursor = skip_horizontal_space(bytes, cursor + 1);
+        let end = if header && key.ends_with("cookie") {
+            line_end(bytes, cursor)
+        } else if let Some(&quote @ (b'"' | b'\'')) = bytes.get(cursor) {
             cursor += 1;
-        }
-        if text[cursor..].starts_with(MASK) {
-            index = cursor + MASK.len();
-            continue;
-        }
-        let mut end = value_end(bytes, cursor);
-        // `Authorization: Bearer abc` keeps the scheme word visible and hides its credential.
-        let word = text[cursor..end].to_ascii_lowercase();
-        if matches!(word.as_str(), "bearer" | "basic" | "token" | "digest")
-            && end < bytes.len()
-            && bytes[end] == b' '
-        {
-            cursor = end + 1;
-            if text[cursor..].starts_with(MASK) {
-                index = cursor + MASK.len();
-                continue;
+            quoted_end(bytes, cursor, quote)
+        } else {
+            let end = value_end(bytes, cursor);
+            let word = text[cursor..end].to_ascii_lowercase();
+            if matches!(word.as_str(), "bearer" | "basic" | "token" | "digest")
+                && bytes
+                    .get(end)
+                    .is_some_and(|byte| matches!(byte, b' ' | b'\t'))
+            {
+                cursor = skip_horizontal_space(bytes, end);
+                if header {
+                    line_end(bytes, cursor)
+                } else if text[cursor..].starts_with(MASK) {
+                    cursor + MASK.len()
+                } else {
+                    value_end(bytes, cursor)
+                }
+            } else if text[cursor..].starts_with(MASK) {
+                cursor + MASK.len()
+            } else {
+                end
             }
-            end = value_end(bytes, cursor);
-        }
+        };
         if end == cursor {
             index = end.max(index);
             continue;

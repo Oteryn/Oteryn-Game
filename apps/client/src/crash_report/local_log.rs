@@ -452,3 +452,28 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[test]
+fn review_crash_redacts_complete_credentials() {
+    let text = crash_text(
+        &Crash {
+            thread: "test",
+            location: "test",
+            message: r#"{"password":"p4-first p4-second\" p4-third"} https://user:comma,secret@example.test/path"#,
+            backtrace: "Cookie: a=first_cookie; b=second_cookie\nnext line",
+        },
+        SystemTime::now(),
+    );
+    for secret in [
+        "p4-first",
+        "p4-second",
+        "p4-third",
+        "first_cookie",
+        "second_cookie",
+        "comma,secret",
+    ] {
+        assert!(!text.contains(secret), "{secret} escaped redaction");
+    }
+    assert!(text.contains("next line"));
+}

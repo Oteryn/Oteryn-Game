@@ -76,6 +76,10 @@ const MAX_CELLS: usize = 1_048_576;
 const MAX_MARKERS: usize = 512;
 const MAX_BYTES: u64 = 64 << 20;
 
+fn cache_position(floor: i32, x: i32, y: i32) -> bool {
+    (-15..=0).contains(&floor) && u16::try_from(x).is_ok() && u16::try_from(y).is_ok()
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Marker {
@@ -135,7 +139,9 @@ impl Default for Minimap {
             editor: None,
             own: (0, 0, -7),
             feedback: String::new(),
-            root: std::env::var_os("LOCALAPPDATA").map(|p| PathBuf::from(p).join("Oteryn/minimap")),
+            root: std::env::var_os("LOCALAPPDATA")
+                .map(|path| PathBuf::from(path).join("Oteryn/minimap"))
+                .or_else(|| crate::play::PreferenceStore::configuration_path("minimap")),
             world: None,
             binding: None,
             dirty: false,
@@ -264,6 +270,11 @@ impl Minimap {
             .iter()
             .filter(|tile| {
                 tile.ground_speed > 0
+                    && cache_position(
+                        i32::from(tile.position.floor),
+                        tile.position.x,
+                        tile.position.y,
+                    )
                     && tile.position.floor <= map.header.first_visible_floor
                     && in_window(origin, tile.position)
             })
@@ -446,7 +457,11 @@ impl Minimap {
             return Ok(());
         }
         let Some(path) = self.path() else {
-            return Ok(());
+            return if self.world.is_some() {
+                Err(io::Error::other("Minimap storage is unavailable"))
+            } else {
+                Ok(())
+            };
         };
         if self.load_failed {
             return Err(io::Error::other(tr!("Invalid minimap file")));
@@ -460,6 +475,7 @@ impl Minimap {
                 .collect(),
             markers: self.markers.clone(),
         };
+        saved.validate()?;
         saved.write_to(&path)?;
         self.dirty = false;
         self.saved_at = Instant::now();

@@ -51,6 +51,8 @@ impl Outbox {
                 let achievements = mailbox.achievement_notices.clone();
                 let shared_frontend = mailbox.shared_frontend;
                 let traffic = mailbox.traffic.take();
+                let character = std::mem::take(&mut mailbox.party.own_character_name);
+                let world = std::mem::take(&mut mailbox.properties.house.fields[0]);
                 let chat_mode = match mailbox.chat.console.mode {
                     oteryn_client_ui::chat::ComposerMode::Temporary => {
                         oteryn_client_ui::chat::ComposerMode::Off
@@ -62,6 +64,10 @@ impl Outbox {
                 *mailbox = mailbox::Mailbox::default();
                 mailbox.shared_frontend = shared_frontend;
                 mailbox.traffic = traffic;
+                mailbox.party.own_character_name = character;
+                mailbox.properties.house.fields[0] = world;
+                mailbox.notices.tutorial_selected = session.feature_selected(31);
+                mailbox.notices.save_selected = session.feature_selected(75);
                 mailbox.chat.console.mode = chat_mode;
                 #[cfg(bevy_shell)]
                 {
