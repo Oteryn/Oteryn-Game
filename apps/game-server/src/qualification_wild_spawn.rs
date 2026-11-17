@@ -67,7 +67,7 @@ impl SpawnRefusal {
 /// A fresh spawn source id for one `spawn` command.
 pub(crate) fn next_command_source() -> Result<u16, SpawnRefusal> {
     NEXT_COMMAND_SOURCE
-        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |next| {
+        .try_update(Ordering::Relaxed, Ordering::Relaxed, |next| {
             (next < u16::MAX - 1).then_some(next + 1)
         })
         .map_err(|_| SpawnRefusal::Fence("qualification spawn sources exhausted".into()))
@@ -125,6 +125,8 @@ fn require_policy(runtime: &ChannelRuntimeV1, key: &str) -> Result<(), SpawnRefu
 }
 
 enum Placement {
+    // Only the cfg(test) seam rat (realize_rat_in_transaction) places at a fixed cell.
+    #[cfg_attr(not(test), allow(dead_code))]
     Fixed(MovementLocalPosition),
     Adjacent(GameSessionId),
 }
