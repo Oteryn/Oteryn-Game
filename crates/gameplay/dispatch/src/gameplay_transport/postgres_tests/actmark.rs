@@ -142,15 +142,11 @@ pub(super) fn native_world(
     let tile = |x, y, floor| crate::map::overlay::TilePos { x, y, floor };
     super::source_world_crop::compiled_region(
         tile(
-            from.x.min(to.x) - 2,
-            from.y.min(to.y) - 2,
+            (from.x - 1).min(to.x),
+            from.y.min(to.y),
             from.floor.min(to.floor),
         ),
-        tile(
-            from.x.max(to.x) + 2,
-            from.y.max(to.y) + 2,
-            from.floor.max(to.floor),
-        ),
+        tile(from.x.max(to.x), from.y.max(to.y), from.floor.max(to.floor)),
         tile(from.x - 1, from.y, from.floor),
         native,
     )
