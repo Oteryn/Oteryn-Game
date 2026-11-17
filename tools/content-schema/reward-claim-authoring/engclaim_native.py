@@ -30,6 +30,7 @@ CASES = [
 def records():
     claims, callbacks, tracks = [], [], {}
     for quest,suffix,pos,ordinal,appearance,items,stage,requires,complete,take in CASES:
+        daily = (quest, suffix) == ('kingdom_of_kormarak', 'corpse')
         quest_key = f'oteryn:quest.authored.{quest}_quest'
         claim_key = f'oteryn:reward-claim.authored.{quest}.{suffix}'
         callback_key = f'oteryn:quest-reward/engclaim-{quest}-{suffix}'
@@ -38,19 +39,20 @@ def records():
             'reward_callback':callback_key,'reward':{'items':[{'item':{'family':'Item','key':f'oteryn:item.tibia.i{i}','revision':'definition-r1'},'count':n} for i,n in items]}}
         definition = {'identity':{'key':claim_key,'revision':'engclaim-r1'},
             'definition_profile':'native_authored_v1','readiness':'ready',
-            'claim':{'per':'character','repeat':{'kind':'once'}}, 'placements':[placement]}
+            'claim':{'per':'character','repeat':{'kind':'daily' if daily else 'once'}}, 'placements':[placement]}
         digest = hashlib.sha256(canonical({k:definition[k] for k in ('identity','claim','placements')}).rstrip(b'\n')).hexdigest()
         definition['provenance'] = {'pilot_key':claim_key, 'pilot_revision':'engclaim-r1', 'path':SOURCE, 'sha256':hashlib.sha256((ROOT/SOURCE).read_bytes()).hexdigest()}
         claims.append({'definition':definition})
         writes = sorted({stage, *([complete] if complete else [])})
         callback = {'key':callback_key,'quest':quest_key,'npc':'','keywords':[], 'topic':0,'next_topic':0,
             'world_claim':{'key':claim_key,'revision':'engclaim-r1','authority_sha256':digest},
-            'storage':[{'track':track(quest,s),'minimum':0,'maximum':0,'set':1} for s in writes],
+            'storage':[{'track':track(quest,s),'minimum':0,'maximum':int(daily),'set':1} for s in writes],
             'requires':[{'track':track(quest,s),'minimum':n,'maximum':n} for s,n in requires],
             'take':[{'item':f'oteryn:item.tibia.i{i}','count':n} for i,n in take], 'present':[],
             'give':{'item':f'oteryn:item.tibia.i{items[0][0]}','count':items[0][1],'contents':[],
                 'additional':[{'item':f'oteryn:item.tibia.i{i}','count':n} for i,n in items[1:]]},
             'outfit':None,'achievement':None,'reply':['You have found your reward.'],'sources':[SOURCE]}
+        if daily: callback['world_claim']['daily'] = True
         if complete: callback['completes'] = True
         if quest == 'magic_sword': callback['minimum_level'] = 100
         if quest in ('mastermind_potion','mystery_of_the_valley'): callback['requires_premium'] = True

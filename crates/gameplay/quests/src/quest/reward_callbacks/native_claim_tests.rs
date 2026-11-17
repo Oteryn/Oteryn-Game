@@ -75,3 +75,38 @@ fn native_claim_production_allocations_are_complete_and_gated() -> Result<(), St
     );
     Ok(())
 }
+
+#[test]
+fn native_claim_kormarak_accepts_the_once_only_predecessor() -> Result<(), String> {
+    let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|e| format!("{e:?}"))?;
+    let catalogue = loaded.catalogue();
+    let mut original = load()?
+        .into_iter()
+        .find(|callback| callback.key.ends_with("kormarak-corpse"))
+        .ok_or("Kormarak callback")?;
+    let binding = original.world_claim.as_mut().ok_or("Kormarak claim")?;
+    assert!(binding.daily);
+    binding.daily = false;
+    // Authority digest of the once-only allocation in the repeatcd base.
+    binding.authority_sha256 =
+        "016f6c0b842d5d38f15002f9825ecabf7fe4892e79a64c1d3964cd18ab9f20c6".into();
+    for state in &mut original.storage {
+        state.maximum = 0;
+    }
+    let mut transitions = catalogue.transitions.clone();
+    transitions.insert(original.key.clone(), primary_transition(&original)?);
+    let hash = super::super::definition_hash(&original.quest, &catalogue.tracks, &transitions);
+    assert_ne!(catalogue.definition_hash(&original.quest), Some(hash));
+    assert!(
+        super::super::npc_rules::legacy_defaults(catalogue, &original.quest, &hash)
+            .ok_or("Kormarak once definition")?
+            .is_empty()
+    );
+    let mut unknown = hash;
+    unknown[0] ^= 1;
+    assert!(
+        super::super::npc_rules::legacy_defaults(catalogue, &original.quest, &unknown).is_none()
+    );
+    Ok(())
+}

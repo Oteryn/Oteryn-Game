@@ -7,6 +7,9 @@ use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::connection::FirstEntryOutcome;
 use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+use std::sync::Arc;
+
+const KORMARAK_CLAIM: &str = "oteryn:reward-claim.authored.kingdom_of_kormarak.corpse";
 
 fn claim_case(
     claim: &str,
@@ -17,6 +20,7 @@ fn claim_case(
     quantity: u32,
     filled: bool,
 ) -> TestResult {
+    let daily = claim == KORMARAK_CLAIM;
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "qready1_claim", false, false).await?;
@@ -69,7 +73,13 @@ fn claim_case(
             "identity": {"key": claim, "revision": "1"}, "definition_profile": "native_authored_v1", "readiness": "ready",
             "claim": {"per": "character", "repeat": {"kind": "once"}}, "placements": placements
         }}]}).to_string();
-        let shards = [document.as_str()];
+        let shards = [if daily {
+            include_str!(
+                "../../../../../../content/interactions/reward_claims/engclaim-native.json"
+            )
+        } else {
+            document.as_str()
+        }];
         let start = world.start();
         let report = crate::content::world_reward_claims::bind_reward_claims(
             world.base().as_ref(),
@@ -186,6 +196,106 @@ fn claim_case(
             placement,
             expected_revision: 0,
         };
+        if daily {
+            let mut owner = deps.owner(&harness, &authority);
+            owner.active_generation = Some(generation);
+            owner.movement_cells = (&cells).into();
+            owner.quest_catalogue = Some(Arc::new(
+                oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                    .map_err(debug)?
+                    .catalogue()
+                    .clone(),
+            ));
+            owner.admit_progression_session(&mut admitted).await;
+            deps.initialize(&owner).await;
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            let seeded = sqlx::query(
+                "INSERT INTO game_character_quest_tracks(
+                    character_id,track_key,quest_key,value,committed_character_revision
+                 ) VALUES(encode($1,'hex')::uuid,
+                    'oteryn:quest-progress/authored/kingdom_of_kormarak_quest/s3',
+                    'oteryn:quest.authored.kingdom_of_kormarak_quest',1,2)",
+            )
+            .bind(fence.character_id.as_bytes().as_slice())
+            .execute(&mut *tx)
+            .await?;
+            assert_eq!(seeded.rows_affected(), 1);
+            tx.commit().await?;
+
+            // Only this isolated fixture database uses the controlled clock.
+            sqlx::query("CREATE TABLE repeatcd_test_clock (now timestamptz NOT NULL)")
+                .execute(&harness.pool)
+                .await?;
+            sqlx::query("INSERT INTO repeatcd_test_clock VALUES (statement_timestamp())")
+                .execute(&harness.pool)
+                .await?;
+            sqlx::query("GRANT SELECT ON repeatcd_test_clock TO oteryn_game_runtime")
+                .execute(&harness.pool)
+                .await?;
+            sqlx::query(
+                "CREATE OR REPLACE FUNCTION game_native_daily_reward_clock() RETURNS timestamptz
+                 LANGUAGE sql STABLE SET search_path = pg_catalog AS
+                 $$ SELECT now FROM public.repeatcd_test_clock $$",
+            )
+            .execute(&harness.pool)
+            .await?;
+            for (command_id, clock, expected, reward_count) in [
+                (
+                    1,
+                    "2031-03-29 06:15 Europe/Berlin",
+                    UseDisposition::Committed,
+                    1,
+                ),
+                (
+                    2,
+                    "2031-03-30 05:59 Europe/Berlin",
+                    UseDisposition::Rejected,
+                    1,
+                ),
+                (
+                    3,
+                    "2031-03-30 06:00 Europe/Berlin",
+                    UseDisposition::Committed,
+                    2,
+                ),
+            ] {
+                sqlx::query("UPDATE repeatcd_test_clock SET now=$1::text::timestamptz")
+                    .bind(clock)
+                    .execute(&harness.pool)
+                    .await?;
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(std::time::Duration::from_secs(1))
+                    .ok_or("clock")?;
+                let result = owner
+                    .use_bundle_chest_from_shards(
+                        deps.actor,
+                        crate::gameplay_transport::connection::UseCommand {
+                            game_session_id: admitted.game_session_id,
+                            command_id,
+                            item_fence: Some(fence),
+                        },
+                        owner.bundle_map().ok_or("bundle map")?,
+                        &target,
+                        &shards,
+                    )
+                    .await
+                    .ok_or("authored placement did not bind")?;
+                assert_eq!(result.disposition, expected, "command {command_id}");
+                let count: i64 =
+                    sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_mint_receipts")
+                        .fetch_one(&harness.pool)
+                        .await?;
+                assert_eq!(count, reward_count);
+            }
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         let mut alternative_placement = world.base().digest().to_vec();
         alternative_placement.extend_from_slice(
             &report.served[0].placements[1]
@@ -332,4 +442,28 @@ fn engclaim_native_container_allocation_once_and_cold_replay() -> TestResult {
 #[test]
 fn engclaim_native_vault_reward_achievement_once_and_cold_replay() -> TestResult {
     execute(false)
+}
+
+#[test]
+fn native_daily_kormarak_claim_reopens_after_server_save() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            claim_case(
+                KORMARAK_CLAIM,
+                (32552, 32200, -11),
+                &[(32552, 6000)],
+                4240,
+                "oteryn:item.tibia.i3359",
+                1,
+                false,
+            )
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "native daily claim scenario panicked")??;
+    Ok(())
 }
