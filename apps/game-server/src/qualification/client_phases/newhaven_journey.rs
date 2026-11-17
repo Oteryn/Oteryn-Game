@@ -11,7 +11,9 @@ use std::collections::BTreeMap;
 
 const SCARF: u32 = 3572;
 const BOOK_OF_WISDOM: u32 = 51977;
-const LOST_WISDOM_XP: u64 = 1600;
+/// Base value when the content carries no reward record (Crystal and Tibia Wiki revid 1205117;
+/// 1600 was the double-XP event value).
+const LOST_WISDOM_BASE_XP: u64 = 800;
 const CORRUPTOR: &str = "oteryn:creature.the_corruptor";
 const CHIEF: &str = "oteryn:creature.muglex_clan_chief";
 const VIOLA: &str = "oteryn:npc.viola";
@@ -130,6 +132,38 @@ async fn await_respawn(client: &mut DevClientSession) -> TestResult {
         verdict::Harness::global().progress("newhaven_journey");
     }
     Ok(())
+}
+
+/// The Viola hand-in XP from the content reward record of `oteryn:quest.newhaven_quest`, else the
+/// base value with its source.
+fn expected_handin_xp() -> (u64, String) {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let read = || -> TestResult<Option<u64>> {
+        let document: serde_json::Value = serde_json::from_slice(&std::fs::read(
+            root.join("content/quests/definitions/quests-00200-00299.json"),
+        )?)?;
+        Ok(document["records"].as_array().and_then(|records| {
+            records
+                .iter()
+                .find(|record| {
+                    record["definition"]["identity"]["key"] == "oteryn:quest.newhaven_quest"
+                })
+                .and_then(|record| {
+                    record["definition"]["oteryn_recipe"]["payload"]["recipe"]["reward_intents"]
+                        .as_array()?
+                        .iter()
+                        .find(|intent| intent["kind"] == "experience")?["count"]
+                        .as_u64()
+                })
+        }))
+    };
+    match read() {
+        Ok(Some(xp)) => (xp, "content reward record newhaven_quest".into()),
+        _ => (
+            LOST_WISDOM_BASE_XP,
+            "no content reward record; base value per Tibia Wiki revid 1205117".into(),
+        ),
+    }
 }
 
 async fn experience(clients: &SeamClients<'_>) -> TestResult<u64> {
@@ -387,13 +421,13 @@ async fn viola_handin(
         .map(|entry| entry.quest_index)
         .collect();
     let gained_xp = xp_after.saturating_sub(xp_before);
-    let ok = gained_xp == LOST_WISDOM_XP
-        && scarf_after == scarf_before + 1
-        && !newly_completed.is_empty();
+    let (expected_xp, xp_source) = expected_handin_xp();
+    let ok =
+        gained_xp == expected_xp && scarf_after == scarf_before + 1 && !newly_completed.is_empty();
     Ok((
         ok,
         format!(
-            "xp {xp_before}->{xp_after} (+{gained_xp}, expected +{LOST_WISDOM_XP}) scarf {scarf_before}->{scarf_after} (expected +1) quests_newly_completed={newly_completed:?} journal_entries={}->{} replies={}",
+            "xp {xp_before}->{xp_after} (+{gained_xp}, expected +{expected_xp} from {xp_source}) scarf {scarf_before}->{scarf_after} (expected +1) quests_newly_completed={newly_completed:?} journal_entries={}->{} replies={}",
             journal_before.len(),
             journal_after.len(),
             replies.join(" | ")
