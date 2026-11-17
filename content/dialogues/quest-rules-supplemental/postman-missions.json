@@ -1,0 +1,227 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.the_postman_missions_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 6,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:71-209"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/the_postman_missions_quest/kevin/mission-offer",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You are not a member of our guild yet! We have high standards for our members. To rise in our guild is a difficult but rewarding task. Are you interested in joining?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:71-74"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_postman_missions_quest/kevin/mission-briefing-1",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        1
+      ],
+      "reply": [
+        "Hm, I might consider your proposal, but first you will have to prove your worth by doing some tasks for us. Are you willing to do that?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:184-186"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_postman_missions_quest/kevin/mission-briefing-2",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        2
+      ],
+      "reply": [
+        "Excellent! Your first task will be quite simple. But you should better write my instructions down anyways. You can read and write?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:187-189"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_postman_missions_quest/kevin/mission-briefing-3",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        3
+      ],
+      "reply": [
+        "So listen, you will check certain tours our members have to take to see if there is some trouble. First travel with Captain Bluebear's ship from Thais to Carlin, understood?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:190-192"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_postman_missions_quest/kevin/mission-briefing-4",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        4
+      ],
+      "reply": [
+        "Excellent! Once you have done that you will travel with Uzon to Edron. You will find him in the Femor Hills. Understood?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 5
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:193-195"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_postman_missions_quest/kevin/mission-briefing-5",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        5
+      ],
+      "reply": [
+        "Fine, fine! Next, travel with Captain Seahorse to the city of Venore. Understood?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 6
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:196-198"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_postman_missions_quest/kevin/mission-briefing-6",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        6
+      ],
+      "reply": [
+        "Good! Finally, find the technomancer Brodrosch and travel with him to the Isle of Cormaya. After this passage report back to me here. Understood?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:199-201"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_postman_missions_quest/kevin/mission-briefing-7",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.kevin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        7
+      ],
+      "reply": [
+        "Ok, remember: the Tibian mail service puts trust in you! Don't fail and report back soon. Just tell me about your {mission}."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kevin.lua:202-205"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/kevin.lua",
+      "sha256": "7f3a304002acd6277bc8981f0e07e045e84eda518cbdb46f245e0e6b898f9691",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    }
+  ]
+}

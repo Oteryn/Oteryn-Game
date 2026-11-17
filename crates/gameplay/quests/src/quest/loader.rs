@@ -330,7 +330,7 @@ pub(super) fn lower_embedded_quest_state(
         }
     }
     let before_npc_rewards = lowered.catalogue.clone();
-    lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
+    lowered.catalogue = super::npc_rules::extend_active(lowered.catalogue, &lowered.source_tracks)
         .map_err(QuestLoadError::Json)?;
     super::reward_callbacks::retain_outfit_reward_predecessor(
         before_npc_rewards,

@@ -359,7 +359,11 @@ impl NpcTalkBook {
                 format_args!("{}\0{}", REWARD_CALLBACKS.join("\0"), source),
                 REWARD_GREETINGS.join("\0"),
                 crate::content::npc_catalogue::healing::DATA,
-                crate::content::npc_catalogue::travel::revision_material(),
+                format_args!(
+                    "{}\0{}",
+                    crate::content::npc_catalogue::travel::revision_material(),
+                    crate::content::npc_catalogue::travel::POSTMAN_ROUTE_REVISION,
+                ),
                 YASIR_SOURCE,
                 YASIR_GREET,
                 YASIR_FAREWELL,
@@ -712,7 +716,7 @@ impl NpcTalkBook {
                     .cloned()
                     .unwrap_or_else(|| "Farewell.".into());
                 (greeting, farewell, None, Vec::new())
-            } else if journal_npcs.contains(&reference.key) {
+            } else if reference.key == "oteryn:npc.kevin" || journal_npcs.contains(&reference.key) {
                 // The authored personal programme owns subsequent choices. Use the
                 // pinned default handler's focus text, never a generic value-bearing topic.
                 journal_fallback = true;

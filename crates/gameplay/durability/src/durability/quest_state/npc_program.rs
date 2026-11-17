@@ -347,6 +347,8 @@ impl DurabilityRoot {
         items: &C,
         premium: &G,
     ) -> Result<NpcProgramCommit> {
+        let source = NpcRuleCatalog::runtime_for_npc(&request.npc)
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
         self.commit_npc_program_source(
             authority,
             node,
@@ -356,7 +358,7 @@ impl DurabilityRoot {
             catalogue,
             items,
             premium,
-            NpcRuleCatalog::runtime().map_err(|_| CharacterProgressionError::InvalidInput)?,
+            source,
             None,
         )
         .await

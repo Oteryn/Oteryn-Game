@@ -72,14 +72,23 @@ pub fn revision_material() -> &'static str {
     include_str!("travel_routes.json")
 }
 
+/// Crystal 201189f8 data-global/npc/brodrosch.lua:125-129.
+pub const POSTMAN_ROUTE_REVISION: &str = include_str!("travel_postman_cormaya.json");
+
 pub fn resolve(
     model: &NpcServiceModel,
     npc_key: &str,
     services: &[ProjectV2DefinitionRef],
 ) -> Vec<TravelRoute> {
     static CORRECTIONS: OnceLock<Vec<Correction>> = OnceLock::new();
-    let corrections =
-        CORRECTIONS.get_or_init(|| serde_json::from_str(revision_material()).unwrap_or_default());
+    let corrections = CORRECTIONS.get_or_init(|| {
+        let mut routes: Vec<Correction> =
+            serde_json::from_str(revision_material()).unwrap_or_default();
+        let postman: Vec<Correction> =
+            serde_json::from_str(POSTMAN_ROUTE_REVISION).unwrap_or_default();
+        routes.extend(postman);
+        routes
+    });
     let native_service = format!(
         "oteryn:service.travel.{}",
         npc_key.trim_start_matches("oteryn:npc.")

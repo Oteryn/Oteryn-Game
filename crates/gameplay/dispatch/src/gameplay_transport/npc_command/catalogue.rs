@@ -190,7 +190,7 @@ pub(super) fn prepare(
         intent,
     )?;
     let catalogue = admission.quest_catalogue.as_ref()?;
-    let source = NpcRuleCatalog::runtime()
+    let source = NpcRuleCatalog::runtime_for_npc(&context.2)
         .ok()?
         .admitted_for_npc(&context.2, catalogue)
         .ok()??;

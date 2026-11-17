@@ -1706,11 +1706,27 @@ fn m54_citizen_source_aliases_require_both_local_sagas() -> Result<(), NpcRuleEr
 
 #[test]
 fn postman_mission_dialogue_is_live() -> Result<(), NpcRuleError> {
-    let catalogue = NpcRuleCatalog::runtime()?;
-    assert!(
-        catalogue
-            .program("oteryn:quest.the_postman_missions_quest")
-            .is_some()
-    );
+    let catalogue = NpcRuleCatalog::runtime_for_npc("oteryn:npc.kevin")?;
+    let loaded = super::super::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| NpcRuleError::Invalid(format!("{error:?}")))?;
+    let kevin = "oteryn:npc.kevin";
+    let admitted = catalogue
+        .admitted_for_npc(kevin, loaded.catalogue())?
+        .ok_or_else(|| NpcRuleError::Invalid("missing Kevin dialogue".into()))?;
+    let facts = Facts::empty();
+    for topic in 0..=7 {
+        let message = if topic == 0 { "mission" } else { "yes" };
+        let plan = admitted
+            .plan_storage(&facts.input(kevin, message, topic))?
+            .ok_or_else(|| NpcRuleError::Invalid(format!("missing Kevin topic {topic}")))?;
+        assert_eq!(plan.next_topic, (topic + 1) % 8);
+        assert!(!plan.reply.is_empty());
+        if topic == 7 {
+            assert_eq!(plan.track_changes.len(), 1);
+            assert_eq!(plan.track_changes[0].after, 1);
+        } else {
+            assert!(plan.track_changes.is_empty());
+        }
+    }
     Ok(())
 }

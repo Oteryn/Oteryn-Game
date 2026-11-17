@@ -581,6 +581,21 @@ impl NpcRuleCatalog {
             .map_err(Clone::clone)
     }
 
+    /// Kevin's separately reviewed source registry shares the NPC rule executor.
+    pub fn runtime_for_npc(npc: &str) -> Result<&'static Self, NpcRuleError> {
+        if npc != "oteryn:npc.kevin" {
+            return Self::runtime();
+        }
+        static KEVIN: std::sync::OnceLock<Result<NpcRuleCatalog, NpcRuleError>> =
+            std::sync::OnceLock::new();
+        KEVIN
+            .get_or_init(|| Self::from_json_documents(&[include_str!(
+                "../../../../../content/dialogues/quest-rules-supplemental/postman-missions.json"
+            )]))
+            .as_ref()
+            .map_err(Clone::clone)
+    }
+
     #[must_use]
     pub fn programs(&self) -> &[NpcRuleProgram] {
         &self.programs
@@ -752,12 +767,34 @@ fn additive_legacy_owner(program: &NpcRuleProgram) -> bool {
         )
 }
 
-/// Extend native bounds only for source writes; preserve existing absent values.
+#[cfg(test)]
 pub(super) fn extend(
     catalogue: super::QuestStateCatalogue,
     source_tracks: &BTreeMap<String, String>,
 ) -> Result<super::QuestStateCatalogue, String> {
     let source = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
+    extend_from(catalogue, source_tracks, source)
+}
+
+/// Bind both the shared source catalogue and the independently admitted Kevin programme.
+pub(super) fn extend_active(
+    catalogue: super::QuestStateCatalogue,
+    source_tracks: &BTreeMap<String, String>,
+) -> Result<super::QuestStateCatalogue, String> {
+    let mut source = NpcRuleCatalog::runtime()
+        .map_err(|e| e.to_string())?
+        .clone();
+    let kevin = NpcRuleCatalog::runtime_for_npc("oteryn:npc.kevin").map_err(|e| e.to_string())?;
+    source.programs.extend_from_slice(kevin.programs());
+    validate::catalogue(&source).map_err(|e| e.to_string())?;
+    extend_from(catalogue, source_tracks, &source)
+}
+
+fn extend_from(
+    catalogue: super::QuestStateCatalogue,
+    source_tracks: &BTreeMap<String, String>,
+    source: &NpcRuleCatalog,
+) -> Result<super::QuestStateCatalogue, String> {
     let mut legacy = catalogue.npc_legacy.clone();
     let predecessors = catalogue.predecessors.clone();
     for program in source.programs() {
