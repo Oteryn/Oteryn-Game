@@ -282,7 +282,7 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
             .map_err(debug)?
             .position();
         let monster = runtime
-            .admit_qualified_test_creature(source, "oteryn:creature.vampire", 475)
+            .admit_source_pinned_lab_creature(source, "oteryn:creature.vampire", 475)
             .map_err(debug)?;
         let departed_session = GameSessionId::decode(&id(99)).map_err(debug)?;
         let reservation = runtime
@@ -448,7 +448,7 @@ fn initialize(
             session,
             facts,
             (0, 0),
-            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now(owner)),
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now(owner)),
         )
         .ok_or("player state")?;
     Ok(())
