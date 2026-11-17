@@ -82,13 +82,13 @@ pub(crate) fn uneasy_crystal() -> Callback {
 
 /// Source readiness is re-proven by the Channel owner immediately before projection.
 pub fn source_is_ready(callback: &Callback, appearance: u16) -> bool {
-    // A timed personal scene must consume its intact source, even when native
+    // A timed personal scene or encounter must consume its intact source, even when native
     // callback matching retained the placement's original palette identity.
     if callback.requires_world_admission
         && callback.has_personal_state()
         && callback.lever.is_none()
         && callback.item_on_target.is_none()
-        && callback.effects.scene.is_some()
+        && (callback.effects.scene.is_some() || callback.effects.encounter.is_some())
         && callback.effects.transform.is_some()
         && callback.effects.reset_after_ms.is_some()
         && callback

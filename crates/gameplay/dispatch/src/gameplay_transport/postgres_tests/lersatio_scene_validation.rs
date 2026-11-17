@@ -224,6 +224,20 @@ fn lersatio_mirrors_are_registered_with_both_counter_transitions() -> Result<(),
                 ),
                 "a fresh target for a broken mirror cannot activate either counter phase"
             );
+            if callback.effects.encounter.is_some() {
+                let mut without_scene = (*callback).clone();
+                without_scene.effects.scene = None;
+                assert!(
+                    without_scene.has_valid_effects(),
+                    "timer + encounter also works without a scene"
+                );
+                assert!(
+                    !oteryn_gameplay_quests::quest::source_world_objects::source_is_ready(
+                        &without_scene,
+                        8721
+                    )
+                );
+            }
             let counter = callback
                 .storage
                 .iter()
