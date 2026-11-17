@@ -274,6 +274,7 @@ fn project(
         .spawn((
             Window,
             GameModal,
+            crate::bevy_shell::ui::window_layout::WindowLayer("outfit"),
             GlobalZIndex(175),
             Node {
                 position_type: PositionType::Absolute,

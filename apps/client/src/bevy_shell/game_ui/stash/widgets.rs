@@ -15,6 +15,7 @@ pub(super) fn build(
     let overlay = commands
         .spawn((
             GameModal,
+            crate::bevy_shell::ui::window_layout::WindowLayer("stash"),
             GlobalZIndex(166),
             TabGroup {
                 order: 3,
@@ -28,7 +29,6 @@ pub(super) fn build(
                 justify_content: JustifyContent::Center,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0., 0., 0., 0.45)),
         ))
         .id();
     let root = commands

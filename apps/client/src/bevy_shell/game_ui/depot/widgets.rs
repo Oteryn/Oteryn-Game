@@ -27,6 +27,7 @@ impl Widgets<'_, '_, '_> {
             .commands
             .spawn((
                 GameModal,
+                crate::bevy_shell::ui::window_layout::WindowLayer("depot"),
                 Name::new("Depot"),
                 GlobalZIndex(165),
                 TabGroup {
@@ -41,7 +42,6 @@ impl Widgets<'_, '_, '_> {
                     justify_content: JustifyContent::Center,
                     ..default()
                 },
-                BackgroundColor(Color::srgba(0., 0., 0., 0.45)),
             ))
             .id();
         let root = self

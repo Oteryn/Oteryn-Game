@@ -196,6 +196,7 @@ fn project(
         .spawn((
             Root,
             GameModal,
+            crate::bevy_shell::ui::window_layout::WindowLayer("task_board"),
             GlobalZIndex(159),
             Node {
                 position_type: PositionType::Absolute,
@@ -205,7 +206,6 @@ fn project(
                 justify_content: JustifyContent::Center,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0., 0., 0., 0.45)),
         ))
         .id();
     let frame = commands

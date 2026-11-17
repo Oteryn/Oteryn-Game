@@ -157,6 +157,7 @@ fn project(
     let root = commands
         .spawn((
             GameModal,
+            crate::bevy_shell::ui::window_layout::WindowLayer("store_inbox"),
             GlobalZIndex(175),
             TabGroup {
                 order: 4,
@@ -170,7 +171,6 @@ fn project(
                 justify_content: JustifyContent::Center,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0., 0., 0., 0.5)),
         ))
         .id();
     let window = commands

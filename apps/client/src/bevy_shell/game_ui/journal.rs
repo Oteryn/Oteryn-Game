@@ -122,6 +122,7 @@ fn setup(mut commands: Commands) {
     commands.spawn((
         Overlay,
         GameModal,
+        crate::bevy_shell::ui::window_layout::WindowLayer("journal"),
         GlobalZIndex(155),
         Node {
             position_type: PositionType::Absolute,
@@ -132,7 +133,6 @@ fn setup(mut commands: Commands) {
             align_items: AlignItems::Center,
             ..default()
         },
-        BackgroundColor(Color::srgba(0., 0., 0., 0.45)),
     ));
 }
 // Bevy injects independent projection, hierarchy and focus owners.

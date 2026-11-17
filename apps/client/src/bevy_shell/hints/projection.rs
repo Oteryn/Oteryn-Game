@@ -25,6 +25,14 @@ pub(super) struct Sources<'w, 's> {
     guard: ModalGuard<'w, 's>,
     windows: Query<'w, 's, (Entity, &'static Window), With<PrimaryWindow>>,
     hovered: Query<'w, 's, (Entity, &'static Hovered, Has<EditableText>)>,
+    grips: Query<
+        'w,
+        's,
+        (
+            &'static Hovered,
+            &'static crate::bevy_shell::ui::window_layout::ResizeCursor,
+        ),
+    >,
     parents: Query<'w, 's, &'static ChildOf>,
     time: Res<'w, Time<Real>>,
 }
@@ -66,6 +74,9 @@ pub(super) fn resolve(sources: Sources, mut state: ResMut<HintState>) {
         }
         if over_text {
             state.cursor = SystemCursorIcon::Text;
+        }
+        if let Some((_, grip)) = sources.grips.iter().find(|(hovered, _)| hovered.get()) {
+            state.cursor = grip.0;
         }
         if !over_ui
             && !over_text

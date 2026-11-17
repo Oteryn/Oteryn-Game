@@ -13,6 +13,7 @@ pub(super) fn build(commands: &mut Commands, skins: &Skins) -> Widgets {
         .spawn((
             Overlay,
             GameModal,
+            crate::bevy_shell::ui::window_layout::WindowLayer("quick_loot"),
             GlobalZIndex(165),
             TabGroup {
                 order: 2,
@@ -26,7 +27,6 @@ pub(super) fn build(commands: &mut Commands, skins: &Skins) -> Widgets {
                 align_items: AlignItems::Center,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0., 0., 0., 0.45)),
         ))
         .id();
     let panel = commands

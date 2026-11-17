@@ -272,3 +272,29 @@ fn form_by_title(
         .find(|form| form.title(link) == title)
         .ok_or_else(|| format!("missing form {title}").into())
 }
+
+#[test]
+fn entry_screen_has_no_status_prose_and_options_use_global_size()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .insert_non_send(HostOwner::new(None)?)
+        .add_systems(Startup, setup);
+    app.update();
+    assert!(
+        !app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.starts_with("Offline"))
+    );
+    let window = app
+        .world_mut()
+        .query::<(&Name, &Node)>()
+        .iter(app.world())
+        .find_map(|(name, node)| (name.as_str() == "options.window").then(|| node.clone()))
+        .ok_or("options window")?;
+    assert_eq!((window.width, window.height), (px(685.), px(534.)));
+    Ok(())
+}

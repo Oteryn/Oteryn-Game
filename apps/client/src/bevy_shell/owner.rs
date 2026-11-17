@@ -69,6 +69,12 @@ pub(super) struct HostOwner {
     pub(super) hotkey_options: u64,
 }
 impl HostOwner {
+    /// Window layouts are saved beside the client preferences file.
+    pub(in crate::bevy_shell) fn window_layouts_path(&self) -> Option<PathBuf> {
+        self.preferences_path
+            .as_ref()
+            .map(|path| path.with_extension("windows.json"))
+    }
     pub fn new(path: Option<PathBuf>) -> Result<Self, Box<dyn std::error::Error>> {
         let client = ClientBootstrap::new()?.with_shared_frontend();
         let (selection, selector) = super::selection::SelectionBridge::new();

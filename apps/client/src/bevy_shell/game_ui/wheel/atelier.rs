@@ -145,6 +145,7 @@ fn project(
     let root = commands
         .spawn((
             GameModal,
+            crate::bevy_shell::ui::window_layout::WindowLayer("gem_atelier"),
             GlobalZIndex(176),
             source::frame(skin.frame.clone(), [4., 17., 4., 4.]),
             Node {

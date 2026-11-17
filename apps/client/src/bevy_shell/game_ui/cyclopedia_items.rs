@@ -154,6 +154,7 @@ fn build(
     let overlay = commands
         .spawn((
             GameModal,
+            crate::bevy_shell::ui::window_layout::WindowLayer("cyclopedia_items"),
             GlobalZIndex(170),
             bevy::input_focus::tab_navigation::TabGroup {
                 order: 2,
@@ -167,7 +168,6 @@ fn build(
                 justify_content: JustifyContent::Center,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0., 0., 0., 0.45)),
         ))
         .id();
     let window = commands
