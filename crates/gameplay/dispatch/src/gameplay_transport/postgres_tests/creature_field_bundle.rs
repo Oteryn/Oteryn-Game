@@ -200,7 +200,7 @@ async fn exercise(harness: &Harness) -> TestResult {
                         native,
                         crate::gameplay_transport::creature_field::CreatureFieldBatch {
                             observed_at: now,
-                            actors: &actors,
+                            actors: &actors[..],
                         },
                         native_health_names,
                     )
