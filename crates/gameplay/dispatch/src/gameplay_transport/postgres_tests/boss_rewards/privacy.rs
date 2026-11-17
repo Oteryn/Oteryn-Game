@@ -251,10 +251,27 @@ async fn reward_and_custody_snapshot(
 }
 
 // The existing deadline-pager admission pattern, kept local to this one test.
+pub(in super::super) async fn admit_gameplay_peer(
+    h: &Harness,
+    evidence: &crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
+    member: u8,
+) -> TestResult<GameSessionId> {
+    admit_peer_inner(h, evidence, member, false).await
+}
+
 pub(in super::super) async fn admit_peer(
     h: &Harness,
     evidence: &crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
     member: u8,
+) -> TestResult<GameSessionId> {
+    admit_peer_inner(h, evidence, member, true).await
+}
+
+async fn admit_peer_inner(
+    h: &Harness,
+    evidence: &crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
+    member: u8,
+    seed_progression: bool,
 ) -> TestResult<GameSessionId> {
     let character = id(100 + member);
     let account = id(120 + member);
@@ -267,8 +284,12 @@ pub(in super::super) async fn admit_peer(
     sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name,sex) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,1,'profile-1','ruleset-1','content-1','starter-1',$4,2)")
         .bind(character.as_slice()).bind(account.as_slice()).bind(id(42).as_slice())
         .bind(format!("Fixture Member {}",char::from(b'A' + member))).execute(&h.pool).await?;
-    sqlx::query("INSERT INTO game_character_progression_state VALUES(encode($1,'hex')::uuid,1,50,1000,'profile-1','ruleset-1','content-1','simulation-1','evidence-1','declaration-1','policy-1','reward-1')")
+    // Gameplay entry initializes XP through the active content owner. The
+    // private chest-only case retains its historical progression fixture.
+    if seed_progression {
+        sqlx::query("INSERT INTO game_character_progression_state VALUES(encode($1,'hex')::uuid,1,50,1000,'profile-1','ruleset-1','content-1','simulation-1','evidence-1','declaration-1','policy-1','reward-1')")
         .bind(character.as_slice()).execute(&h.pool).await?;
+    }
     seed_peer_creation(h, member).await?;
     let (account, character_text): (String, String) = sqlx::query_as("SELECT account_id::text,character_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
         .bind(character.as_slice()).fetch_one(&h.pool).await?;

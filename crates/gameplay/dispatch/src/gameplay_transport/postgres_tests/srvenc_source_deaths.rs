@@ -349,7 +349,8 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
         };
         for member in [1u8, 2] {
             let peer_session =
-                super::boss_rewards::privacy::admit_peer(h, &source.evidence, member).await?;
+                super::boss_rewards::privacy::admit_gameplay_peer(h, &source.evidence, member)
+                    .await?;
             let current =
                 crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                     .current_session_at(peer_session)
