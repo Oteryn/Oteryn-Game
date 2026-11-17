@@ -119,13 +119,19 @@ async fn prepare_build(
     session: [u8; 16],
     profile: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     let session = crate::foundation::GameSessionId::decode(&session)?;
     // Independently resolve current admission, never synthesize a fence from
     // fixture SQL or expose the node proof to the client process.
-    let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(root.clone())
-        .current_session(session)
-        .await
-        .map_err(|error| format!("qualification admission: {error:?}"))?;
+    let store = crate::durability::fresh_admission::FreshAdmissionStore::from_root(root.clone());
+    let current = qualification_build::retry_holder(
+        Some(root),
+        deadline,
+        |error| matches!(error, DurabilityError::RootUnavailable),
+        async || store.current_session(session).await,
+    )
+    .await
+    .map_err(|error| format!("qualification admission: {error:?}"))?;
     let scope = current.current_runtime_scope();
     if Some(*scope.world_id().as_bytes()) != super::super::uuid_bytes(&config.scope.world_id)
         || scope.channel_id().map(|id| *id.as_bytes())
@@ -137,18 +143,25 @@ async fn prepare_build(
         *current.current_character_lease().character_id().as_bytes(),
     )
     .map_err(|error| format!("qualification character: {error:?}"))?;
-    let interpretation = root
-        .read_character_root_interpretation(authority, character)
-        .await
-        .map_err(|error| format!("qualification interpretation: {error:?}"))?
-        .ok_or("qualification interpretation unavailable")?;
+    let interpretation = qualification_build::retry_holder(
+        Some(root),
+        deadline,
+        qualification_build::authority_busy,
+        async || {
+            root.read_character_root_interpretation(authority, character)
+                .await
+        },
+    )
+    .await
+    .map_err(|error| format!("qualification interpretation: {error:?}"))?
+    .ok_or("qualification interpretation unavailable")?;
     let [profile_revision, ruleset_revision, content_revision, _] = interpretation.revisions();
     let progression = native
         .progression()
         .ok_or("qualification progression unavailable")?;
     let policy = progression.policy_for(profile_revision, ruleset_revision, content_revision)?;
     let context = policy.context.clone();
-    qualification_build::prepare_character_with_policy(
+    qualification_build::prepare_character_with_policy_until(
         root,
         authority,
         proof,
@@ -165,9 +178,10 @@ async fn prepare_build(
             build_occurrence: uuid_v7()?,
         },
         policy,
+        deadline,
     )
     .await?;
-    prepare_items(root, authority, proof, &current, native).await
+    prepare_items(root, authority, proof, &current, native, deadline).await
 }
 
 // Fixture claims use the ordinary fenced/audited reward owner, never SQL item
@@ -180,6 +194,7 @@ async fn prepare_items(
         crate::foundation::AuthenticatedTransportRefV1,
     >,
     native: &NativeGameplayState,
+    deadline: tokio::time::Instant,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
@@ -197,10 +212,21 @@ async fn prepare_items(
         runtime_scope: current.current_runtime_scope(),
         scope_ownership_generation: current.current_scope_generation(),
     };
-    let inventory = root
-        .read_item_use_inventory(authority, proof, fence)
-        .await
-        .map_err(|error| format!("qualification inventory: {error:?}"))?;
+    let inventory = qualification_build::retry_holder(
+        Some(root),
+        deadline,
+        |error| {
+            matches!(
+                error,
+                crate::durability::item_use::ItemUseError::Unavailable(
+                    DurabilityError::RootUnavailable
+                )
+            )
+        },
+        async || root.read_item_use_inventory(authority, proof, fence).await,
+    )
+    .await
+    .map_err(|error| format!("qualification inventory: {error:?}"))?;
     let bag = inventory
         .backpack
         .ok_or("qualification requires the real starter backpack")?;
@@ -250,12 +276,27 @@ async fn prepare_items(
             quest_transition: None,
             key_number: None,
         };
-        let mut candidate = root
-            .freeze_reward_claim_mint(authority, proof, fence, request)
-            .await
-            .map_err(|error| format!("qualification Item reserve: {error:?}"))?;
+        // Reservation replay retains the same CommandRef and frozen semantic intent.
+        let mut candidate = qualification_build::retry_holder(
+            Some(root),
+            deadline,
+            |error| {
+                matches!(
+                    error,
+                    crate::durability::reward_claim_mint::RewardClaimMintError::Unavailable(
+                        DurabilityError::RootUnavailable
+                    )
+                )
+            },
+            async || {
+                root.freeze_reward_claim_mint(authority, proof, fence, request.clone())
+                    .await
+            },
+        )
+        .await
+        .map_err(|error| format!("qualification Item reserve: {error:?}"))?;
         let outcome = root
-            .commit_reward_claim_mint(authority, proof, fence, &mut candidate)
+            .commit_reward_claim_mint_waiting(authority, proof, fence, &mut candidate, deadline)
             .await
             .map_err(|error| format!("qualification Item commit: {error:?}"))?;
         if !matches!(outcome, RewardClaimMintOutcome::Committed(_)) {

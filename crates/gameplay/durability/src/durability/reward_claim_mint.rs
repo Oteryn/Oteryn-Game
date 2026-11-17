@@ -669,6 +669,7 @@ impl DurabilityRoot {
         &self,
         recovery: CharacterRecoveryFenceV1,
         candidate: &mut RewardClaimMintCandidate,
+        retry_until: Option<tokio::time::Instant>,
     ) -> Result<()> {
         if candidate.work_units_used >= RL08_RETRY_WORK_UNITS_MAX {
             return Err(RewardClaimMintError::CapacityExceeded);
@@ -676,7 +677,8 @@ impl DurabilityRoot {
         let command = candidate.request.command;
         let transaction_id = candidate.transaction_id;
         let charged = self
-            .try_issue_semantic_pass()?
+            .reward_claim_pass(retry_until)
+            .await?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
@@ -750,6 +752,55 @@ impl DurabilityRoot {
             .map(|(outcome, _)| outcome)
     }
 
+    /// Deadline-bounded holder acquisition for qualification setup. The work-unit
+    /// charge and the commit each execute once; only their holder checkout retries.
+    pub async fn commit_reward_claim_mint_waiting(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        candidate: &mut RewardClaimMintCandidate,
+        deadline: tokio::time::Instant,
+    ) -> Result<RewardClaimMintOutcome> {
+        self.commit_reward_claim_mint_with_weights(
+            authority,
+            node,
+            fence,
+            candidate,
+            None,
+            (None, Some(deadline)),
+        )
+        .await
+        .map(|(outcome, _)| outcome)
+    }
+
+    async fn reward_claim_pass(
+        &self,
+        retry_until: Option<tokio::time::Instant>,
+    ) -> std::result::Result<super::db::IssuedSemanticPass, DurabilityError> {
+        loop {
+            let result = self.try_issue_semantic_pass();
+            let Some(deadline) = retry_until else {
+                return result;
+            };
+            if !matches!(result, Err(DurabilityError::RootUnavailable))
+                || tokio::time::Instant::now() >= deadline
+            {
+                return result;
+            }
+            let now = tokio::time::Instant::now();
+            let latest = (now + std::time::Duration::from_millis(250)).min(deadline);
+            self.wait_holder_retry(
+                (now + std::time::Duration::from_millis(50)).min(latest),
+                latest,
+            )
+            .await;
+            if tokio::time::Instant::now() >= deadline {
+                return result;
+            }
+        }
+    }
+
     /// [`Self::commit_reward_claim_mint`], with the notice of the grant this
     /// commit made. `catalogue_len` is the size of the loaded Achievement
     /// catalogue, which bounds the account's fact keys; `None` reads nothing
@@ -768,7 +819,7 @@ impl DurabilityRoot {
             fence,
             candidate,
             catalogue_len,
-            None,
+            (None, None),
         )
         .await
     }
@@ -794,7 +845,7 @@ impl DurabilityRoot {
             fence,
             candidate,
             catalogue_len,
-            Some(weights),
+            (Some(weights), None),
         )
         .await
     }
@@ -806,21 +857,26 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         candidate: &mut RewardClaimMintCandidate,
         catalogue_len: Option<usize>,
-        weights: Option<&dyn super::item_transfer::ItemWeightLookup>,
+        options: (
+            Option<&dyn super::item_transfer::ItemWeightLookup>,
+            Option<tokio::time::Instant>,
+        ),
     ) -> Result<(RewardClaimMintOutcome, GrantNotice)> {
+        let (weights, retry_until) = options;
         if weights.is_none() && candidate.request.item.container_capacity.is_some() {
             return Err(RewardClaimMintError::InvalidInput);
         }
         let recovery = authority
             .record_for(self)
             .map_err(|_| RewardClaimMintError::AuthorityRejected)?;
-        self.charge_reward_claim_mint_work_unit(recovery.clone(), candidate)
+        self.charge_reward_claim_mint_work_unit(recovery.clone(), candidate, retry_until)
             .await?;
         let frozen = FrozenClaim::of(candidate);
         let node = node.clone();
         let mut weight_context = weights;
 
-        self.try_issue_semantic_pass()?
+        self.reward_claim_pass(retry_until)
+            .await?
             .run_with_context(&mut weight_context, move |holder, deadline, weights| {
                 Box::pin(async move {
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
@@ -971,7 +1027,7 @@ impl DurabilityRoot {
         let recovery = authority
             .record_for(self)
             .map_err(|_| RewardClaimMintError::AuthorityRejected)?;
-        self.charge_reward_claim_mint_work_unit(recovery.clone(), candidate)
+        self.charge_reward_claim_mint_work_unit(recovery.clone(), candidate, None)
             .await?;
         let command = candidate.request.command;
         let binding = candidate.intent_binding;
