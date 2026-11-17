@@ -65,16 +65,7 @@ impl Fight {
             Self::CourtWarlock(f) => f.victors(runtime),
         }
     }
-    fn advance(
-        &mut self,
-        runtime: &mut ChannelRuntimeV1,
-        admits: impl Fn(&ChannelRuntimeV1, MovementLocalPosition) -> bool,
-    ) -> Result<(), CarrierError> {
-        match self {
-            Self::Cults(f) => f.advance(runtime, admits),
-            Self::CourtWarlock(_) => Ok(()),
-        }
-    }
+
 }
 
 #[derive(Default, Debug)]
@@ -100,10 +91,8 @@ impl Registry {
                 Ok(Some(_)) => {
                     // Credit was captured in the lethal turn. Release the lever
                     // only after exact terminal decorations retire; tick retries failures.
-                    let ActivePhase { fight, cells, .. } = phase;
-                    fight
-                        .advance(runtime, |runtime, at| placement(cells, runtime, at))
-                        .is_err()
+                    let Fight::Cults(fight) = &mut phase.fight else { return true; };
+                    fight.advance(runtime, |runtime, at| placement(&phase.cells, runtime, at)).is_err()
                 }
                 Ok(None) => phase
                     .frozen
@@ -130,9 +119,10 @@ impl Registry {
             return;
         };
         for phase in active.iter_mut().filter(|p| p.fight.contains(actor)) {
-            if phase.fight.projected_death(runtime, actor).is_ok() {
-                let ActivePhase { fight, cells, .. } = phase;
-                let _ = fight.advance(runtime, |runtime, at| placement(cells, runtime, at));
+            if phase.fight.projected_death(runtime, actor).is_ok()
+                && let Fight::Cults(fight) = &mut phase.fight
+            {
+                let _ = fight.advance(runtime, |runtime, at| placement(&phase.cells, runtime, at));
             }
         }
         // Keep terminal admission credit until the same lethal turn captures it.
@@ -361,6 +351,7 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, 
             })();
             return match result { Ok(keep) => keep, Err(error) => { super::operator_event(&format!("encounter_phase_deferred key={key} reason={error:?}")); true } };
         }
+        let Fight::Cults(fight) = fight else { return false; };
         if let Err(error) = fight.advance(runtime, |runtime, at| placement(cells, runtime, at)) {
             super::operator_event(&format!(
                 "encounter_phase_deferred key={key} reason={error:?}"
