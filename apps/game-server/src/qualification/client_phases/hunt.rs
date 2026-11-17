@@ -103,6 +103,9 @@ async fn hunt_with_safety(
         client.actor_vitals()
     ); // [DBG-hunt]
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
+    // This existing combat observation budget can exceed the row's idle
+    // watchdog. Preserve it without extending the hunt or outer row deadline.
+    client_world::hunt_observation_wait(deadline);
     let mut damaged = false;
     let mut killed = false;
     let mut last_position = target.position;
@@ -296,6 +299,15 @@ async fn hunt_with_safety(
     {
         return Err("hunt did not observe damage and target removal".into());
     }
+    loot_corpse(client, target, corpse).await
+}
+
+async fn loot_corpse(
+    client: &mut oteryn_dev_client::DevClientSession,
+    target: oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntity,
+    corpse: oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntity,
+) -> TestResult {
+    use oteryn_dev_client::EntityDetail;
     let EntityDetail::Object {
         item_handle: Some(handle),
         ..
@@ -388,3 +400,7 @@ async fn hunt_with_safety(
     ));
     Ok(())
 }
+
+#[path = "rat_hunt.rs"]
+mod rat;
+pub(super) use rat::{hunt_rat, recover_rat_health};

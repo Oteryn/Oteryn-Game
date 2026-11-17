@@ -140,11 +140,7 @@ impl Harness {
     /// A condition/timer with its own existing deadline is not a stalled row.
     /// This never changes that deadline or the enclosing journey's wall budget.
     pub(crate) fn bounded_wait(&self, until: tokio::time::Instant, phase: &'static str) {
-        if let Some(watch) = self
-            .active()
-            .as_ref()
-            .filter(|watch| watch.scenario.is_some())
-        {
+        if let Some(watch) = self.active().as_ref() {
             let mut state = watch.state();
             state.phase = phase;
             state.last = tokio::time::Instant::now();
@@ -265,6 +261,49 @@ mod tests {
                 .await;
             assert!(matches!(
                 error.as_ref().err().map(|error| classify(error.as_ref())),
+                Some(Cause::Deadline { .. })
+            ));
+            Ok(())
+        })
+    }
+    #[test]
+    fn qualification_nbroute_legacy_row_hunt_wait_keeps_operation_deadline() -> TestResult {
+        runtime()?.block_on(async {
+            let harness = Box::leak(Box::new(Harness::new(true, Some(Duration::from_secs(90)))));
+            // F5/F6 Row::watch uses scenario=None, unlike the indexed reporters.
+            let watch = Watch::new("P16", harness);
+            assert!(watch.scenario.is_none());
+            let started = tokio::time::Instant::now();
+            let result: TestResult = watch
+                .bound(Duration::from_secs(180), "row deadline", async {
+                    harness.bounded_wait(
+                        tokio::time::Instant::now() + Duration::from_secs(120),
+                        "rat-hunt",
+                    );
+                    tokio::time::sleep(Duration::from_secs(120)).await;
+                    Err("hunt produced no corpse before deadline".into())
+                })
+                .await;
+            assert_eq!(started.elapsed(), Duration::from_secs(120));
+            assert_eq!(
+                result
+                    .err()
+                    .ok_or("hunt deadline unexpectedly passed")?
+                    .to_string(),
+                "hunt produced no corpse before deadline"
+            );
+            let watch = Watch::new("P16", harness);
+            let result: TestResult = watch
+                .bound(Duration::from_secs(10), "row deadline", async {
+                    harness.bounded_wait(
+                        tokio::time::Instant::now() + Duration::from_secs(120),
+                        "rat-hunt",
+                    );
+                    std::future::pending().await
+                })
+                .await;
+            assert!(matches!(
+                result.as_ref().err().map(|error| classify(error.as_ref())),
                 Some(Cause::Deadline { .. })
             ));
             Ok(())

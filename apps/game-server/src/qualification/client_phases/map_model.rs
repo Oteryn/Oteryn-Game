@@ -278,7 +278,7 @@ impl<'a> MapModel<'a> {
         to: TilePos,
         bounds: Option<TilePos>,
     ) -> Option<Vec<StepDirection>> {
-        search(
+        let path = search(
             from,
             to,
             |at, direction| {
@@ -289,7 +289,11 @@ impl<'a> MapModel<'a> {
                 Some(destination)
             },
             self.world.floors().count() == 0 && self.world.floors().teleport_count() == 0,
-        )
+        );
+        if path.is_none() {
+            evidence(&format!("route_failed start={from:?} target={to:?} bounds={bounds:?} planner=map_model"));
+        }
+        path
     }
 
     fn samples(&self, start: TilePos, seed: u64) -> Vec<Sample> {

@@ -280,7 +280,7 @@ fn resting_tiles(world: &BundleWorld, start: TilePos) -> TestResult<(TilePos, Ti
     }
     shrines.sort_by_key(|at| (start.x.abs_diff(at.x).max(start.y.abs_diff(at.y)), *at));
     for shrine in shrines {
-        let Some(path) = route(world, start, |at| {
+        let Some(path) = route_toward(world, start, ("PZ reward shrine approach", shrine), |at| {
             at.floor == shrine.floor
                 && at.x.abs_diff(shrine.x).max(at.y.abs_diff(shrine.y)) <= 1
                 && world
@@ -296,7 +296,7 @@ fn resting_tiles(world: &BundleWorld, start: TilePos) -> TestResult<(TilePos, Ti
             inside = destination(world, inside, direction)
                 .ok_or("P10 shrine path endpoint unavailable")?;
         }
-        let outside_path = route(world, inside, |at| {
+        let outside_path = route_toward(world, inside, ("same-floor outside PZ, distance >= 4", inside), |at| {
             at.floor == inside.floor
                 && at.x.abs_diff(inside.x).max(at.y.abs_diff(inside.y)) >= 4
                 && world
@@ -313,7 +313,8 @@ fn resting_tiles(world: &BundleWorld, start: TilePos) -> TestResult<(TilePos, Ti
             return Ok((inside, outside));
         }
     }
-    Err("P10 player route blocked: no reachable production reward shrine with a PZ approach and outside return route in the 160-tile town window".into())
+    evidence(&format!("route_failed start={start:?} target=production-reward-shrine-with-PZ-approach-and-outside-return planner=P10"));
+    Err(route_gap(world, ActorPosition { x:i32::from(start.x), y:i32::from(start.y), floor:-i16::from(start.floor) }, "production reward shrine with PZ approach and outside return", "P10 player route blocked: no reachable production reward shrine with a PZ approach and outside return route in the 160-tile town window").into())
 }
 
 async fn resting_walk(
@@ -322,7 +323,7 @@ async fn resting_walk(
     to: TilePos,
 ) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route(world, from, |at| at == to)
+    let path = route_toward(world, from, to, |at| at == to)
         .ok_or_else(|| format!("P10 player walking route blocked: {from:?}->{to:?}"))?;
     walk(client, world, &path).await?;
     if tile(client.world_spatial().actor_position)? != to {
@@ -338,7 +339,7 @@ async fn resting_reentry(
     inside: TilePos,
 ) -> TestResult<tokio::time::Instant> {
     let mut at = tile(client.world_spatial().actor_position)?;
-    let path = route(world, at, |at| at == inside).ok_or("P10 reentry walking route blocked")?;
+    let path = route_toward(world, at, inside, |at| at == inside).ok_or("P10 reentry walking route blocked")?;
     let mut entered = None;
     for direction in path {
         let to = destination(world, at, direction).ok_or("P10 reentry destination absent")?;
@@ -430,8 +431,8 @@ async fn resting_deficits(
 ) -> TestResult {
     // A real credited kill debits stamina. No combat/minute override is used.
     let before = progress(client).await?;
-    travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await?;
-    client_hunt::hunt(client).await.map_err(|error| {
+    travel_to_careful_rat(client, world, spawns).await?;
+    client_hunt::hunt_rat(client, world).await.map_err(|error| {
         format!("P10 earned stamina/HP deficit prerequisite: real rat hunt: {error}")
     })?;
     if progress(client).await?.0 <= before.0 {
@@ -870,12 +871,7 @@ async fn temple_respawn(
         }
         // This unprovisioned Character has made no citizenship change. The bundle's
         // configured hometown fixes the expected temple BEFORE observing the death.
-        let towns = &world.base().subareas;
-        let home = towns
-            .default_town
-            .and_then(|id| towns.town(id))
-            .and_then(|town| town.temple)
-            .ok_or("compiled world has no default home temple")?;
+        let home = respawn_return_plan(world, TOWN)?;
         let temple = ActorPosition {
             x: i32::from(home.x),
             y: i32::from(home.y),
@@ -963,10 +959,10 @@ async fn temple_respawn(
     .await;
     // Preserve the entry position required by the pre-existing phases, even on failure.
     let restore: TestResult = async {
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        let path = route_toward(world, tile(client.world_spatial().actor_position)?, TOWN, |at| {
             at == TOWN
         })
-        .ok_or("E2EF6 return route unavailable")?;
+        .ok_or_else(|| route_gap(world, client.world_spatial().actor_position, TOWN, "E2EF6 return route unavailable"))?;
         walk(&mut client, world, &path).await
     }
     .await;
@@ -1064,12 +1060,16 @@ async fn approach_oressa(
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
+    let from = tile(client.world_spatial().actor_position)?;
     let npc = npcs
         .npcs
         .iter()
         .find(|npc| npc.key == "oteryn:npc.oressa")
-        .ok_or("Oressa prerequisite blocked: compiled world has no oteryn:npc.oressa placement")?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        .ok_or_else(|| {
+            npc_route_failure(from, "oteryn:npc.oressa", npcs, &BTreeSet::from(["oteryn:npc.oressa".to_owned()]));
+            "Oressa prerequisite blocked: compiled world has no oteryn:npc.oressa placement"
+        })?;
+    let path = route_toward(world, tile(client.world_spatial().actor_position)?, (&npc.key, &npc.placements), |at| {
         npc.placements.iter().any(|placement| placement.floor == at.floor
             && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3)
     }).ok_or("Oressa prerequisite blocked: no player walking route to oteryn:npc.oressa within the existing town route budget")?;
@@ -1305,7 +1305,7 @@ async fn first_vocation(
     }.await;
     let restore: TestResult = async {
         client.session_mut().attack_target(None).await?;
-        let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        let back = route_toward(world, tile(client.world_spatial().actor_position)?, TOWN, |at| {
             at == TOWN
         })
         .ok_or("Oressa journey return route unavailable")?;
@@ -1465,7 +1465,7 @@ async fn wait_inventory(
 async fn return_and_release(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     let restore: TestResult = async {
         client.session_mut().attack_target(None).await?;
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        let path = route_toward(world, tile(client.world_spatial().actor_position)?, TOWN, |at| {
             at == TOWN
         })
         .ok_or("death row cleanup: no walking route back to entry")?;
@@ -1511,9 +1511,9 @@ async fn earn_death_prerequisites(
         if tokio::time::Instant::now() >= deadline {
             return Err(format!("player prerequisite blocked: rat hunting/loot budget exhausted; required level={level} carried_gold={gold}; observed XP={} level={} carried_gold={money}", build.0, build.1).into());
         }
-        travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await
+        travel_to_careful_rat(client, world, spawns).await
             .map_err(|error| format!("player prerequisite blocked: required level={level} carried_gold={gold}, observed XP={} level={} carried_gold={money}; rat route: {error}", build.0, build.1))?;
-        client_hunt::hunt(client).await.map_err(|error| format!("player prerequisite blocked: real rat kill/loot: {error}; required level={level} carried_gold={gold}; before XP={} level={} carried_gold={money}", build.0, build.1))?;
+        client_hunt::hunt_rat(client, world).await.map_err(|error| format!("player prerequisite blocked: real rat kill/loot: {error}; required level={level} carried_gold={gold}; before XP={} level={} carried_gold={money}", build.0, build.1))?;
     }
 }
 
@@ -1526,7 +1526,7 @@ async fn approach_service(
     let npc = npcs.npcs.iter().find(|npc| npc.key == key).ok_or_else(|| {
         format!("player prerequisite blocked: compiled world has no {key} placement")
     })?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+    let path = route_toward(world, tile(client.world_spatial().actor_position)?, (&npc.key, &npc.placements), |at| {
         npc.placements.iter().any(|place| {
             place.floor == at.floor && at.x.abs_diff(place.x).max(at.y.abs_diff(place.y)) <= 3
         })
@@ -1997,7 +1997,7 @@ async fn item_loss(
         if custody(client.inventory().ok_or("protected relog inventory absent")?) != expected { return Err("protected death custody/amulet consumption differs after fresh admission".into()); }
         row.pass("protected-relog-custody", &expected);
         let destination = tile(protected_position)?;
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == destination).ok_or("protected death ground return route unavailable")?;
+        let path = route_toward(world, tile(client.world_spatial().actor_position)?, destination, |at| at == destination).ok_or("protected death ground return route unavailable")?;
         walk(&mut client, world, &path).await?;
         let after_ground = custody(&CharacterInventory { entries: ground_entries(&mut client, protected_position).await?, ..Default::default() });
         if after_ground != ground_signature { return Err(format!("protected death changed ground custody: before={ground_signature:?} after={after_ground:?}").into()); }
@@ -2016,7 +2016,7 @@ async fn item_loss(
         if custody(client.inventory().ok_or("unprotected relog inventory absent")?) != saved { return Err("unprotected death custody differs after fresh admission".into()); }
         row.pass("unprotected-relog-custody", &saved);
         let destination = tile(encounter)?;
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| at == destination)
+        let path = route_toward(world, tile(client.world_spatial().actor_position)?, destination, |at| at == destination)
             .ok_or("no real return route to death ground")?;
         walk(&mut client, world, &path).await?;
         let ground = ground_entries(&mut client, encounter).await?;
@@ -2303,7 +2303,7 @@ async fn pvp_meet(
 ) -> TestResult<oteryn_dev_client::EntityRef> {
     victim.session_mut().attack_target(None).await?;
     attacker.session_mut().attack_target(None).await?;
-    let path = route(world, tile(victim.world_spatial().actor_position)?, |at| {
+    let path = route_toward(world, tile(victim.world_spatial().actor_position)?, "non-PZ PvP tile clear of creature spawns", |at| {
         world
             .base()
             .tile(at.x, at.y, at.floor)
@@ -2319,9 +2319,9 @@ async fn pvp_meet(
     .ok_or("PvP player route blocked: no reachable non-PZ tile clear of creature spawns")?;
     walk(victim, world, &path).await?;
     let target = tile(victim.world_spatial().actor_position)?;
-    let path = route(
+    let path = route_toward(
         world,
-        tile(attacker.world_spatial().actor_position)?,
+        tile(attacker.world_spatial().actor_position)?, ("adjacent non-PZ PvP target", target),
         |at| {
             at.floor == target.floor
                 && at.x.abs_diff(target.x) + at.y.abs_diff(target.y) == 1

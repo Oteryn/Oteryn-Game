@@ -465,11 +465,9 @@ PY_STAGE
 fi
 MAP_REVISION=map-s3b-1
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
-  # Real Thais/town outskirts and the default-start region for ordinary home respawns.
-  # The Newhaven leg adds Newhaven's main island (Anna, the Muglex camp, the islet's north row).
-  REGIONS='126,125;126,126;127,127'
-  if [[ "$NODE_BOOT_NEWHAVEN" == 1 ]]; then REGIONS="$REGIONS;127,126"; fi
-  cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler -- compile-regions "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" "$REGIONS" > "$WORK/world-compile.json"
+  # Thais plus Newhaven: region 127,126 serves both the tutorial leg and
+  # the ordinary home-respawn 49-step PZ exit used by the row routes.
+  cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler -- compile-regions "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" '126,125;126,126;127,126;127,127' > "$WORK/world-compile.json"
   PIN="$WORK/world.json"
   python3 - "$GAME_SOURCE/content/world/pins/oteryn.json" "$WORK/world-compile.json" "$PIN" <<'PY_REGION_PIN'
 import json, os, sys

@@ -63,3 +63,89 @@ mod native_content_tests {
         Ok(())
     }
 }
+
+/// Match served creature names against the same pinned native profiles as the server.
+pub(super) fn native_creature_name(key: &str) -> TestResult<&'static str> {
+    use crate::content::ProjectV2AuthoringProfileData;
+    use crate::content::native_gameplay::CreatureProfilesDocument;
+    static NAMES: OnceLock<Result<std::collections::BTreeMap<String, String>, String>> =
+        OnceLock::new();
+    let names = NAMES
+        .get_or_init(|| {
+            (|| -> TestResult<std::collections::BTreeMap<String, String>> {
+                let profiles: CreatureProfilesDocument =
+                    serde_json::from_slice(&native_input()?.creature_profiles.bytes)?;
+                Ok(profiles
+                    .records
+                    .into_iter()
+                    .filter_map(|record| {
+                        if let ProjectV2AuthoringProfileData::Creature(profile) =
+                            record.profile.data
+                        {
+                            profile
+                                .details
+                                .map(|details| (record.profile.target.key, details.display_name))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect())
+            })()
+            .map_err(|error| error.to_string())
+        })
+        .as_ref()
+        .map_err(|error| error.clone())?;
+    names
+        .get(key)
+        .map(String::as_str)
+        .ok_or_else(|| format!("native creature display name unavailable: {key}").into())
+}
+
+pub(super) fn native_food_references()
+-> TestResult<&'static std::collections::BTreeSet<std::num::NonZeroU32>> {
+    use crate::content::{ReferenceItemConsumption, ReferenceItemField};
+    static FOODS: OnceLock<Result<std::collections::BTreeSet<std::num::NonZeroU32>, String>> =
+        OnceLock::new();
+    FOODS
+        .get_or_init(|| {
+            (|| -> TestResult<std::collections::BTreeSet<std::num::NonZeroU32>> {
+                let input = native_input()?;
+                let bytes = &input
+                    .item_profiles
+                    .as_ref()
+                    .ok_or("native item profiles absent")?
+                    .bytes;
+                let profiles: crate::content::native_gameplay::ItemProfilesDocument =
+                    serde_json::from_slice(bytes)?;
+                let index = provisioning::item_index()?;
+                profiles
+                    .records
+                    .iter()
+                    .filter(|record| {
+                        matches!(
+                            record.semantics.consumption,
+                            ReferenceItemField::Known(ReferenceItemConsumption::Food(_))
+                        )
+                    })
+                    .map(|record| {
+                        index
+                            .definition_ref(
+                                &record.production_definition.family,
+                                &record.production_definition.production_key,
+                                &record.production_definition.revision_ref,
+                            )
+                            .ok_or_else(|| {
+                                format!(
+                                    "native food reference absent: {}",
+                                    record.production_definition.production_key
+                                )
+                                .into()
+                            })
+                    })
+                    .collect()
+            })()
+            .map_err(|error| error.to_string())
+        })
+        .as_ref()
+        .map_err(|error| error.clone().into())
+}

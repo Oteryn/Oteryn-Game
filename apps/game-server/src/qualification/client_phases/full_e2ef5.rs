@@ -90,10 +90,10 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
             // returns above and drops this connection with its uncertain reply/frame.
             // Restore the entry tile even after a failed movement/cast assertion.
             let cleanup: TestResult = async {
-                let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
+                let back = route_toward(world, tile(client.world_spatial().actor_position)?, TOWN, |at| {
                     at == TOWN
                 })
-                .ok_or("E2EF5 return route unavailable")?;
+                .ok_or_else(|| route_gap(world, client.world_spatial().actor_position, TOWN, "E2EF5 return route unavailable"))?;
                 walk(&mut client, world, &back).await?;
                 logout(&mut client).await
             }
@@ -716,7 +716,7 @@ async fn haste(
     }
     let haste_duration = duration(haste)?;
     let strong_duration = duration(strong)?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+    let path = route_toward(world, tile(client.world_spatial().actor_position)?, "PZ speed corridor", |at| {
         world
             .base()
             .tile(at.x, at.y, at.floor)
@@ -969,10 +969,10 @@ async fn rune_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
 
 pub(super) async fn rune_cleanup(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     let travel: TestResult = async {
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        let path = route_toward(world, tile(client.world_spatial().actor_position)?, TOWN, |at| {
             at == TOWN
         })
-        .ok_or("rune journey return route unavailable")?;
+        .ok_or_else(|| route_gap(world, client.world_spatial().actor_position, TOWN, "rune journey return route unavailable"))?;
         walk(client, world, &path).await
     }
     .await;
@@ -1042,29 +1042,8 @@ pub(super) async fn acquire_rune(
     use oteryn_protocol_oteryn::npc_service as wire;
     let index = provisioning::item_index()?;
     let reference = provisioning::item_reference(&index, id)?;
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(
-        root.join("content/services/trade/trade-00000-00323.json"),
-    )?)?;
     let item_key = format!("oteryn:item.tibia.i{id}");
-    let sellers: BTreeSet<_> = trades["records"]
-        .as_array()
-        .ok_or("trade records absent")?
-        .iter()
-        .filter_map(|record| {
-            let declaration = &record["declaration"];
-            declaration["offers"]
-                .as_array()?
-                .iter()
-                .any(|offer| {
-                    offer["direction"] == "SellToPlayer" && offer["item"]["key"] == item_key
-                })
-                .then(|| declaration["identity"]["key"].as_str())
-                .flatten()
-                .and_then(|key| key.strip_prefix("oteryn:service.trade."))
-                .map(|name| format!("oteryn:npc.{name}"))
-        })
-        .collect();
+    let sellers = rune_seller_keys(id)?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let here = tile(client.world_spatial().actor_position)?;
@@ -1074,7 +1053,7 @@ pub(super) async fn acquire_rune(
         .iter()
         .filter(|npc| sellers.contains(&npc.key))
         .filter_map(|npc| {
-            route(world, here, |at| {
+            route_toward(world, here, (&npc.key, &npc.placements), |at| {
                 npc.placements
                     .iter()
                     .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
@@ -1083,8 +1062,14 @@ pub(super) async fn acquire_rune(
         })
         .min_by_key(|(_, path)| path.len());
     let Some((npc, path)) = selected else {
+        let inventory = npc_route_failure(here, &item_key, &metadata.npcs, &sellers);
+        let reason = if inventory.placements.is_empty() {
+            "no compiled-world seller placement"
+        } else {
+            "no player-walk route within the admitted town window to a compiled-world seller"
+        };
         let balances = runtime::balances(client.session_mut()).await?;
-        return Err(format!("rune {id} acquisition blocked: no player-walk route within the admitted town window to a compiled-world seller; eligible_sellers={sellers:?}; observed_balances={balances:?}; carried_quantity={}; no item mint or remote vendor interaction; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:1", rune_quantity(client, reference)?).into());
+        return Err(format!("rune {id} acquisition blocked: {reason}; eligible_sellers={sellers:?}; observed_balances={balances:?}; carried_quantity={}; no item mint or remote vendor interaction; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:1", rune_quantity(client, reference)?).into());
     };
     walk(client, world, &path).await?;
     let actor = client
@@ -1396,12 +1381,12 @@ async fn paralyze(
     // profile provisioning. No PvP policy, war, level or vocation is granted.
     let mut peer = connect_character(clients, 0xb1, 0).await?;
     let result: TestResult = tokio::time::timeout(Duration::from_secs(140), async {
-        let path = route(world, tile(peer.world_spatial().actor_position)?, |at| rune_corridor(world, at).is_some())
+        let path = route_toward(world, tile(peer.world_spatial().actor_position)?, "non-PZ equal-ground rune corridor", |at| rune_corridor(world, at).is_some())
             .ok_or("C16b no reachable non-PZ equal-ground target corridor")?;
         with_observer_liveness(client, walk(&mut peer, world, &path)).await?;
         let cells = rune_corridor(world, tile(peer.world_spatial().actor_position)?)
             .ok_or("C16b target corridor vanished")?;
-        let caster_path = route(world, tile(client.world_spatial().actor_position)?, |at|
+        let caster_path = route_toward(world, tile(client.world_spatial().actor_position)?, ("non-PZ caster approach", cells[0]), |at|
             at.floor == cells[0].floor && !cells.contains(&at)
                 && at.x.abs_diff(cells[0].x).max(at.y.abs_diff(cells[0].y)) <= 3
                 && world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone()))
@@ -1413,7 +1398,7 @@ async fn paralyze(
         if !same_cadence(baseline, expected_cadence(None, target_level, ground)?) {
             return Err("C16b target baseline does not match production movement speed".into());
         }
-        let back = route(world, tile(peer.world_spatial().actor_position)?, |at| at == cells[0])
+        let back = route_toward(world, tile(peer.world_spatial().actor_position)?, cells[0], |at| at == cells[0])
             .ok_or("C16b target cannot return to speed trial start")?;
         with_observer_liveness(client, walk(&mut peer, world, &back)).await?;
         row.pass("target-baseline", peer.last_server_sequence());
@@ -1569,7 +1554,7 @@ async fn barriers(
         let (reference, sequence) = acquire_rune(client, world, id).await?;
         row.pass(acquire, sequence);
         row.pass(refusal, illegal_floor(client, reference).await?);
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        let path = route_toward(world, tile(client.world_spatial().actor_position)?, "non-PZ barrier corridor", |at| {
             rune_corridor(world, at).is_some()
         })
         .ok_or("C16a no reachable non-PZ barrier traversal site")?;
@@ -1589,7 +1574,7 @@ async fn barriers(
         // First prove the target is traversable without the wall, and return.
         walk(client, world, &[direction]).await?;
         let back =
-            route(world, cells[1], |at| at == from).ok_or("C16a approach return unavailable")?;
+            route_toward(world, cells[1], from, |at| at == from).ok_or("C16a approach return unavailable")?;
         walk(client, world, &back).await?;
         let vitals = client
             .actor_vitals()
@@ -1854,13 +1839,13 @@ async fn combat_access(
 ) -> TestResult<u64> {
     // Normal speech/indexed spells have learning_required=false in the served
     // book. Walk out of PZ; ask the actual owner to admit this player's cast.
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+    let path = route_toward(world, tile(client.world_spatial().actor_position)?, "outside PZ for combat spell", |at| {
         world
             .base()
             .tile(at.x, at.y, at.floor)
             .is_some_and(|tile| !tile.protection_zone())
     })
-    .ok_or("no ordinary walk route out of PZ for combat spell access")?;
+    .ok_or_else(|| route_gap(world, client.world_spatial().actor_position, "outside PZ", "no ordinary walk route out of PZ for combat spell access"))?;
     walk(client, world, &path).await?;
     let spell = book.spoken(words).ok_or("combat spell absent")?.spell;
     spell_ready(client, spell).await?;
@@ -1879,7 +1864,7 @@ async fn combat_access(
             if let Err(blocker) = player_first_vocation(client, world, vocation).await {
                 return Err(format!("{refusal}; player prerequisite route: {blocker}").into());
             }
-            let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+            let path = route_toward(world, tile(client.world_spatial().actor_position)?, "outside PZ after vocation selection", |at| {
                 world
                     .base()
                     .tile(at.x, at.y, at.floor)
@@ -1907,8 +1892,11 @@ async fn player_first_vocation(
     let here = tile(client.world_spatial().actor_position)?;
     let observed_level = level(client).await?;
     let npc = metadata.npcs.npcs.iter().find(|npc| npc.key == "oteryn:npc.oressa")
-        .ok_or_else(|| format!("first vocation {vocation}: Oressa absent from compiled world; observed_level={observed_level}; source:crates/gameplay/content/src/content/npc_catalogue.rs:5"))?;
-    let path = route(world, here, |at| npc.placements.iter().any(|p|
+        .ok_or_else(|| {
+            npc_route_failure(here, "oteryn:npc.oressa", &metadata.npcs, &BTreeSet::from(["oteryn:npc.oressa".to_owned()]));
+            format!("first vocation {vocation}: Oressa absent from compiled world; observed_level={observed_level}; source:crates/gameplay/content/src/content/npc_catalogue.rs:5")
+        })?;
+    let path = route_toward(world, here, (&npc.key, &npc.placements), |at| npc.placements.iter().any(|p|
         p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3))
         .ok_or_else(|| format!("first vocation {vocation}: no ordinary player route to Oressa within the admitted town window; observed_level={observed_level}; source:crates/gameplay/content/src/content/npc_catalogue.rs:5"))?;
     walk(client, world, &path).await?;
@@ -2374,7 +2362,7 @@ async fn combat_rejoin(
     tag: u8,
 ) -> TestResult {
     select_monster(client, None).await?;
-    let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
+    let back = route_toward(world, tile(client.world_spatial().actor_position)?, TOWN, |at| {
         at == TOWN
     })
     .ok_or("combat row cannot return to TOWN for fresh admission")?;
@@ -2410,7 +2398,7 @@ async fn combat_rejoin(
         .spoken(words)
         .ok_or("fresh-admission spell absent")?
         .spell;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+    let path = route_toward(world, tile(client.world_spatial().actor_position)?, "outside PZ after fresh admission", |at| {
         world
             .base()
             .tile(at.x, at.y, at.floor)
@@ -2490,7 +2478,7 @@ async fn challenge(
             monster_hit(&mut peer, client, monster, 15).await?,
         );
         let target_at = creature(&peer, monster)?.position;
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        let path = route_toward(world, tile(client.world_spatial().actor_position)?, ("adjacent combat target", target_at), |at| {
             let at = actor_position(at);
             at.floor == target_at.floor
                 && at != peer.world_spatial().actor_position
@@ -2581,7 +2569,7 @@ async fn challenge(
         // while A is STILL an eligible visible target. Walking out of sight
         // would only prove target invalidation, not expiry of Challenge.
         let monster_at = creature(&peer, monster)?.position;
-        let retreat = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        let retreat = route_toward(world, tile(client.world_spatial().actor_position)?, ("three-tile non-PZ retreat", monster_at), |at| {
             let at = actor_position(at);
             at.floor == monster_at.floor
                 && at.x.abs_diff(monster_at.x).max(at.y.abs_diff(monster_at.y)) == 3
@@ -2960,13 +2948,13 @@ async fn companion_spawn(
     }
 }
 async fn non_pz(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+    let path = route_toward(world, tile(client.world_spatial().actor_position)?, "outside PZ for companion", |at| {
         world
             .base()
             .tile(at.x, at.y, at.floor)
             .is_some_and(|tile| !tile.protection_zone())
     })
-    .ok_or("companion: no player walk route outside PZ")?;
+    .ok_or_else(|| route_gap(world, client.world_spatial().actor_position, "outside PZ", "companion: no player walk route outside PZ"))?;
     walk(client, world, &path).await
 }
 async fn summon_rat(
@@ -3044,7 +3032,7 @@ async fn companion_behavior(
     select_monster(client, None).await?;
     let start = creature(client, owned)?.position;
     let here = tile(client.world_spatial().actor_position)?;
-    let path = route(world, here, |at| {
+    let path = route_toward(world, here, ("four-tile non-PZ companion follow", here), |at| {
         at.floor == here.floor
             && at.x.abs_diff(here.x).max(at.y.abs_diff(here.y)) == 4
             && world
@@ -3088,7 +3076,7 @@ async fn companion_behavior(
     let victim = wild_rat(client, world, excluded).await?;
     // Stand beyond fist range; the damage must be from the companion.
     let target = tile(victim.position)?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+    let path = route_toward(world, tile(client.world_spatial().actor_position)?, ("three-tile companion observation", target), |at| {
         at.floor == target.floor
             && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) == 3
             && world
@@ -3172,7 +3160,7 @@ async fn companion_logout(
     tag: u8,
 ) -> TestResult<(Option<oteryn_dev_client::EntityRef>, u64)> {
     select_monster(client, None).await?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+    let path = route_toward(world, tile(client.world_spatial().actor_position)?, TOWN, |at| {
         at == TOWN
     })
     .ok_or("companion logout: no player route back to town")?;
@@ -3190,9 +3178,9 @@ async fn companion_logout(
     let mut observer = connect_character(clients, tag, 0).await?;
     let result: TestResult<_> = async {
         let owner_position = tile(client.world_spatial().actor_position)?;
-        let path = route(
+        let path = route_toward(
             world,
-            tile(observer.world_spatial().actor_position)?,
+            tile(observer.world_spatial().actor_position)?, ("companion owner approach", owner_position),
             |at| {
                 at.floor == owner_position.floor
                     && at
@@ -3468,7 +3456,7 @@ async fn companion_owner_death(
     let mut observer = connect_character(clients, tag, 0).await?;
     let result: TestResult<_> = async {
         let site = tile(encounter)?;
-        let path = route(world, tile(observer.world_spatial().actor_position)?, |at| {
+        let path = route_toward(world, tile(observer.world_spatial().actor_position)?, ("lethal encounter witness", site), |at| {
             at.floor == site.floor && at.x.abs_diff(site.x).max(at.y.abs_diff(site.y)) <= 3 && at != site
         }).ok_or("ordinary witness cannot reach the lethal encounter")?;
         with_observer_liveness(client, walk(&mut observer, world, &path)).await?;
@@ -3571,7 +3559,7 @@ async fn companion_after_death(
     quantities: &[(std::num::NonZeroU32, u64)],
     tag: u8,
 ) -> TestResult<u64> {
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+    let path = route_toward(world, tile(client.world_spatial().actor_position)?, TOWN, |at| {
         at == TOWN
     })
     .ok_or("post-death return to town unavailable")?;
@@ -3694,7 +3682,7 @@ async fn player_corpse(
     let existing = census(client)?;
     let owner = own_entity(client)?;
     let at = tile(target.position)?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |p| {
+    let path = route_toward(world, tile(client.world_spatial().actor_position)?, ("corpse-source rat approach", at), |p| {
         p.floor == at.floor && p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)) <= 1
     })
     .ok_or("no ordinary melee approach to corpse-source rat")?;

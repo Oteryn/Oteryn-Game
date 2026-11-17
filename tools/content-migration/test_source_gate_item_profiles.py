@@ -10,7 +10,7 @@ class SourceGateItemProfiles(unittest.TestCase):
     def test_source_pair_is_exact_ground_only_door_with_level_base(self):
         packet = gate.capture()
         self.assertEqual({r['production_definition']['production_key'] for r in packet['records']},
-                         {f'oteryn:item.tibia.i{i}' for i in (1626,1627,1634,1635,1948,2572,2573,2574,2575,2576,2577,2578,2579,2580,5111,5112,21935)})
+                         {f'oteryn:item.tibia.i{i}' for i in (1534,1535,1626,1627,1634,1635,1856,1857,1865,1867,1948,2572,2573,2574,2575,2576,2577,2578,2579,2580,5111,5112,21935)})
         for record in packet['records']:
             self.assertEqual(record['admission']['legal_destinations'], ['Ground'])
             self.assertEqual(record['semantics']['classification']['value']['item_type'],
@@ -55,6 +55,19 @@ class SourceGateItemProfiles(unittest.TestCase):
             self.assertEqual(row['semantics']['physical']['value']['movable'], {'state':'KNOWN','value':False})
             self.assertEqual(row['semantics']['physical']['value']['pickupable'], {'state':'KNOWN','value':False})
             self.assertEqual(row['production_binding']['disposition'], 'EXACT')
+
+    def test_rat_corridor_decorations_keep_donor_collision(self):
+        rows = {r['production_definition']['production_key']: r for r in gate.capture()['records']}
+        objects = gate.source.engine_items.load_appearance_objects((gate.ROOT / gate.CLIENT).read_bytes())
+        for item in (1534, 1535, 1856, 1857, 1865, 1867):
+            flags = objects[item]['flags']
+            self.assertFalse(flags.get('flags.unpass', False), item)
+            self.assertFalse(flags.get('flags.unpath', False), item)
+            self.assertTrue(flags['flags.unmove'], item)
+            row = rows[f'oteryn:item.tibia.i{item}']
+            self.assertFalse(row['attributes']['blocks_movement'], item)
+            self.assertFalse(row['attributes']['blocks_projectile'], item)
+            self.assertEqual(row['admission']['legal_destinations'], ['Ground'])
 
     def test_existing_profiles_preserved_and_conflicts_refuse(self):
         packet = gate.capture()

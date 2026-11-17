@@ -48,6 +48,11 @@ KNOBS = section('# Local parallel stacks', 'GAME_SOURCE=')
 
 
 class KnobTests(unittest.TestCase):
+    def test_world_regions_include_native_hometown_exit(self):
+        selected = re.findall(r"compile-regions[^\n]*'([0-9;,]+)'", RUN_TEXT)
+        self.assertEqual(selected, ['126,125;126,126;127,126;127,127'])
+        self.assertIn('49-step', RUN_TEXT)
+
     def knobs(self, **env):
         script = 'set -Eeuo pipefail\n' + KNOBS + 'printf "%s|%s|%s|%s" "$SERVICE_USER" "$BASE" "$NODE_BOOT_KEEP_STACK" "$NODE_BOOT_REUSE_STACK"\n'
         return bash(script, env)

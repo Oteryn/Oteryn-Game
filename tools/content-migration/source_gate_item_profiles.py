@@ -9,6 +9,10 @@ prove walkable, immovable, non-pickup Ground custody. LADDER is an existing
 closed native Item class, not a new name-based interaction or floor flag.
 XML:3517-3519 declares open archways1626/1627, XML:43330 grass21935.
 Pinned client flags, not those names, prove their static walkable collision.
+NBROUTE also admits cave decorations 1534/1535, 1856/1857 and 1865/1867.
+For each id the pinned appearances.dat has unmove=true, unpass=false and
+unpath=false; no XML unpass/blockpath override exists. Their native collision
+comes from those donor flags, not from a town-coordinate exception.
 The same capture admits passable buttresses1634/1635 (XML:3544), the final
 original entrance frontier; no walls or collision flags are overridden.
 XML:5314-5316 declares red carpet2572-2580. Their exact pinned client flags
@@ -25,7 +29,8 @@ sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as source
 import grizzly_shop_profiles as accepted
 
-CLASSES = {1626: None, 1627: None, 1634: None, 1635: None, 1948: "ladder",
+CLASSES = {1534: None, 1535: None, 1626: None, 1627: None, 1634: None, 1635: None,
+           1856: None, 1857: None, 1865: None, 1867: None, 1948: "ladder",
            2572: None, 2573: None, 2574: None, 2575: None, 2576: None,
            2577: None, 2578: None, 2579: None, 2580: None,
            5111: "door", 5112: "door", 21935: None}
