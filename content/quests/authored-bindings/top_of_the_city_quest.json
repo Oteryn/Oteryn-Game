@@ -136,6 +136,7 @@
                 }
               ],
               "premium_required": true,
+              "requires_world_admission": true,
               "completes": false,
               "offerings": [],
               "return_on_failure": false,
@@ -148,6 +149,7 @@
                 "item": "oteryn:item.tibia.i3456",
                 "count": 1,
                 "reusable": true,
+                "selected_instance": true,
                 "replacement": null,
                 "target_replacement": null
               }

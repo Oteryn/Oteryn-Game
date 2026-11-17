@@ -1,14 +1,17 @@
 //! Lane qh: registered authored bindings driven by literal USE on an unmodified native map crop.
 //! The quest catalogue is the production embedded one; nothing here supplies a callback.
-use super::fixture::{Harness, id};
+use super::fixture::{Harness, debug, id};
 use super::questpc8_authored_programmes::use_target;
 use super::{TestResult, quest_world_callbacks};
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::map::{overlay::TilePos, view::MapFacts};
 use oteryn_gameplay_quests::quest::authored_bindings::Bindings;
-use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
-use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Offering, Position};
+use oteryn_protocol_oteryn::world_object::{
+    MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, decode_use_result,
+    encode_item_use_intent,
+};
 
 const SMALL_SAPPHIRE: &str = "authored-qh-small-sapphire";
 const SMALL_SAPPHIRE_CHEST: TilePos = TilePos {
@@ -16,12 +19,76 @@ const SMALL_SAPPHIRE_CHEST: TilePos = TilePos {
     y: 32429,
     floor: -7,
 };
-const TOP_OF_THE_CITY: &str = "authored-qh-top-of-the-city";
+pub(super) const TOP_OF_THE_CITY: &str = "authored-qh-top-of-the-city";
 const TOP_OF_THE_CITY_CRATE: TilePos = TilePos {
     x: 32807,
     y: 31252,
     floor: -8,
 };
+
+const DIG: &str = "authored-qh-top-of-the-city-dig";
+const BARE: &str = "authored-qh-top-of-the-city-dig-bare";
+const WRONG_TOOL: &str = "authored-qh-top-of-the-city-dig-wrong-tool";
+const NO_PICK: &str = "authored-qh-top-of-the-city-dig-no-pick";
+const DIRT: Position = Position {
+    x: 32803,
+    y: 31259,
+    floor: -8,
+};
+const BEFORE_DIG: Position = Position {
+    x: 32803,
+    y: 31258,
+    floor: -8,
+};
+const TUNNEL: Position = Position { floor: -9, ..DIRT };
+const DIG_CALLBACK: &str = "oteryn:quest-callback/authored-top-of-the-city-dig";
+const CITY_STAGE: &str = "oteryn:quest-progress/authored/top-of-the-city/stage";
+const PICK: &str = "oteryn:item.tibia.i3456";
+const SHOVEL: &str = "oteryn:item.tibia.i3457";
+
+pub(super) fn is_dig(name: &str) -> bool {
+    matches!(name, DIG | BARE | WRONG_TOOL | NO_PICK)
+}
+
+pub(super) const fn dig_start() -> Position {
+    BEFORE_DIG
+}
+
+#[test]
+fn qh_top_of_the_city_pick_digs_into_tunnel_postgres() -> TestResult {
+    run_dig(DIG)
+}
+
+#[test]
+fn qh_top_of_the_city_bare_dirt_use_refuses_postgres() -> TestResult {
+    run_dig(BARE)
+}
+
+#[test]
+fn qh_top_of_the_city_wrong_tool_refuses_postgres() -> TestResult {
+    run_dig(WRONG_TOOL)
+}
+
+#[test]
+fn qh_top_of_the_city_pick_use_without_pick_refuses_postgres() -> TestResult {
+    run_dig(NO_PICK)
+}
+
+fn run_dig(name: &'static str) -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
+        quest_world_callbacks::scenario(name, DIRT, false)
+    });
+    eprintln!(
+        "QH_POSTGRES_CASE {name} duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
 
 #[test]
 fn qh_small_sapphire_premium_chest_mints_bag_once_postgres() -> TestResult {
@@ -87,12 +154,16 @@ pub(super) fn callback(name: &str) -> TestResult<Callback> {
             )),
             "oteryn:quest-callback/authored-small-sapphire-chest",
         ),
-        TOP_OF_THE_CITY => (
+        TOP_OF_THE_CITY | DIG | BARE | WRONG_TOOL | NO_PICK => (
             include_str!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
                 "/../../../content/quests/authored-bindings/top_of_the_city_quest.json"
             )),
-            "oteryn:quest-callback/authored-top-of-the-city-crate",
+            if is_dig(name) {
+                DIG_CALLBACK
+            } else {
+                "oteryn:quest-callback/authored-top-of-the-city-crate"
+            },
         ),
         _ => return Err(format!("unknown qh case {name}").into()),
     };
@@ -107,6 +178,22 @@ pub(super) fn world(
     name: &str,
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    if is_dig(name) {
+        return super::source_world_crop::compiled_region(
+            TilePos {
+                x: DIRT.x - 1,
+                y: DIRT.y - 1,
+                floor: TUNNEL.floor,
+            },
+            TilePos {
+                x: DIRT.x + 1,
+                y: DIRT.y + 1,
+                floor: DIRT.floor,
+            },
+            tile(BEFORE_DIG),
+            native,
+        );
+    }
     let (minimum, maximum, start) = match name {
         SMALL_SAPPHIRE => (
             TilePos {
@@ -156,8 +243,127 @@ pub(super) async fn exercise(
     match name {
         SMALL_SAPPHIRE => small_sapphire(owner, admitted, h).await,
         TOP_OF_THE_CITY => top_of_the_city(owner, admitted, h).await,
+        DIG | BARE | WRONG_TOOL | NO_PICK => dig(name, owner, admitted, h).await,
         _ => Err(format!("unknown qh case {name}").into()),
     }
+}
+
+const fn tile(position: Position) -> TilePos {
+    TilePos {
+        x: position.x,
+        y: position.y,
+        floor: position.floor,
+    }
+}
+
+async fn dig(
+    name: &str,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    owner.admit_premium(id(40), admitted.game_session_id);
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            &[4, 6, 11, 15, 18],
+        )
+        .ok_or("dig capabilities")?;
+    let fence = admitted.item_fence.ok_or("dig fence")?;
+    // Seed the predecessor state established by the separate NPC chain case.
+    sqlx::query(
+        "INSERT INTO game_character_quest_tracks \
+         (character_id, track_key, quest_key, value, committed_character_revision) \
+         SELECT character_id, $2, 'oteryn:quest.authored.top_of_the_city_quest', 2, character_revision \
+         FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(id(41).as_slice())
+    .bind(CITY_STAGE)
+    .execute(&h.pool)
+    .await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    for (index, item) in [(1, PICK), (2, SHOVEL)] {
+        if (item == PICK && name != NO_PICK) || (item == SHOVEL && name == WRONG_TOOL) {
+            quest_world_callbacks::input_item(
+                owner,
+                fence,
+                &Offering {
+                    position: BEFORE_DIG,
+                    item: item.into(),
+                    count: 1,
+                },
+                950 + index,
+                true,
+            )
+            .await?;
+        }
+    }
+    let dirt = target(owner, tile(DIRT))?;
+    let map = owner.bundle_map().ok_or("dig map")?;
+    assert_eq!(
+        super::engitem_seal_paint::source_appearances(map, DIRT)?,
+        [351, 8504]
+    );
+    assert_eq!(live(h, 3456).await?, i64::from(name != NO_PICK));
+
+    let command = admitted.continuity.next_command_id;
+    let result = if name == BARE {
+        use_target(owner, admitted, command, &dirt).await?
+    } else {
+        let tool = if name == WRONG_TOOL { SHOVEL } else { PICK };
+        let reference = owner
+            .active_generation
+            .and_then(|g| g.native_gameplay())
+            .and_then(|n| n.item_index())
+            .and_then(|index| index.definition_ref("Item", tool, "definition-r1"))
+            .ok_or("dig tool definition")?;
+        let payload = encode_item_use_intent(&UseIntent {
+            target: UseTarget::ItemByDefinition(reference),
+            use_with: None,
+            use_with_map_item: Some(MapUseTarget::Object(dirt)),
+            use_with_position: None,
+        })
+        .map_err(debug)?;
+        let response = quest_world_callbacks::wire(owner, admitted, command, 2, payload).await?;
+        decode_use_result(&response).map_err(debug)?
+    };
+    let expected = match name {
+        DIG => UseDisposition::Committed,
+        BARE => UseDisposition::Rejected,
+        _ => UseDisposition::NothingToUse,
+    };
+    assert_eq!(result, expected, "{name} dispatch disposition");
+    let position = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(admitted.runtime_actor.ok_or("dig actor")?)
+        .map_err(debug)?
+        .position();
+    let expected_position = if name == DIG { TUNNEL } else { BEFORE_DIG };
+    assert_eq!(
+        position,
+        crate::foundation::MovementLocalPosition {
+            x: i32::from(expected_position.x),
+            y: i32::from(expected_position.y),
+            floor: -i16::from(expected_position.floor),
+        }
+    );
+    assert_eq!(track(h, CITY_STAGE).await?, 2);
+    let selected_tools: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_quest_world_tool_reads r \
+         JOIN game_item_instances i USING(item_instance_id) \
+         WHERE r.transition_key=$1 AND i.definition_production_key=$2",
+    )
+    .bind(DIG_CALLBACK)
+    .bind(PICK)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(selected_tools, i64::from(name == DIG), "fenced pick read");
+    assert_eq!(live(h, 3456).await?, i64::from(name != NO_PICK));
+    Ok(())
 }
 
 fn target(

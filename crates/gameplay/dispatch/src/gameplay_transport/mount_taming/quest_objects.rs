@@ -104,6 +104,7 @@ mod tests {
             accepts(dig),
             "pick-on-dirt must reach the fenced tool owner"
         );
+        assert!(tool.selected_instance);
         assert!(is_required_tool(tool, "oteryn:item.tibia.i3456"));
         assert!(
             !is_required_tool(tool, "oteryn:item.tibia.i3457"),

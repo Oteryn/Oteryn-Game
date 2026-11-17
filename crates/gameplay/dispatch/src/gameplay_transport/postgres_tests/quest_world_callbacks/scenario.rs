@@ -125,6 +125,8 @@ fn scenario_case(
             y: 32167,
             floor: -8,
         }
+    } else if super::super::qh_authored_cases::is_dig(name) {
+        super::super::qh_authored_cases::dig_start()
     } else if qd_world {
         super::super::qd_world::start(name)?
     } else if engenc_asura {
@@ -1539,7 +1541,7 @@ fn scenario_case(
                 5
             } else if matches!(name, "authored-anniversary" | "authored-venore") {
                 12
-            } else if super::super::qh_authored_cases::is_case(name) {
+            } else if name == super::super::qh_authored_cases::TOP_OF_THE_CITY {
                 // One player plus Iriana and Jimmy for Top of the City.
                 3
             } else if name == "authored-torch" {
