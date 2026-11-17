@@ -39,5 +39,20 @@ The mounted `brainout.rs` cases drive framed USE and cover one-input rollback,
 two-input success, ground position/quantity, Mission09, replay, full inventory
 and wrong quest state. Their initial focused run is compiling dependencies.
 
-Status: donor investigation and regression case authoring complete;
-implementation and red/green validation pending.
+Implementation now includes both native control bindings, the `ground_output`
+effect, an exchange-owner participant, and migration 2889. Input BURNs, the
+output, audit event and Mission09 receipt share one physical transaction. The
+new deferred guard arms require both directions of that composition.
+
+Validation recorded so far:
+
+| Check | Result |
+|---|---|
+| `cargo fmt --all` | Passed; include-mounted leaf files also formatted with Rust 2024 rustfmt |
+| `python3 tools/content-schema/validate_full_game_content_tree.py` | Passed: 19 domains, 39 systems, 100 nodes; no unassigned entries |
+| Initial focused dispatch regression | Build still running; no red/green result claimed |
+| Quest-authoring checks and unit-tests runner | Running |
+| Clippy, full regeneration and pin verification | Pending |
+
+Status: implementation authored; PostgreSQL red/green qualification and remaining
+validation are pending. This branch is WIP and has no PR.
