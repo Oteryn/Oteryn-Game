@@ -1,11 +1,10 @@
 //! P22d (live tracker refresh on kill progress):
 //! 1. Admit the node-boot character, track a race and note its kill count.
 //! 2. Walk to a compiled spawn of that race, kill one creature and wait for the live frames.
-//! 3. The server pushes a Cyclopedia tracker StateDelta (domain 98); the native session has no
-//!    decoder for that domain and fails with `UnsupportedPushedDomain`. The row therefore
-//!    confirms the credit through a fresh admission (kill count +1) and reports the client gap.
+//! 3. Require a decoded Cyclopedia tracker update for that race and matching fresh-admission
+//!    credit. A typed unsupported tracker domain with durable credit identifies a decoder gap.
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityKind};
+use oteryn_dev_client::{DevClientError, DevClientSession, EntityKind, SessionError, SessionEvent};
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
 use oteryn_protocol_oteryn::{CommandStatus, cyclopedia_tracker as tr};
 
@@ -66,7 +65,7 @@ async fn read(
     Ok(list)
 }
 
-const GAP: &str = "source:crates/session/src/domain_dispatch.rs:346";
+const GAP: &str = "tracker-domain-98-unsupported-with-durable-credit";
 
 fn kills(snapshot: &Option<tr::TrackerSnapshot>, key: &str) -> u32 {
     snapshot
@@ -76,10 +75,38 @@ fn kills(snapshot: &Option<tr::TrackerSnapshot>, key: &str) -> u32 {
 }
 
 /// Whether a session failure is the refusal of the pushed tracker domain.
-fn is_domain_gap(error: &str) -> bool {
-    let lowered = error.to_ascii_lowercase();
-    lowered.contains("unsupportedpusheddomain")
-        || (lowered.contains("unsupported") && lowered.contains("98"))
+fn is_domain_gap(mut error: &DevClientError) -> bool {
+    while let DevClientError::Context { source, .. } = error {
+        error = source;
+    }
+    matches!(error, DevClientError::Session(SessionError::UnsupportedPushedDomain {
+        domain_id: tr::STATE_DOMAIN_CYCLOPEDIA_TRACKER
+    }))
+}
+
+fn classify_refresh(before: u32, durable: u32, pushed: Option<u32>, error: Option<&DevClientError>) -> TestResult<Verdict> {
+    expect(before.checked_add(1) == Some(durable), "kill-credit", (before, durable))?;
+    match error {
+        Some(error) if is_domain_gap(error) => Ok(("MISSING-CLIENT", GAP.to_owned())),
+        Some(error) => Err(format!("step=live-refresh;observed=session-error:{error}").into()),
+        None if pushed == Some(durable) => Ok(("PASS", format!("live-and-durable-tracker-kill-count:{durable}"))),
+        None => Err(format!("step=live-refresh;observed=pushed:{pushed:?};needed={durable}").into()),
+    }
+}
+
+fn pushed_kills(events: Vec<SessionEvent>, after: u64) -> TestResult<Option<u32>> {
+    let mut count = None;
+    for event in events {
+        if let SessionEvent::GatedSnapshotReplaced(delta) = event
+            && delta.value.domain_id == tr::STATE_DOMAIN_CYCLOPEDIA_TRACKER
+            && delta.server_sequence > after
+        {
+            let (bestiary, _) = tr::decode_domain_snapshot(&delta.value.payload)
+                .ok_or("step=live-refresh;observed=undecodable-tracker-snapshot")?;
+            count = bestiary.entries.iter().find(|entry| entry.creature_key == RAT).map(|entry| entry.kill_count);
+        }
+    }
+    Ok(count)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
@@ -95,6 +122,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     )?;
     let mut client = connect_world(clients, 0xd6).await?;
     selected(&client)?;
+    let was_tracked = has(&read(&mut client, best).await?, RAT);
     let (status, list) = call(&mut client, best, &change(tr::TrackerAction::Add, RAT)).await?;
     expect(
         status == CommandStatus::Accepted && has(&list, RAT),
@@ -110,6 +138,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         .and_then(|entities| {
             entities.iter().find(|entry| {
                 entry.kind == EntityKind::Creature
+                    && entry.display_name.is_some_and(|name| name.as_str().is_ok_and(|name| name == "Rat"))
                     && entry.position.floor == here.floor
                     && entry
                         .position
@@ -120,7 +149,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
             })
         })
         .copied()
-        .ok_or("step=hunt;observed=no-adjacent-creature")?;
+        .ok_or("step=hunt;observed=no-adjacent-rat")?;
     client.take_events();
     let attack = client
         .session_mut()
@@ -133,41 +162,40 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     )?;
 
     let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
-    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    let mut push_error: Option<String> = None;
-    let mut killed = false;
+    verdict::Harness::global().bounded_wait(deadline, "tracker-push");
+    let mut pushed = None;
+    let mut push_error = None;
     while tokio::time::Instant::now() < deadline {
-        if let Err(error) = client.service_liveness(Duration::from_millis(50)).await {
-            push_error = Some(error.to_string());
-            break;
-        }
-        client.take_events();
-        if client
-            .world_entities()
-            .is_some_and(|entities| entities.get(&target.entity).is_none())
+        if let Some(count) = pushed_kills(client.take_events(), attack.result_server_sequence)?
+            && count != before
         {
-            killed = true;
+            pushed = Some(count);
             break;
         }
+        match tokio::time::timeout_at(deadline, client.service_liveness(Duration::from_millis(50))).await {
+            Ok(Ok(())) => {}
+            Ok(Err(error)) if is_domain_gap(&error) => {
+                push_error = Some(error);
+                break;
+            }
+            Ok(Err(error)) => return Err(error.into()),
+            Err(_) => return Err("step=live-refresh;observed=tracker-push-timeout".into()),
+        }
+    }
+    if push_error.is_none() {
+        logout(&mut client).await?;
     }
     drop(client);
 
     let mut fresh = connect_world(clients, 0xd7).await?;
     let list = read(&mut fresh, best).await?;
     let after = kills(&list, RAT);
-    // Leave the tracker as found.
-    call(&mut fresh, best, &change(tr::TrackerAction::Remove, RAT)).await?;
-    logout(&mut fresh).await?;
-    expect(
-        after == before + 1,
-        "kill-credit",
-        format!("before:{before},after:{after},killed:{killed},error:{push_error:?}"),
-    )?;
-    match push_error {
-        Some(error) if is_domain_gap(&error) => Ok(("MISSING-CLIENT", GAP.to_owned())),
-        Some(error) => Err(format!("step=live-refresh;observed=session-error:{error}").into()),
-        None => Err("step=live-refresh;observed=no-domain-98-push-and-no-client-refusal".into()),
+    if !was_tracked {
+        let (status, list) = call(&mut fresh, best, &change(tr::TrackerAction::Remove, RAT)).await?;
+        expect(status == CommandStatus::Accepted && !has(&list, RAT), "cleanup", status)?;
     }
+    logout(&mut fresh).await?;
+    classify_refresh(before, after, pushed, push_error.as_ref())
 }
 
 type Verdict = (&'static str, String);
@@ -223,6 +251,22 @@ mod tests {
     use super::*;
 
     #[test]
+    fn tracker_refresh_classifier_requires_domain_identity_and_durable_credit() {
+        use oteryn_dev_client::{DevClientError, SessionError};
+        let wrong = DevClientError::Session(SessionError::UnsupportedPushedDomain { domain_id: 97 });
+        let tracker = DevClientError::Session(SessionError::UnsupportedPushedDomain { domain_id: tr::STATE_DOMAIN_CYCLOPEDIA_TRACKER });
+        assert!(classify_refresh(3, 4, None, Some(&wrong)).is_err());
+        assert!(matches!(classify_refresh(3, 4, None, Some(&tracker)), Ok(("MISSING-CLIENT", _))));
+        assert!(classify_refresh(3, 3, Some(4), None).is_err());
+    }
+
+    #[test]
+    fn decoded_tracker_refresh_and_matching_durable_credit_pass() {
+        assert!(matches!(classify_refresh(3, 4, Some(4), None), Ok(("PASS", _))));
+        assert!(classify_refresh(3, 4, Some(5), None).is_err());
+    }
+
+    #[test]
     fn token_has_no_whitespace_and_is_bounded() {
         let value = token(&format!("step=a b\tc\n{}", "x".repeat(400)));
         assert!(!value.contains(char::is_whitespace));
@@ -232,7 +276,9 @@ mod tests {
 
     #[test]
     fn domain_gap_is_recognised_from_the_session_error() {
-        assert!(is_domain_gap("UnsupportedPushedDomain { domain_id: 98 }"));
-        assert!(!is_domain_gap("connection reset"));
+        assert!(is_domain_gap(&DevClientError::Session(SessionError::UnsupportedPushedDomain {
+            domain_id: tr::STATE_DOMAIN_CYCLOPEDIA_TRACKER,
+        })));
+        assert!(!is_domain_gap(&DevClientError::Io(std::io::ErrorKind::ConnectionReset.into())));
     }
 }

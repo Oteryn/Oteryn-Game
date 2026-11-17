@@ -1,9 +1,7 @@
 //! G25: coin transfer quotes and coin market (cmd 6127/6128, caps 154/63).
-//! Admits the character, asks for the durable operation detail (action 3), a 25-coin gift review
-//! addressed to the other provisioned character (action 1) and the coin market listing (market
-//! action 1), then re-reads the detail. A pinned Platform with a coin API must answer the review
-//! `ok` with a quote; the node boot pins no Store API, so the server's exact `unavailable` refusal
-//! is asserted with unchanged state and the row ends FAIL `needed:platform-coin-api-in-node-boot`.
+//! Review a 25-coin gift to the other fixture character, query the coin market, and require
+//! both Platform-backed wallet projections to be unchanged. The quote must bind the requested
+//! recipient, amount, and world in the Game-owned quote table.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use sqlx::Connection;
@@ -71,13 +69,32 @@ fn result_of(value: &serde_json::Value) -> String {
     value["result"].as_str().unwrap_or("none").to_owned()
 }
 
-fn operation() -> [u8; 16] {
-    let mut id = [0_u8; 16];
-    id[0] = 1;
-    id[6] = 0x70;
-    id[8] = 0x80;
-    id[15] = 1;
-    id
+fn review_matches(value: &serde_json::Value, recipient: &str, amount: u64) -> bool {
+    result_of(value) == "ok"
+        && value["quote"].as_str().is_some_and(|id| !id.is_empty())
+        && value["recipient"].as_str() == Some(recipient)
+        && value["amount"].as_str().and_then(|amount| amount.parse::<u64>().ok()) == Some(amount)
+        && value["expires_in_seconds"].as_u64() == Some(60)
+}
+
+async fn coin_balance(client: &mut DevClientSession) -> TestResult<[u64; 3]> {
+    let request = coin_market::Request { action: 9, ..Default::default() };
+    let payload = coin_market::encode(&request).map_err(|error| format!("step=balance encode={error:?}"))?;
+    let reply = json_call(client, coin_market::CAPABILITY, coin_market::COMMAND, &payload).await?;
+    if result_of(&reply) != "ok" {
+        return Err(format!("step=balance observed={};needed=platform-coin-api-and-depot-access", result_of(&reply)).into());
+    }
+    let field = |name: &str| -> TestResult<u64> {
+        reply[name].as_str().and_then(|value| value.parse().ok())
+            .ok_or_else(|| format!("step=balance observed=invalid-{name}").into())
+    };
+    Ok([field("transferable")?, field("non_transferable")?, field("reserved")?])
+}
+
+async fn at_depot(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = route(world, from, |at| near_locker(world, at)).ok_or("step=depot needed=reachable-locker")?;
+    walk(client, world, &path).await
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -88,20 +105,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             return Err(format!("step=admit observed=capability-{capability}-not-selected").into());
         }
     }
-    let detail = |op| {
-        coin_transfer::encode(&coin_transfer::Request {
-            action: 3,
-            operation: op,
-            ..Default::default()
-        })
-    };
-    let detail_before = json_call(
-        &mut client,
-        coin_transfer::CAPABILITY,
-        coin_transfer::COMMAND,
-        &detail(operation()).map_err(|error| format!("step=encode observed={error:?}"))?,
-    )
-    .await?;
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
+    let mut recipient = connect_character(clients, 0xd5, 0).await?;
+    at_depot(&mut client, world).await?;
+    at_depot(&mut recipient, world).await?;
+    let before = [coin_balance(&mut client).await?, coin_balance(&mut recipient).await?];
     let review = coin_transfer::encode(&coin_transfer::Request {
         action: 1,
         recipient: peer.clone(),
@@ -125,15 +135,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &list,
     )
     .await?;
-    let detail_after = json_call(
-        &mut client,
-        coin_transfer::CAPABILITY,
-        coin_transfer::COMMAND,
-        &detail(operation()).map_err(|error| format!("step=encode observed={error:?}"))?,
-    )
-    .await?;
-    let unchanged = detail_before == detail_after;
+    let after = [coin_balance(&mut client).await?, coin_balance(&mut recipient).await?];
+    let unchanged = before == after;
     logout(&mut client).await?;
+    logout(&mut recipient).await?;
     let (transfer, listed) = (result_of(&reviewed), result_of(&market));
     if transfer == "unavailable" || listed == "unavailable" {
         return Err(format!("step=quote observed=transfer:{transfer};market:{listed};state_unchanged={unchanged};needed:platform-coin-api-in-node-boot").into());
@@ -147,10 +152,36 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         )
         .into());
     }
-    if transfer != "ok" || reviewed["quote"].is_null() || !unchanged {
+    if !review_matches(&reviewed, &peer, 25) || !unchanged {
         return Err(format!("step=quote observed=transfer:{transfer};market:{listed};quote_present={};state_unchanged={unchanged};needed=ok-with-quote", !reviewed["quote"].is_null()).into());
     }
-    Ok(format!(
-        "transfer-review-ok-with-quote;market:{listed};state_unchanged"
-    ))
+    let quote = reviewed["quote"].as_str().ok_or("step=quote observed=missing-quote-id")?;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let bound: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_coin_gift_quotes
+         WHERE quote_id::text=$1 AND actor=encode($2,'hex')::uuid AND recipient=encode($3,'hex')::uuid
+           AND world_id=encode($4,'hex')::uuid AND amount=25 AND consumed_by IS NULL)",
+    ).bind(quote).bind(clients.characters[1].as_slice()).bind(clients.characters[0].as_slice())
+        .bind(clients.world.as_slice()).fetch_one(&mut database).await?;
+    if !bound {
+        return Err("step=quote observed=no-unconsumed-quote-for-fixture-actors".into());
+    }
+    Ok(format!("transfer-review-ok-with-bound-quote;market:{listed};balances-unchanged"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn coin_quote_requires_the_requested_recipient_and_amount() {
+        let mut quote = serde_json::json!({
+            "result": "ok", "quote": "01935f3b-2c4d-7a11-8b22-334455667788", "recipient": "Other",
+            "amount": "25", "expires_in_seconds": 60
+        });
+        assert!(!review_matches(&quote, "Peer", 25));
+        quote["recipient"] = "Peer".into();
+        assert!(!review_matches(&quote, "Peer", 24));
+        assert!(review_matches(&quote, "Peer", 25));
+    }
 }

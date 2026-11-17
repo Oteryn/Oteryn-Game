@@ -29,6 +29,56 @@ struct Page {
     pvp_kills: u16,
 }
 
+fn page_counts_match(page: &Page, history: &History, offset: usize, limit: u8) -> bool {
+    let count = |length: usize| length.saturating_sub(offset).min(usize::from(limit));
+    usize::from(page.deaths) == count(history.deaths.len())
+        && usize::from(page.pvp_kills) == count(history.kills.len())
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct History {
+    deaths: Vec<String>,
+    kills: Vec<String>,
+}
+
+fn received_one_death(before: &History, after: &History) -> bool {
+    after.deaths.split_first().is_some_and(|(new, retained)| {
+        !before.deaths.contains(new) && retained == before.deaths
+    }) && after.kills == before.kills
+}
+
+async fn history(clients: &SeamClients<'_>) -> TestResult<History> {
+    use sqlx::Connection;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp())*1000)::bigint")
+        .fetch_one(&mut database).await?;
+    let oldest = now.checked_sub(info::HISTORY_WINDOW_MS).ok_or("step=history observed=invalid-clock")?;
+    let character = clients.characters[0].as_slice();
+    let deaths: Vec<String> = sqlx::query_scalar(
+        "SELECT to_jsonb(d)::text FROM game_character_death_receipts d
+         WHERE d.character_id=encode($1,'hex')::uuid AND d.committed_at BETWEEN $2 AND $3
+         ORDER BY committed_at DESC,death_occurrence_id DESC LIMIT 65536",
+    ).bind(character).bind(oldest).bind(now).fetch_all(&mut database).await?;
+    let kills: Vec<String> = sqlx::query_scalar(
+        "SELECT to_jsonb(k)::text FROM game_character_unjustified_points k
+         WHERE k.character_id=encode($1,'hex')::uuid
+           AND k.committed_at BETWEEN to_timestamp($2::double precision/1000) AND to_timestamp($3::double precision/1000)
+         ORDER BY committed_at DESC,death_occurrence_id DESC LIMIT 65536",
+    ).bind(character).bind(oldest).bind(now).fetch_all(&mut database).await?;
+    Ok(History { deaths, kills })
+}
+
+async fn check_offsets(client: &mut DevClientSession, history: &History) -> TestResult {
+    let end = u16::try_from(history.deaths.len().max(history.kills.len()))?;
+    for offset in [0, 1, end] {
+        let page = query(client, offset, 1).await?;
+        if !page_counts_match(&page, history, usize::from(offset), 1) {
+            return Err(format!("step=history-offset observed={page:?};needed=offset-{offset}-matches-durable-history").into());
+        }
+    }
+    Ok(())
+}
+
 fn decode_page(bytes: &[u8], limit: u8) -> TestResult<Page> {
     if bytes.first() != Some(&0) || bytes.len() < 71 {
         return Err(format!(
@@ -150,7 +200,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if baseline.level == 0 || baseline.pvp_kills == 0 {
         return Err(format!("step 1 query-self: observed={baseline:?}; need nonzero native level and the preceding real PvP frag").into());
     }
-    let _paged = query(&mut client, 1, 1).await?;
+    let first_history = history(clients).await?;
+    if !page_counts_match(&baseline, &first_history, 0, 50) {
+        return Err("step=baseline observed=history-counts-do-not-match-durable-records".into());
+    }
+    check_offsets(&mut client, &first_history).await?;
 
     let visible = info::CharacterInfoOperation::QueryVisible {
         character: clients.characters[1],
@@ -209,7 +263,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         }
     }
     let after = query(&mut client, 0, 50).await?;
-    if after.deaths != baseline.deaths.saturating_add(1) || after.pvp_kills < baseline.pvp_kills {
+    let post_death = history(clients).await?;
+    if after.deaths != baseline.deaths.saturating_add(1) || after.pvp_kills < baseline.pvp_kills
+        || !received_one_death(&first_history, &post_death)
+        || !page_counts_match(&after, &post_death, 0, 50)
+    {
         return Err(format!("step 4 history delta: before={baseline:?} after={after:?}; need one death and retained PvP kill").into());
     }
     let old_session = client.join_snapshot().game_session_id;
@@ -219,9 +277,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step 5 fresh admission: server reused GameSession".into());
     }
     let durable = query(&mut client, 0, 50).await?;
-    if durable != after {
+    let durable_history = history(clients).await?;
+    if durable != after || durable_history != post_death {
         return Err(format!("step 5 durable recheck: before-logout={after:?} fresh={durable:?}; need identical summary/history counts").into());
     }
+    check_offsets(&mut client, &durable_history).await?;
     logout(&mut client).await?;
     Ok(())
 }
@@ -249,6 +309,23 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn history_page_counts_respect_the_requested_offset() {
+        let first = Page { level: 1, experience: 0, counters: [0; 6], deaths: 0, pvp_kills: 1 };
+        let history = History { deaths: Vec::new(), kills: vec!["credited-kill".into()] };
+        assert!(page_counts_match(&first, &history, 0, 1));
+        assert!(!page_counts_match(&first, &history, 1, 1));
+    }
+
+    #[test]
+    fn death_history_must_add_one_record_and_preserve_previous_records() {
+        let before = History { deaths: vec!["prior".into()], kills: vec!["kill".into()] };
+        let after = History { deaths: vec!["new".into(), "fabricated".into()], kills: before.kills.clone() };
+        assert!(!received_one_death(&before, &after));
+        let after = History { deaths: vec!["new".into(), "prior".into()], kills: before.kills.clone() };
+        assert!(received_one_death(&before, &after));
+    }
+
     #[test]
     fn page_decoder_is_bounded_and_strict() -> TestResult {
         let mut bytes = vec![0];

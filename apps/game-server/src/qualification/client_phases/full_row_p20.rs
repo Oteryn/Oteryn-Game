@@ -14,11 +14,8 @@
 //!    request is refused and does not charge or change the durable build again.
 //! 5. Logout and obtain a fresh admission; assert a new game-session id and the
 //!    same XP, level, promoted vocation, inventory, and position.
-//! 6. That fresh admission is the paid-region-expiry relocation attempt. Assert a
-//!    server relocation delta to the free-town temple. The current server has no
-//!    player command/content mapping that places a character on a Premium special
-//!    tile and no admission relocation consumer; after the preceding real commands,
-//!    report that runtime-observed missing path rather than inventing a relocation.
+//! 6. Observe the current entitlement expire, then admit again and require the native
+//!    Premium-hometown relocation to Thais and the durable change of citizenship.
 
 use super::*;
 
@@ -197,12 +194,58 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+fn expiry_relocation_matches(
+    expired: bool, fresh_admission: bool, before: ActorPosition, after: ActorPosition, temple: ActorPosition,
+    destination_town: u32,
+) -> bool {
+    expired && fresh_admission && after != before && after == temple && destination_town == 8
+}
+
+async fn premium(client: &mut DevClientSession) -> TestResult<oteryn_protocol_oteryn::premium_overview::Overview> {
+    use oteryn_protocol_oteryn::{character_info as info, premium_overview as wire};
+    let reply = client.session_mut().gated_command(
+        info::CAPABILITY_CHARACTER_INFO_V1, info::COMMAND_TYPE_CHARACTER_INFO, &[wire::OPERATION],
+    ).await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("step=premium-query observed={:?}", reply.status).into());
+    }
+    wire::Overview::decode(&reply.payload).ok_or_else(|| "step=premium-query observed=malformed-entitlement".into())
+}
+
+async fn hometown(clients: &SeamClients<'_>) -> TestResult<u32> {
+    use sqlx::Connection;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let town: i32 = sqlx::query_scalar(
+        "SELECT town_id FROM game_character_home_towns WHERE character_id=encode($1,'hex')::uuid",
+    ).bind(clients.characters[1].as_slice()).fetch_one(&mut database).await?;
+    Ok(u32::try_from(town)?)
+}
+
+async fn prepare_king_purchase(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+) -> TestResult<u64> {
+    let mut build = progress(client).await?;
+    while build.1 < 20 {
+        travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await?;
+        client_hunt::hunt_named(client, "Rat").await?;
+        let next = progress(client).await?;
+        if next.0 <= build.0 || next.1 < build.1 {
+            return Err(format!("step=3-leveling observed={build:?}->{next:?};needed=earned-experience").into());
+        }
+        build = next;
+    }
+    full_gold::earn(client, world, spawns, "P20 promotion", 20_000).await
+}
+
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let mut row = Row {
         completed: BTreeSet::new(),
     };
-    let result: TestResult = verdict::indexed_timeout(Duration::from_secs(90), async {
+    evidence("P20_CHECK steps-1-2 required-source-vocation-journey-outside-permitted-fixture-route");
+    let result: TestResult = verdict::indexed_timeout(Duration::from_secs(1800) + full_gold::allowance(20_000), async {
         let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
         let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
         let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -214,6 +257,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         )?;
         let mut client = connect_world(clients, 0xd0).await?;
         let result: TestResult = verdict::observe(async {
+            prepare_king_purchase(&mut client, world, &metadata.spawns).await?;
             let npc = approach_king(&mut client, world, &metadata.npcs).await?;
             let greeting = talk(&mut client, npc, "hi").await?;
             if greeting.is_empty() {
@@ -224,6 +268,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
                 .inventory()
                 .ok_or("step-3 inventory observation absent")?
                 .clone();
+            let carried_gold = full_gold::coin_value(&client)?;
             let quote = talk(&mut client, npc, "promotion").await?;
             if quote != ["Do you want to be promoted for 20000 gold coins?"] {
                 return Err(format!("step-3 promotion quote observed={quote:?}").into());
@@ -240,15 +285,14 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
                 .inventory()
                 .ok_or("step-4 inventory observation absent")?
                 .clone();
-            if promoted == unpromoted || inventory == uncharged {
+            let paid = full_gold::coin_value(&client)?;
+            if promoted == unpromoted || inventory == uncharged || paid.checked_add(20_000) != Some(carried_gold) {
                 return Err(format!(
                     "step-3 successful purchase missing vocation/inventory delta vocation={unpromoted:?}->{promoted:?} inventory={uncharged:?}->{inventory:?}"
                 )
                 .into());
             }
-            evidence(&format!(
-                "P20_CHECK step-3 FAIL observed=quote-{quote:?}-confirmation-{confirmation:?}-vocation-{promoted:?}-inventory-{inventory:?}; native level-20 rat hunt and 20000-gold loot actions did not run"
-            ));
+            row.complete("step-3", (&quote, &confirmation, &promoted, carried_gold, paid));
 
             let duplicate_quote = talk(&mut client, npc, "promotion").await?;
             let duplicate = talk(&mut client, npc, "yes").await?;
@@ -290,22 +334,41 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
                 (old_session, build, &promoted, &inventory, before),
             );
 
-            let towns = &world.base().subareas;
-            let temple = towns
-                .default_town
-                .and_then(|id| towns.town(id))
-                .and_then(|town| town.temple)
-                .map(|at| ActorPosition {
-                    x: i32::from(at.x),
-                    y: i32::from(at.y),
-                    floor: -i16::from(at.floor),
-                })
-                .ok_or("step-6 compiled free-town temple absent")?;
-            let after = client.world_spatial().actor_position;
-            if after == before || after != temple {
-                return Err(format!("step-6 paid-region expiry relocation observed={before:?}->{after:?} expected_free_town_temple={temple:?}; need=Premium-area special-tile mapping and free-town admission relocation consumer; source:crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator.rs:525").into());
+            use oteryn_protocol_oteryn::premium_overview::State;
+            let current = premium(&mut client).await?;
+            let expires = current.expires_at_us.filter(|_| current.state == State::Active && current.valid_for_us > 0)
+                .ok_or("step-6 needed=current-Premium-with-observable-expiry")?;
+            let source_town = hometown(clients).await?;
+            if ![10, 11, 12, 13, 14, 15, 16, 18, 20, 21, 22].contains(&source_town) {
+                return Err(format!("step-6 observed=hometown:{source_town};needed=Premium-hometown-fixture").into());
             }
-            row.complete("step-6", (before, after, temple));
+            let temple = world.base().subareas.town(8).and_then(|town| town.temple)
+                .map(|at| ActorPosition { x: i32::from(at.x), y: i32::from(at.y), floor: -i16::from(at.floor) })
+                .ok_or("step-6 compiled Thais temple absent")?;
+            let expired = tokio::time::timeout(Duration::from_secs(120), async {
+                loop {
+                    let view = premium(&mut client).await?;
+                    if view.valid_for_us == 0 && view.observed_at_us >= expires
+                        && view.expires_at_us == Some(expires)
+                        && matches!(view.state, State::Expired | State::Active)
+                    {
+                        return Ok::<_, Box<dyn std::error::Error>>(view);
+                    }
+                    client.service_liveness(Duration::from_millis(250)).await?;
+                    client.take_events();
+                }
+            }).await.map_err(|_| "step-6 needed=observed-Premium-expiry-before-admission")??;
+            let pre_expiry_session = client.join_snapshot().game_session_id;
+            logout(&mut client).await?;
+            client = connect_world(clients, 0xd2).await?;
+            let after = client.world_spatial().actor_position;
+            let town = hometown(clients).await?;
+            if !expiry_relocation_matches(expired.valid_for_us == 0, client.join_snapshot().game_session_id != pre_expiry_session,
+                before, after, temple, town)
+            {
+                return Err(format!("step-6 observed=expiry:{expired:?},position:{before:?}->{after:?},town:{town};needed=Thais-temple:{temple:?}").into());
+            }
+            row.complete("step-6", (before, after, temple, source_town, town));
             Ok(())
         })
         .await;
@@ -333,6 +396,16 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn promotion_expiry_relocation_requires_actual_expiry_and_a_later_admission() {
+        let before = ActorPosition { x: 100, y: 100, floor: 0 };
+        let temple = ActorPosition { x: 200, ..before };
+        assert!(!expiry_relocation_matches(false, true, before, temple, temple, 8));
+        assert!(!expiry_relocation_matches(true, false, before, temple, temple, 8));
+        assert!(!expiry_relocation_matches(true, true, before, temple, temple, 11));
+        assert!(expiry_relocation_matches(true, true, before, temple, temple, 8));
+    }
 
     #[test]
     fn verdict_requires_every_numbered_step() {

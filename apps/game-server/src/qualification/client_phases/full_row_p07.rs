@@ -95,6 +95,41 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+fn newly_revealed(before: &atelier::AtelierReply, after: &atelier::AtelierReply, quality: u8) -> Option<[u8; 16]> {
+    let mut added = after.gems.iter().filter(|gem| !before.gems.iter().any(|old| old.id == gem.id));
+    let gem = added.next()?;
+    (added.next().is_none() && gem.quality == quality && !gem.locked && !gem.vessel
+        && before.gems.iter().all(|old| after.gems.contains(old))).then_some(gem.id)
+}
+
+type AtelierState = (atelier::AtelierReply, atelier::resources::ResourceBalances);
+
+fn stale_unchanged(refused: bool, before: &AtelierState, after: &AtelierState) -> bool {
+    refused && before == after
+}
+
+fn gold_debit(before: &atelier::resources::ResourceBalances, after: &atelier::resources::ResourceBalances) -> Option<u64> {
+    before.bank_gold.checked_add(before.carried_gold)?.checked_sub(after.bank_gold.checked_add(after.carried_gold)?)
+}
+
+fn fragment_total(resources: &atelier::resources::ResourceBalances, kind: u8) -> u64 {
+    if kind == 0 { resources.basic_fragments } else { resources.supreme_fragments }
+}
+
+fn reveal_delta(before: &AtelierState, after: &AtelierState, quote: &atelier::QualityQuote) -> Option<[u8; 16]> {
+    let gem = newly_revealed(&before.0, &after.0, quote.quality)?;
+    let prior = &before.1;
+    let current = &after.1;
+    (after.0.revision > before.0.revision
+        && gold_debit(prior, current) == Some(quote.reveal_gold)
+        && current.lesser_gems.checked_add(1) == Some(prior.lesser_gems)
+        && current.regular_gems == prior.regular_gems
+        && current.greater_gems == prior.greater_gems
+        && current.basic_fragments == prior.basic_fragments
+        && current.supreme_fragments == prior.supreme_fragments)
+        .then_some(gem)
+}
+
 async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResult {
     let mut client = connect_world(clients, 0xa7).await?;
     let session = client.join_snapshot().game_session_id;
@@ -124,6 +159,9 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
         }
     };
 
+    let quote = initial.quality_quotes.iter().find(|quote| quote.quality == 0)
+        .ok_or("step=reveal observed=no-lesser-gem-quote")?;
+    let baseline = (initial.clone(), initial_resources);
     let mut revision = initial.revision;
     let mut gem = [0; 16];
     let reveal = atelier::MutateRequest {
@@ -137,15 +175,18 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
         atelier::encode_mutate(&reveal).map_err(|e| format!("reveal encode: {e:?}"))?,
     )
     .await?;
+    let revealed = query(&mut client).await?;
+    let new_gem = reveal_delta(&baseline, &revealed, quote);
     match atelier_reply(&response) {
         Ok(reply)
             if response.status == CommandStatus::Accepted
                 && !reply.refused
                 && reply.revision > revision
-                && !reply.gems.is_empty() =>
+                && new_gem.is_some_and(|id| reply.gems.iter().any(|entry| entry.id == id))
+                && reply.revision == revealed.0.revision =>
         {
             revision = reply.revision;
-            gem = reply.gems[0].id;
+            gem = new_gem.ok_or("step=reveal observed=no-new-gem")?;
             seen.pass("2-reveal");
         }
         observed => seen.fail("2-reveal", (&response.status, observed)),
@@ -162,11 +203,19 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
         atelier::encode_mutate(&dismantle).map_err(|e| format!("dismantle encode: {e:?}"))?,
     )
     .await?;
+    let dismantled = query(&mut client).await?;
+    let fragments = fragment_total(&dismantled.1, quote.fragment_kind)
+        .checked_sub(fragment_total(&revealed.1, quote.fragment_kind));
     match atelier_reply(&response) {
         Ok(reply)
             if response.status == CommandStatus::Accepted
                 && !reply.refused
-                && reply.revision > revision =>
+                && reply.revision > revision
+                && reply.revision == dismantled.0.revision
+                && !reply.gems.iter().any(|entry| entry.id == gem)
+                && !dismantled.0.gems.iter().any(|entry| entry.id == gem)
+                && fragments.is_some_and(|count| (u64::from(quote.fragment_min)..=u64::from(quote.fragment_max)).contains(&count))
+                && gold_debit(&revealed.1, &dismantled.1) == Some(0) =>
         {
             revision = reply.revision;
             seen.pass("3-dismantle-fragments");
@@ -174,17 +223,20 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
         observed => seen.fail("3-dismantle-fragments", (&response.status, observed)),
     }
 
-    let grade = initial
-        .grades
-        .first()
-        .map(|row| (row.kind, row.mod_id))
-        .unwrap_or((0, 0));
+    let target = dismantled.0.grades.iter().find(|row| row.grade < 3)
+        .map(|row| (row.kind, row.mod_id, row.grade))
+        .or_else(|| revealed.0.gems.iter().find(|entry| entry.id == gem)
+            .and_then(|entry| entry.modifiers.first()).map(|id| (0, *id, 0)))
+        .ok_or("step=grade needed=compatible-modifier-below-grade-cap")?;
+    let grade = target.2.checked_add(1).ok_or("step=grade observed=invalid-grade")?;
+    let grade_quote = dismantled.0.grade_quotes.iter().find(|quote| (quote.kind, quote.grade) == (target.0, grade))
+        .ok_or("step=grade observed=no-next-grade-quote")?;
     let request = atelier::MutateRequest {
         occurrence: occurrence(session, 3),
         expected_revision: revision,
         mutation: atelier::Mutation::GradeUp {
-            kind: grade.0,
-            mod_id: grade.1,
+            kind: target.0,
+            mod_id: target.1,
         },
     };
     let response = raw(
@@ -193,11 +245,17 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
         atelier::encode_mutate(&request).map_err(|e| format!("grade encode: {e:?}"))?,
     )
     .await?;
+    let graded = query(&mut client).await?;
+    let selected_grade = |state: &atelier::AtelierReply| state.grades.iter().any(|row| (row.kind, row.mod_id, row.grade) == (target.0, target.1, grade));
     match atelier_reply(&response) {
         Ok(reply)
             if response.status == CommandStatus::Accepted
                 && !reply.refused
-                && reply.revision > revision =>
+                && reply.revision > revision
+                && reply.revision == graded.0.revision
+                && selected_grade(&reply) && selected_grade(&graded.0)
+                && gold_debit(&dismantled.1, &graded.1) == Some(grade_quote.gold)
+                && fragment_total(&dismantled.1, target.0).checked_sub(fragment_total(&graded.1, target.0)) == Some(u64::from(grade_quote.fragments)) =>
         {
             revision = reply.revision;
             seen.pass("4-grade");
@@ -216,15 +274,18 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
         atelier::encode_mutate(&reveal).map_err(|e| format!("second reveal encode: {e:?}"))?,
     )
     .await?;
+    let second_reveal = query(&mut client).await?;
+    let socket_gem = reveal_delta(&graded, &second_reveal, quote);
     match atelier_reply(&response) {
         Ok(reply)
             if response.status == CommandStatus::Accepted
                 && !reply.refused
                 && reply.revision > revision
-                && !reply.gems.is_empty() =>
+                && socket_gem.is_some_and(|id| reply.gems.iter().any(|entry| entry.id == id))
+                && reply.revision == second_reveal.0.revision =>
         {
             revision = reply.revision;
-            gem = reply.gems[0].id;
+            gem = socket_gem.ok_or("step=reveal observed=no-new-socket-gem")?;
             seen.pass("5-reveal-socket-candidate");
         }
         observed => seen.fail("5-reveal-socket-candidate", (&response.status, observed)),
@@ -278,6 +339,7 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
         observed => seen.fail("5-unlock", (&response.status, observed)),
     }
 
+    let before_switch = query(&mut client).await?;
     let switch = atelier::MutateRequest {
         occurrence: occurrence(session, 7),
         expected_revision: revision,
@@ -289,11 +351,18 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
         atelier::encode_mutate(&switch).map_err(|e| format!("switch encode: {e:?}"))?,
     )
     .await?;
+    let switched = query(&mut client).await?;
+    let prior_domain = before_switch.0.gems.iter().find(|entry| entry.id == gem).map(|entry| entry.domain);
+    let next_domain = switched.0.gems.iter().find(|entry| entry.id == gem).map(|entry| entry.domain);
     match atelier_reply(&response) {
         Ok(reply)
             if response.status == CommandStatus::Accepted
                 && !reply.refused
-                && reply.revision > revision =>
+                && reply.revision > revision
+                && reply.revision == switched.0.revision
+                && prior_domain.is_some() && next_domain.is_some() && prior_domain != next_domain
+                && reply.gems.iter().any(|entry| entry.id == gem && Some(entry.domain) == next_domain)
+                && gold_debit(&before_switch.1, &switched.1) == Some(quote.switch_gold) =>
         {
             seen.pass("5-switch-domain");
         }
@@ -348,6 +417,7 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
         seen.fail("5-socket-vessel-resonance", &response);
     }
 
+    let before_stale = query(&mut client).await?;
     let stale = atelier::MutateRequest {
         occurrence: occurrence(session, 9),
         expected_revision: initial.revision,
@@ -359,15 +429,19 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
         atelier::encode_mutate(&stale).map_err(|e| format!("stale encode: {e:?}"))?,
     )
     .await?;
+    let durable = verdict::observe(query(&mut client)).await;
     if response.status == CommandStatus::Accepted
-        && atelier_reply(&response).is_ok_and(|reply| reply.refused)
+        && initial.revision < before_stale.0.revision
+        && durable.as_ref().is_ok_and(|after| stale_unchanged(
+            atelier_reply(&response).is_ok_and(|reply| reply.refused),
+            &before_stale, after,
+        ))
     {
         seen.pass("6-stale-refusal");
     } else {
         seen.fail("6-stale-refusal", &response);
     }
 
-    let durable = verdict::observe(query(&mut client)).await;
     if durable.is_err() {
         seen.fail("7-pre-logout-state", &durable);
     }
@@ -418,5 +492,33 @@ mod tests {
         assert_eq!(occurrence(session, 1), occurrence(session, 1));
         assert_ne!(occurrence(session, 1), occurrence(session, 2));
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod proof_tests {
+    use super::*;
+
+    fn state(ids: &[u8]) -> atelier::AtelierReply {
+        atelier::AtelierReply {
+            refused: false, revision: 1,
+            gems: ids.iter().map(|&id| atelier::GemView { id: [id; 16], quality: 0, domain: 0,
+                locked: false, vessel: false, modifiers: vec![1] }).collect(),
+            grades: Vec::new(), quality_quotes: Vec::new(), grade_quotes: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn reveal_identifies_the_new_gem_when_old_gems_precede_it() {
+        assert_eq!(newly_revealed(&state(&[1]), &state(&[1, 2]), 0), Some([2; 16]));
+        assert_eq!(newly_revealed(&state(&[1]), &state(&[1]), 0), None);
+    }
+
+    #[test]
+    fn stale_atelier_refusal_requires_unchanged_state_and_assets() {
+        let before = (state(&[1]), atelier::resources::ResourceBalances::default());
+        let after = (state(&[1, 2]), atelier::resources::ResourceBalances::default());
+        assert!(!stale_unchanged(true, &before, &after));
+        assert!(stale_unchanged(true, &before, &before));
     }
 }

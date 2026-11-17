@@ -96,6 +96,51 @@ async fn slot(c: &mut DevClientSession, q: BossSlotRequest) -> TestResult<BossSl
     BossSlotReply::decode(&r.payload)
         .ok_or_else(|| format!("step boss-slot: malformed payload={:?}", r.payload).into())
 }
+fn valid_boss_credit(before: u64, after: u64, is_boosted: bool) -> bool {
+    before.checked_add(if is_boosted { 3 } else { 1 }) == Some(after)
+}
+
+async fn daily_boss(client: &mut DevClientSession) -> TestResult<(u64, String)> {
+    use oteryn_protocol_oteryn::daily_boost as wire;
+    let reply = client.session_mut().gated_command(
+        wire::CAPABILITY_DAILY_BOOST_V1, wire::COMMAND_TYPE_DAILY_BOOST_QUERY, &[],
+    ).await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("step=boosted-boss observed={:?}", reply.status).into());
+    }
+    let (epoch, keys) = reply.payload.split_at_checked(8).ok_or("step=boosted-boss observed=short-projection")?;
+    let (&creature_len, rest) = keys.split_first().ok_or("step=boosted-boss observed=no-creature-key")?;
+    let (_, boss_field) = rest.split_at_checked(usize::from(creature_len)).ok_or("step=boosted-boss observed=invalid-creature-key")?;
+    let (&boss_len, boss) = boss_field.split_first().ok_or("step=boosted-boss observed=no-boss-key")?;
+    if boss_len == 0 || boss.len() != usize::from(boss_len) {
+        return Err("step=boosted-boss observed=invalid-boss-key".into());
+    }
+    Ok((u64::from_be_bytes(epoch.try_into()?), std::str::from_utf8(boss)?.to_owned()))
+}
+
+pub(super) fn creature_display_name(key: &str) -> TestResult<String> {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/creatures/definitions");
+    for file in std::fs::read_dir(root)? {
+        let path = file?.path();
+        if !path.file_name().and_then(|name| name.to_str()).is_some_and(|name| name.starts_with("creatures-") && name.ends_with(".json")) {
+            continue;
+        }
+        let shard: serde_json::Value = serde_json::from_slice(&std::fs::read(path)?)?;
+        if let Some(display) = shard["records"].as_array().into_iter().flatten()
+            .find(|entry| entry["definition"]["identity"]["key"] == key)
+            .and_then(|entry| entry["authoring"]["profile"]["details"]["display_name"].as_str())
+        {
+            return Ok(display.to_owned());
+        }
+    }
+    Err(format!("step=creature-identity observed=no-display-name-for-{key}").into())
+}
+
+pub(super) fn named_creature(entry: &oteryn_dev_client::WorldSpatialEntity, name: &str) -> bool {
+    entry.kind == EntityKind::Creature
+        && entry.display_name.is_some_and(|display| display.as_str().is_ok_and(|display| display == name))
+}
+
 fn counts(s: &boss_encounter::Snapshot) -> BTreeMap<String, u64> {
     s.progress.iter().cloned().collect()
 }
@@ -124,13 +169,14 @@ async fn kill(
     travel_to_spawn(c, w, s, key)
         .await
         .map_err(|e| { verdict::record_error(verdict::IndexedError::as_error(&e)); verdict::context(format!("step boss-kill {key}: walking/spawn reply={e}"), e) })?;
+    let name = creature_display_name(key)?;
     let here = c.world_spatial().actor_position;
     let target = c
         .world_entities()
         .and_then(|es| {
             es.iter()
                 .filter(|e| {
-                    e.kind == EntityKind::Creature
+                    named_creature(e, &name)
                         && e.position.floor == here.floor
                         && e.position
                             .x
@@ -152,23 +198,16 @@ async fn kill(
         return Err(format!("step boss-kill {key}: ATTACK reply={r:?}").into());
     }
     let until = tokio::time::Instant::now() + Duration::from_secs(90);
-    verdict::Harness::global().bounded_wait(until, "bounded-observation");
-    loop {
-        c.service_liveness(Duration::from_millis(50)).await?;
-        c.take_events();
-        if c.world_entities()
-            .is_some_and(|es| es.get(&target.entity).is_none())
-        {
-            c.session_mut().attack_target(None).await?;
-            return Ok(());
+    verdict::Harness::global().bounded_wait(until, "boss-combat");
+    tokio::time::timeout_at(until, async {
+        while c.world_entities().is_some_and(|entities| entities.get(&target.entity).is_some()) {
+            c.service_liveness(Duration::from_millis(50)).await?;
+            c.take_events();
         }
-        if tokio::time::Instant::now() >= until {
-            c.session_mut().attack_target(None).await?;
-            return Err(
-                format!("step boss-kill {key}: ATTACK accepted, death frame timeout").into(),
-            );
-        }
-    }
+        Ok::<_, oteryn_dev_client::DevClientError>(())
+    }).await.map_err(|_| format!("step boss-kill {key}: attack target did not leave visibility"))??;
+    c.session_mut().attack_target(None).await?;
+    Ok(())
 }
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
@@ -181,7 +220,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut c = connect_world(clients, 0xb2).await?;
-    let mut before = snapshot(&mut c).await?;
+    let before = snapshot(&mut c).await?;
     let initial_slot = slot(&mut c, BossSlotRequest::Query).await?;
     row.pass(
         "initial-query",
@@ -201,41 +240,21 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             })
         })
         .collect();
-    let mut ordinary = None;
-    let mut boosted = None;
-    for b in spawned {
-        kill(&mut c, world, &meta.spawns, &b.key).await?;
-        let after = snapshot(&mut c).await?;
-        let d = counts(&after)
-            .get(&b.key)
-            .copied()
-            .unwrap_or(0)
-            .saturating_sub(counts(&before).get(&b.key).copied().unwrap_or(0));
-        match d {
-            1 => ordinary = Some((b.key.clone(), b.category.clone(), after.clone())),
-            3 => boosted = Some((b.key.clone(), after.clone())),
-            _ => {
-                return Err(format!(
-                    "step boss-kill {}: progress delta={d}, reply={after:?}",
-                    b.key
-                )
-                .into());
-            }
-        }
-        before = after;
-        if ordinary.is_some() && boosted.is_some() {
-            break;
-        }
+    let (epoch, boosted_key) = daily_boss(&mut c).await?;
+    let ordinary = spawned.iter().find(|b| b.key != boosted_key && b.category == "nemesis")
+        .ok_or("step boss-kill: need a spawned ordinary Nemesis to earn prowess")?;
+    let boss = ordinary.key.clone();
+    if !spawned.iter().any(|b| b.key == boosted_key) {
+        return Err(format!("step boosted-kill: daily boss {boosted_key} has no compiled spawn").into());
     }
-    let (boss, category, after) =
-        ordinary.ok_or("step boss-kill: no reachable compiled Bosstiary boss produced delta=1")?;
+    kill(&mut c, world, &meta.spawns, &boss).await?;
+    let after = snapshot(&mut c).await?;
+    let old = counts(&before).get(&boss).copied().unwrap_or(0);
+    let new = counts(&after).get(&boss).copied().unwrap_or(0);
+    if !valid_boss_credit(old, new, false) {
+        return Err(format!("step boss-kill {boss}: disappeared without exact ordinary credit {old}->{new}").into());
+    }
     row.pass("boss-kill-progress", (&boss, &after.progress, after.points));
-    if category != "nemesis" {
-        return Err(format!(
-            "step slot-equip: boss={boss} category={category} has not earned prowess"
-        )
-        .into());
-    }
     let equipped = slot(
         &mut c,
         BossSlotRequest::Equip {
@@ -260,8 +279,17 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step slot-refusal: reply={refused:?}").into());
     }
     row.pass("slot-refusal", &refused);
-    let (boosted_key, boosted_state) =
-        boosted.ok_or("step boosted-kill: no reachable boss produced delta=3")?;
+    if daily_boss(&mut c).await? != (epoch, boosted_key.clone()) {
+        return Err("step boosted-kill: daily boost changed before the selected kill".into());
+    }
+    let before = snapshot(&mut c).await?;
+    kill(&mut c, world, &meta.spawns, &boosted_key).await?;
+    let boosted_state = snapshot(&mut c).await?;
+    let old = counts(&before).get(&boosted_key).copied().unwrap_or(0);
+    let new = counts(&boosted_state).get(&boosted_key).copied().unwrap_or(0);
+    if !valid_boss_credit(old, new, true) || daily_boss(&mut c).await? != (epoch, boosted_key.clone()) {
+        return Err(format!("step boosted-kill {boosted_key}: disappeared without exact boosted credit {old}->{new}").into());
+    }
     let br = slot(
         &mut c,
         BossSlotRequest::Equip {
@@ -295,6 +323,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn boss_credit_must_match_independently_selected_boost_status() {
+        assert!(valid_boss_credit(9, 10, false));
+        assert!(valid_boss_credit(9, 12, true));
+        assert!(!valid_boss_credit(9, 12, false));
+        assert!(!valid_boss_credit(9, 10, true));
+        assert!(!valid_boss_credit(9, 9, false));
+    }
+
     #[test]
     fn requires_whole_lifecycle() {
         assert_eq!(REQUIRED.len(), 6);

@@ -80,26 +80,28 @@ async fn progress(clients: &SeamClients<'_>) -> TestResult<i64> {
     Ok(rows)
 }
 
+fn refused_add_unchanged(
+    before: &Option<tr::TrackerSnapshot>,
+    after: &Option<tr::TrackerSnapshot>,
+) -> TestResult {
+    expect(before.is_some() && before == after, "refused-add", "tracker-changed-after-refusal")
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let mut client = connect_world(clients, 0xd2).await?;
     selected(&client)?;
     let boss = tr::COMMAND_TYPE_BOSSTIARY_TRACKER;
     let credited = progress(clients).await?;
+    let before = read(&mut client, boss).await?;
     let (status, list) = call(&mut client, boss, &change(tr::TrackerAction::Add, BOSS)).await?;
     if status == CommandStatus::Rejected {
-        let (removed, _) =
-            call(&mut client, boss, &change(tr::TrackerAction::Remove, BOSS)).await?;
-        let list = read(&mut client, boss).await?;
-        expect(
-            !has(&list, BOSS),
-            "refused-add",
-            "boss-tracked-despite-refusal",
-        )?;
+        let after = read(&mut client, boss).await?;
+        refused_add_unchanged(&before, &after)?;
         logout(&mut client).await?;
         return Ok((
             "FAIL",
             format!(
-                "step=boss-add;observed=Rejected,remove:{removed:?},credited-rows:{credited};needed=credited-kill-of-{BOSS}"
+                "step=boss-add;observed=Rejected,credited-rows:{credited};needed=credited-kill-of-{BOSS}"
             ),
         ));
     }
@@ -196,6 +198,19 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn refused_boss_add_must_be_read_without_a_cleanup_mutation() {
+        let before = Some(tr::TrackerSnapshot { boss: true, entries: Vec::new() });
+        let after = Some(tr::TrackerSnapshot {
+            boss: true,
+            entries: vec![tr::TrackerEntry {
+                creature_key: BOSS.into(), kill_count: 1, thresholds: [1, 2, 3], completed: false,
+            }],
+        });
+        assert!(refused_add_unchanged(&before, &after).is_err());
+        assert!(refused_add_unchanged(&before, &before).is_ok());
+    }
 
     #[test]
     fn token_has_no_whitespace_and_is_bounded() {

@@ -1,11 +1,28 @@
 //! Hunt through network attack, visibility, corpse USE and item-move replies.
 use super::*;
 pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<()> {
+    hunt_target(client, None).await
+}
+
+pub(super) async fn hunt_named(
+    client: &mut oteryn_dev_client::DevClientSession,
+    name: &str,
+) -> TestResult {
+    hunt_target(client, Some(name)).await
+}
+
+async fn hunt_target(
+    client: &mut oteryn_dev_client::DevClientSession,
+    name: Option<&str>,
+) -> TestResult {
     use oteryn_dev_client::{EntityDetail, EntityKind};
     if !client
         .selected_capabilities()
         .contains(&oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1)
     {
+        if name.is_some() {
+            return Err("hunt requires native combat and loot capability".into());
+        }
         evidence("mechanic=hunt skipped=entry_room_has_no_native_combat_and_loot_content");
         return Ok(());
     }
@@ -15,6 +32,11 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
         .and_then(|entities| {
             entities.iter().find(|entry| {
                 entry.kind == EntityKind::Creature
+                    && name.is_none_or(|name| {
+                        entry.display_name.is_some_and(|display| {
+                            display.as_str().is_ok_and(|display| display == name)
+                        })
+                    })
                     && entry.position.floor == position.floor
                     && entry
                         .position
@@ -25,7 +47,7 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
             })
         })
         .copied()
-        .ok_or("hunt route has no visible monster")?;
+        .ok_or_else(|| format!("hunt route has no adjacent creature matching {name:?}"))?;
     let attack = client
         .session_mut()
         .attack_target(Some(&target.entity))

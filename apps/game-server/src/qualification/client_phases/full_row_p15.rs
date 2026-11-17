@@ -236,6 +236,32 @@ fn dummy_positions(bytes: &[u8]) -> TestResult<std::collections::BTreeSet<TilePo
     Ok(positions)
 }
 
+fn refused_start_unchanged(initial: wire::TrainingResult, refused: wire::TrainingResult, after: wire::TrainingResult) -> bool {
+    refused == wire::TrainingResult::REFUSED && after == initial
+}
+
+fn settled_charges(ticked: wire::TrainingResult, stopped: wire::TrainingResult) -> bool {
+    stopped.disposition == 2
+        && stopped.charges <= ticked.charges
+        && stopped.revision >= ticked.revision
+        && (stopped.charges == ticked.charges || stopped.revision > ticked.revision)
+}
+
+async fn observe_tick(
+    full: u32,
+    mut status: impl AsyncFnMut() -> TestResult<wire::TrainingResult>,
+) -> TestResult<wire::TrainingResult> {
+    loop {
+        let ticked = status().await?;
+        if ticked.disposition != 1 || ticked.charges > full {
+            return Err(format!("post-tick STATUS reply={ticked:?}; need=running with at most {full} charges").into());
+        }
+        if ticked.charges < full {
+            return Ok(ticked);
+        }
+    }
+}
+
 async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_character(clients, 0xb5, 0).await?;
     let initial = command(&mut client, wire::ExerciseIntent::Status).await?;
@@ -253,8 +279,9 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
         },
     )
     .await?;
-    if refused != wire::TrainingResult::REFUSED {
-        return Err(format!("invalid START reply={refused:?}; need=REFUSED without delta").into());
+    let after_refusal = command(&mut client, wire::ExerciseIntent::Status).await?;
+    if !refused_start_unchanged(initial, refused, after_refusal) {
+        return Err(format!("invalid START reply={refused:?}, status:{initial:?}->{after_refusal:?}; need=REFUSED without delta").into());
     }
     verdict.pass(2, refused);
 
@@ -282,20 +309,15 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
     }
     verdict.pass(3, running);
 
-    client.service_liveness(Duration::from_millis(2300)).await?;
-    let ticked = command(&mut client, wire::ExerciseIntent::Status).await?;
-    if ticked.disposition != 1 || ticked.charges >= full {
-        return Err(
-            format!("post-tick STATUS reply={ticked:?}; need=charge delta below {full}").into(),
-        );
-    }
+    let ticked = tokio::time::timeout(Duration::from_secs(15), observe_tick(full, async || {
+        client.service_liveness(Duration::from_millis(125)).await?;
+        client.take_events();
+        command(&mut client, wire::ExerciseIntent::Status).await
+    })).await.map_err(|_| "step=exercise-tick observed=no-charge-decrease-before-deadline")??;
     verdict.pass(4, ticked);
 
     let stopped = command(&mut client, wire::ExerciseIntent::Stop).await?;
-    if stopped.disposition != 2
-        || stopped.charges != ticked.charges
-        || stopped.revision < ticked.revision
-    {
+    if !settled_charges(ticked, stopped) {
         return Err(format!(
             "STOP reply={stopped:?}; before={ticked:?}; need=settled durable charge/revision"
         )
@@ -335,6 +357,34 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
+    fn training_result(disposition: u8, charges: u32, revision: u64) -> wire::TrainingResult {
+        wire::TrainingResult { disposition, charges, revision, pool_seconds: 0 }
+    }
+
+    #[test]
+    fn invalid_start_refusal_must_preserve_training_state() {
+        let before = training_result(2, 10, 2);
+        assert!(!refused_start_unchanged(before, wire::TrainingResult::REFUSED, training_result(2, 9, 3)));
+        assert!(refused_start_unchanged(before, wire::TrainingResult::REFUSED, before));
+    }
+
+    #[tokio::test]
+    async fn exercise_waits_for_delayed_tick() -> TestResult {
+        let mut responses = [training_result(1, 10, 2), training_result(1, 9, 3)].into_iter();
+        let ticked = observe_tick(10, async || responses.next().ok_or_else(|| "no more responses".into())).await?;
+        assert_eq!(ticked.charges, 9);
+        Ok(())
+    }
+
+    #[test]
+    fn exercise_stop_can_settle_a_concurrent_tick() {
+        let ticked = training_result(1, 9, 3);
+        assert!(settled_charges(ticked, training_result(2, 8, 4)));
+        assert!(!settled_charges(ticked, training_result(2, 8, 3)));
+    }
+
     #[test]
     fn training_reply_decoder_rejects_missing_fields() {
         assert_eq!(super::decode_result(&[8, 2]), None);

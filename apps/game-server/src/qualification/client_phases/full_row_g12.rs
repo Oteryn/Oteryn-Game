@@ -1,10 +1,10 @@
 //! G12 weapon proficiency state and perks (capabilities 448 and 195, commands 732 and 378).
-//! 1. Admit the node-boot character; read catalogue page 0 (command 660) for the weapon
+//! 1. Admit the node-boot character; read catalogue pages (command 660) for the weapon
 //!    definitions the server knows.
 //! 2. Query the state projection (command 732) for each definition and require the echoed
 //!    definition; this proves the read route.
 //! 3. A perk can only be chosen on a slot whose proficiency level the server granted from weapon
-//!    experience. When a slot with offers exists, select the first perk (command 378) and require
+//!    experience. When a slot with offers exists, select a different perk (command 378) and require
 //!    a newer state revision; otherwise fail naming the missing experience.
 //!
 //! The row never grants experience.
@@ -101,45 +101,79 @@ async fn state(client: &mut DevClientSession, definition: u32) -> TestResult<wir
 
 async fn catalogue_page(
     client: &mut DevClientSession,
+    offset: u32,
 ) -> TestResult<catalogue::ProficiencyCataloguePage> {
     let payload = accepted(
         client,
         catalogue::CAPABILITY_WEAPON_PROFICIENCY_V1,
         catalogue::COMMAND_TYPE_PROFICIENCY_CATALOGUE,
-        &0u32.to_be_bytes(),
+        &offset.to_be_bytes(),
     )
     .await?;
-    catalogue::ProficiencyCataloguePage::decode(&payload)
-        .ok_or_else(|| "step=catalogue observed=decode-failed".into())
+    let page = catalogue::ProficiencyCataloguePage::decode(&payload)
+        .ok_or("step=catalogue observed=decode-failed")?;
+    if page.offset != offset {
+        return Err(format!("step=catalogue observed=offset:{};needed={offset}", page.offset).into());
+    }
+    Ok(page)
 }
 
-/// Select the first perk on a slot with offers; returns `(definition, level, revision)`.
-async fn body(client: &mut DevClientSession) -> TestResult<(u32, u8, u64)> {
-    let page = catalogue_page(client).await?;
-    let definitions: Vec<(u32, u32)> = page
-        .entries
-        .iter()
-        .filter(|entry| entry.definition != 0)
-        .map(|entry| (entry.definition, entry.experience))
-        .collect();
+fn alternate_perk(selected: Option<u8>, offer_count: usize) -> Option<u8> {
+    let perk = u8::from(selected == Some(0));
+    (usize::from(perk) < offer_count).then_some(perk)
+}
+
+#[derive(Debug)]
+struct Selection {
+    offset: u32,
+    definition: u32,
+    level: u8,
+    perk: u8,
+    revision: u64,
+}
+
+/// Read the catalogue view of the exact level, using the owner's zero-based level ordinal.
+fn selected_perk(page: &catalogue::ProficiencyCataloguePage, definition: u32, level: u8) -> Option<Option<u8>> {
+    page.entries.iter().find(|entry| entry.definition == definition)
+        .and_then(|entry| entry.levels.get(usize::from(level)))
+        .map(|level| level.selected)
+}
+
+async fn body(client: &mut DevClientSession) -> TestResult<Selection> {
+    let mut offset = 0u32;
+    let mut definitions = Vec::new();
+    loop {
+        let page = catalogue_page(client, offset).await?;
+        let next = offset.checked_add(u32::try_from(page.entries.len())?).ok_or("step=catalogue observed=offset-overflow")?;
+        definitions.extend(page.entries.into_iter().filter(|entry| entry.definition != 0).map(|entry| (offset, entry)));
+        if next == page.total {
+            break;
+        }
+        if next <= offset {
+            return Err("step=catalogue observed=non-advancing-offset".into());
+        }
+        offset = next;
+    }
     if definitions.is_empty() {
         return Err("step=catalogue observed=no-weapon-definitions needed=weapon-catalogue".into());
     }
     let mut slotless = Vec::new();
-    for (definition, experience) in definitions {
+    for (offset, entry) in definitions {
+        let definition = entry.definition;
         let before = state(client, definition).await?;
-        let Some((index, slot)) = before.slots.iter().enumerate().find_map(|(index, slot)| {
-            slot.as_ref()
-                .filter(|s| !s.offers.is_empty())
-                .map(|s| (index, s))
+        let Some((level, perk)) = before.slots.iter().flatten().find_map(|slot| {
+            let level = entry.levels.get(usize::from(slot.level))?;
+            alternate_perk(level.selected, level.perks.len())
+                .filter(|_| !slot.offers.is_empty())
+                .map(|perk| (slot.level, perk))
         }) else {
-            slotless.push(format!("{definition}:xp{experience}"));
+            slotless.push(format!("{definition}:xp{}", entry.experience));
             continue;
         };
         let request = catalogue::SelectPerkRequest {
             definition: std::num::NonZeroU32::new(definition).ok_or("step=perk observed=zero")?,
-            level: slot.level,
-            perk: Some(0),
+            level,
+            perk: Some(perk),
         };
         let payload = accepted(
             client,
@@ -151,22 +185,16 @@ async fn body(client: &mut DevClientSession) -> TestResult<(u32, u8, u64)> {
         let reply = catalogue::SelectPerkReply::decode(&payload)
             .ok_or("step=perk observed=reply-decode-failed")?;
         let after = state(client, definition).await?;
-        let chosen = reply.selections.get(usize::from(slot.level)).copied();
-        if reply.result != catalogue::SelectPerkResult::Accepted || chosen != Some(Some(0)) {
-            return Err(format!(
-                "step=perk observed=reply:{:?}-selection:{chosen:?} needed=accepted-selection-of-perk-0",
-                reply.result
-            )
-            .into());
+        let chosen = reply.selections.get(usize::from(level)).copied();
+        if reply.result != catalogue::SelectPerkResult::Accepted || chosen != Some(Some(perk)) {
+            return Err(format!("step=perk observed=reply:{:?}-selection:{chosen:?};needed=accepted-perk-{perk}", reply.result).into());
         }
         if after.revision <= before.revision {
-            return Err(format!(
-                "step=perk observed=slot{index}-reply:{:?}-revision:{}->{} needed=state-revision-advance",
-                reply.result, before.revision, after.revision
-            )
-            .into());
+            return Err(format!("step=perk observed=revision:{}->{};needed=advance", before.revision, after.revision).into());
         }
-        return Ok((definition, slot.level, after.revision));
+        let selection = Selection { offset, definition, level, perk, revision: after.revision };
+        verify_selection(client, &selection).await?;
+        return Ok(selection);
     }
     Err(format!(
         "step=state observed=no-slot-with-offers:{} needed=weapon-proficiency-experience",
@@ -179,44 +207,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0x72).await?;
     let outcome = verdict::observe(body(&mut client)).await;
     let closed = verdict::observe(finish(&mut client)).await;
-    let (definition, level, revision) = outcome?;
+    let selection = outcome?;
     closed?;
     drop(client);
 
     let mut fresh = connect_world(clients, 0x73).await?;
-    let durable = verdict::observe(durable_selection(&mut fresh, definition, level, revision)).await;
+    let durable = verdict::observe(verify_selection(&mut fresh, &selection)).await;
     let closed = verdict::observe(finish(&mut fresh)).await;
     durable?;
     closed
 }
 
-/// After relog the committed selection and the state revision must still be there.
-async fn durable_selection(
-    client: &mut DevClientSession,
-    definition: u32,
-    level: u8,
-    revision: u64,
-) -> TestResult {
-    let page = catalogue_page(client).await?;
-    let selected = page
-        .entries
-        .iter()
-        .find(|entry| entry.definition == definition)
-        .and_then(|entry| entry.levels.get(usize::from(level)))
-        .map(|slot| slot.selected);
-    if selected != Some(Some(0)) {
-        return Err(format!(
-            "step=relog observed=selection:{selected:?} needed=durable-perk-0-at-level-{level}"
-        )
-        .into());
-    }
-    let after = state(client, definition).await?;
-    if after.revision < revision {
-        return Err(format!(
-            "step=relog observed=revision:{} needed=at-least:{revision}",
-            after.revision
-        )
-        .into());
+/// Read the selection independently of the mutation reply, both live and after admission.
+async fn verify_selection(client: &mut DevClientSession, selection: &Selection) -> TestResult {
+    let page = catalogue_page(client, selection.offset).await?;
+    let selected = selected_perk(&page, selection.definition, selection.level);
+    let after = state(client, selection.definition).await?;
+    if selected != Some(Some(selection.perk)) || after.revision < selection.revision {
+        return Err(format!("step=selection-query observed=perk:{selected:?},revision:{};needed={selection:?}", after.revision).into());
     }
     Ok(())
 }
@@ -224,6 +232,13 @@ async fn durable_selection(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn perk_selection_requires_a_different_available_perk() {
+        assert_eq!(alternate_perk(Some(0), 2), Some(1));
+        assert_eq!(alternate_perk(Some(0), 1), None);
+        assert_eq!(alternate_perk(Some(1), 2), Some(0));
+    }
 
     #[test]
     fn compact_is_one_bounded_token() {

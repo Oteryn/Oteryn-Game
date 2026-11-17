@@ -123,12 +123,32 @@ fn listed(reply: &wire::Reply, client_id: u32) -> Option<u64> {
         .map(|row| u64::from(row.depot) + u64::from(row.stash) + u64::from(row.inbox))
 }
 
-async fn open_list(client: &mut DevClientSession) -> TestResult<wire::Reply> {
-    let reply = command(client, wire::Request::Open { after: 0 }).await?;
-    if !matches!(reply.outcome, wire::Outcome::Listed | wire::Outcome::More) {
-        return Err(format!("step=open observed=outcome:{:?}", reply.outcome).into());
+async fn open_count(
+    client_id: u32,
+    mut page: impl AsyncFnMut(u32) -> TestResult<wire::Reply>,
+) -> TestResult<Option<u64>> {
+    let mut after = 0;
+    loop {
+        let reply = page(after).await?;
+        if !matches!(reply.outcome, wire::Outcome::Listed | wire::Outcome::More) {
+            return Err(format!("step=open observed=outcome:{:?}", reply.outcome).into());
+        }
+        if let Some(count) = listed(&reply, client_id) {
+            return Ok(Some(count));
+        }
+        if reply.outcome == wire::Outcome::Listed {
+            return Ok(None);
+        }
+        after = reply.results.last().map(|row| row.client_id).filter(|next| *next > after)
+            .ok_or("step=open observed=non-advancing-cursor")?;
     }
-    Ok(reply)
+}
+
+fn retrieval_remainder(stack: u64, held: u64) -> TestResult<u64> {
+    if stack < 2 || held != stack {
+        return Err(format!("step=open observed=count:{held},deposit:{stack};needed=exact-deposit-of-at-least-two").into());
+    }
+    Ok(stack - 1)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -149,18 +169,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step=admit observed=capability-153-not-negotiated".into());
     }
     to_locker(&mut client, world).await?;
-    let item = client
-        .inventory()
-        .and_then(|inventory| inventory.entries.first())
-        .copied()
-        .ok_or("step=admit observed=no-carried-item")?;
-    let (key, _) = definitions
-        .definition_at(item.item_definition_ref)
-        .ok_or("step=admit observed=carried-item-definition-unknown")?;
-    let client_id: u32 = key
-        .strip_prefix("oteryn:item.tibia.i")
-        .ok_or("step=admit observed=carried-item-has-no-native-client-id")?
-        .parse()?;
+    let candidates = client.inventory().ok_or("step=admit observed=no-inventory")?.entries.clone();
+    let mut selected = None;
+    for item in candidates.into_iter().filter(|item| item.count.get() >= 2) {
+        let Some(client_id) = definitions.definition_at(item.item_definition_ref)
+            .and_then(|(key, _)| key.strip_prefix("oteryn:item.tibia.i"))
+            .and_then(|id| id.parse::<u32>().ok())
+        else {
+            continue;
+        };
+        let held = open_count(client_id, async |after| {
+            command(&mut client, wire::Request::Open { after }).await
+        }).await?;
+        if held.is_none() {
+            selected = Some((item, client_id));
+            break;
+        }
+    }
+    let (item, client_id) = selected.ok_or("step=admit needed=carried-stack-of-at-least-two-with-no-existing-depot-custody")?;
     let original = carried_count(&client, item.item_definition_ref);
     let stack = u64::from(item.count.get());
     let browse = depot_intent(
@@ -191,11 +217,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     wait_count(&mut client, item.item_definition_ref, original - stack).await?;
 
-    let list = open_list(&mut client).await?;
-    let held = listed(&list, client_id).ok_or("step=open observed=deposited-item-not-listed")?;
-    if held < stack {
-        return Err(format!("step=open observed=count:{held};needed>={stack}").into());
-    }
+    let held = open_count(client_id, async |after| {
+        command(&mut client, wire::Request::Open { after }).await
+    })
+    .await?
+    .ok_or("step=open observed=deposited-item-not-listed")?;
+    let remainder = retrieval_remainder(stack, held)?;
     let one = command(
         &mut client,
         wire::Request::Retrieve {
@@ -212,54 +239,53 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     wait_count(&mut client, item.item_definition_ref, original - stack + 1).await?;
-    let after_one = open_list(&mut client).await?;
-    if listed(&after_one, client_id).unwrap_or(0) != held - 1 {
+    let after_one = open_count(client_id, async |after| {
+        command(&mut client, wire::Request::Open { after }).await
+    })
+    .await?;
+    if after_one != Some(remainder) {
         return Err(format!(
             "step=list-after-one observed={:?};needed={}",
-            listed(&after_one, client_id),
-            held - 1
+            after_one,
+            remainder
         )
         .into());
     }
-    if held > 1 {
-        let rest = command(
-            &mut client,
-            wire::Request::Retrieve {
-                client_id,
-                all: true,
-            },
-        )
-        .await?;
-        if rest.outcome != wire::Outcome::Retrieved || u64::from(rest.retrieved) != held - 1 {
-            return Err(format!(
-                "step=retrieve-rest observed=outcome:{:?},retrieved:{}",
-                rest.outcome, rest.retrieved
-            )
-            .into());
-        }
-    }
-    wait_count(
+    let rest = command(
         &mut client,
-        item.item_definition_ref,
-        original - stack + held,
+        wire::Request::Retrieve { client_id, all: true },
     )
     .await?;
-    if listed(&open_list(&mut client).await?, client_id).is_some() {
+    if rest.outcome != wire::Outcome::Retrieved || u64::from(rest.retrieved) != remainder {
+        return Err(format!(
+            "step=retrieve-rest observed=outcome:{:?},retrieved:{};needed={remainder}",
+            rest.outcome, rest.retrieved
+        ).into());
+    }
+    wait_count(&mut client, item.item_definition_ref, original).await?;
+    if open_count(client_id, async |after| {
+        command(&mut client, wire::Request::Open { after }).await
+    })
+    .await?
+    .is_some()
+    {
         return Err("step=list-empty observed=row-still-listed".into());
     }
-    let restored = carried_count(&client, item.item_definition_ref);
     logout(&mut client).await?;
     drop(client);
 
     let mut fresh = connect_character(clients, 0xc4, 1).await?;
     to_locker(&mut fresh, world).await?;
-    let durable = open_list(&mut fresh).await?;
+    let durable = open_count(client_id, async |after| {
+        command(&mut fresh, wire::Request::Open { after }).await
+    })
+    .await?;
     let carried = carried_count(&fresh, item.item_definition_ref);
     logout(&mut fresh).await?;
-    if listed(&durable, client_id).is_some() || carried != restored {
+    if durable.is_some() || carried != original {
         return Err(format!(
-            "step=fresh observed=listed:{:?},carried:{carried};needed=none,{restored}",
-            listed(&durable, client_id)
+            "step=fresh observed=listed:{:?},carried:{carried};needed=none,{original}",
+            durable
         )
         .into());
     }
@@ -269,6 +295,39 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn open_follows_continuation_before_concluding_absence() -> TestResult {
+        let found = open_count(7, async |after| {
+            let (outcome, client_id) = match after {
+                0 => (wire::Outcome::More, 6),
+                6 => (wire::Outcome::Listed, 7),
+                _ => return Err(format!("unexpected cursor {after}").into()),
+            };
+            Ok(wire::Reply {
+                outcome,
+                retrieved: 0,
+                results: vec![wire::SearchResult {
+                    client_id,
+                    depot: 1,
+                    stash: 0,
+                    inbox: 0,
+                    tiers: Vec::new(),
+                }],
+            })
+        })
+        .await?;
+        assert_eq!(found, Some(1));
+        Ok(())
+    }
+
+    #[test]
+    fn retrieve_all_requires_a_remainder_from_only_the_deposit() -> TestResult {
+        assert!(retrieval_remainder(1, 1).is_err());
+        assert!(retrieval_remainder(2, 3).is_err());
+        assert_eq!(retrieval_remainder(2, 2)?, 1);
+        Ok(())
+    }
 
     #[test]
     fn listed_sums_every_custody_bucket_of_the_requested_row() {

@@ -4,7 +4,7 @@
 //!    refusal for an item without an imbuement allowance is the correct answer and is skipped.
 //! 3. For the first item with quotes, validate the echoed handle, the (family, tier) ordering and
 //!    the bounded success chance, which only the server's imbuement catalogue can produce.
-//! 4. Log out, freshly admit and re-query the same item definition: the quotes must be equal.
+//! 4. Log out, freshly admit and re-query the same durable item instance: the quotes must be equal.
 //!
 //! The row never grants items; with no imbuable item carried it fails naming that precondition.
 
@@ -79,28 +79,59 @@ fn quotes_ok(quotes: &[wire::Quote]) -> bool {
         })
 }
 
-fn carried(client: &DevClientSession) -> Vec<(ItemHandle, u32)> {
-    client
-        .inventory()
-        .map(|inventory| {
-            inventory
-                .entries
-                .iter()
-                .map(|entry| (entry.handle, entry.item_definition_ref.get()))
-                .collect()
-        })
-        .unwrap_or_default()
+#[derive(Debug)]
+struct Carried {
+    handle: ItemHandle,
+    definition: u32,
+    id: [u8; 16],
 }
 
-/// Returns the first carried item (optionally one definition only) that has imbuement quotes,
-/// together with a summary of what every probed item answered.
+#[derive(Debug)]
+struct Evidence {
+    item: Carried,
+    quotes: Vec<wire::Quote>,
+}
+
+async fn carried(client: &DevClientSession, clients: &SeamClients<'_>) -> TestResult<Vec<Carried>> {
+    use sqlx::Connection;
+    let inventory = client.inventory().ok_or("step=inventory observed=no-inventory-view")?;
+    let index = provisioning::item_index()?;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let rows: Vec<(Vec<u8>, String, String, i64)> = sqlx::query_as(
+        "SELECT uuid_send(i.item_instance_id), i.definition_production_key, i.definition_revision_ref, i.quantity::bigint          FROM game_item_container_slots s          JOIN game_item_container_entries e ON (e.parent_item_instance_id,e.world_id)=(s.item_instance_id,s.world_id)          JOIN game_item_instances i ON (i.item_instance_id,i.world_id)=(e.item_instance_id,e.world_id)          WHERE s.character_id=encode($1,'hex')::uuid AND s.world_id=encode($2,'hex')::uuid AND i.lifecycle=1          ORDER BY e.placement_ordinal DESC LIMIT $3",
+    ).bind(clients.characters[1].as_slice()).bind(clients.world.as_slice())
+        .bind(i64::try_from(oteryn_protocol_oteryn::item_view::MAX_CHARACTER_INVENTORY_ITEMS)?)
+        .fetch_all(&mut database).await?;
+    if rows.len() != inventory.entries.len() {
+        return Err("step=inventory observed=wire-and-durable-entry-count-disagree".into());
+    }
+    // Domain 9 preserves the direct backpack order (descending durable placement ordinal).
+    inventory.entries.iter().zip(rows).map(|(entry, (id, key, revision, quantity))| {
+        let definition = entry.item_definition_ref;
+        if index.definition_at(definition) != Some((key.as_str(), revision.as_str()))
+            || i64::from(entry.count.get()) != quantity
+        {
+            return Err("step=inventory observed=wire-and-durable-entry-disagree".into());
+        }
+        let id = id.try_into().map_err(|_| "step=inventory observed=invalid-instance-id")?;
+        Ok(Carried { handle: entry.handle, definition: definition.get(), id })
+    }).collect()
+}
+
+fn item_matches(definition: u32, id: &[u8], wanted_definition: u32, wanted_id: &[u8]) -> bool {
+    definition == wanted_definition && id == wanted_id
+}
+
+/// Rebind the same durable instance to the handle issued on this admission.
 async fn quotes_for(
     client: &mut DevClientSession,
-    only: Option<u32>,
-) -> TestResult<(Option<(u32, String)>, String)> {
+    clients: &SeamClients<'_>,
+    only: Option<&Carried>,
+) -> TestResult<(Option<Evidence>, String)> {
     let mut observed = Vec::new();
-    for (handle, definition) in carried(client).into_iter().take(32) {
-        if only.is_some_and(|wanted| wanted != definition) {
+    for item in carried(client, clients).await? {
+        let Carried { handle, definition, id } = item;
+        if only.is_some_and(|wanted| !item_matches(definition, &id, wanted.definition, &wanted.id)) {
             continue;
         }
         let (status, payload) = send(
@@ -116,7 +147,7 @@ async fn quotes_for(
         }
         let reply = wire::decode_reply(&payload)
             .map_err(|error| format!("step=decode observed={error:?}"))?;
-        if format!("{:?}", reply.item) != format!("{handle:?}") {
+        if reply.item != handle {
             return Err("step=query observed=reply-for-another-item".into());
         }
         if reply.quotes.is_empty() {
@@ -127,7 +158,7 @@ async fn quotes_for(
             return Err(format!("step=quotes observed=invalid:{:?}", reply.quotes).into());
         }
         return Ok((
-            Some((definition, format!("{:?}", reply.quotes))),
+            Some(Evidence { item, quotes: reply.quotes }),
             observed.join(","),
         ));
     }
@@ -136,9 +167,9 @@ async fn quotes_for(
 
 async fn body(
     client: &mut DevClientSession,
-    _clients: &SeamClients<'_>,
-) -> TestResult<(u32, String)> {
-    match quotes_for(client, None).await? {
+    clients: &SeamClients<'_>,
+) -> TestResult<Evidence> {
+    match quotes_for(client, clients, None).await? {
         (Some(found), _) => Ok(found),
         (None, observed) => Err(format!(
             "step=query observed={observed} needed=carried-item-with-imbuement-allowance"
@@ -149,11 +180,11 @@ async fn body(
 
 async fn verify(
     client: &mut DevClientSession,
-    _clients: &SeamClients<'_>,
-    data: &(u32, String),
+    clients: &SeamClients<'_>,
+    data: &Evidence,
 ) -> TestResult {
-    match quotes_for(client, Some(data.0)).await? {
-        (Some((_, quotes)), _) if quotes == data.1 => Ok(()),
+    match quotes_for(client, clients, Some(&data.item)).await? {
+        (Some(found), _) if found.quotes == data.quotes => Ok(()),
         (found, observed) => Err(format!(
             "step=relog observed={found:?}/{observed} needed=quotes-unchanged-after-fresh-admission"
         )
@@ -177,6 +208,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn imbuement_fresh_lookup_rejects_a_copy_of_the_original_item() {
+        assert!(!item_matches(7, &[2; 16], 7, &[1; 16]));
+        assert!(item_matches(7, &[1; 16], 7, &[1; 16]));
+    }
 
     #[test]
     fn compact_is_one_bounded_token() {

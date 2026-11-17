@@ -14,14 +14,14 @@
 //! 5. Send ASSIGN for that unlocked charm and the completed race; expect
 //!    `Assigned`, the race assignment delta, and `effect_active=true`.
 //! 6. Walk back to a live creature, send ATTACK, and require a second credited
-//!    kill while the assignment is active, proving the production combat hook
-//!    is traversed without losing the assignment.
+//!    kill and Zap's energy impact from an otherwise physical attack, with the
+//!    assignment still active.
 //! 7. Send LOGOUT, obtain a fresh admission, then send QUERY; expect the kill
 //!    counts, charm-point balance, unlocked stage, and assigned race to equal
 //!    the pre-logout durable view.
 
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind, SessionEvent};
+use oteryn_dev_client::{DevClientSession, EntityDetail, SessionEvent};
 use oteryn_protocol_oteryn::charm::{CharmAssignDisposition, CharmUnlockDisposition};
 use oteryn_protocol_oteryn::charm_progression::{
     self as wire, CharmProgressionAction, CharmProgressionOutcome, CharmProgressionReply,
@@ -137,15 +137,23 @@ fn race_complete(reply: &CharmProgressionReply, race: NonZeroU32) -> bool {
         .is_some_and(|entry| entry.kill_count == entry.kill_thresholds[2])
 }
 
-async fn kill_adjacent(client: &mut DevClientSession) -> TestResult {
+fn charm_effect_observed(energy_hit: bool, credited_kill: bool) -> bool {
+    energy_hit && credited_kill
+}
+
+fn energy_damage(fact: &oteryn_protocol_oteryn::analyser::AnalyserFact) -> bool {
+    use oteryn_protocol_oteryn::{analyser::{AnalyserFact, AnalyserImpact}, damage_element::DamageElement};
+    matches!(fact, AnalyserFact::Impact(AnalyserImpact::Damage { element: DamageElement::Energy, .. }))
+}
+
+async fn kill_adjacent(client: &mut DevClientSession, name: &str) -> TestResult<bool> {
     use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
-    let before = query(client).await?;
     let here = client.world_spatial().actor_position;
     let target = client
         .world_entities()
         .and_then(|entities| {
             entities.iter().find(|entry| {
-                entry.kind == EntityKind::Creature
+                super::full_row_p02::named_creature(entry, name)
                     && entry.position.floor == here.floor
                     && entry
                         .position
@@ -167,64 +175,32 @@ async fn kill_adjacent(client: &mut DevClientSession) -> TestResult {
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
+    let mut energy = false;
     let mut damaged = false;
     loop {
-        client.service_liveness(Duration::from_millis(50)).await?;
+        tokio::time::timeout_at(deadline, client.service_liveness(Duration::from_millis(50))).await??;
         for event in client.take_events() {
-            if let SessionEvent::WorldSpatialEntities(delta) = event {
-                damaged |= delta.value.update.iter().any(|entry| {
-                    entry.entity == target.entity
-                        && matches!(
-                            entry.detail,
-                            EntityDetail::Actor { health_percent, .. } if health_percent < 100
-                        )
-                });
+            match event {
+                SessionEvent::WorldSpatialEntities(delta) => {
+                    damaged |= delta.value.update.iter().any(|entry| {
+                        entry.entity == target.entity && matches!(entry.detail,
+                            EntityDetail::Actor { health_percent, .. } |
+                            EntityDetail::ActorWithIcons { health_percent, .. } if health_percent < 100)
+                    });
+                }
+                SessionEvent::AnalyserFacts(delta) if delta.server_sequence > attack.result_server_sequence => {
+                    energy |= delta.value.iter().any(energy_damage);
+                }
+                SessionEvent::AnalyserAttributedFacts(delta) if delta.server_sequence > attack.result_server_sequence => {
+                    energy |= delta.value.iter().any(|fact| energy_damage(&fact.fact));
+                }
+                _ => {}
             }
         }
-        if client
-            .world_entities()
-            .is_some_and(|entities| entities.get(&target.entity).is_none())
-        {
+        if client.world_entities().is_some_and(|entities| entities.get(&target.entity).is_none()) {
             client.session_mut().attack_target(None).await?;
-            let after = query(client).await?;
-            let before_total = before
-                .bestiary
-                .iter()
-                .try_fold(0_u32, |total, entry| total.checked_add(entry.kill_count))
-                .ok_or("Bestiary kill total overflow before ATTACK")?;
-            let after_total = after
-                .bestiary
-                .iter()
-                .try_fold(0_u32, |total, entry| total.checked_add(entry.kill_count))
-                .ok_or("Bestiary kill total overflow after ATTACK")?;
-            if before_total
-                .checked_add(1)
-                .ok_or("Bestiary kill total overflow")?
-                != after_total
-                || before
-                    .bestiary
-                    .iter()
-                    .any(|entry| count(&after, entry.race) < entry.kill_count)
-            {
-                return Err(format!(
-                    "target vanished without exactly one credited Bestiary kill: before={:?} after={:?}",
-                    before.bestiary, after.bestiary
-                )
-                .into());
-            }
-            evidence(&format!(
-                "P01_CHECK combat-kill PASS target={:?} damaged={damaged} bestiary_delta=1",
-                target.entity
-            ));
-            return Ok(());
-        }
-        if tokio::time::Instant::now() >= deadline {
-            client.session_mut().attack_target(None).await?;
-            return Err(format!(
-                "ATTACK timeout target={:?} damaged={damaged}",
-                target.entity
-            )
-            .into());
+            evidence(&format!("P01 combat target={:?} health-update={damaged} energy-impact={energy}", target.entity));
+            return Ok(energy);
         }
     }
 }
@@ -233,9 +209,22 @@ async fn hunt_once(
     client: &mut DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
-) -> TestResult {
-    travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await?;
-    kill_adjacent(client).await
+    key: &str,
+    name: &str,
+) -> TestResult<bool> {
+    travel_to_spawn(client, world, spawns, key).await?;
+    kill_adjacent(client, name).await
+}
+
+async fn rat_reward(
+    database: &mut sqlx::PgConnection,
+    character: &[u8; 16],
+) -> TestResult<Option<Vec<u8>>> {
+    Ok(sqlx::query_scalar(
+        "SELECT m.death_key FROM game_party_kill_xp_members m JOIN game_party_kill_xp_receipts r USING(death_key)
+         WHERE m.character_id=encode($1,'hex')::uuid AND r.creature_key='oteryn:creature.rat'
+           AND m.xp_awarded > 0 ORDER BY r.committed_at DESC,r.death_key DESC LIMIT 1",
+    ).bind(character.as_slice()).fetch_optional(database).await?)
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
@@ -259,7 +248,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     evidence("P01_CHECK admission-query PASS accepted-native-views");
 
     row.at("player-earned-kill-count");
-    hunt_once(&mut client, world, &metadata.spawns).await?;
+    hunt_once(&mut client, world, &metadata.spawns, "oteryn:creature.rat", "Rat").await?;
     let mut current = query(&mut client).await?;
     let race = current
         .bestiary
@@ -272,7 +261,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 initial.bestiary, current.bestiary
             )
         })?;
-    if count(&current, race) != count(&initial, race) + 1 {
+    if count(&initial, race).checked_add(1) != Some(count(&current, race)) {
         return Err("credited kill did not increment Bestiary by exactly one".into());
     }
     evidence(&format!(
@@ -281,21 +270,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         count(&current, race)
     ));
 
-    let (charm, stage, cost) = current
-        .charms
-        .charms
-        .iter()
-        .enumerate()
-        .filter(|(_, charm)| charm.unlocked_stage == 0 && charm.next_stage_cost > 0)
-        .min_by_key(|(_, charm)| charm.next_stage_cost)
-        .and_then(|(index, charm)| {
-            Some((
-                NonZeroU32::new(u32::try_from(index).ok()?.checked_add(1)?)?,
-                charm.unlocked_stage,
-                charm.next_stage_cost,
-            ))
-        })
-        .ok_or("query has no locked charm with a stage cost")?;
+    let catalogue = crate::content::charm_source::CanonicalCharmCatalogue::embedded()?;
+    let zap = catalogue.catalogue().definitions().position(|entry| entry.key.as_str() == "oteryn:charm.zap")
+        .and_then(|index| u32::try_from(index + 1).ok()).and_then(NonZeroU32::new)
+        .ok_or("Zap absent from authored catalogue")?;
+    let locked = current.charms.charms.iter().find(|entry| entry.charm == zap)
+        .filter(|entry| entry.unlocked_stage == 0 && entry.next_stage_cost > 0)
+        .ok_or("step=locked-assignment needed=locked-Zap")?;
+    let (charm, stage, cost) = (locked.charm, locked.unlocked_stage, locked.next_stage_cost);
 
     row.at("locked-assignment-refusal");
     let refused = command(&mut client, CharmProgressionAction::Assign { charm, race }).await?;
@@ -307,21 +289,17 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     evidence("P01_CHECK locked-assignment-refusal PASS disposition=CharmLocked");
 
     row.at("earn-unlock-currency");
-    while current.charms.charm_points_available < cost || !race_complete(&current, race) {
-        hunt_once(&mut client, world, &metadata.spawns).await?;
+    while !race_complete(&current, race) {
+        hunt_once(&mut client, world, &metadata.spawns, "oteryn:creature.rat", "Rat").await?;
         let next = query(&mut client).await?;
-        if count(&next, race) <= count(&current, race) {
-            return Err(format!(
-                "credited hunt produced no increasing QUERY delta: {} -> {}",
-                count(&current, race),
-                count(&next, race)
-            )
-            .into());
+        if count(&current, race).checked_add(1) != Some(count(&next, race)) {
+            return Err("rat hunt did not increment that race's Bestiary count".into());
         }
         current = next;
     }
-    if !race_complete(&current, race) {
-        return Err("hunted race did not reach its final threshold".into());
+    if current.charms.charm_points_available < cost {
+        return Err(format!("step=earn-unlock-currency observed={};needed={cost}-player-earned-major-charm-points",
+            current.charms.charm_points_available).into());
     }
 
     row.at("unlock-stage");
@@ -340,7 +318,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .ok_or("unlocked charm vanished")?;
     if unlocked.outcome != CharmProgressionOutcome::Unlock(CharmUnlockDisposition::Unlocked)
         || unlocked_state.unlocked_stage != stage + 1
-        || unlocked.charms.charm_points_available + cost != current.charms.charm_points_available
+        || unlocked.charms.charm_points_available.checked_add(cost) != Some(current.charms.charm_points_available)
     {
         return Err(format!("UNLOCK reply/delta mismatch: {unlocked:?}").into());
     }
@@ -348,7 +326,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     row.at("assign-unlocked");
     let assigned = command(&mut client, CharmProgressionAction::Assign { charm, race }).await?;
-    let assigned_state = &assigned.charms.charms[usize::try_from(charm.get() - 1)?];
+    let assigned_state = assigned.charms.charms.iter().find(|entry| entry.charm == charm)
+        .ok_or("assigned charm absent from mutation reply")?;
     if assigned.outcome != CharmProgressionOutcome::Assign(CharmAssignDisposition::Assigned)
         || assigned_state.assigned_race != Some(race)
         || !assigned_state.effect_active
@@ -358,17 +337,46 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     evidence("P01_CHECK assign-unlocked PASS assignment-and-active-hook");
 
     row.at("assigned-combat-hook");
-    let before_hook = count(&assigned, race);
-    hunt_once(&mut client, world, &metadata.spawns).await?;
-    let after_hook = query(&mut client).await?;
-    let after_state = &after_hook.charms.charms[usize::try_from(charm.get() - 1)?];
-    if count(&after_hook, race) != before_hook.checked_add(1).ok_or("kill count overflow")?
-        || after_state.assigned_race != Some(race)
-        || !after_state.effect_active
-    {
-        return Err(format!("assigned combat hook lost durable state: {after_hook:?}").into());
+    use oteryn_protocol_oteryn::item_view::EquipmentSlot;
+    use oteryn_protocol_oteryn::attack::{FightMode, FightModes, AttackIntentDisposition};
+    use sqlx::Connection;
+    let hands = client.inventory().ok_or("step=combat observed=no-equipment-view")?.equipment.iter()
+        .filter(|entry| matches!(entry.slot, EquipmentSlot::LeftHand | EquipmentSlot::RightHand))
+        .map(|entry| entry.item.handle).collect::<Vec<_>>();
+    for handle in hands {
+        let moved = client.move_item(&oteryn_dev_client::ItemMoveIntent {
+            source: handle, destination: oteryn_dev_client::ItemMoveDestination::MainBackpack,
+        }).await?;
+        if moved.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved {
+            return Err("step=combat needed=unarmed-physical-attacks".into());
+        }
     }
-    evidence("P01_CHECK assigned-combat-hook PASS native-attack-retained-active-assignment");
+    let stance = client.session_mut().set_fight_modes(&FightModes { fight_mode: FightMode::Defensive, ..FightModes::DEFAULT }).await?;
+    if stance.disposition != AttackIntentDisposition::Ok {
+        return Err("step=combat observed=defensive-stance-refused".into());
+    }
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let mut observed = false;
+    for _ in 0..32 {
+        let before = rat_reward(&mut database, &clients.characters[1]).await?;
+        let energy = hunt_once(&mut client, world, &metadata.spawns, "oteryn:creature.rat", "Rat").await?;
+        let after = rat_reward(&mut database, &clients.characters[1]).await?;
+        let credited = after.is_some() && after != before;
+        if !credited {
+            return Err("step=combat observed=rat-vanished-without-new-kill-receipt".into());
+        }
+        if charm_effect_observed(energy, credited) {
+            observed = true;
+            break;
+        }
+    }
+    let after_hook = query(&mut client).await?;
+    let after_state = after_hook.charms.charms.iter().find(|entry| entry.charm == charm)
+        .ok_or("post-combat charm absent from reply")?;
+    if !observed || after_state.assigned_race != Some(race) || !after_state.effect_active {
+        return Err(format!("step=combat observed=zap-energy-hit:{observed},assignment:{after_state:?}").into());
+    }
+    evidence("P01_CHECK assigned-combat-hook PASS unarmed-Zap-energy-impact-and-credited-rat-kill");
 
     row.at("logout-fresh-admission");
     let old_session = client.join_snapshot().game_session_id;
@@ -386,6 +394,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if durable.bestiary != after_hook.bestiary || durable.charms != after_hook.charms {
         return Err(format!("fresh QUERY lost durable state: {durable:?}").into());
     }
+    if fresh.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err("fresh LOGOUT refused after charm readback".into());
+    }
     evidence("P01_CHECK logout-fresh-admission PASS exact-durable-views");
     Ok(())
 }
@@ -399,5 +410,17 @@ mod tests {
         let token = compact("a reply with spaces\nand punctuation!?/x");
         assert!(!token.contains([' ', '\n']));
         assert!(token.len() <= 180);
+    }
+}
+
+#[cfg(test)]
+mod combat_proof_tests {
+    use super::*;
+
+    #[test]
+    fn kill_credit_without_elemental_charm_damage_is_insufficient() {
+        assert!(!charm_effect_observed(false, true));
+        assert!(!charm_effect_observed(true, false));
+        assert!(charm_effect_observed(true, true));
     }
 }

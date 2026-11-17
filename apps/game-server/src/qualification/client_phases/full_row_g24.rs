@@ -102,7 +102,96 @@ async fn ask(client: &mut DevClientSession, query: &wire::Query) -> TestResult<w
     Ok(reply)
 }
 
-async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> TestResult {
+fn market_evidence_matches(
+    statistics: &wire::Statistics,
+    expected_statistics: &wire::Statistics,
+    book: &[oteryn_protocol_oteryn::market::MarketRow],
+    expected_book: &[oteryn_protocol_oteryn::market::MarketRow],
+) -> bool {
+    statistics.trades > 0 && statistics == expected_statistics && book == expected_book
+}
+
+async fn trade_statistics(
+    db: &mut sqlx::PgConnection,
+    world: &[u8; 16],
+    key: &str,
+    observed: &wire::Statistics,
+) -> TestResult<wire::Statistics> {
+    type SummaryRow = (Option<i16>, i64, String, Option<String>, Option<String>, Option<String>);
+    let rows: Vec<SummaryRow> = sqlx::query_as(
+        "WITH trades AS (
+            SELECT DISTINCT ON (h.transaction_id) h.transaction_id,h.price,h.amount,o.side
+            FROM game_market_settlements s JOIN game_market_history h USING(transaction_id)
+            JOIN game_market_offers o ON o.offer_id=s.offer_id AND o.world_id=s.world_id
+            WHERE s.world_id=encode($1,'hex')::uuid AND o.definition_key=$2 AND s.kind IN(2,5)
+              AND s.occurred_at_us BETWEEN $3 AND $4
+            ORDER BY h.transaction_id,h.character_id
+         ) SELECT side,count(*),coalesce(sum(amount),0)::text,min(price)::text,max(price)::text,floor(avg(price))::text
+           FROM trades GROUP BY GROUPING SETS ((side),())",
+    ).bind(world.as_slice()).bind(key).bind(observed.since_us).bind(observed.as_of_us)
+        .fetch_all(&mut *db).await?;
+    let mut result = wire::Statistics {
+        definition: observed.definition, since_us: observed.since_us, as_of_us: observed.as_of_us,
+        ..Default::default()
+    };
+    for (side, trades, units, minimum, maximum, average) in rows {
+        let summary = wire::PriceSummary {
+            trades: u64::try_from(trades)?, units: units.parse()?,
+            minimum: minimum.map(|value| value.parse()).transpose()?,
+            maximum: maximum.map(|value| value.parse()).transpose()?,
+            average: average.map(|value| value.parse()).transpose()?,
+        };
+        match side {
+            Some(1) => result.buy = summary,
+            Some(2) => result.sell = summary,
+            None => {
+                result.trades = summary.trades;
+                result.units = summary.units;
+                result.minimum = summary.minimum;
+                result.maximum = summary.maximum;
+                result.average = summary.average;
+            }
+            _ => return Err("step=statistics observed=invalid-settlement-side".into()),
+        }
+    }
+    Ok(result)
+}
+
+async fn first_book_page(
+    db: &mut sqlx::PgConnection,
+    world: &[u8; 16],
+    key: &str,
+    revision: &str,
+    definition: u32,
+    as_of: i64,
+) -> TestResult<(Vec<oteryn_protocol_oteryn::market::MarketRow>, bool)> {
+    type BookRow = (Vec<u8>, i32, String, bool, String);
+    let mut book = Vec::new();
+    let mut has_next = false;
+    for side in [1i16, 2] {
+        let rows: Vec<BookRow> = sqlx::query_as(
+            "SELECT uuid_send(offer_id),remaining,piece_price::text,anonymous,definition_revision
+             FROM game_market_offers
+             WHERE world_id=encode($1,'hex')::uuid AND definition_key=$2 AND side=$3 AND state=1
+               AND created_at_us<=$4 AND expires_at_us>$4
+             ORDER BY CASE WHEN side=1 THEN piece_price END DESC,
+                      CASE WHEN side=2 THEN piece_price END ASC,created_at_us,offer_id LIMIT 33",
+        ).bind(world.as_slice()).bind(key).bind(side).bind(as_of).fetch_all(&mut *db).await?;
+        has_next |= rows.len() > 32;
+        for (id, amount, price, anonymous, stored_revision) in rows.into_iter().take(32) {
+            if stored_revision == revision {
+                book.push(oteryn_protocol_oteryn::market::MarketRow {
+                    offer: id.try_into().map_err(|_| "step=book observed=invalid-offer-id")?,
+                    definition, side: u8::try_from(side)?, amount: u32::try_from(amount)?,
+                    price: price.parse()?, state: 1, anonymous,
+                });
+            }
+        }
+    }
+    Ok((book, has_next))
+}
+
+async fn body(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
     let filter = wire::Filter::default();
     let wire::Reply::Catalogue { items, .. } = ask(
         client,
@@ -156,8 +245,10 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
     }
     let wire::Reply::Book {
         definition: echoed,
+        page,
         rows,
-        ..
+        statistics: book_statistics,
+        has_next,
     } = ask(
         client,
         &wire::Query::Book {
@@ -169,16 +260,29 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
     else {
         return Err("step=book observed=not-a-book".into());
     };
-    if echoed != definition {
-        return Err(format!("step=book observed=definition-{echoed}").into());
+    if echoed != definition || page != 0 {
+        return Err(format!("step=book observed=definition:{echoed},page:{page};needed={definition},0").into());
     }
-    let trades = statistics.buy.trades + statistics.sell.trades;
-    if trades == 0 {
+    use sqlx::Connection;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let index = provisioning::item_index()?;
+    let (key, revision) = index.definition_at(std::num::NonZeroU32::new(definition).ok_or("step=catalogue observed=zero-definition")?)
+        .ok_or("step=catalogue observed=unknown-item-definition")?;
+    let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp())*1000000)::bigint")
+        .fetch_one(&mut database).await?;
+    if [statistics.as_of_us, book_statistics.as_of_us].into_iter().any(|stamp| now.abs_diff(stamp) > 60_000_000) {
+        return Err("step=statistics observed=noncurrent-statistics-window".into());
+    }
+    let expected = trade_statistics(&mut database, &clients.world, key, &statistics).await?;
+    let expected_book_stats = trade_statistics(&mut database, &clients.world, key, &book_statistics).await?;
+    let (expected_book, expected_next) = first_book_page(&mut database, &clients.world, key, revision, definition, book_statistics.as_of_us).await?;
+    if has_next != expected_next || book_statistics != expected_book_stats
+        || !market_evidence_matches(&statistics, &expected, &rows, &expected_book)
+    {
         return Err(format!(
-            "step=statistics observed=trades:0-book-rows:{} needed=completed-market-trade-history",
-            rows.len()
-        )
-        .into());
+            "step=market-proof observed=trades:{},book-rows:{},next:{has_next};needed=exact-durable-statistics-and-book:{},{},{expected_next}",
+            statistics.trades, rows.len(), expected.trades, expected_book.len()
+        ).into());
     }
     Ok(())
 }
@@ -194,6 +298,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn market_rejects_nonzero_fabricated_statistics_and_book_rows() {
+        use oteryn_protocol_oteryn::market::MarketRow;
+        let actual = wire::Statistics {
+            definition: 7, trades: 1, buy: wire::PriceSummary {
+                trades: 1, units: 1, minimum: Some(50), maximum: Some(50), average: Some(50),
+            }, ..Default::default()
+        };
+        let book = [MarketRow { offer: [3; 16], definition: 7, side: 1, amount: 1, price: 50,
+            state: 1, anonymous: false }];
+        let mut fabricated = actual.clone();
+        fabricated.buy.average = Some(40);
+        assert!(!market_evidence_matches(&fabricated, &actual, &book, &book));
+        assert!(!market_evidence_matches(&actual, &actual, &book, &[]));
+        assert!(market_evidence_matches(&actual, &actual, &book, &book));
+    }
 
     #[test]
     fn compact_is_one_bounded_token() {

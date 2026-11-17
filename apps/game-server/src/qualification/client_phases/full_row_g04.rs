@@ -51,6 +51,14 @@ async fn report(
         .map_err(|error| format!("step=decode observed={error:?}").into())
 }
 
+fn require_invalid_report(refused: TestResult<wire::PlayerReportReply>) -> TestResult {
+    let reply = refused?;
+    if reply.code != wire::PlayerReportCode::Invalid || reply.report != 0 || reply.wait_seconds != 0 {
+        return Err(format!("step=invalid observed={reply:?};needed=invalid-category-refusal").into());
+    }
+    Ok(())
+}
+
 type Row = (i64, i16, i32, i32, i16, i32, i32);
 
 async fn rows(clients: &SeamClients<'_>) -> TestResult<Vec<Row>> {
@@ -131,18 +139,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if (row.0, row.1, row.2, row.3, row.4) != expected || row.5 != at.x || row.6 != at.y {
         return Err(format!("step=durable observed={row:?};needed={expected:?}").into());
     }
-    let refused = report(&mut client, &request(wire::MAX_BUG_CATEGORY + 1, (0, 0, 0))).await;
-    // The shared client rejects an unknown category before sending; either an `Invalid` reply or
-    // an encode refusal proves the negative path, but a stored row never does.
-    if let Ok(reply) = &refused {
-        let refusal = matches!(
-            reply.code,
-            wire::PlayerReportCode::Invalid | wire::PlayerReportCode::RateLimited
-        );
-        if !refusal || reply.report != 0 {
-            return Err(format!("step=invalid observed={reply:?}").into());
+    let invalid = request(wire::MAX_BUG_CATEGORY + 1, (0, 0, 0));
+    let mut refusal = report(&mut client, &invalid).await?;
+    if refusal.code == wire::PlayerReportCode::RateLimited && (1..=60).contains(&refusal.wait_seconds) {
+        let refill = tokio::time::Instant::now() + Duration::from_secs(u64::from(refusal.wait_seconds));
+        while tokio::time::Instant::now() < refill {
+            client.service_liveness(Duration::from_millis(100)).await?;
+            client.take_events();
         }
+        refusal = report(&mut client, &invalid).await?;
     }
+    require_invalid_report(Ok(refusal))?;
     if rows(clients).await? != stored {
         return Err("step=invalid observed=queue-changed".into());
     }
@@ -160,6 +167,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn invalid_report_requires_decoded_category_refusal() {
+        let rate_limited = wire::PlayerReportReply {
+            code: wire::PlayerReportCode::RateLimited,
+            report: 0,
+            wait_seconds: 60,
+        };
+        assert!(require_invalid_report(Ok(rate_limited)).is_err());
+        for error in ["step=decode observed=Malformed", "step=report observed=status:Rejected"] {
+            assert!(require_invalid_report(Err(error.into())).is_err());
+        }
+        assert!(require_invalid_report(Ok(wire::PlayerReportReply {
+            code: wire::PlayerReportCode::Invalid,
+            report: 0,
+            wait_seconds: 0,
+        })).is_ok());
+    }
 
     #[test]
     fn map_bug_request_is_valid_and_unknown_category_is_not() {

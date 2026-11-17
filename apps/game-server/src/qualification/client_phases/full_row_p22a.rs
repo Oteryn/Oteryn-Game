@@ -68,6 +68,13 @@ async fn read(
 
 const UNKNOWN: &str = "oteryn:creature.no-such-race-p22a";
 
+fn unknown_add_unchanged(
+    before: &Option<tr::TrackerSnapshot>,
+    after: &Option<tr::TrackerSnapshot>,
+) -> bool {
+    before == after && !has(after, UNKNOWN)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let mut client = connect_world(clients, 0xd1).await?;
     selected(&client)?;
@@ -95,15 +102,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
 
     let (status, _) = call(&mut client, best, &change(tr::TrackerAction::Add, UNKNOWN)).await?;
     expect(status == CommandStatus::Rejected, "unknown-race", status)?;
-    let list = read(&mut client, best).await?;
-    expect(!has(&list, UNKNOWN), "unknown-race", "unknown-key-tracked")?;
+    let after = read(&mut client, best).await?;
+    expect(unknown_add_unchanged(&list, &after), "unknown-race", "tracker-changed-after-refusal")?;
 
     // Durable: the entry survives logout and a fresh admission, and stays out of the bosses.
     logout(&mut client).await?;
     let mut client = connect_world(clients, 0xd3).await?;
     selected(&client)?;
-    let list = read(&mut client, best).await?;
-    expect(has(&list, RAT), "relog-with-entry", "race-lost-after-relog")?;
+    let durable = read(&mut client, best).await?;
+    expect(has(&durable, RAT), "relog-with-entry", "race-lost-after-relog")?;
+    expect(unknown_add_unchanged(&list, &durable), "relog-with-entry", "tracker-changed-after-relog")?;
     let bosses = read(&mut client, boss).await?;
     expect(
         !has(&bosses, RAT),
@@ -187,6 +195,22 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn unknown_tracker_add_cannot_remove_a_known_entry() {
+        let before = Some(tr::TrackerSnapshot {
+            boss: false,
+            entries: vec![tr::TrackerEntry {
+                creature_key: RAT.into(),
+                kill_count: 0,
+                thresholds: [1, 2, 3],
+                completed: false,
+            }],
+        });
+        let after = Some(tr::TrackerSnapshot { boss: false, entries: Vec::new() });
+        assert!(!unknown_add_unchanged(&before, &after));
+        assert!(unknown_add_unchanged(&before, &before));
+    }
 
     #[test]
     fn token_has_no_whitespace_and_is_bounded() {

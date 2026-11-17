@@ -138,6 +138,24 @@ fn answer(selected: bool, dialog_id: u32, button_id: u8) -> TestResult<Vec<u8>> 
     }
 }
 
+fn require_unknown_refusal(status: CommandStatus) -> TestResult {
+    if status != CommandStatus::Rejected {
+        return Err(format!("step=wrong-answer observed={status:?};needed=rejected").into());
+    }
+    Ok(())
+}
+
+fn require_answer(
+    reply: TestResult<wire::Reply>,
+    expected: wire::Answer,
+    step: &str,
+) -> TestResult {
+    match reply? {
+        wire::Reply::Answered(answer) if answer == expected => Ok(()),
+        other => Err(format!("step={step} observed={other:?};needed={expected:?}").into()),
+    }
+}
+
 async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> TestResult {
     let wire::Reply::Dialog(dialog) = query(client).await? else {
         return Err("step=query observed=no-dialog needed=non-empty-server-motd".into());
@@ -152,23 +170,16 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
     let selected = input_selected(client);
     let wrong_id = dialog.id.checked_add(1).unwrap_or(1);
     let wrong = answer(selected, wrong_id, button)?;
-    let (status, payload) = send(
+    let (status, _) = send(
         client,
         CAPABILITY,
         wire::COMMAND_TYPE_SERVER_MODAL_ANSWER,
         &wrong,
     )
     .await?;
-    if status == CommandStatus::Accepted
-        && matches!(
-            decode_reply(selected, &payload),
-            Ok(wire::Reply::Answered(_))
-        )
-    {
-        return Err("step=wrong-answer observed=accepted-for-unknown-dialog".into());
-    }
+    require_unknown_refusal(status)?;
     match query(client).await? {
-        wire::Reply::Dialog(still) if still.id == dialog.id => {}
+        wire::Reply::Dialog(still) if still == dialog => {}
         other => return Err(format!("step=wrong-answer observed=dialog-changed:{other:?}").into()),
     }
     let right = answer(selected, dialog.id, button)?;
@@ -179,11 +190,8 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
         &right,
     )
     .await?;
-    match decode_reply(selected, &payload) {
-        Ok(wire::Reply::Answered(given))
-            if given.dialog_id == dialog.id && given.button_id == button => {}
-        other => return Err(format!("step=answer observed={other:?}").into()),
-    }
+    let expected = wire::Answer { dialog_id: dialog.id, button_id: button, choice_id: None };
+    require_answer(decode_reply(selected, &payload), expected, "answer")?;
     if !matches!(query(client).await?, wire::Reply::None) {
         return Err("step=cleared observed=dialog-still-pending".into());
     }
@@ -194,10 +202,7 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
         &right,
     )
     .await?;
-    match decode_reply(selected, &payload) {
-        Ok(wire::Reply::Answered(_)) => {}
-        other => return Err(format!("step=replay observed={other:?}").into()),
-    }
+    require_answer(decode_reply(selected, &payload), expected, "replay")?;
     if !matches!(query(client).await?, wire::Reply::None) {
         return Err("step=replay observed=dialog-reopened".into());
     }
@@ -215,6 +220,26 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn unknown_modal_does_not_accept_malformed_success() {
+        assert!(require_unknown_refusal(CommandStatus::Accepted).is_err());
+        assert!(require_unknown_refusal(CommandStatus::Rejected).is_ok());
+    }
+
+    #[test]
+    fn modal_replay_requires_original_dialog_and_button() {
+        let answer = |dialog_id, button_id| wire::Answer {
+            dialog_id,
+            button_id,
+            choice_id: None,
+        };
+        let reply = |id, button| Ok(wire::Reply::Answered(answer(id, button)));
+        let expected = answer(1, 1);
+        assert!(require_answer(reply(2, 1), expected, "replay").is_err());
+        assert!(require_answer(reply(1, 2), expected, "replay").is_err());
+        assert!(require_answer(reply(1, 1), expected, "replay").is_ok());
+    }
 
     #[test]
     fn compact_is_one_bounded_token() {

@@ -167,7 +167,7 @@ async fn journey(clients: &SeamClients<'_>, observed: &mut Observations) -> Test
     // an unrelated kill cannot manufacture a weapon track.
     let combat = async {
         travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-        client_hunt::hunt(&mut client).await
+        client_hunt::hunt_named(&mut client, "Rat").await
     }
     .await;
     observed.require("combat", combat.is_ok(), &combat);
