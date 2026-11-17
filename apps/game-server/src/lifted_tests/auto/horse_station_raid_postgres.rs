@@ -265,5 +265,24 @@ async fn exercise(h: &Harness) -> TestResult {
             .iter()
             .all(|plan| plan.creature.as_str() != "oteryn:creature.wild_horse")
     );
+    sqlx::query(
+        "UPDATE game_horse_stations SET loose_until_ms=$2 WHERE world_id=encode($1,'hex')::uuid",
+    )
+    .bind(world.as_bytes().as_slice())
+    .bind(request.now_ms + 4 * 24 * 3_600_000)
+    .execute(&h.pool)
+    .await?;
+    let cleanup = h
+        .root
+        .claim_lost_raid_run(
+            &h.node,
+            stable_firing,
+            channel,
+            request.generation,
+            request.now_ms,
+        )
+        .await?
+        .ok_or("stable cleanup on escape")?;
+    assert_eq!(cleanup.action, CommittedRaidAction::Lost);
     Ok(())
 }
