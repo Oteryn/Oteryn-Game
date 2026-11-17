@@ -1169,6 +1169,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
             };
+            #[cfg(any(test, feature = "test-support"))]
+            if callback.effects.ground_output.is_some()
+                && let Err(error) = &outcome
+            {
+                eprintln!("Ground output callback {} failed: {error:?}", callback.key);
+            }
             if callback.key == oteryn_gameplay_quests::quest::dreamer_carrot::KEY
                 && matches!(&outcome,Ok(QuestTransitionOutcome::Refused(
                     oteryn_gameplay_quests::quest::QuestRefusal::SourceOfferingMissing
