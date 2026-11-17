@@ -2956,7 +2956,6 @@ async fn newhaven_leg(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult {
-    newhaven_journey::report_content_gaps();
     const FOOTMAN: &str = "oteryn:creature.muglex_clan_footman";
     let mut client = connect_world(clients, 0x74).await?;
     let entered = tile(client.world_spatial().actor_position)?;
@@ -3071,6 +3070,7 @@ async fn newhaven_leg(
         "mechanic=death state=relogged position={respawn:?} health={}",
         client.actor_vitals().ok_or("death relog vitals")?.health
     ));
+    newhaven_journey::run(&mut client, clients, world, spawns).await;
     drop(client);
     Ok(())
 }
