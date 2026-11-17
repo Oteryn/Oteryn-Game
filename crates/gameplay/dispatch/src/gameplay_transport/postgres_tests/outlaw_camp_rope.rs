@@ -58,7 +58,7 @@ async fn scenario(admin: String) -> TestResult {
         ],
     )?;
     let cells = map
-        .movement_cells(deps.room.movement_cells())
+        .movement_cells(pin.qualified_room().movement_cells())
         .map_err(debug)?;
     let world = deps.admitted.world_id;
     let room = super::rust_lottery::bundle_action_room(pin.qualified_room(), &map, world, &cells)?;
