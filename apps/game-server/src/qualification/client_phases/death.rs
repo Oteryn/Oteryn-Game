@@ -17,6 +17,7 @@ pub(super) async fn death(
         .actor_vitals()
         .ok_or("death journey vitals missing")?
         .health;
+    let mut previous_health = before;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let encounter = client.world_spatial().actor_position;
     let mut damaged = false;
@@ -24,7 +25,8 @@ pub(super) async fn death(
         client.service_liveness(Duration::from_millis(100)).await?;
         for event in client.take_events() {
             if let oteryn_dev_client::SessionEvent::ActorVitals(delta) = event {
-                damaged |= delta.value.health < before;
+                damaged |= delta.value.health < previous_health || delta.value.health == 0;
+                previous_health = delta.value.health;
             }
         }
         let position = client.world_spatial().actor_position;

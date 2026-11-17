@@ -85,7 +85,7 @@ impl State {
             let entities =
                 crate::gameplay_transport::entity_names::observe(authority, actor, selected)
                     .await
-                    .ok_or(ServeEnd::Disconnected)?;
+                    .map_err(|_| ServeEnd::Disconnected)?;
             let mut view = SessionVisibility::with_objects(items.is_some())
                 .lit(selected.contains(CAPABILITY_WORLD_LIGHT_V1));
             let (snapshot_type, payload) = appearances

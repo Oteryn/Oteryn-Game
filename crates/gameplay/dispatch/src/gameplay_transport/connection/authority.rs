@@ -261,11 +261,21 @@ pub trait FreshAdmissionAuthority {
     }
 
     /// S-ENTNAME: the same visibility read enriched with names for capability 286.
+    /// `HolderBusy` is transient (see `entity_names::observe`); `Unavailable` is not.
     fn observe_named_visible_entities(
         &self,
         actor: ExactActorRef,
-    ) -> impl Future<Output = Option<ChannelEntities>> {
-        self.observe_visible_entities(actor)
+    ) -> impl Future<
+        Output = Result<
+            ChannelEntities,
+            crate::gameplay_transport::appearance_change::observation::ObservationError,
+        >,
+    > {
+        async move {
+            self.observe_visible_entities(actor).await.ok_or(
+                crate::gameplay_transport::appearance_change::observation::ObservationError::Unavailable,
+            )
+        }
     }
 
     /// VIS-3 (MOVE-RL-11 §4): every entity of the admitted actor's Channel with the actor's own

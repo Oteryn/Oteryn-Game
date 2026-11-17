@@ -142,7 +142,7 @@ fn seam_join_named_entities_retry_busy_holder_before_chat_open() -> TestResult {
             let expected = owner
                 .observe_named_visible_entities(deps.actor)
                 .await
-                .ok_or("initial named entities")?;
+                .map_err(|error| format!("initial named entities: {error:?}"))?;
             let player = expected
                 .entities
                 .iter()
@@ -162,7 +162,9 @@ fn seam_join_named_entities_retry_busy_holder_before_chat_open() -> TestResult {
                 })
                 .await;
                 held.run(|_, _| Box::pin(async { Ok(()) })).await?;
-                snapshot.await.ok_or("named entities after contention")?
+                snapshot
+                    .await
+                    .map_err(|error| format!("named entities after contention: {error:?}"))?
             };
             assert_eq!(observed.entities, expected.entities);
             assert!(owner.states.chat.speaker_name(session).is_none());

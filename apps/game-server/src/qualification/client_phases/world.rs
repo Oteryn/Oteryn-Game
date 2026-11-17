@@ -9,6 +9,7 @@ use std::path::Path;
 mod general_stats;
 
 include!("character_core.rs");
+include!("newhaven_hunt.rs");
 include!("character_release.rs");
 include!("e2e_row_batch.rs");
 include!("floor_journey.rs");
@@ -541,6 +542,11 @@ fn near_locker(world: &BundleWorld, at: TilePos) -> bool {
     })
 }
 
+fn depot_route(world: &BundleWorld, from: TilePos) -> TestResult<Vec<StepDirection>> {
+    route(world, from, |at| near_locker(world, at))
+        .ok_or_else(|| format!("no reachable authored depot locker from {from:?}").into())
+}
+
 fn town_route_retry_delay(
     disposition: StepDisposition,
     stationary: bool,
@@ -650,6 +656,10 @@ pub(super) async fn journeys(
         started.elapsed().as_millis()
     ));
     let groups = verdict::Groups::from_env()?;
+    if std::env::var("NODE_BOOT_NEWHAVEN").is_ok_and(|leg| leg == "1") {
+        // The separate Newhaven leg (run.sh starts this node on the tutorial islet).
+        return newhaven_leg(clients, world, &metadata.spawns).await;
+    }
     // The required core keeps its ordinary pair; packet journeys own a separate pair.
     let mut client = connect_world(clients, 0x70).await?;
     let entered_at = tile(client.world_spatial().actor_position)?;
@@ -2805,7 +2815,12 @@ pub(super) async fn journeys(
         evidence("e2e_groups core=skipped");
         return Ok(());
     }
-    let profile_result = profile_journey(clients, world, &bytes, &metadata.spawns).await;
+    let profile_result = if std::env::var_os("NBM_DBG_HUNT").is_some() {
+        Ok(())
+    } else {
+        // [DBG-hunt]
+        profile_journey(clients, world, &bytes, &metadata.spawns).await
+    }; // [DBG-hunt]
     if let Err(error) = &profile_result {
         evidence(&format!("world_profile state=failed error={error}"));
     }
@@ -2826,67 +2841,205 @@ pub(super) async fn journeys(
     if map.header.bundle_digest != world.base().digest() || map.tiles.is_empty() {
         return Err("town join served a different or empty World bundle".into());
     }
-    // Resume from the profile journey's saved cell and travel normally to town.
+    if std::env::var_os("NBM_DBG_HUNT").is_none() {
+        // [DBG-hunt]
+        // Resume from the profile journey's saved cell and travel normally to town.
+        let from = tile(client.world_spatial().actor_position)?;
+        evidence(&format!(
+            "world_fixture role=core phase=return_to_town from={from:?} to={TOWN:?}"
+        ));
+        let back = route(world, from, |at| at == TOWN).ok_or_else(|| {
+            format!("required core has no return route to town: from={from:?} to={TOWN:?}")
+        })?;
+        walk(&mut client, world, &back).await?;
+        client = character_core(client, clients, world).await?;
+        client = include!("full_e2ef3_registration.rs");
+        client = floor_journey(client, clients, world).await?;
+        client_guild::guild(&mut client).await?;
+        client_party::party(&mut client).await?;
+        let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+        let buddy: String = sqlx::query_scalar(
+            "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(clients.characters[0].as_slice())
+        .fetch_one(&mut connection)
+        .await?;
+        client_vip::add(&mut client, &buddy).await?;
+        client_player_trade::pair(&mut client, clients).await?;
+        client_prey::prey(&mut client).await?;
+        client_task_board::task_board(&mut client).await?;
+        client_imbue::imbue(&mut client).await?;
+        client_hireling::hireling(&mut client).await?;
+        client_browse_field::browse_field(&mut client).await?;
+        client_daily_boost::daily_boost(&mut client).await?;
+        let path = depot_route(world, tile(client.world_spatial().actor_position)?)?;
+        walk(&mut client, world, &path).await?;
+        client_depot_search::depot_search(&mut client).await?;
+        client_stash::stash(&mut client).await?;
+        client_market::market(&mut client).await?;
+        shop_journey(&mut client, world, &metadata.npcs, clients).await?;
+        client_hotkey_equip::hotkey_equip(&mut client).await?;
+        client_item_forge::item_forge(&mut client).await?;
+        client_store::store(&mut client).await?;
+        let after = destination(
+            world,
+            tile(client.world_spatial().actor_position)?,
+            StepDirection::West,
+        )
+        .map(|at| ActorPosition {
+            x: i32::from(at.x),
+            y: i32::from(at.y),
+            floor: -i16::from(at.floor),
+        });
+        client = client_disconnect_resume::recover(client, clients, after).await?;
+    } // [DBG-hunt]
+    // Character 1's hunt, death and relog run in the separate Newhaven leg (newhaven_leg).
+    drop(client);
+    profile_result
+}
+
+/// The tutorial islet temple: a vocationless Character's first entry and death respawn
+/// (crates/gameplay/quests tutorial steps).
+const NEWHAVEN_ISLET_TEMPLE: TilePos = TilePos {
+    x: 32534,
+    y: 32513,
+    floor: -7,
+};
+
+/// Leaves the tutorial islet as a new player does. The islet is its own land; its only way
+/// off is the step-in teleport east of 32537,32514 to the forcefield arrival 32544,32515.
+/// `walk()` never models a teleport, so this step asserts its exact arrival itself.
+async fn leave_islet(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+) -> TestResult {
+    let gate = TilePos {
+        x: 32537,
+        y: 32514,
+        floor: -7,
+    };
+    let arrival = TilePos {
+        x: 32544,
+        y: 32515,
+        floor: -7,
+    };
     let from = tile(client.world_spatial().actor_position)?;
+    let path = route(world, from, |at| at == gate)
+        .ok_or_else(|| format!("no islet route to the exit: from={from:?} to={gate:?}"))?;
+    walk(client, world, &path).await?;
+    let outcome = client.step_retrying(StepDirection::East).await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while tile(client.world_spatial().actor_position)? != arrival {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "islet exit did not arrive: expected={arrival:?} actual={:?} step={outcome:?}",
+                client.world_spatial().actor_position
+            )
+            .into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+    }
+    client.take_events();
     evidence(&format!(
-        "world_fixture role=core phase=return_to_town from={from:?} to={TOWN:?}"
+        "world_fixture role=newhaven phase=left_islet position={arrival:?}"
     ));
-    let back = route(world, from, |at| at == TOWN).ok_or_else(|| {
-        format!("required core has no return route to town: from={from:?} to={TOWN:?}")
-    })?;
-    walk(&mut client, world, &back).await?;
-    client = character_core(client, clients, world).await?;
-    client = include!("full_e2ef3_registration.rs");
-    client = floor_journey(client, clients, world).await?;
-    client_guild::guild(&mut client).await?;
-    client_party::party(&mut client).await?;
-    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
-    let buddy: String = sqlx::query_scalar(
-        "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
-    )
-    .bind(clients.characters[0].as_slice())
-    .fetch_one(&mut connection)
-    .await?;
-    client_vip::add(&mut client, &buddy).await?;
-    client_player_trade::pair(&mut client, clients).await?;
-    client_prey::prey(&mut client).await?;
-    client_task_board::task_board(&mut client).await?;
-    client_imbue::imbue(&mut client).await?;
-    client_hireling::hireling(&mut client).await?;
-    client_browse_field::browse_field(&mut client).await?;
-    client_daily_boost::daily_boost(&mut client).await?;
-    let path = route(world, TOWN, |at| near_locker(world, at))
-        .ok_or("town has no reachable authored depot locker")?;
-    walk(&mut client, world, &path).await?;
-    client_depot_search::depot_search(&mut client).await?;
-    client_stash::stash(&mut client).await?;
-    client_market::market(&mut client).await?;
-    shop_journey(&mut client, world, &metadata.npcs, clients).await?;
-    client_hotkey_equip::hotkey_equip(&mut client).await?;
-    client_item_forge::item_forge(&mut client).await?;
-    client_store::store(&mut client).await?;
-    let after = destination(
-        world,
-        tile(client.world_spatial().actor_position)?,
-        StepDirection::West,
-    )
-    .map(|at| ActorPosition {
-        x: i32::from(at.x),
-        y: i32::from(at.y),
-        floor: -i16::from(at.floor),
-    });
-    client = client_disconnect_resume::recover(client, clients, after).await?;
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-    client_hunt::hunt(&mut client).await?;
+    Ok(())
+}
+
+/// The Newhaven leg: vocationless character 1 enters on the tutorial islet, leaves it, hunts a
+/// Muglex clan footman, dies to an assassin, respawns on the islet and relogs.
+async fn newhaven_leg(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+) -> TestResult {
+    const FOOTMAN: &str = "oteryn:creature.muglex_clan_footman";
+    let mut client = connect_world(clients, 0x74).await?;
+    let entered = tile(client.world_spatial().actor_position)?;
+    evidence(&format!(
+        "world_fixture role=newhaven phase=first_entry position={entered:?}"
+    ));
+    if entered != NEWHAVEN_ISLET_TEMPLE {
+        return Err(format!(
+            "new Character did not enter on the tutorial islet: expected={NEWHAVEN_ISLET_TEMPLE:?} actual={entered:?}"
+        )
+        .into());
+    }
+    leave_islet(&mut client, world).await?;
+    if let Err(error) = newhaven_equip_weapon(&mut client).await {
+        let cause = if error
+            .to_string()
+            .starts_with("Newhaven no-vocation starter has no")
+        {
+            "missing_starter_weapon"
+        } else {
+            "weapon_setup_failed"
+        };
+        evidence(&format!(
+            "NEWHAVEN_GAP case=footman-hunt state=failed cause={cause} error=\"{error}\""
+        ));
+        return Err(error);
+    }
+    for attempt in 1..=3 {
+        let result = match travel_to_spawn(&mut client, world, spawns, FOOTMAN).await {
+            Ok(()) => client_hunt::hunt_newhaven(&mut client, world, FOOTMAN).await,
+            Err(_) if newhaven_hunt_died(&client) => Err("newhaven hunt died".into()),
+            Err(error) => return Err(error),
+        };
+        let Err(error) = result else { break };
+        let message = error.to_string();
+        let observed_cause = newhaven_hunt_cause(
+            client
+                .actor_vitals()
+                .ok_or("Newhaven hunt vitals missing")?
+                .health,
+            newhaven_at_temple(&client) || message == "newhaven hunt died",
+            message == "newhaven hunt kill_observed_no_corpse",
+        );
+        if observed_cause == "died" {
+            evidence(&format!(
+                "NEWHAVEN_GAP case=footman-hunt state=failed cause={observed_cause}"
+            ));
+            newhaven_wait_for_respawn(&mut client).await?;
+            break;
+        }
+        if message == "newhaven hunt recovered; retry one footman" && attempt < 3 {
+            continue;
+        }
+        let cause = match message.as_str() {
+            "newhaven hunt kill_observed_no_corpse" => "kill_observed_no_corpse",
+            "newhaven hunt no_kill" | "newhaven hunt recovered; retry one footman" => "no_kill",
+            _ => return Err(error),
+        };
+        evidence(&format!(
+            "NEWHAVEN_GAP case=footman-hunt state=failed cause={cause} error=\"{error}\""
+        ));
+        break;
+    }
+    // A hunt death invalidates the old route. Wait above, then leave from the
+    // actual live islet tile; travel_to_spawn plans from that current position.
+    if newhaven_at_temple(&client) {
+        leave_islet(&mut client, world).await?;
+    }
+    // Stop the hunt before approaching a fresh, stronger melee attacker. Both Muglex
+    // types are hostile and never flee; the assassin has attack 15 versus the footman's 10
+    // at the same 2 s interval (content/abilities/formulas/formulas-03500-03999.json).
+    client.session_mut().attack_target(None).await?;
     travel_to_spawn(
         &mut client,
         world,
-        &metadata.spawns,
-        "oteryn:creature.poison_spider",
+        spawns,
+        "oteryn:creature.muglex_clan_assassin",
     )
     .await?;
     client_death::death(&mut client, clients).await?;
     let respawn = client.world_spatial().actor_position;
+    if tile(respawn)? != NEWHAVEN_ISLET_TEMPLE {
+        return Err(format!(
+            "tutorial death did not respawn on the islet: expected={NEWHAVEN_ISLET_TEMPLE:?} actual={respawn:?}"
+        )
+        .into());
+    }
     let old_session = client.join_snapshot().game_session_id;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
@@ -2914,9 +3067,8 @@ pub(super) async fn journeys(
         "mechanic=death state=relogged position={respawn:?} health={}",
         client.actor_vitals().ok_or("death relog vitals")?.health
     ));
-
     drop(client);
-    profile_result
+    Ok(())
 }
 
 async fn profile_journey(
@@ -3057,6 +3209,24 @@ pub(super) async fn connect_character(
     Ok(client)
 }
 
+/// Whether a visible creature is the requested spawn's creature. Its display name (the key's
+/// last segment with spaces for underscores) decides when names were negotiated; without names
+/// every creature still counts.
+pub(super) fn is_spawn_creature(
+    entry: &oteryn_dev_client::WorldSpatialEntity,
+    creature: &str,
+) -> bool {
+    let wanted = creature
+        .rsplit(['.', ':'])
+        .next()
+        .unwrap_or(creature)
+        .replace('_', " ");
+    entry.display_name.as_ref().is_none_or(|name| {
+        name.as_str()
+            .is_ok_and(|name| name.eq_ignore_ascii_case(&wanted))
+    })
+}
+
 async fn travel_to_spawn(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
@@ -3081,7 +3251,18 @@ async fn travel_to_spawn(
             .tile(at.x, at.y, at.floor)
             .is_none_or(|tile| tile.protection_zone())
             && points.iter().any(|(floor, point)| {
-                at.floor == *floor && at.x.abs_diff(point.x) <= 1 && at.y.abs_diff(point.y) <= 1
+                at.floor == *floor
+                    && at.x.abs_diff(point.x) <= 1
+                    && at.y.abs_diff(point.y) <= 1
+                    && (creature != "oteryn:creature.muglex_clan_footman"
+                        || points
+                            .iter()
+                            .filter(|(other_floor, other)| {
+                                at.floor == *other_floor
+                                    && at.x.abs_diff(other.x).max(at.y.abs_diff(other.y)) <= 1
+                            })
+                            .count()
+                            == 1)
             })
     })
     .ok_or_else(|| format!("no reachable {creature} spawn within town route budget"))?;
@@ -3096,6 +3277,7 @@ async fn travel_to_spawn(
                     .filter(|entry| {
                         entry.kind == oteryn_dev_client::EntityKind::Creature
                             && entry.position.floor == here.floor
+                            && is_spawn_creature(entry, creature)
                     })
                     .min_by_key(|entry| {
                         entry
@@ -3107,9 +3289,26 @@ async fn travel_to_spawn(
             })
             .copied()
             .ok_or("spawn route has no visible creature")?;
+        let target_entity = target.entity;
         let target = tile(target.position)?;
         let path = route(world, tile(here)?, |at| {
-            at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1
+            at.floor == target.floor
+                && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1
+                && (creature != "oteryn:creature.muglex_clan_footman"
+                    || client.world_entities().is_some_and(|entities| {
+                        entities.iter().all(|other| {
+                            other.entity == target_entity
+                                || other.kind != oteryn_dev_client::EntityKind::Creature
+                                || other.position.floor != here.floor
+                                || tile(other.position).is_ok_and(|other_at| {
+                                    at.x.abs_diff(other_at.x).max(at.y.abs_diff(other_at.y)) > 1
+                                })
+                        })
+                    }))
+                && world
+                    .base()
+                    .tile(at.x, at.y, at.floor)
+                    .is_some_and(|tile| !tile.protection_zone())
         })
         .ok_or("visible creature unreachable")?;
         let Some(direction) = path.first() else {
@@ -3166,6 +3365,19 @@ pub(crate) fn smoke() -> TestResult {
     assert!(
         route(world, TOWN, |at| near_locker(world, at)).is_some(),
         "town depot must be reachable"
+    );
+    // M01/E2EF3 keep the non-temple relog cell; floor_journey returns to that cell.
+    // Replaying a path planned from TOWN there used to hit West at 32367,32227,7.
+    let mut at = destination(world, TOWN, StepDirection::North)
+        .ok_or("core non-temple relog cell must be reachable")?;
+    for direction in depot_route(world, at)? {
+        at = destination(world, at, direction).ok_or_else(|| {
+            format!("depot route has no qualified landing: from={at:?} direction={direction:?}")
+        })?;
+    }
+    assert!(
+        near_locker(world, at),
+        "core route must finish beside a depot locker"
     );
     let floor_path = route(world, TOWN, |at| at.floor != TOWN.floor)
         .ok_or("town floor-change route must be reachable")?;

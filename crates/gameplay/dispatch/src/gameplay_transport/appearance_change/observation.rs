@@ -8,7 +8,8 @@ mod house;
 pub struct Observation {
     pub catalogue: wire::Catalogue,
     pub bindings: Vec<wire::Binding>,
-    /// Requested entities deliberately omitted while their appearance is unobservable.
+    /// Requested entities deliberately omitted while their appearance is unobservable or
+    /// after they left the channel.
     pub skipped: Vec<wire::EntityRef>,
 }
 
@@ -192,13 +193,22 @@ async fn observe_once(
             });
             continue;
         }
-        let (actor, target_session) = note_none(
-            census.iter().find(|(actor, _)| {
-                actor.placement_identity() == entity.identity
-                    && actor.actor_local_generation() == entity.generation
-            }),
-            "visibility",
-        )?;
+        let Some((actor, target_session)) = census.iter().find(|(actor, _)| {
+            actor.placement_identity() == entity.identity
+                && actor.actor_local_generation() == entity.generation
+        }) else {
+            // The caller read its visible entities before this runtime lock: an entity that
+            // left the channel since (a peer that logged out, a despawned creature) is a
+            // normal removal. The caller drops it from its view, which sends its leave.
+            // Only the observer itself is required.
+            if entity.identity == observer.placement_identity()
+                && entity.generation == observer.actor_local_generation()
+            {
+                return note_none(None, "visibility");
+            }
+            skipped.push(entity);
+            continue;
+        };
         if states.player_hidden_from(
             &runtime,
             observer,

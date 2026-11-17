@@ -705,6 +705,10 @@ def main() -> int:
     run(["python3", "tools/content-migration/refresh_season_creature_inventory.py"])
     run(["python3", "tools/content-schema/quest-authoring/quest_tree_authoring.py", "content",
          "--source-packet", "tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json"])
+    # Quest lowering can change shared definition shards. Bind authored props and
+    # callback witnesses to those final bytes before refreshing the world pin.
+    run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
+    run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
     for script in (
         "quest_binding_authoring", "quest_completion_matrix", "quest_rollout_authoring",
         "quest_v2_export", "quest_state_lowering", "source_lowered_binding_plan",
