@@ -58,6 +58,7 @@ pub(super) struct PickerState {
     channel: Option<usize>,
     /// Show outfits: 66px rows with the outfit column, otherwise 29px rows.
     outfits: bool,
+    list: Option<Entity>,
     revision: u64,
     rendered: Option<(u64, u64)>,
     last_click: Option<(u64, usize, std::time::Instant)>,
@@ -117,7 +118,7 @@ pub(super) fn project(
     mut state: ResMut<PickerState>,
     mut roots: Query<(Entity, &mut Node), With<Picker>>,
     mut focus: ResMut<InputFocus>,
-    controls: Query<&PickerControl>,
+    (controls, scrolls): (Query<&PickerControl>, Query<&ScrollPosition>),
 ) {
     let Some(request) = owner.selection.pending() else {
         if focus
@@ -200,6 +201,11 @@ pub(super) fn project(
         let list = commands
             .spawn((
                 bevy::ui_widgets::ScrollArea,
+                state
+                    .list
+                    .and_then(|entity| scrolls.get(entity).ok())
+                    .cloned()
+                    .unwrap_or_default(),
                 Name::new("selection.list"),
                 source::frame(skin.inset.clone(), [1.; 4]),
                 Node {
@@ -214,6 +220,7 @@ pub(super) fn project(
                 },
             ))
             .id();
+        state.list = Some(list);
         commands.entity(panel).add_child(list);
         let height = if state.outfits { 66. } else { 29. };
         for (index, row) in request.rows.iter().enumerate() {
