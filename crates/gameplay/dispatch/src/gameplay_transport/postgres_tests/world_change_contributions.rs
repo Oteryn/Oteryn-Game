@@ -140,7 +140,8 @@ fn junkar_scenario() -> TestResult {
             .await
             .initialize_first_entry_position(actor)
             .map_err(debug)?;
-        super::boss_activity::issue_content_and_reset(&h, &pin).await?;
+        let (content_pin, ..) = pin.into_channel_parts();
+        super::boss_activity::issue_content_and_reset(&h, &content_pin).await?;
         super::worldchg_trader::day(&h, world, 1).await?;
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
             .bind(id(41).as_slice()).execute(&h.pool).await?;
