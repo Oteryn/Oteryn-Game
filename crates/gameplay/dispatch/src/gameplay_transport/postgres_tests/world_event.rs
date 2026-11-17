@@ -88,6 +88,10 @@ fn w05d_cake_real_baker_burns_only_remaining_goal_and_replays() -> TestResult {
     Ok(())
 }
 
+pub(super) fn scenario_with_deepling_cycle() -> TestResult {
+    scenario_run(7, Some("DeeplingCycle"), false, None)
+}
+
 pub(super) fn scenario(epochs: u64) -> TestResult {
     scenario_run(epochs, None, false, None)
 }
@@ -105,7 +109,7 @@ fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool, native_dea
         reset();
         let h =
             Harness::create_with_admission_seed(admin, "world_event_dispatch", !(consumers || native_deaths.is_some()), false).await?;
-        let clock = seasonal.or_else(|| native_deaths.and_then(|(creature, active)| {
+        let clock = seasonal.filter(|name| *name != "DeeplingCycle").or_else(|| native_deaths.and_then(|(creature, active)| {
             (creature == "werewolf").then_some(if active { "QworldGrimvaleActive" } else { "QworldGrimvaleInactive" })
         }));
         if clock.is_some() {
@@ -164,7 +168,11 @@ fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool, native_dea
                 "oteryn:game:primary",
             )
             .await?;
-        event_fixture::reset_epochs(&h, &authority, room, world, channel, epochs).await?;
+        let deepling_cycle = seasonal == Some("DeeplingCycle");
+        event_fixture::reset_epochs(&h, &authority, room, world, channel, epochs, deepling_cycle).await?;
+        if deepling_cycle {
+            return Ok(());
+        }
         // The reset decision owns the calendar across every Channel and restart.
         let calendar = h.root.world_change_calendar(world, epochs).await?;
         assert_eq!(h.root.world_change_calendar(world, epochs).await?, calendar);

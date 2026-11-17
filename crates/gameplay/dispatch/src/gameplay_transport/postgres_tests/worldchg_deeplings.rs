@@ -14,6 +14,18 @@ fn worldchg_deepling_guard_death_credits_one_tenth_once() -> TestResult {
     })
 }
 
+#[test]
+fn worldchg_deeplings_save_job_returns_to_stage_two() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run(
+        "wcdeep-save-cycle",
+        super::world_event::scenario_with_deepling_cycle,
+    )
+}
+
 pub(super) async fn exercise(
     h: &Harness,
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,

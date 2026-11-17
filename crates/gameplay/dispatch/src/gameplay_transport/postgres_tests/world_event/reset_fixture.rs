@@ -11,6 +11,7 @@ pub(super) async fn reset_epochs(
     world: WorldId,
     channel: ChannelId,
     epochs: u64,
+    deepling_cycle: bool,
 ) -> TestResult {
     sqlx::query("INSERT INTO game_control_scope_grants(control_role,world_id,channel_id,operation) VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4),(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,2)")
         .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).execute(&h.pool).await?;
@@ -84,6 +85,25 @@ pub(super) async fn reset_epochs(
                     .map_err(debug)?,
                 Some(previous + 1)
             );
+        }
+        if deepling_cycle && previous == 0 {
+            // Seed a stage-two cycle ready to advance. The production save job
+            // must open stage three and then expire it five saves later.
+            let seeded = sqlx::query(
+                "UPDATE game_world_change_counters SET state=state || jsonb_build_object('stage',2,'condition',true) WHERE world_id=encode($1,'hex')::uuid AND change_key='deeplings'",
+            )
+            .bind(world.as_bytes().as_slice())
+            .execute(&h.pool)
+            .await?;
+            assert_eq!(seeded.rows_affected(), 1);
+        } else if deepling_cycle {
+            let stage: i64 = sqlx::query_scalar(
+                "SELECT (state->>'stage')::bigint FROM game_world_change_counters WHERE world_id=encode($1,'hex')::uuid AND change_key='deeplings'",
+            )
+            .bind(world.as_bytes().as_slice())
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(stage, if previous < 6 { 3 } else { 2 });
         }
         let (active, announcement): (bool, String) = sqlx::query_as("SELECT active,announcement FROM game_world_event_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
             .bind(world.as_bytes().as_slice()).bind((previous+1).to_string()).fetch_one(&h.pool).await?;
