@@ -1,6 +1,7 @@
 //! USE cosmetic items through the shared item-action transaction and existing Premium owner.
 pub(super) mod capture_commit;
 pub(super) mod quest_targets;
+pub(super) mod tainted_soul;
 
 use super::ComposedFreshAdmission;
 use super::connection::{UseCommand, UseOutcome};
@@ -917,6 +918,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let capture_target = creature.as_ref().and_then(|proof| proof.live_target());
         let capture_key = callback.creature_target.clone();
+        let redeem = callback.key == reward_callbacks::TAINTED_SOUL_REDEMPTION;
         if let Some(guard) = capture_guard.as_ref() {
             guard.arm();
         }
@@ -946,10 +948,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| ())?;
         drop(creature);
         if let Some(guard) = capture_guard.as_mut() {
-            guard.finish(&result, capture_target, capture_key.as_deref())?;
+            if redeem {
+                guard.publish_redemption(|runtime| {
+                    if matches!(result, QuestTransitionOutcome::Committed(_)) {
+                        self.publish_tainted_soul_redemption(runtime, actor, capture_target.ok_or(())?, native)?;
+                    }
+                    Ok(())
+                })?;
+            } else {
+                guard.finish(&result, capture_target, capture_key.as_deref())?;
+            }
         }
         drop(capture_guard);
         drop(creature_runtime);
+        if redeem && matches!(result, QuestTransitionOutcome::Committed(_)) {
+            self.states.spell_states.lock().await.owner_wake.notify_one();
+        }
         drop(sequence);
         drop(permit);
         let disposition = if matches!(

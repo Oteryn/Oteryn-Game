@@ -49,6 +49,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .and_then(|map| map.facts.next_movement_decay_time()),
                     )
                     .chain(self.states.quest_callbacks.next_encounter_due_us())
+                    .chain(self.states.tainted_soul_expiry.next_due())
                     .chain(
                         self.rooms()
                             .gate_monster_ai()
@@ -139,6 +140,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         4 => {
                             if self.ensure_source_map_initialized().await {
                                 self.drain_quest_encounter_deadlines().await;
+                                self.drain_tainted_soul_expiry(self.owner_now().get()).await;
                             }
                         }
                         5 => {

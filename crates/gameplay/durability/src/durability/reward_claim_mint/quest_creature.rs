@@ -115,7 +115,14 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
                 c.actor.placement_identity() == target.identity && c.generation == target.generation
             })?
             .actor;
-        runtime.check_mount_taming_subject(creature, key).ok()?;
+        if callback.key == oteryn_gameplay_quests::quest::reward_callbacks::TAINTED_SOUL_REDEMPTION {
+            if !runtime.matches_live_creature_identity(creature, key.as_bytes()) {
+                return None;
+            }
+            runtime.assert_actor_spell_unreserved(creature).ok()?;
+        } else {
+            runtime.check_mount_taming_subject(creature, key).ok()?;
+        }
         let at = runtime.read_actor_position(creature).ok()?.position();
         if at.floor != own.floor || at.x.abs_diff(own.x) > 1 || at.y.abs_diff(own.y) > 1 {
             return None;

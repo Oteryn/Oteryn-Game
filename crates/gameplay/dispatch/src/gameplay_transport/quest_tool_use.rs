@@ -101,6 +101,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let bound = callbacks
             .iter()
             .filter(|c| c.carried_item.as_deref() == Some(&item.definition.production_key))
+            .filter(|c| c.key != reward_callbacks::TAINTED_SOUL_REDEMPTION)
             // Selected two-input recipes retain their own M20 admission owner.
             .filter(|c| c.carried_target.is_none() && !c.fresh_corpse)
             .filter(|c| c.corpse_target.is_some() == corpse.is_some())

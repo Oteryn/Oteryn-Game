@@ -221,6 +221,8 @@ pub struct NativeClaimBinding {
     pub authority_sha256: String,
 }
 
+pub const TAINTED_SOUL_REDEMPTION: &str = "oteryn:quest-reward/tainted-soul-redemption";
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct RewardCallback {
@@ -380,6 +382,16 @@ impl RewardCallback {
                 .iter()
                 .any(|input| input.item == key && input.count == 1 && input.fluid_subtype.is_none())
         };
+        if self.key == TAINTED_SOUL_REDEMPTION {
+            return self.carried_item.as_deref() == Some("oteryn:item.tibia.i22009")
+                && self.creature_target.as_deref() == Some("oteryn:creature.tainted_soul")
+                && self.carried_target.is_none()
+                && self.take.is_empty()
+                && matches!(self.present.as_slice(), [item] if item.item == "oteryn:item.tibia.i22009" && item.count == 1)
+                && self.give.is_none()
+                && self.corpse_target.is_none()
+                && !self.fresh_corpse;
+        }
         match (&self.carried_item, &self.carried_target) {
             (Some(source), Some(target)) => {
                 source != target
@@ -872,6 +884,13 @@ fn validate_document_with_capacity(
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
             || match &c.world_claim {
+                None if c.key == TAINTED_SOUL_REDEMPTION => {
+                    !c.npc.is_empty()
+                        || !c.keywords.is_empty()
+                        || c.topic != 0
+                        || c.next_topic != 0
+                        || !c.capture_creature
+                }
                 None => !slug(&c.npc, "oteryn:npc.", b"_", 128),
                 Some(binding) => {
                     !c.npc.is_empty()
@@ -1029,7 +1048,7 @@ fn validate_document_with_capacity(
                 != c.cosmetic_targets().count()
             || c.cosmetic_targets()
                 .any(|r| !slug(&r.outfit, "oteryn:outfit.", b"_", 160) || r.addons > 3)
-            || (c.keywords.is_empty() && c.world_claim.is_none())
+            || (c.keywords.is_empty() && c.world_claim.is_none() && c.key != TAINTED_SOUL_REDEMPTION)
             || c.keywords.len() > 8
             || c.keywords.iter().collect::<BTreeSet<_>>().len() != c.keywords.len()
             || c.keywords.iter().any(|s| {

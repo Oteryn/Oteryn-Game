@@ -30,6 +30,15 @@ impl<'a> CaptureCommitGuard<'a> {
         self.uncertain.set(self.capture);
     }
 
+    pub(super) fn publish_redemption(
+        &mut self,
+        publish: impl FnOnce(&mut ChannelRuntimeV1) -> Result<(), ()>,
+    ) -> Result<(), ()> {
+        publish(self.runtime)?;
+        self.uncertain.set(false);
+        Ok(())
+    }
+
     pub(in crate::gameplay_transport) fn finish(
         &mut self,
         outcome: &QuestTransitionOutcome,
