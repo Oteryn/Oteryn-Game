@@ -27,9 +27,37 @@ pub(super) struct StatusRow(Vec<Icon>);
 
 /// The size of one condition icon.
 const ICON: f32 = 9.;
-/// The art slot key of a condition: `condition-` and the lowercase key with every other
-/// character turned into a dash.
+/// The cell of a condition in the Tibia `player-state-flags` strip, by its player-state bit
+/// (Poison 1 -> 0 ... Feared 1048576 -> 20; the new mana shield, Agony and Powerless sit at
+/// 26-28). Conditions without a Tibia state bit have no cell.
+fn state_cell(key: &str) -> Option<u8> {
+    Some(match key {
+        "Poison" => 0,
+        "Burning" => 1,
+        "Energy" => 2,
+        "Drunk" => 3,
+        "Paralysed" => 5,
+        "Haste" => 6,
+        "Drowning" => 8,
+        "Freezing" => 9,
+        "Dazzled" => 10,
+        "Cursed" => 11,
+        "Bleeding" => 15,
+        "Intense Hex" => 17,
+        "Rooted" => 19,
+        "Feared" => 20,
+        "Mana Shield" => 26,
+        "Agony" => 27,
+        "Powerless" => 28,
+        _ => return None,
+    })
+}
+/// The art slot key of a state: its `player-state-flags-<cell>` strip cell, else `condition-`
+/// and the lowercase key with every other character turned into a dash.
 fn slot_key(key: &str) -> String {
+    if let Some(cell) = state_cell(key) {
+        return format!("player-state-flags-{cell}");
+    }
     let slug: String = key
         .chars()
         .map(|c| {
@@ -97,9 +125,12 @@ pub(super) fn project(
             && conditions.error.is_none()
             && let Some(status) = &conditions.snapshot
         {
-            // The closed wire catalogue (1..=27) preserves condition order. Sub-IDs
-            // identify simultaneous instances of skill/regeneration conditions.
-            for id in 1..=27 {
+            // Tibia shows the strip in player-state bit order; conditions without a state bit
+            // follow in the closed wire catalogue (1..=27) order. Sub-IDs identify
+            // simultaneous instances of skill/regeneration conditions.
+            let mut ids: Vec<u8> = (1..=27).collect();
+            ids.sort_by_key(|id| (state_cell(icon_key(*id)).unwrap_or(u8::MAX), *id));
+            for id in ids {
                 let count = status
                     .conditions
                     .iter()

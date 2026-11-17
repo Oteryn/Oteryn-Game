@@ -11,7 +11,9 @@ pub(crate) fn next_edit() -> u64 {
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BattleSort {
+    /// Tibia's display-time order: the order the creatures appeared in the battle rows.
     #[default]
+    Appearance,
     Name,
     HealthAscending,
     HealthDescending,
@@ -46,7 +48,7 @@ impl Default for BattleListPreferences {
             creatures: true,
             search: String::new(),
             max_health: 100,
-            sort: BattleSort::Name,
+            sort: BattleSort::Appearance,
             vocation: None,
             guild: GuildFilter::Any,
         }
@@ -101,8 +103,12 @@ impl BattleListPreferences {
             })
             .copied()
             .collect();
+        if self.sort == BattleSort::Appearance {
+            return rows;
+        }
         rows.sort_by(|a, b| {
             let order = match self.sort {
+                BattleSort::Appearance => std::cmp::Ordering::Equal,
                 BattleSort::Name => name(a).to_lowercase().cmp(&name(b).to_lowercase()),
                 BattleSort::HealthAscending => health(a).cmp(&health(b)),
                 BattleSort::HealthDescending => health(b).cmp(&health(a)),
