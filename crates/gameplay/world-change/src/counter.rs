@@ -56,6 +56,7 @@ pub struct Parameters {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Credit {
     Kill(u8),
+    DeeplingGuard(u64),
     Task(u8),
     TrappedWolves(u32),
     HeartDestroyed,
@@ -117,6 +118,7 @@ impl CounterState {
     pub fn validate(self, kind: CounterKind) -> Result<(), CounterError> {
         let valid = match kind {
             CounterKind::DemonWars => (1..=5).contains(&self.stage),
+            CounterKind::Deeplings => (1..=3).contains(&self.stage) && self.counts[1] < 10,
             CounterKind::MagesTower => (1..=4).contains(&self.stage),
             CounterKind::TheirMastersVoice => {
                 (1..=4).contains(&self.stage)
@@ -303,6 +305,14 @@ impl CounterState {
             }
             (CounterKind::Overhunting, Credit::Kill(0..=1)) => {}
             (CounterKind::Overhunting, Credit::TrappedWolves(units)) if units > 0 => {}
+            (CounterKind::Deeplings, Credit::DeeplingGuard(players)) if players > 0 => {
+                if next.stage == 1 {
+                    // Retain tenths separately so existing whole-point balances remain valid.
+                    let remainder = next.counts[1] + players % 10;
+                    add(&mut next.counts[0], players / 10 + remainder / 10)?;
+                    next.counts[1] = remainder % 10;
+                }
+            }
             (CounterKind::Deeplings, Credit::HeartDestroyed) if next.stage == 1 => {
                 add(&mut next.counts[0], 2)?
             }
@@ -650,4 +660,30 @@ pub struct SpawnSourceCell {
     pub x: u16,
     pub y: u16,
     pub floor: u8,
+}
+
+#[cfg(test)]
+mod deepling_tests {
+    use super::*;
+
+    #[test]
+    fn deepling_guard_fractions_cross_threshold_only_on_save() -> Result<(), CounterError> {
+        let kind = CounterKind::Deeplings;
+        let parameters = Parameters {
+            deepling_points: 1,
+            ..Parameters::default()
+        };
+        let mut state = CounterState::new(kind, 1, false);
+        for _ in 0..9 {
+            state = state.credit(kind, Credit::DeeplingGuard(1), &parameters, 0)?;
+        }
+        state = state.at_save(kind, 2, false, &parameters, 0)?;
+        assert_eq!(state.stage, 1);
+        state = state.credit(kind, Credit::DeeplingGuard(1), &parameters, 0)?;
+        assert_eq!(state.stage, 1);
+        state = state.at_save(kind, 3, false, &parameters, 0)?;
+        assert_eq!(state.stage, 2);
+        assert_eq!(state.counts, [0; 3]);
+        Ok(())
+    }
 }

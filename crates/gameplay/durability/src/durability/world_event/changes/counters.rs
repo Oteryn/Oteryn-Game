@@ -234,7 +234,7 @@ pub async fn credit(
             (event.source_kind, credit),
             (
                 1,
-                Credit::Kill(_) | Credit::VoiceServant { .. } | Credit::VoiceMage
+                Credit::Kill(_) | Credit::DeeplingGuard(_) | Credit::VoiceServant { .. } | Credit::VoiceMage
             ) | (
                 2,
                 Credit::Task(_)

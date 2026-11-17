@@ -2050,6 +2050,12 @@ pub fn record_creature_kill(
             let mut credits = world_change_credits(&creature, facts.corpse);
             let cohort = runtime.world_spawn_cohort(target);
             use crate::durability::world_event::changes::counters::{CounterKind, Credit};
+            if creature == "oteryn:creature.deepling_guard" {
+                // The death already has one durable receipt. Aggregate its distinct
+                // player contributors before submitting the world credit.
+                let players = damage_shares.len().max(1) as u64;
+                credits.push((CounterKind::Deeplings, Credit::DeeplingGuard(players)));
+            }
             if let Some((key, _, home)) = cohort {
                 if let Some(wave) = key
                     .strip_prefix("their_masters_voice.wave.")

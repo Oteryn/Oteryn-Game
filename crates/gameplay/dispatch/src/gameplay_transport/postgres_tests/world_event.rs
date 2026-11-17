@@ -272,7 +272,11 @@ fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool, native_dea
         }
 
         if let Some((creature, active)) = native_deaths {
-            super::qworld_native_deaths::exercise(&h, &mut owner, &mut admitted, creature, active).await?;
+            if creature == "deepling_guard" {
+                super::worldchg_deeplings::exercise(&h, &mut owner, &mut admitted).await?;
+            } else {
+                super::qworld_native_deaths::exercise(&h, &mut owner, &mut admitted, creature, active).await?;
+            }
         }
         owner
             .runtime
