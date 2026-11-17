@@ -653,3 +653,109 @@ fn proficiency_close_while_catalogue_refresh_is_pending() -> Result {
     assert!(!panel.open);
     Ok(())
 }
+
+#[test]
+fn save_and_close_waits_for_a_periodic_refresh() -> Result {
+    let (mut app, mut commands, outbox) = app()?;
+    click(&mut app, |kind| matches!(kind, Kind::Weapon(0)))?;
+    app.update();
+    click(&mut app, |kind| matches!(kind, Kind::Perk(0, 1)))?;
+    app.update();
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .weapon_proficiency_tick(std::time::Instant::now() + std::time::Duration::from_secs(6));
+    assert_eq!(command(&mut commands)?.kind, 641);
+    app.update();
+    click(&mut app, |kind| matches!(kind, Kind::Close))?;
+    app.update();
+    click(&mut app, |kind| matches!(kind, Kind::SaveClose))?;
+    assert!(commands.try_recv().is_err());
+    let page = oteryn_client_runtime::weapon_proficiency::ProficiencyPage {
+        offset: 0,
+        total: 0,
+        rows: Vec::new(),
+    };
+    reply(&outbox, 2, page.encode().ok_or("progress reply")?);
+    app.update();
+    assert!(SelectPerkRequest::decode(&command(&mut commands)?.payload).is_some());
+    confirm_perk(&outbox, 3)?;
+    app.update();
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .weapon_proficiency_is_open()
+    );
+    Ok(())
+}
+
+#[test]
+fn close_and_escape_wait_for_an_applying_draft() -> Result {
+    for escape in [false, true] {
+        let (mut app, mut commands, outbox) = app()?;
+        click(&mut app, |kind| matches!(kind, Kind::Weapon(0)))?;
+        app.update();
+        click(&mut app, |kind| matches!(kind, Kind::Perk(0, 1)))?;
+        app.update();
+        click(&mut app, |kind| matches!(kind, Kind::Apply))?;
+        command(&mut commands)?;
+        app.update();
+        if escape {
+            use bevy::input::keyboard::{Key, KeyboardInput};
+            app.world_mut().write_message(KeyboardInput {
+                key_code: KeyCode::Escape,
+                logical_key: Key::Escape,
+                state: bevy::input::ButtonState::Pressed,
+                text: None,
+                repeat: false,
+                window: Entity::PLACEHOLDER,
+            });
+        } else {
+            click(&mut app, |kind| matches!(kind, Kind::Close))?;
+        }
+        app.update();
+        assert!(
+            app.world()
+                .non_send::<HostOwner>()
+                .play
+                .as_ref()
+                .ok_or("play")?
+                .link
+                .weapon_proficiency_is_open()
+        );
+        confirm_perk(&outbox, 2)?;
+        app.update();
+        assert!(
+            !app.world()
+                .non_send::<HostOwner>()
+                .play
+                .as_ref()
+                .ok_or("play")?
+                .link
+                .weapon_proficiency_is_open()
+        );
+    }
+    Ok(())
+}
+
+fn confirm_perk(outbox: &crate::play::Outbox, sequence: u64) -> Result {
+    use oteryn_client_runtime::weapon_proficiency::{SelectPerkReply, SelectPerkResult};
+    reply(
+        outbox,
+        sequence,
+        SelectPerkReply {
+            result: SelectPerkResult::Accepted,
+            selections: vec![Some(1), None],
+        }
+        .encode()
+        .ok_or("perk reply")?,
+    );
+    Ok(())
+}

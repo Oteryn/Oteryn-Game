@@ -96,6 +96,39 @@ fn idle_shop_frame_skips_catalogue_formatting() -> Result {
         .npc_shop_panel()
         .live;
     assert_eq!(shop.window.offers.len(), 1024);
+    let offers = |app: &mut App| {
+        app.world_mut()
+            .query::<(Entity, &Action)>()
+            .iter(app.world())
+            .filter_map(|(e, action)| matches!(action.kind, Kind::Select(_)).then_some(e))
+            .collect::<std::collections::BTreeSet<_>>()
+    };
+    let before = offers(&mut app);
+    assert_eq!(before.len(), 1024);
+    let toggle = app
+        .world_mut()
+        .query::<(Entity, &Action)>()
+        .iter(app.world())
+        .find_map(|(e, action)| matches!(action.kind, Kind::IgnoreCapacity).then_some(e))
+        .ok_or("ignore capacity")?;
+    app.world_mut().trigger(Activate { entity: toggle });
+    app.update();
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .npc_shop_panel()
+            .live
+            .options
+            .ignore_capacity
+    );
+    assert!(
+        offers(&mut app) == before,
+        "option toggle rebuilt offer rows"
+    );
     let format = (0..5)
         .map(|_| {
             let start = Instant::now();

@@ -109,14 +109,14 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<(), Box<dyn std::
     owner.configure_login(options.login_settings.clone(), |name| {
         std::env::var(name).ok()
     });
-    let mut app = build_app(options, owner);
+    let mut app = build_app(options, owner, DefaultPlugins.build());
     // App::run transfers the app into its runner. HostOwner::drop owns shutdown there.
     match app.run() {
         AppExit::Success => Ok(()),
         AppExit::Error(code) => Err(format!("Bevy event loop exited with {code}").into()),
     }
 }
-fn build_app(options: Options, owner: HostOwner) -> App {
+fn build_app(options: Options, owner: HostOwner, plugins: bevy::app::PluginGroupBuilder) -> App {
     let mut app = App::new();
     if options.smoke {
         app.add_systems(Update, smoke_exit);
@@ -130,7 +130,7 @@ fn build_app(options: Options, owner: HostOwner) -> App {
             .map(|path| path.with_file_name("client-window-layout.json")),
     );
     app.add_plugins(
-        DefaultPlugins
+        plugins
             .set(AssetPlugin {
                 file_path: options.ui_assets.to_string_lossy().into_owned(),
                 ..default()

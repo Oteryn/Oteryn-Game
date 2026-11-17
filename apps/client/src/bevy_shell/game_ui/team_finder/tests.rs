@@ -24,16 +24,36 @@ fn fixture(selected: bool) -> Result<Fixture> {
     owner.phase = Phase::Playing;
     owner.play.as_ref().ok_or("play")?.link.discovery_open(232);
     let mut app = App::new();
-    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
-        .init_asset::<Image>()
-        .init_asset::<Font>()
-        .init_resource::<InputFocus>()
-        .insert_non_send(owner)
-        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    app.add_plugins((
+        MinimalPlugins,
+        bevy::asset::AssetPlugin::default(),
+        bevy::text::TextPlugin,
+    ))
+    .init_resource::<UiScale>()
+    .init_resource::<bevy::text::RemSize>()
+    .add_systems(
+        PostUpdate,
+        bevy::ui::widget::update_editable_text_styles.before(bevy::text::EditableTextSystems),
+    )
+    .add_systems(Startup, test_font.after(crate::bevy_shell::ui::setup))
+    .init_asset::<Image>()
+    .init_resource::<InputFocus>()
+    .insert_non_send(owner)
+    .add_systems(Startup, crate::bevy_shell::ui::setup);
     super::super::modal::install(&mut app);
     install(&mut app);
     app.update();
     Ok((app, rx, outbox))
+}
+fn test_font(mut skins: ResMut<Skins>, mut fonts: ResMut<Assets<Font>>) {
+    let font = Font::from_bytes(
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/assets/FiraMono-subset.ttf"
+        ))
+        .to_vec(),
+    );
+    skins.font = fonts.add(font);
 }
 fn click(app: &mut App, kind: Kind) -> Result {
     let entity = app
@@ -596,20 +616,22 @@ fn acknowledgement_preserves_later_edits() -> Result {
 #[test]
 fn publish_fences_pending_paste() -> Result {
     let (mut app, mut rx, _) = manage_team(Some(advertised(10)))?;
-    for (field, mut text) in app
-        .world_mut()
-        .query::<(&Field, &mut EditableText)>()
-        .iter_mut(app.world_mut())
-    {
-        if matches!(field, Field::Listing(0)) {
-            text.pending_paste = Some(bevy::clipboard::ClipboardRead::Pending(
-                std::sync::Arc::new(std::sync::Mutex::new(None)),
-            ));
-        }
-    }
+    let clipboard = std::sync::Arc::new(std::sync::Mutex::new(None));
+    let field = listing_editor(&mut app)?;
+    app.world_mut()
+        .get_mut::<EditableText>(field)
+        .ok_or("minimum level")?
+        .queue_edit(bevy::text::TextEdit::SelectAll);
+    app.update();
+    app.world_mut()
+        .get_mut::<EditableText>(field)
+        .ok_or("minimum level")?
+        .pending_paste = Some(bevy::clipboard::ClipboardRead::Pending(clipboard.clone()));
     click(&mut app, Kind::Publish(Vec::new()))?;
     assert!(rx.try_recv().is_err());
-    listing_texts(&mut app, ["32", "100", "15", "4", "3", "0", "1", "1", ""]);
+    app.update();
+    assert!(rx.try_recv().is_err());
+    *clipboard.lock().map_err(|_| "clipboard lock")? = Some(Ok("32".into()));
     app.update();
     let sent = command(&mut rx)?;
     assert_eq!(
@@ -620,5 +642,125 @@ fn publish_fences_pending_paste() -> Result {
     );
     app.update();
     assert!(rx.try_recv().is_err());
+    Ok(())
+}
+
+fn listing_editor(app: &mut App) -> Result<Entity> {
+    app.world_mut()
+        .query::<(Entity, &Field)>()
+        .iter(app.world())
+        .find_map(|(entity, field)| matches!(field, Field::Listing(0)).then_some(entity))
+        .ok_or("minimum level".into())
+}
+
+#[test]
+fn fast_withdrawal_clears_the_submitted_draft() -> Result {
+    let (mut app, mut rx, outbox) = manage_team(Some(advertised(10)))?;
+    listing_texts(&mut app, ["20", "100", "15", "4", "3", "0", "1", "1", ""]);
+    click(&mut app, Kind::Withdraw)?;
+    assert_eq!(command(&mut rx)?.command_type, 391);
+    leader_reply(&outbox, oteryn_session::CommandStatus::Accepted);
+    app.update();
+    assert_eq!(editors(&mut app), <[String; 9]>::default());
+    assert!(!withdraw_enabled(&mut app)?);
+    Ok(())
+}
+
+#[test]
+fn selection_and_acknowledgement_preserve_queued_editor_input() -> Result {
+    let (mut app, mut rx, outbox) = manage_team(Some(advertised(10)))?;
+    let field = listing_editor(&mut app)?;
+    let mut editor = app
+        .world_mut()
+        .get_mut::<EditableText>(field)
+        .ok_or("minimum level")?;
+    editor.queue_edit(bevy::text::TextEdit::SelectAll);
+    editor.queue_edit(bevy::text::TextEdit::Insert("20".into()));
+    click(&mut app, Kind::Select(1))?;
+    app.update();
+    let edited = editors(&mut app)[0].clone();
+    assert_eq!(edited, "20");
+    click(&mut app, Kind::Publish(Vec::new()))?;
+    command(&mut rx)?;
+    app.update();
+    let field = listing_editor(&mut app)?;
+    let mut editor = app
+        .world_mut()
+        .get_mut::<EditableText>(field)
+        .ok_or("minimum level")?;
+    editor.queue_edit(bevy::text::TextEdit::SelectAll);
+    editor.queue_edit(bevy::text::TextEdit::Insert("21".into()));
+    leader_reply(&outbox, oteryn_session::CommandStatus::Accepted);
+    app.update();
+    assert_eq!(editors(&mut app)[0], "21");
+    Ok(())
+}
+
+#[test]
+fn deferred_publish_survives_applicants_reply() -> Result {
+    let (mut app, mut rx, outbox) = manage_team(Some(advertised(10)))?;
+    click(&mut app, Kind::Applicants(false))?;
+    command(&mut rx)?;
+    app.update();
+    let field = listing_editor(&mut app)?;
+    let mut editor = app
+        .world_mut()
+        .get_mut::<EditableText>(field)
+        .ok_or("minimum level")?;
+    editor.queue_edit(bevy::text::TextEdit::SelectAll);
+    editor.queue_edit(bevy::text::TextEdit::Insert("32".into()));
+    click(&mut app, Kind::Publish(Vec::new()))?;
+    assert!(rx.try_recv().is_err());
+    reply(
+        &outbox,
+        encode_result(&applicants_page(Some(advertised(10))))
+            .map_err(|error| format!("{error:?}"))?,
+    );
+    app.update();
+    assert_eq!(
+        oteryn_client_ui::team_finder_leader::decode_upsert(&command(&mut rx)?.payload)
+            .map_err(|error| format!("{error:?}"))?
+            .min_level,
+        32
+    );
+    Ok(())
+}
+
+#[test]
+fn selection_preserves_a_search_paste_that_completes_later() -> Result {
+    let (mut app, mut rx, outbox) = fixture(true)?;
+    click(&mut app, Kind::Browse(false))?;
+    command(&mut rx)?;
+    reply(
+        &outbox,
+        encode_result(&page(MemberStatus::None)).map_err(|e| format!("{e:?}"))?,
+    );
+    app.update();
+    let name = app
+        .world_mut()
+        .query::<(Entity, &Field)>()
+        .iter(app.world())
+        .find_map(|(entity, field)| matches!(field, Field::Name).then_some(entity))
+        .ok_or("name editor")?;
+    let clipboard = std::sync::Arc::new(std::sync::Mutex::new(None));
+    app.world_mut()
+        .get_mut::<EditableText>(name)
+        .ok_or("name editor")?
+        .pending_paste = Some(bevy::clipboard::ClipboardRead::Pending(clipboard.clone()));
+    click(&mut app, Kind::Select(1))?;
+    app.update();
+    *clipboard.lock().map_err(|_| "clipboard lock")? = Some(Ok("second".into()));
+    app.update();
+    click(&mut app, Kind::Filter(TeamFilter::default()))?;
+    let panel = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .discovery_panel()
+        .teams;
+    assert_eq!(panel.filter.name, "second");
     Ok(())
 }

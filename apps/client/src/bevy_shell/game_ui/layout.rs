@@ -27,7 +27,6 @@ pub(in crate::bevy_shell) struct LayoutStore {
     path: Option<PathBuf>,
     layout: WindowLayout,
     pending_save: bool,
-    migrated: bool,
     #[cfg(test)]
     rejection_count: usize,
     retry_after: std::time::Duration,
@@ -63,9 +62,6 @@ impl LayoutStore {
             window.position = bevy::window::WindowPosition::At(IVec2::new(x, y));
             window.resolution = (width, height).into();
         }
-        if let Some([x, y, _, _]) = self.legacy_window() {
-            window.position = bevy::window::WindowPosition::At(IVec2::new(x, y));
-        }
         WindowPlugin {
             close_when_requested: false,
             primary_window: Some(window),
@@ -74,14 +70,9 @@ impl LayoutStore {
     }
     /// The remembered main window physical desktop position and logical size.
     pub(in crate::bevy_shell) fn window(&self) -> Option<[i32; 4]> {
+        // The original key already stored logical dimensions.
         self.bounds_with_extent(WINDOW, WINDOW_EXTENT)
-    }
-    /// Unversioned files stored physical pixels. Restore them once the backend knows the monitor.
-    pub(in crate::bevy_shell) fn legacy_window(&self) -> Option<[i32; 4]> {
-        if self.window().is_some() || self.migrated {
-            return None;
-        }
-        self.bounds_with_extent("window", "window.extent")
+            .or_else(|| self.bounds_with_extent("window", "window.extent"))
     }
     fn bounds_with_extent(&self, id: &str, extent: &str) -> Option<[i32; 4]> {
         let [x, y, width, height] = self.layout.bounds(id)?;
@@ -100,7 +91,7 @@ impl LayoutStore {
         }
         self.rejected.remove(id);
         let result = if id == WINDOW {
-            if self.window() == Some(bounds) {
+            if self.bounds_with_extent(WINDOW, WINDOW_EXTENT) == Some(bounds) {
                 return;
             }
             self.record_window(bounds)
@@ -177,7 +168,7 @@ fn remember(
     time: Res<Time<Real>>,
     splitters: Query<&Splitter>,
     nodes: Query<&Node>,
-    mut windows: Query<&mut Window, With<PrimaryWindow>>,
+    windows: Query<&Window, With<PrimaryWindow>>,
 ) {
     if store.path.is_none() || splitters.iter().any(|splitter| splitter.gesture.is_some()) {
         return;
@@ -192,15 +183,6 @@ fn remember(
         let size = size.round() as i32;
         let bounds = [0, 0, 1, size];
         store.remember_bounds(splitter.id, bounds);
-    }
-    if let Some([_, _, width, height]) = store.legacy_window()
-        && let Ok(mut window) = windows.single_mut()
-        && window.mode == WindowMode::Windowed
-    {
-        window
-            .resolution
-            .set_physical_resolution(width as u32, height as u32);
-        store.migrated = true;
     }
     if let Ok(window) = windows.single()
         && window.mode == WindowMode::Windowed

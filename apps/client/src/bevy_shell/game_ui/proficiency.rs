@@ -69,7 +69,7 @@ fn project(
         .as_ref()
         .filter(|_| owner.phase == Phase::Playing)
         .and_then(|play| {
-            if play.link.weapon_proficiency_is_open() {
+            if play.link.weapon_proficiency_is_open() && !state.draft.applying {
                 play.link.weapon_proficiency_tick(std::time::Instant::now());
             }
             let panel = play.link.weapon_proficiency_panel();

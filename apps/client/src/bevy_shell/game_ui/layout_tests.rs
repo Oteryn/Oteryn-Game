@@ -389,19 +389,24 @@ fn unchanged_rejected_geometry_is_not_recorded_again() -> TestResult {
 }
 
 #[test]
-fn legacy_physical_bounds_migrate_on_the_actual_display() -> TestResult {
+fn legacy_logical_bounds_migrate_on_the_actual_display() -> TestResult {
     let path = std::env::temp_dir().join(format!("legacy-window-{}.json", std::process::id()));
-    let mut legacy = WindowLayout::default();
-    legacy.record("window", [40, 80, 2400, 1400])?;
-    legacy.save(&path)?;
-    let mut app = app_with(LayoutStore::default());
-    app.insert_resource(LayoutStore::load(Some(path.clone())));
+    let mut layout = WindowLayout::default();
+    layout.record("window", [40, 80, 1200, 700])?;
+    layout.save(&path)?;
+    let mut app = App::new();
+    let store = LayoutStore::load(Some(path.clone()));
+    app.add_plugins(store.primary_window_plugin())
+        .insert_resource(store);
+    app.init_resource::<Time<Real>>()
+        .add_systems(Update, remember);
     let mut q = app
         .world_mut()
         .query_filtered::<&mut Window, With<PrimaryWindow>>();
     let mut window = q.single_mut(app.world_mut())?;
-    window.position = WindowPosition::At(IVec2::new(40, 80));
-    window.resolution.set_scale_factor(2.);
+    window
+        .resolution
+        .set_scale_factor_and_apply_to_physical_size(2.);
     app.update();
     assert_eq!(
         q.single(app.world())?.physical_size(),
@@ -410,6 +415,38 @@ fn legacy_physical_bounds_migrate_on_the_actual_display() -> TestResult {
     assert_eq!(
         LayoutStore::load(Some(path.clone())).window(),
         Some([40, 80, 1200, 700])
+    );
+    std::fs::remove_file(path)?;
+    Ok(())
+}
+
+#[test]
+fn unversioned_logical_bounds_keep_their_size_at_double_dpi() -> TestResult {
+    let path = std::env::temp_dir().join(format!("logical-window-{}.json", std::process::id()));
+    let mut layout = WindowLayout::default();
+    layout.record("window", [40, 80, 2400, 1400])?;
+    layout.save(&path)?;
+    let mut app = App::new();
+    let store = LayoutStore::load(Some(path.clone()));
+    app.add_plugins(store.primary_window_plugin())
+        .insert_resource(store);
+    app.init_resource::<Time<Real>>()
+        .add_systems(Update, remember);
+    let mut windows = app
+        .world_mut()
+        .query_filtered::<&mut Window, With<PrimaryWindow>>();
+    windows
+        .single_mut(app.world_mut())?
+        .resolution
+        .set_scale_factor_and_apply_to_physical_size(2.);
+    app.update();
+    assert_eq!(
+        windows.single(app.world())?.physical_size(),
+        UVec2::new(4800, 2800)
+    );
+    assert_eq!(
+        LayoutStore::load(Some(path.clone())).window(),
+        Some([40, 80, 2400, 1400])
     );
     std::fs::remove_file(path)?;
     Ok(())

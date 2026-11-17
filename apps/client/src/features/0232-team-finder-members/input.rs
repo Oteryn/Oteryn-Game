@@ -75,7 +75,7 @@ impl PlayLink {
 /// The leader's advertisement typed as fields: minimum and maximum level, vocation mask,
 /// team size, free slots, party members join (0/1), activity (1 boss, 2 hunt, 3 quest),
 /// activity id, hunting area and an optional start timestamp.
-pub(in crate::play) fn listing_from_fields(
+pub(crate) fn listing_from_fields(
     fields: &[String],
 ) -> Option<oteryn_client_ui::team_finder_leader::LeaderListing> {
     use oteryn_client_ui::team_finder_leader::{LeaderListing, TeamTarget};

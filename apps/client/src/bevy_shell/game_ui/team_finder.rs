@@ -10,9 +10,14 @@ use super::{
     GameModal,
     modal::ModalGuard,
 };
-use crate::play::feature_0232_team_finder_members::input::TeamControl as Kind;
+use crate::play::feature_0232_team_finder_members::input::{
+    TeamControl as Kind, listing_from_fields,
+};
 use bevy::{input_focus::InputFocus, prelude::*, text::EditableText, ui_widgets::Activate};
-use oteryn_client_ui::{team_finder::Panel, team_finder_leader::Panel as Leader};
+use oteryn_client_ui::{
+    team_finder::Panel,
+    team_finder_leader::{LeaderListing, Panel as Leader},
+};
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 struct Key {
     generation: u64,
@@ -34,7 +39,7 @@ enum Field {
 struct State {
     snapshot: Option<(u64, Panel, Leader)>,
     search: [String; 2],
-    submitted_fields: Option<[String; widgets::LISTING_FIELDS]>,
+    submission: Option<Submission>,
     pending_editor_action: Option<Entity>,
     root: Option<Entity>,
     key: Key,
@@ -43,13 +48,22 @@ struct State {
     /// The leader's unpublished listing edits, kept across rebuilds until a reply confirms them.
     draft: Option<[String; widgets::LISTING_FIELDS]>,
 }
+struct Submission {
+    fields: [String; widgets::LISTING_FIELDS],
+    listing: Option<LeaderListing>,
+}
+
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
-        .add_systems(Update, (keyboard, project).chain())
+        .add_systems(Update, keyboard)
         .add_systems(
             PostUpdate,
-            finish_edit.after(bevy::text::EditableTextSystems),
+            (finish_edit, project)
+                .chain()
+                .after(bevy::text::EditableTextSystems)
+                .before(bevy::ui::UiSystems::PostLayout)
+                .before(bevy::ui::UiSystems::Stack),
         );
 }
 fn project(
@@ -68,7 +82,16 @@ fn project(
         .map(|play| play.link.discovery_panel())
         .filter(|discovery| discovery.teams.open);
     let snapshot = panel.map(|discovery| (owner.generation(), discovery.teams, discovery.leader));
-    if state.snapshot == snapshot {
+    let same_session = state.snapshot.is_some()
+        && snapshot.is_some()
+        && state.key.generation == owner.generation();
+    let submission_finished = state.submission.is_some()
+        && snapshot
+            .as_ref()
+            .is_some_and(|(_, _, leader)| !leader.pending);
+    if (state.snapshot == snapshot && !submission_finished)
+        || (same_session && fields.iter().any(|(_, text)| editing(text)))
+    {
         return;
     }
     let Some(revision) = state.key.revision.checked_add(1) else {
@@ -95,34 +118,31 @@ fn project(
             state.draft = Some(typed);
         }
     }
-    match (&state.snapshot, &snapshot) {
-        (Some((old, _, before)), Some((current, _, after))) if old == current => {
-            if before.pending && !after.pending {
-                if before.submitted == Some(after.confirmed)
-                    && state.draft == state.submitted_fields
-                {
-                    state.draft = None;
-                }
-                state.submitted_fields = None;
-            }
-        }
-        _ => {
-            state.search = snapshot
-                .as_ref()
-                .map(|(_, panel, _)| {
-                    [
-                        panel.filter.name.clone(),
-                        panel
-                            .filter
-                            .level
-                            .map(|level| level.to_string())
-                            .unwrap_or_default(),
-                    ]
-                })
-                .unwrap_or_default();
+    if same_session {
+        if let Some((_, _, after)) = &snapshot
+            && !after.pending
+            && let Some(submission) = state.submission.take()
+            && after.confirmed == submission.listing
+            && state.draft.as_ref() == Some(&submission.fields)
+        {
             state.draft = None;
-            state.submitted_fields = None;
         }
+    } else {
+        state.search = snapshot
+            .as_ref()
+            .map(|(_, panel, _)| {
+                [
+                    panel.filter.name.clone(),
+                    panel
+                        .filter
+                        .level
+                        .map(|level| level.to_string())
+                        .unwrap_or_default(),
+                ]
+            })
+            .unwrap_or_default();
+        state.draft = None;
+        state.submission = None;
     }
     state.pending_editor_action = None;
     if let Some(root) = state.root.take() {
@@ -153,7 +173,7 @@ fn project(
     }
     state.snapshot = snapshot;
 }
-fn perform(owner: &HostOwner, state: &State, control: &Control) -> bool {
+fn perform(owner: &HostOwner, state: &State, control: &Control, deferred: bool) -> bool {
     let Some((generation, expected, leader)) = &state.snapshot else {
         return false;
     };
@@ -167,6 +187,15 @@ fn perform(owner: &HostOwner, state: &State, control: &Control) -> bool {
     if let Some(play) = &owner.play
         && (control.kind == Kind::Close || !play.view.gameplay_input_blocked(&play.link))
     {
+        // An applicants reply changes the member view while a listing edit settles.
+        // The listing control stays bound to the same leader observation.
+        if deferred && matches!(control.kind, Kind::Publish(_)) {
+            let current = play.link.discovery_panel();
+            return current.leader == *leader
+                && play
+                    .link
+                    .team_dispatch_bound(&current.teams, leader, control.kind.clone());
+        }
         return play
             .link
             .team_dispatch_bound(expected, leader, control.kind.clone());
@@ -189,72 +218,97 @@ fn activate(
         if control.key != state.key || owner.modal_active() {
             return;
         }
-        if fields.iter().any(|(field, text)| {
-            matches!(
-                (&control.kind, field),
-                (Kind::Filter(_), Field::Name | Field::Level)
-                    | (Kind::Publish(_), Field::Listing(_))
-            ) && (text.pending_paste.is_some()
-                || text
-                    .pending_edits
-                    .iter()
-                    .any(bevy::text::TextEdit::is_destructive))
-        }) {
+        if waiting_for_editor(control, &fields) {
             state.pending_editor_action = Some(event.entity);
             return;
         }
-        let mut control = control.clone();
-        if let Kind::Filter(ref mut filter) = control.kind {
-            for (field, text) in &fields {
-                let value = text.value().to_string();
-                match field {
-                    Field::Name => filter.name = value,
-                    Field::Level => {
-                        filter.level = if value.trim().is_empty() {
-                            None
-                        } else {
-                            let Ok(level) = value.trim().parse::<u16>() else {
-                                return;
-                            };
-                            Some(level)
-                        };
-                    }
-                    Field::Listing(_) => continue,
-                }
-            }
-        }
-        if matches!(control.kind, Kind::Publish(_) | Kind::Withdraw) {
-            let mut submitted = [const { String::new() }; widgets::LISTING_FIELDS];
-            for (field, text) in &fields {
-                if let Field::Listing(index) = field {
-                    submitted[*index] = text.value().to_string();
-                }
-            }
-            if let Kind::Publish(values) = &mut control.kind {
-                *values = submitted
-                    .iter()
-                    .map(|value| value.trim().to_owned())
-                    .collect();
-            }
-            if perform(&owner, &state, &control) {
-                state.submitted_fields = Some(submitted);
-            }
-            return;
-        }
-        perform(&owner, &state, &control);
+        dispatch(&owner, &mut state, control, &fields, false);
     }
 }
+fn editing(text: &EditableText) -> bool {
+    text.pending_paste.is_some()
+        || text
+            .pending_edits
+            .iter()
+            .any(bevy::text::TextEdit::is_destructive)
+}
+fn waiting_for_editor(control: &Control, fields: &Query<(&Field, &EditableText)>) -> bool {
+    fields.iter().any(|(field, text)| {
+        matches!(
+            (&control.kind, field),
+            (Kind::Filter(_), Field::Name | Field::Level) | (Kind::Publish(_), Field::Listing(_))
+        ) && editing(text)
+    })
+}
+fn dispatch(
+    owner: &HostOwner,
+    state: &mut State,
+    control: &Control,
+    fields: &Query<(&Field, &EditableText)>,
+    deferred: bool,
+) {
+    let mut control = control.clone();
+    if let Kind::Filter(ref mut filter) = control.kind {
+        for (field, text) in fields {
+            let value = text.value().to_string();
+            match field {
+                Field::Name => filter.name = value,
+                Field::Level => {
+                    filter.level = if value.trim().is_empty() {
+                        None
+                    } else {
+                        let Ok(level) = value.trim().parse::<u16>() else {
+                            return;
+                        };
+                        Some(level)
+                    };
+                }
+                Field::Listing(_) => continue,
+            }
+        }
+    }
+    if matches!(control.kind, Kind::Publish(_) | Kind::Withdraw) {
+        let mut submitted = [const { String::new() }; widgets::LISTING_FIELDS];
+        for (field, text) in fields {
+            if let Field::Listing(index) = field {
+                submitted[*index] = text.value().to_string();
+            }
+        }
+        if let Kind::Publish(values) = &mut control.kind {
+            *values = submitted
+                .iter()
+                .map(|value| value.trim().to_owned())
+                .collect();
+        }
+        if perform(owner, state, &control, deferred) {
+            state.submission = Some(Submission {
+                listing: match &control.kind {
+                    Kind::Publish(values) => listing_from_fields(values),
+                    _ => None,
+                },
+                fields: submitted,
+            });
+        }
+        return;
+    }
+    perform(owner, state, &control, deferred);
+}
 fn finish_edit(
-    mut commands: Commands,
+    owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
     controls: Query<&Control>,
+    fields: Query<(&Field, &EditableText)>,
     guard: ModalGuard,
 ) {
     if let Some(entity) = state.pending_editor_action.take()
-        && controls.contains(entity)
         && guard.allows(entity)
+        && let Ok(control) = controls.get(entity)
     {
-        commands.trigger(Activate { entity });
+        if waiting_for_editor(control, &fields) {
+            state.pending_editor_action = Some(entity);
+        } else {
+            dispatch(&owner, &mut state, control, &fields, true);
+        }
     }
 }
 fn keyboard(
@@ -281,6 +335,7 @@ fn keyboard(
                 key: state.key,
                 kind: Kind::Close,
             },
+            false,
         );
     }
 }

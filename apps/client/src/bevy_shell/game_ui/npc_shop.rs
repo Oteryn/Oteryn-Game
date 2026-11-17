@@ -265,7 +265,15 @@ fn project(
         .rendered
         .as_ref()
         .is_some_and(|(shop, side, query, selected)| {
-            shop == &panel.live
+            shop.window == panel.live.window
+                && shop.inventory.as_ref().map(|inventory| &inventory.entries)
+                    == panel
+                        .live
+                        .inventory
+                        .as_ref()
+                        .map(|inventory| &inventory.entries)
+                && (state.side == Some(NpcTradeSide::Buy)
+                    || shop.options.only_owned == panel.live.options.only_owned)
                 && *side == state.side
                 && query == &state.query
                 && *selected == state.selection

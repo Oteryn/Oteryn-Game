@@ -190,6 +190,7 @@ pub(super) fn render(
     let filters = commands
         .spawn((
             ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("quick_loot", 1),
             source::frame(skins.inset.clone(), [1.; 4]),
             Node {
                 width: px(234.),
