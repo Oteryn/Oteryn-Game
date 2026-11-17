@@ -463,6 +463,15 @@ pub(in crate::gameplay_transport) async fn resume_one_due(
             }
         }
         Cursor::Prelude(Consumer::Physical) | Cursor::Proposal(_, Consumer::Physical) => {
+            if let Some(proposal) = current.first() {
+                if !map.view().matches(runtime) {
+                    return Err(());
+                }
+                if super::super::retro_combat::execute(runtime, proposal).map_err(|_| ())? {
+                    pending.advance(cursor)?;
+                    return Ok(true);
+                }
+            }
             physical_spell::execute_proposals(
                 runtime,
                 states,
