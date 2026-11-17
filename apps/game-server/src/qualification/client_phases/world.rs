@@ -2969,6 +2969,7 @@ async fn newhaven_leg(
         .into());
     }
     leave_islet(&mut client, world).await?;
+    newhaven_journey::starter_after_vocation_select(&mut client, world).await;
     let mut deferred: Option<String> = None;
     if let Err(error) = newhaven_equip_weapon(&mut client).await {
         let cause = if error
