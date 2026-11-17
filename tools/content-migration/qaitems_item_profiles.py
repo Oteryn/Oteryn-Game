@@ -64,7 +64,13 @@ def apply_admissions(definitions, root):
     profiles = {r['production_definition']['production_key']: r for r in capture(root)['records']}
     for definition in definitions:
         if definition['identity']['key'] in profiles:
-            qualified = qualify_native_core(definition, profiles[definition['identity']['key']])
+            profile = profiles[definition['identity']['key']]
+            qualified = qualify_native_core(definition, profile)
+            if definition['identity']['key'] in {'oteryn:item.tibia.i3208', 'oteryn:item.tibia.i9018'}:
+                # Ready claims construct from the canonical pattern before later
+                # physical owners compose it. Carry the same source-qualified
+                # pattern, preserving every already known canonical leaf.
+                qualified['semantics']['equipment'] = copy.deepcopy(profile['semantics']['equipment'])
             definition.clear()
             definition.update(qualified)
 
