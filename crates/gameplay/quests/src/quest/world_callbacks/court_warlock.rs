@@ -41,3 +41,7 @@ pub fn callback() -> Result<Callback, String> {
         }}
     })).map_err(|e| e.to_string())
 }
+
+pub(super) fn exact(candidate: &Callback) -> bool {
+    candidate.key == KEY && callback().is_ok_and(|canonical| candidate == &canonical)
+}

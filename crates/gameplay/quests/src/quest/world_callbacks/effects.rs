@@ -783,6 +783,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         || (operations > 0
             && ((!personal_encounter
                 && !super::personal_trial::admitted(callback)
+                && !super::court_warlock::exact(callback)
                 && (!lever
                     || (effects.scene.is_none()
                         && effects.party_transfer.is_none()
@@ -844,7 +845,8 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase.is_some();
         let delayed = encounter.phase == Some(EncounterPhase::CourtWarlock);
-        if (encounter.minimum_level == 0 && !source_party)
+        if (delayed && !super::court_warlock::exact(callback))
+            || (encounter.minimum_level == 0 && !source_party)
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()
