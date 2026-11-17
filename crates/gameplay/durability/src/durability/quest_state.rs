@@ -721,6 +721,7 @@ mod authored_admission;
 /// transaction's statement time and database randomness), the amount and the quest's pin.
 pub(super) mod capacity;
 mod collection;
+pub mod creature_objectives;
 pub mod encounter_deaths;
 pub mod grizzly;
 pub mod grizzly_boss;

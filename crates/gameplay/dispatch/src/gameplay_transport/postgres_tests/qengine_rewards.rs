@@ -1141,6 +1141,9 @@ pub(super) async fn exercise(
         ))
         .await;
     }
+    if name.starts_with("qengine-rewards-qkill-") {
+        return Box::pin(super::qkill::exercise(owner, admitted, h, name)).await;
+    }
     if name == "qengine-rewards-authored-bindings" {
         return Box::pin(super::authored_quest_bindings::exercise(owner, admitted, h)).await;
     }

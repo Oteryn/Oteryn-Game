@@ -49,6 +49,7 @@ pub(super) async fn exercise(
             recipe_sha256: "1".repeat(64),
             occurrence: None,
             admission: None,
+            creature_removals: Vec::new(),
             tracks: vec![Track {
                 key: TRACK.into(),
                 initial: 0,

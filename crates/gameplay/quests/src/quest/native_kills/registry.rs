@@ -15,6 +15,7 @@ pub struct CounterRef<'a> {
     pub maximum: i64,
     pub death_area: Option<crate::quest::authored_bindings::kills::DeathArea>,
     pub encounter_source: Option<&'a str>,
+    pub credit: crate::quest::creature_objectives::CreditRule,
 }
 
 impl Counter {
@@ -30,6 +31,7 @@ impl Counter {
             maximum: self.maximum,
             death_area: None,
             encounter_source: None,
+            credit: crate::quest::creature_objectives::CreditRule::MostDamageParty,
         }
     }
 }

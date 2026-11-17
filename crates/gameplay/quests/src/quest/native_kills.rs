@@ -237,8 +237,9 @@ pub fn active_encounter(tracks: &BTreeMap<String, i64>) -> Vec<&'static str> {
 pub(crate) fn counters() -> impl Iterator<Item = &'static Counter> {
     COUNTERS
         .iter()
-        .chain(qworld::counters().unwrap_or_default())
+        .chain(std::iter::once(&super::creature_objectives::ROOKIE_RATS))
         .chain(fugue::COUNTERS)
+        .chain(qworld::counters().unwrap_or_default())
         .chain(
             super::world_change_journals::counters()
                 .into_iter()
@@ -250,6 +251,7 @@ pub(crate) fn counters() -> impl Iterator<Item = &'static Counter> {
 pub(super) fn registered_counters() -> Result<impl Iterator<Item = &'static Counter>, String> {
     Ok(COUNTERS
         .iter()
+        .chain(std::iter::once(&super::creature_objectives::ROOKIE_RATS))
         .chain(fugue::COUNTERS)
         .chain(phase_settlements::COUNTERS)
         .chain(qworld::counters()?)

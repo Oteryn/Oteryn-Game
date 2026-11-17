@@ -41,6 +41,7 @@ struct NativeCounterCapture {
     definition_hash: Option<[u8; 32]>,
     death_area: Option<oteryn_gameplay_quests::quest::authored_bindings::kills::DeathArea>,
     encounter_source: Option<String>,
+    credit: oteryn_gameplay_quests::quest::creature_objectives::CreditRule,
 }
 
 fn capture_native(
@@ -63,6 +64,7 @@ fn capture_native(
                 definition_hash,
                 death_area: counter.death_area,
                 encounter_source: counter.encounter_source.map(str::to_owned),
+                credit: counter.credit,
             })
         })
         .collect()
@@ -78,8 +80,9 @@ struct Recipient {
     objective_actions: Vec<String>,
 }
 
-/// At most 50 source-party recipients with three tasks and one boss action each,
-/// plus one personal native principal with at most 16 goals. Retained by the queued death.
+/// The source party is bounded to 50 members. Personal objective captures use the
+/// existing Channel player census and authored kill-binding ceiling. The queued
+/// native death retains its original recipients across retries.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(super) struct FrozenGrizzlyDeath {
     source: Option<PartySnapshot>,
@@ -183,7 +186,8 @@ fn freeze_at(
             continue;
         }
         for counter in &snapshot.native_counters {
-            if counter.creature == creature
+            if counter.credit.is_default()
+                && counter.creature == creature
                 && counter.encounter_source.is_none()
                 && counter.death_area.is_none_or(|area| {
                     death_position.is_some_and(|position| area.contains(position))
@@ -288,6 +292,22 @@ pub(super) fn tracks_native_creature(queue: &KillSettlementQueue, creature: &str
                     .any(|counter| counter.creature == creature)
             })
         })
+}
+
+/// These callbacks remain eligible when the most-damage player has left.
+pub(super) fn tracks_personal_native_creature(queue: &KillSettlementQueue, creature: &str) -> bool {
+    use oteryn_gameplay_quests::quest::creature_objectives::CreditRule;
+    queue.1.lock().is_ok_and(|cache| {
+        cache.sessions.iter().any(|snapshot| {
+            snapshot.native_counters.iter().any(|counter| {
+                counter.creature == creature
+                    && matches!(
+                        counter.credit,
+                        CreditRule::LastHit | CreditRule::DamagingPlayers
+                    )
+            })
+        })
+    })
 }
 
 pub(super) fn tracks_creature(creature: &str) -> bool {
@@ -448,6 +468,27 @@ pub(super) fn capture(
                     runs,
                     principal_present,
                 ));
+            for snapshot in &live {
+                for counter in &snapshot.native_counters {
+                    if counter.credit.is_default() || counter.creature != entry.creature
+                        || counter.encounter_source.is_some()
+                        || counter.death_area.is_some_and(|area| !area.contains([
+                            entry.facts.corpse.x, entry.facts.corpse.y, i32::from(entry.facts.corpse.floor)]))
+                    { continue; }
+                    let Some(death) = crate::durability::quest_state::creature_objectives::ObjectiveDeath::capture(
+                        runtime, entry.target, snapshot.actor, snapshot.session, counter.credit)
+                    else { continue; };
+                    frozen.native.push(super::quest_kills::Recipient {
+                        actor: snapshot.actor, session: snapshot.session, character: snapshot.character,
+                        lease_generation: snapshot.lease_generation,
+                        death: crate::durability::quest_state::native_kills::NativeQuestDeath {
+                            transition: counter.transition.clone(), creature: entry.creature.clone(),
+                            observed_revision: snapshot.observed_revision, definition_hash: counter.definition_hash,
+                            source: crate::durability::quest_state::native_kills::NativeDeathSource::Objective(death),
+                        },
+                    });
+                }
+            }
             frozen.native_goals = native_goals::freeze(runtime, entry, principal_present, &live);
             frozen
         }),

@@ -137,6 +137,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.refresh_grizzly_kill_snapshot(session).await;
         let _ = self.bounty_talisman_for_session(session).await;
         self.refresh_native_objective_snapshot(session).await;
+        if !super::quest_kills::refresh_creature_removals(self, session).await {
+            self.schedule_quest_refresh(session);
+        }
         let disguise_retry = self.refresh_quest_disguise(session).await;
         if (self.refresh_quest_guardians(session).await || disguise_retry)
             && let Ok(mut sessions) = self.states.quest_sessions.lock()

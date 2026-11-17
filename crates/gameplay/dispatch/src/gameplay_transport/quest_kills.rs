@@ -51,6 +51,18 @@ pub(super) async fn settle(
         return false;
     };
     for recipient in &frozen.native {
+        let occurrence =
+            if let crate::durability::quest_state::native_kills::NativeDeathSource::Objective(
+                source,
+            ) = &recipient.death.source
+            {
+                let Ok(occurrence) = source.occurrence() else {
+                    return false;
+                };
+                occurrence
+            } else {
+                occurrence
+            };
         let fence = match owner.current_quest_fence(recipient.session).await {
             Ok(Some(fence)) => fence,
             Ok(None) => continue,
@@ -121,6 +133,123 @@ pub(super) async fn settle(
                 return false;
             }
             Err(error) => super::operator_event(&format!("quest_kill_refused reason={error:?}")),
+        }
+    }
+    true
+}
+
+/// The durable advanced stage is the removal intent. Admission/refresh replays it
+/// after a crash, without replaying the kill or depending on an in-memory callback.
+pub(super) async fn refresh_creature_removals(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    session: crate::foundation::GameSessionId,
+) -> bool {
+    use oteryn_gameplay_quests::quest::authored_bindings::Trigger;
+    let Some(catalogue) = owner.quest_catalogue.as_deref() else {
+        return true;
+    };
+    let Some(bindings) = catalogue.authored_bindings() else {
+        return true;
+    };
+    let tracks = owner
+        .states
+        .quest_sessions
+        .lock()
+        .ok()
+        .and_then(|sessions| {
+            let entry = sessions.get(&session)?;
+            let copy = entry.copy.as_ref()?;
+            Some((
+                entry.version,
+                copy.character_revision()?.get(),
+                copy.read_tracks(catalogue)?,
+            ))
+        });
+    let Some((version, revision, tracks)) = tracks else {
+        return true;
+    };
+    let mut removals: Vec<_> = bindings
+        .quests
+        .iter()
+        .flat_map(|quest| &quest.stages)
+        .filter_map(|stage| match &stage.trigger {
+            Trigger::Kill { counter }
+                if counter.advance_gate_to.is_some()
+                    && tracks.get(&counter.gate).copied() == counter.advance_gate_to
+                    && tracks.get(&counter.track).copied() == Some(counter.maximum) =>
+            {
+                Some(&counter.remove_on_advance)
+            }
+            _ => None,
+        })
+        .flatten()
+        .collect();
+    removals.extend(
+        bindings
+            .quests
+            .iter()
+            .flat_map(|quest| &quest.creature_removals)
+            .filter(|removal| tracks.get(&removal.track).copied() == Some(removal.value))
+            .flat_map(|removal| &removal.creatures),
+    );
+    if removals.is_empty() {
+        return true;
+    }
+    let Ok(Some(fence)) = owner.current_quest_fence(session).await else {
+        return false;
+    };
+    if fence.expected_character_revision.get() != revision {
+        return false;
+    }
+    let mut runtime = owner.runtime.lock().await;
+    if !owner.states.quest_sessions.lock().is_ok_and(|sessions| {
+        sessions
+            .get(&session)
+            .is_some_and(|entry| entry.version == version)
+    }) || runtime.binding().runtime_scope() != fence.runtime_scope
+        || runtime.binding().scope_generation() != fence.scope_ownership_generation
+        || runtime.owner_fence().is_err()
+    {
+        return false;
+    }
+    let present = runtime.positioned_actor_census().is_ok_and(|census| {
+        census.iter().any(|(actor, _, observed)| {
+            *observed == Some(session)
+                && runtime
+                    .bound_attacker_lease(*actor, session)
+                    .is_ok_and(|lease| {
+                        lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                            && lease.generation() == fence.character_lease_generation
+                    })
+        })
+    });
+    if !present {
+        return false;
+    }
+    let Ok(census) = runtime.current_live_creature_census() else {
+        return false;
+    };
+    let mut selected = Vec::new();
+    for actor in census {
+        let (Ok(identity), Ok(position)) = (
+            runtime.creature_spell_target_atom(actor),
+            runtime.read_actor_position(actor),
+        ) else {
+            return false;
+        };
+        let position = position.position();
+        if removals.iter().any(|removal| {
+            removal.matches(
+                &identity,
+                [position.x, position.y, i32::from(position.floor)],
+            )
+        }) {
+            selected.push(actor);
+        }
+    }
+    for actor in selected {
+        if runtime.remove_encounter_actor(actor).is_err() {
+            return false;
         }
     }
     true

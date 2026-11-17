@@ -97,6 +97,8 @@ pub struct BoundQuest {
     pub occurrence: Option<Occurrence>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub admission: Option<actor_admission::ActorAdmission>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub creature_removals: Vec<super::creature_objectives::StageRemoval>,
     pub tracks: Vec<Track>,
     pub stages: Vec<Stage>,
     pub sources: Vec<String>,
@@ -182,6 +184,12 @@ impl Bindings {
             }
             if let Some(admission) = &quest.admission {
                 admission.validate(&quest.quest)?;
+            }
+            if quest.creature_removals.len() > 16 {
+                return Err("quest creature removal bound".into());
+            }
+            for removal in &quest.creature_removals {
+                removal.validate(quest)?;
             }
             let mut tracks = BTreeSet::new();
             for track in &quest.tracks {

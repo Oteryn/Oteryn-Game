@@ -34,6 +34,7 @@ pub mod children_puzzle;
 pub mod classic_dialogue;
 pub mod classic_talk;
 pub mod completion_sets;
+pub mod creature_objectives;
 pub mod cults_of_tibia;
 pub mod dark_trails;
 pub mod death_objectives;

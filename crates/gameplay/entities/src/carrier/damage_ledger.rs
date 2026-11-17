@@ -46,6 +46,7 @@ pub struct DamageReceipts {
     /// The owner clock (ms) of the turn that committed the lethal receipt, when that turn
     /// supplied one. Set once by the lethal commit; a replay never changes it.
     lethal_at_ms: Option<u64>,
+    lethal_player: Option<(CharacterId, u64, GameSessionId)>,
     /// EQMOD2: source-owned streams have their own clock, never a player command number.
     pub(super) reflection_marks: std::collections::BTreeMap<[u8; 32], u64>,
 }
@@ -973,6 +974,33 @@ impl ChannelActorCarrier {
         if write_index != index {
             return Err(CarrierError::StaleActorGeneration);
         }
+        let lethal_player = if next == 0 {
+            attacker
+                .map(|attacker| {
+                    (
+                        attacker.character,
+                        attacker.lease_generation,
+                        attacker.session,
+                    )
+                })
+                .or_else(|| {
+                    let actor = source?.actor?;
+                    let source_index = self.validate_ref(continuity, actor.0).ok()?;
+                    let Slot::Occupied {
+                        game_session_id: Some(session),
+                        ..
+                    } = &self.slots[source_index]
+                    else {
+                        return None;
+                    };
+                    let lease = self
+                        .bound_attacker_lease(continuity, actor.0, *session)
+                        .ok()?;
+                    Some((lease.character_id(), lease.generation(), *session))
+                })
+        } else {
+            None
+        };
         let drome_source = attacker.and_then(|attacker| {
             self.slots
                 .iter()
@@ -1059,6 +1087,7 @@ impl ChannelActorCarrier {
         committed.next_ordinal = next_ordinal;
         if next == 0 && *health > 0 {
             committed.lethal_at_ms = now_ms;
+            committed.lethal_player = lethal_player;
         }
         if result.health_after < result.health_before
             && let Some((run, source)) = drome_source
@@ -1565,6 +1594,17 @@ impl CurrentOwnerCombatDeath<'_> {
     ) -> Result<([u8; 16], bool), CarrierError> {
         self.carrier
             .party_reward_occurrence_inner(self.continuity, actor.0, *character.as_bytes())
+    }
+    /// The original player identity whose committed damage made this generation lethal.
+    pub fn lethal_player_source(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<Option<(CharacterId, u64, GameSessionId)>, CarrierError> {
+        let index = self.carrier.validate_ref(self.continuity, actor.0)?;
+        match &self.carrier.slots[index] {
+            Slot::CreatureOccupied { committed, .. } => Ok(committed.lethal_player),
+            _ => Err(CarrierError::NotCreature),
+        }
     }
     /// Damage shares from this exact creature generation, captured with its lethal projection.
     pub fn reward_damage_shares(

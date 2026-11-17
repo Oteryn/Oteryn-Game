@@ -1,7 +1,7 @@
 //! Native counter bindings use the existing death queue and its fenced quest writer.
 //! Threshold gate effects reuse questpc3 262618b3's original-snapshot operation.
-use super::BoundQuest;
-use crate::quest::{QuestComparison, QuestEffect, QuestEffectKind};
+#[cfg(test)]
+use crate::quest::QuestEffectKind;
 use serde::{Deserialize, Serialize};
 
 pub const MAX_KILL_BINDINGS: usize = 128;
@@ -15,7 +15,7 @@ pub struct DeathArea {
     pub maximum: [i32; 3],
 }
 impl DeathArea {
-    fn valid(self) -> bool {
+    pub(crate) fn valid(self) -> bool {
         (0..3).all(|axis| {
             self.minimum[axis] >= 0
                 && self.minimum[axis] <= self.maximum[axis]
@@ -27,131 +27,8 @@ impl DeathArea {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(deny_unknown_fields)]
-pub struct KillCounter {
-    pub key: String,
-    pub creature: String,
-    pub track: String,
-    pub gate: String,
-    pub gate_value: i64,
-    #[serde(default)]
-    pub minimum: i64,
-    pub maximum: i64,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub advance_gate_to: Option<i64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub death_area: Option<DeathArea>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub world_change: Option<String>,
-    /// Exact native encounter callback; absent for ordinary party hunts.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub encounter_source: Option<String>,
-}
+pub use super::super::creature_objectives::KillCounter;
 
-impl KillCounter {
-    pub(super) fn validate(&self, quest: &BoundQuest) -> Result<(), String> {
-        let count = quest.tracks.iter().find(|track| track.key == self.track);
-        let gate = quest.tracks.iter().find(|track| track.key == self.gate);
-        if super::super::native_kills::counter(&self.key).is_some()
-            || !super::super::valid_quest_key(&self.key)
-            || !self.key.starts_with(super::super::native_kills::PREFIX)
-            || !super::super::valid_quest_key(&self.creature)
-            || !self.creature.starts_with("oteryn:creature.")
-            || self.track == self.gate
-            || self.minimum >= self.maximum
-            || self.death_area.is_some_and(|area| !area.valid())
-            || count
-                .is_none_or(|track| track.minimum > self.minimum || track.maximum < self.maximum)
-            || gate.is_none_or(|track| {
-                !(track.minimum..=track.maximum).contains(&self.gate_value)
-                    || self
-                        .advance_gate_to
-                        .is_some_and(|value| !(track.minimum..=track.maximum).contains(&value))
-            })
-        {
-            return Err("authored kill identity/owner/bounds".into());
-        }
-        if let Some(source) = &self.encounter_source {
-            let encounter = quest
-                .stages
-                .iter()
-                .find_map(|stage| match &stage.trigger {
-                    super::Trigger::MapUse { callback } if callback.key == *source => {
-                        callback.effects.encounter.as_ref()
-                    }
-                    _ => None,
-                })
-                .ok_or("authored encounter counter source")?;
-            let defenders = encounter
-                .monsters
-                .iter()
-                .filter(|monster| monster.creature == self.creature)
-                .count();
-            if self.minimum != 0
-                || encounter.timing.is_some()
-                || encounter.players.is_empty()
-                || encounter.players.len() > 8
-                || encounter.monsters.is_empty()
-                || encounter.monsters.len() > 8
-                || i64::try_from(defenders) != Ok(self.maximum)
-            {
-                return Err("authored encounter counter roster/bounds".into());
-            }
-        }
-        Ok(())
-    }
-
-    pub(super) fn effects(&self) -> Vec<QuestEffect> {
-        if self.encounter_source.is_some() && self.advance_gate_to.is_none() {
-            // The source/epoch owner checks the gate without rewriting its revision
-            // for every death queued from the same admission.
-            return vec![QuestEffect {
-                track: self.track.clone(),
-                from: QuestComparison::Between(self.minimum, self.maximum - 1),
-                effect: QuestEffectKind::Add(1),
-            }];
-        }
-        vec![
-            QuestEffect {
-                track: self.gate.clone(),
-                from: QuestComparison::Eq(self.gate_value),
-                effect: self
-                    .advance_gate_to
-                    .map_or(QuestEffectKind::Add(0), |value| {
-                        QuestEffectKind::SetWhenAtLeast {
-                            other_effect: 1,
-                            minimum: self.maximum - 1,
-                            value,
-                        }
-                    }),
-            },
-            QuestEffect {
-                track: self.track.clone(),
-                from: QuestComparison::Between(self.minimum, self.maximum - 1),
-                effect: QuestEffectKind::Add(1),
-            },
-        ]
-    }
-
-    pub(in crate::quest) fn counter<'a>(
-        &'a self,
-        quest: &'a str,
-    ) -> super::super::native_kills::CounterRef<'a> {
-        super::super::native_kills::CounterRef {
-            transition: &self.key,
-            creature: &self.creature,
-            quest,
-            track: &self.track,
-            gate: &self.gate,
-            gate_value: self.gate_value,
-            minimum: self.minimum,
-            maximum: self.maximum,
-            death_area: self.death_area,
-            encounter_source: self.encounter_source.as_deref(),
-        }
-    }
-}
 #[cfg(test)]
 mod tests {
     use super::*;

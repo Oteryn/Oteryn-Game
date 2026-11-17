@@ -4,6 +4,7 @@ use super::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NativeDeathSource {
     Party(Arc<crate::foundation::PartySnapshot>),
+    Objective(super::creature_objectives::ObjectiveDeath),
     /// The carrier supplies this unforgeable key only after a committed lethal.
     InstanceBoss {
         party: Arc<crate::foundation::PartySnapshot>,
@@ -52,6 +53,7 @@ impl NativeQuestDeath {
                     )
                     .is_some_and(|counter| {
                         counter.creature == self.creature
+                            && counter.credit.is_default()
                             && counter.encounter_source.is_none()
                             && if oteryn_gameplay_quests::quest::native_kills::counter(
                                 &self.transition,
@@ -79,6 +81,14 @@ impl NativeQuestDeath {
                             })
                     })
                 }
+                NativeDeathSource::Objective(source) => {
+                    oteryn_gameplay_quests::quest::native_kills::counter_for(catalogue, &self.transition)
+                        .is_some_and(|counter| matches!(request.cause, QuestCause::CreatureDeath(id) if source.occurrence().is_ok_and(|expected| id==expected))
+                            && counter.credit == source.credit() && source.matches_counter(counter)
+                            && counter.creature == self.creature
+                            && counter.encounter_source.is_none()
+                            && self.definition_hash.is_some_and(|hash| catalogue.definition_hash(counter.quest) == Some(hash)))
+                }
                 NativeDeathSource::Source(_) => {
                     self.definition_hash.is_none()
                         && oteryn_gameplay_quests::quest::source_deaths::rule(&self.transition)
@@ -104,7 +114,7 @@ impl NativeQuestDeath {
         match &self.source {
             NativeDeathSource::PositionedParty { source, .. } | NativeDeathSource::Party(source)
             | NativeDeathSource::InstanceBoss { party: source, .. } => Some(source.as_ref()),
-            NativeDeathSource::Source(_) | NativeDeathSource::Encounter(_) => None,
+            NativeDeathSource::Source(_) | NativeDeathSource::Encounter(_) | NativeDeathSource::Objective(_) => None,
         }
     }
 
@@ -140,6 +150,7 @@ impl NativeQuestDeath {
                 binding[1..].copy_from_slice(&digest);
             }
             NativeDeathSource::Source(source) => source.bind(binding),
+            NativeDeathSource::Objective(source) => source.bind(binding),
             NativeDeathSource::Encounter(source) => source.bind(binding),
         }
         let mut digest = Sha256::new()
@@ -162,6 +173,9 @@ impl NativeQuestDeath {
         fence: CurrentCharacterGameplayFence,
         catalogue: &QuestStateCatalogue,
     ) -> StoredResult<bool> {
+        if let NativeDeathSource::Objective(source) = &self.source
+            && !source.matches(fence)
+        { return Ok(false); }
         if let NativeDeathSource::Source(source) = &self.source {
             return source.admit(tx, fence, self).await;
         }
