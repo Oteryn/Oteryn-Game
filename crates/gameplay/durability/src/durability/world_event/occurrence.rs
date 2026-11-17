@@ -147,6 +147,27 @@ pub(super) async fn insert(
             &bound.native,
         ),
     };
+    let selected = if selected && definition.key == "awash" {
+        use oteryn_gameplay_world_change::awash::{MAX_DRY_DAYS, must_flood};
+        let days: Vec<bool> = sqlx::query_scalar(
+            "SELECT COALESCE(state.active, false)
+             FROM generate_series(1, $3::integer) AS prior(days_ago)
+             LEFT JOIN game_world_change_states state
+               ON state.world_id=encode($1,'hex')::uuid AND state.change_key='awash'
+               AND state.reset_epoch=$2::text::numeric-prior.days_ago",
+        )
+        .bind(world.as_bytes().as_slice())
+        .bind(epoch.to_string())
+        .bind(i32::try_from(MAX_DRY_DAYS).map_err(|_| DurabilityError::InvalidStoredState)?)
+        .fetch_all(&mut **tx)
+        .await?;
+        !must_flood(
+            days.try_into()
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+        )
+    } else {
+        selected
+    };
     let counter = definition.counter.as_ref().filter(|_| selected);
     let active = counter.map_or(selected, |c| c.initial_active);
     let creature = counter.map(|c| c.creature.as_str());

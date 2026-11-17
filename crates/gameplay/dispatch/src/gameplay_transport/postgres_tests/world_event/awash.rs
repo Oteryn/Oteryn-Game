@@ -31,9 +31,9 @@ fn awash_coal_threshold_is_applied_at_the_next_server_save() -> TestResult {
                 sqlx::raw_sql(
                     "CREATE FUNCTION seed_awash_coal() RETURNS trigger LANGUAGE plpgsql AS $$
                      BEGIN
-                       IF NEW.reset_epoch IN (1,2) THEN
+                       IF NEW.reset_epoch BETWEEN 1 AND 7 THEN
                          INSERT INTO game_world_change_tallies VALUES
-                           (NEW.world_id, NEW.reset_epoch, 'coal', 200 + NEW.reset_epoch);
+                           (NEW.world_id, NEW.reset_epoch, 'coal', CASE WHEN NEW.reset_epoch=1 THEN 201 ELSE 202 END);
                        END IF;
                        RETURN NEW;
                      END $$;
@@ -42,7 +42,7 @@ fn awash_coal_threshold_is_applied_at_the_next_server_save() -> TestResult {
                 )
                 .execute(&h.pool)
                 .await?;
-                event_fixture::reset_epochs(&h, &authority, pin.qualified_room(), world, channel, 4).await?;
+                event_fixture::reset_epochs(&h, &authority, pin.qualified_room(), world, channel, 8).await?;
                 let states: Vec<bool> = sqlx::query_scalar(
                     "SELECT active FROM game_world_change_states
                      WHERE world_id=encode($1,'hex')::uuid AND change_key='awash'
@@ -51,7 +51,7 @@ fn awash_coal_threshold_is_applied_at_the_next_server_save() -> TestResult {
                 .bind(world.as_bytes().as_slice())
                 .fetch_all(&h.pool)
                 .await?;
-                assert_eq!(states, [false, false, true, false]);
+                assert_eq!(states, [false, false, true, true, true, true, true, false]);
                 Ok(())
             })
             .map_err(|error| error.to_string())

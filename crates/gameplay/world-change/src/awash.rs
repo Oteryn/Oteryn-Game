@@ -17,9 +17,24 @@ pub fn is_dronk_pump(key: &str, x: u16, y: u16, floor: i8) -> bool {
     PUMPS.contains(&(key, x, y, floor))
 }
 
+/// TibiaWiki Awash spoiler 54770@1149364. The sixth save forces flooding
+/// even when the community meets the requirements to keep the tunnels dry.
+pub const MAX_DRY_DAYS: usize = 5;
+
+pub fn must_flood(previous_days: [bool; MAX_DRY_DAYS]) -> bool {
+    previous_days.into_iter().all(|dry| dry)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn awash_forces_flood_after_five_consecutive_dry_days() {
+        assert!(!must_flood([true, true, true, true, false]));
+        assert!(!must_flood([true, true, false, true, true]));
+        assert!(must_flood([true; 5]));
+    }
 
     #[test]
     fn awash_admits_only_dronks_three_exact_pumps() {
