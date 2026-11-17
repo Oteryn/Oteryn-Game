@@ -11,7 +11,6 @@ evidence in the pinned pilot; only the canonical reward changes.
 | captain_iglues | Captain Iglues Treasure Quest/Spoiler rev 1013321: the right chest is a Chest (Quest) holding 2 Salmon; the book and 12 salmon are the left, daily-respawn chest | 1 salmon (its own comment says 2x) | 2 salmon |
 | quest/key/id4502 | Alawar's Vault Quest rev 683774 and /Spoiler rev 1029814: the Key 4502 reward is a Dark Helmet, 4 Throwing Knives, a Blank Rune, 33gp and Key 4502 | 23 gold coins | 33 gold coins |
 | fireaxe1 | Fire Axe Quest/Spoiler rev 855030: the chest holds a Ring of Healing, a Dragon Necklace and 7 Small Diamonds; the Fire Axe is the final reward of the Pile of Bones (fireaxe2) | the bag also holds a Fire Axe (its own comment omits it) | no Fire Axe in the bag |
-| ghostsilver_lantern_quest | Ghostsilver Lantern rev 1148076: the Spider Web at 128.56/123.176/9 (32824,31664,9) gives the lit Ghostsilver Lantern, item 23738; 23734 is the unlit variant | 1 unlit lantern 23734 | 1 lit lantern 23738 |
 | powerring1 | Power Ring Quest rev 683946: the rewards are a Power Ring and a Bronze Amulet (powerring2) | 1 gold coin (its own comment says power ring) | 1 Power Ring |
 
 Written book texts (TEXTS) follow the same rule. The Global text is the TibiaWiki
@@ -39,8 +38,6 @@ CORRECTIONS = {
            [[3579, 1]], [[3579, 2]]),
     6151: ('canary:reward-claim/kv/powerring1', {'x': 32599, 'y': 31776, 'z': 9},
            [[3031, 1]], [[3050, 1]]),
-    6310: ('canary:reward-claim/kv/ghostsilver_lantern_quest', {'x': 32825, 'y': 31664, 'z': 9},
-           [[23734, 1]], [[23738, 1]]),
 }
 BY_PILOT = {pilot: (unique, position, source, target)
             for unique, (pilot, position, source, target) in CORRECTIONS.items()}
