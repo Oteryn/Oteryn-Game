@@ -132,6 +132,22 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+fn guest_members_match(actual: &[[u8; 16]], expected: &[[u8; 16]]) -> bool {
+    let mut actual = actual.to_vec();
+    actual.sort_unstable();
+    actual == expected
+}
+
+async fn guests(client: &mut DevClientSession, panel: &mut panel_ui::Panel) -> TestResult<house::HouseAclSnapshot> {
+    let command = panel_ui::read_acl(panel, house::HouseAclSelector::Guest)?;
+    let reply = raw_feature::send(client.session_mut(), &command).await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("step=guest-read observed={:?}", reply.status).into());
+    }
+    panel.apply(&command, &reply);
+    panel.acl_snapshot.take().ok_or_else(|| "step=guest-read observed=no-acl".into())
+}
+
 async fn owned_acl(clients: &SeamClients<'_>, towns: &std::collections::BTreeSet<String>) -> TestResult {
     let mut client = connect_world(clients, 0xc1).await?;
     let mut panel = panel_ui::Panel::default();
@@ -142,13 +158,7 @@ async fn owned_acl(clients: &SeamClients<'_>, towns: &std::collections::BTreeSet
     let id = panel.page.rows[panel.index].house.clone();
     let town = panel.town.clone();
 
-    let command = panel_ui::read_acl(&mut panel, house::HouseAclSelector::Guest)?;
-    let reply = raw_feature::send(client.session_mut(), &command).await?;
-    if reply.status != CommandStatus::Accepted {
-        return Err(format!("step=guest-read observed={:?}", reply.status).into());
-    }
-    panel.apply(&command, &reply);
-    let snapshot = panel.acl_snapshot.take().ok_or("step=guest-read observed=no-acl")?;
+    let snapshot = guests(&mut client, &mut panel).await?;
     let peer = *clients.characters.first().ok_or("step=acl needed=fixture-peer")?;
     let mut members = snapshot.members;
     if members.contains(&peer) {
@@ -157,16 +167,20 @@ async fn owned_acl(clients: &SeamClients<'_>, towns: &std::collections::BTreeSet
         members.push(peer);
     }
     members.sort_unstable();
-    let reply = send(&mut client, &mut panel, Some(&Action::Guests(members)), false).await?;
+    let reply = send(&mut client, &mut panel, Some(&Action::Guests(members.clone())), false).await?;
     if reply.status != CommandStatus::Accepted {
         return Err(format!("step=acl observed=status:{:?}", reply.status).into());
     }
     let (disposition, revision) = house::result(&reply.payload)?;
     let lookup = |row: &house::Row| row.owned && row.house == id;
-    catalogue(&mut panel, [&*town], async |panel, next| query(&mut client, panel, next).await, lookup).await?
+    panel.index = catalogue(&mut panel, [&*town], async |panel, next| query(&mut client, panel, next).await, lookup).await?
         .ok_or("step=acl observed=owned-house-disappeared")?;
     if acl_advanced(&id, snapshot.revision, disposition, &panel.page.rows) != Some(revision) {
         return Err(format!("step=acl observed=disposition:{disposition},revision:{revision};needed=committed-advance-on-{id}").into());
+    }
+    let live = guests(&mut client, &mut panel).await?;
+    if live.revision != revision || !guest_members_match(&live.members, &members) {
+        return Err(format!("step=acl observed={live:?};needed=written-guest-list-on-{id}").into());
     }
     logout(&mut client).await?;
     drop(client);
@@ -175,9 +189,11 @@ async fn owned_acl(clients: &SeamClients<'_>, towns: &std::collections::BTreeSet
     panel.admitted(clients.world, fresh.selected_capabilities());
     let index = catalogue(&mut panel, [&*town], async |panel, next| query(&mut fresh, panel, next).await, lookup).await?
         .ok_or("step=fresh observed=owned-house-disappeared")?;
+    panel.index = index;
     let durable = panel.page.rows[index].acl_revision;
+    let fresh_guests = guests(&mut fresh, &mut panel).await?;
     logout(&mut fresh).await?;
-    if durable != revision {
+    if durable != revision || fresh_guests.revision != revision || !guest_members_match(&fresh_guests.members, &members) {
         return Err(format!("step=fresh observed=acl:{durable};needed={revision}").into());
     }
     Ok(())
@@ -260,5 +276,15 @@ mod tests {
     #[test]
     fn token_has_no_whitespace() {
         assert_eq!(token("step=a  observed=b\nc"), "step=a-observed=b-c");
+    }
+}
+
+#[cfg(test)]
+mod delta_tests {
+    use super::*;
+
+    #[test]
+    fn acl_revision_bump_without_guest_write_fails() {
+        assert!(!guest_members_match(&[[1; 16]], &[[2; 16]]));
     }
 }

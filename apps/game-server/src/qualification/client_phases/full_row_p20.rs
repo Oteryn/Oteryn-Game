@@ -69,6 +69,21 @@ async fn progress(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
     ))
 }
 
+fn is_expected_promotion(before: &str, after: &str) -> bool {
+    let Some((identity, vocation)) = before.strip_suffix(").").and_then(|text| text.rsplit_once(", ")) else {
+        return false;
+    };
+    let promoted = match vocation {
+        "knight" => "elite knight",
+        "paladin" => "royal paladin",
+        "druid" => "elder druid",
+        "sorcerer" => "master sorcerer",
+        "monk" => "exalted monk",
+        _ => return false,
+    };
+    after == format!("{identity}, {promoted}).")
+}
+
 async fn vocation(client: &mut DevClientSession) -> TestResult<String> {
     use oteryn_protocol_oteryn::item_look as wire;
     let entities = client.world_entities().ok_or("P20 own actor view absent")?;
@@ -286,7 +301,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
                 .ok_or("step-4 inventory observation absent")?
                 .clone();
             let paid = full_gold::coin_value(&client)?;
-            if promoted == unpromoted || inventory == uncharged || paid.checked_add(20_000) != Some(carried_gold) {
+            if !is_expected_promotion(&unpromoted, &promoted) || inventory == uncharged || paid.checked_add(20_000) != Some(carried_gold) {
                 return Err(format!(
                     "step-3 successful purchase missing vocation/inventory delta vocation={unpromoted:?}->{promoted:?} inventory={uncharged:?}->{inventory:?}"
                 )
@@ -426,5 +441,17 @@ mod tests {
         };
         assert_eq!(row.finish(&Ok(())), "PASS");
         assert_eq!(row.finish(&Err("observed server refusal".into())), "FAIL");
+    }
+}
+
+#[cfg(test)]
+mod delta_tests {
+    use super::*;
+
+    #[test]
+    fn wrong_promoted_vocation_does_not_complete_purchase() {
+        let before = "You see yourself (Level 20, knight).";
+        assert!(!is_expected_promotion(before, "You see yourself (Level 20, royal paladin)."));
+        assert!(is_expected_promotion(before, "You see yourself (Level 20, elite knight)."));
     }
 }

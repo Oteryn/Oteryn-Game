@@ -118,12 +118,17 @@ struct Delivery {
 async fn delivery(clients: &SeamClients<'_>, offer: &[u8; 16]) -> TestResult<Delivery> {
     use sqlx::Connection;
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    read_delivery(&mut database, &clients.characters[1], &clients.world, offer).await
+}
+
+async fn read_delivery(database: &mut sqlx::PgConnection, character: &[u8; 16], world: &[u8; 16], offer: &[u8; 16]) -> TestResult<Delivery> {
     let (item, minted, inbox) = sqlx::query_as(
         "SELECT (SELECT uuid_send(i.item_instance_id)
                   FROM game_returner_reward_claims c
                   JOIN game_returner_reward_entitlements e USING(offer_id)
                   JOIN game_item_instances i ON (i.item_instance_id,i.world_id)=(c.item_instance_id,e.world_id)
-                  JOIN game_item_character_inbox_locations l USING(item_instance_id,world_id)
+                  JOIN game_item_character_inbox_locations l
+                    ON (l.item_instance_id,l.world_id)=(i.item_instance_id,i.world_id)
                   WHERE c.offer_id=encode($3,'hex')::uuid AND e.character_id=encode($1,'hex')::uuid
                     AND e.world_id=encode($2,'hex')::uuid AND l.character_id=e.character_id
                     AND i.definition_family='Item' AND i.definition_production_key='oteryn:item.tibia.i266'
@@ -136,8 +141,8 @@ async fn delivery(clients: &SeamClients<'_>, offer: &[u8; 16]) -> TestResult<Del
                   WHERE l.character_id=encode($1,'hex')::uuid AND l.world_id=encode($2,'hex')::uuid
                     AND i.definition_family='Item' AND i.definition_production_key='oteryn:item.tibia.i266'
                     AND i.lifecycle=1)",
-    ).bind(clients.characters[1].as_slice()).bind(clients.world.as_slice()).bind(offer.as_slice())
-        .fetch_one(&mut database).await?;
+    ).bind(character.as_slice()).bind(world.as_slice()).bind(offer.as_slice())
+        .fetch_one(database).await?;
     Ok(Delivery { item, minted, inbox })
 }
 
@@ -260,5 +265,35 @@ mod tests {
         assert_eq!(BOGUS[6] >> 4, 7);
         assert_eq!(BOGUS[8] >> 6, 2);
         assert_eq!(returner::decode_claim(&BOGUS), Ok(BOGUS));
+    }
+}
+
+#[cfg(test)]
+mod delta_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn preclaim_delivery_query_runs_on_empty_claims() -> TestResult {
+        use sqlx::Connection;
+        let url = required("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
+        let mut db = sqlx::PgConnection::connect(&url).await?;
+        sqlx::raw_sql("
+          CREATE TEMP TABLE game_returner_reward_claims (offer_id uuid, item_instance_id uuid);
+          CREATE TEMP TABLE game_returner_reward_entitlements (offer_id uuid, character_id uuid, world_id uuid);
+          CREATE TEMP TABLE game_item_instances (item_instance_id uuid, world_id uuid, definition_family text,
+              definition_production_key text, definition_revision_ref text, quantity int, lifecycle int, minted_transaction_id uuid);
+          CREATE TEMP TABLE game_item_character_inbox_locations (item_instance_id uuid, world_id uuid, character_id uuid);
+        ").execute(&mut db).await?;
+        let result = read_delivery(&mut db, &[0; 16], &[0; 16], &[0; 16]).await?;
+        assert_eq!(result, Delivery { item: None, minted: 0, inbox: 0 });
+        sqlx::raw_sql("
+          INSERT INTO game_returner_reward_entitlements VALUES ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-000000000000');
+          INSERT INTO game_returner_reward_claims VALUES ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-000000000000');
+          INSERT INTO game_item_instances VALUES ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-000000000000','Item','oteryn:item.tibia.i266','definition-r1',1,1,'00000000-0000-0000-0000-000000000000');
+          INSERT INTO game_item_character_inbox_locations VALUES ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-000000000000');
+        ").execute(&mut db).await?;
+        let claimed = read_delivery(&mut db, &[0; 16], &[0; 16], &[0; 16]).await?;
+        assert_eq!(claimed, Delivery { item: Some(vec![0; 16]), minted: 1, inbox: 1 });
+        Ok(())
     }
 }

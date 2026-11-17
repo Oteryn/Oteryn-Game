@@ -242,7 +242,7 @@ fn refused_start_unchanged(initial: wire::TrainingResult, refused: wire::Trainin
 
 fn settled_charges(ticked: wire::TrainingResult, stopped: wire::TrainingResult) -> bool {
     stopped.disposition == 2
-        && stopped.charges <= ticked.charges
+        && ticked.charges.checked_sub(stopped.charges).is_some_and(|lost| lost <= 1)
         && stopped.revision >= ticked.revision
         && (stopped.charges == ticked.charges || stopped.revision > ticked.revision)
 }
@@ -397,5 +397,16 @@ mod tests {
         .ok()
         .and_then(|encoded| super::decode_result(&encoded));
         assert_eq!(decoded.map(|reply| reply.charges), Some(499));
+    }
+}
+
+#[cfg(test)]
+mod delta_tests {
+    use super::*;
+
+    #[test]
+    fn stop_rejects_more_than_one_extra_charge_per_tick() {
+        let result = |disposition, charges, revision| wire::TrainingResult { disposition, charges, revision, ..wire::TrainingResult::REFUSED };
+        assert!(!settled_charges(result(0, 9, 7), result(2, 1, 8)));
     }
 }

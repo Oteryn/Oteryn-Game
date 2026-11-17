@@ -227,6 +227,32 @@ async fn rat_reward(
     ).bind(character.as_slice()).fetch_optional(database).await?)
 }
 
+fn currency_plan(current: u32, cost: u32, available: &[(NonZeroU32, u32, u32)]) -> Vec<NonZeroU32> {
+    let mut candidates = available.to_vec();
+    candidates.sort_by(|a, b| {
+        (u64::from(a.1) * u64::from(b.2)).cmp(&(u64::from(b.1) * u64::from(a.2)))
+            .then_with(|| a.1.cmp(&b.1)).then_with(|| a.0.cmp(&b.0))
+    });
+    let remaining = cost.saturating_sub(current);
+    candidates.into_iter().scan(remaining, |left, (id, _, points)| {
+        if *left == 0 { return None; }
+        *left = left.saturating_sub(points);
+        Some(id)
+    }).collect()
+}
+
+fn authored_bestiary() -> TestResult<Vec<(crate::domain::bestiary::BestiaryRace, u32)>> {
+    let limits = crate::content::ProjectEvidenceLimits {
+        max_documents: 5, max_document_bytes: 2_500_000, max_total_bytes: 8_000_000,
+        max_json_depth: 10, max_decoded_fields: 65_000, max_string_bytes: 1_000_000,
+        max_locator_bytes: 128, max_locator_segments: 5, max_reference_records: 4096,
+        max_import_records: 1, max_reimport_states: 1,
+    };
+    let mut races = crate::content::canonical_bestiary_rows(limits)?;
+    races.sort_unstable_by(|left, right| left.0.key().cmp(right.0.key()));
+    Ok(races)
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -248,21 +274,21 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     evidence("P01_CHECK admission-query PASS accepted-native-views");
 
     row.at("player-earned-kill-count");
-    hunt_once(&mut client, world, &metadata.spawns, "oteryn:creature.rat", "Rat").await?;
+    const RAT: &str = "oteryn:creature.rat";
+    use sqlx::Connection;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let races = authored_bestiary()?;
+    let rat_index = races.iter().position(|(race, _)| race.key() == RAT).ok_or("rat absent from Bestiary")?;
+    let race = NonZeroU32::new(u32::try_from(rat_index + 1)?).ok_or("invalid Rat index")?;
+    let rat_limit = races[rat_index].0.final_kill_threshold();
+    let before_reward = rat_reward(&mut database, &clients.characters[1]).await?;
+    hunt_once(&mut client, world, &metadata.spawns, RAT, "Rat").await?;
+    let after_reward = rat_reward(&mut database, &clients.characters[1]).await?;
     let mut current = query(&mut client).await?;
-    let race = current
-        .bestiary
-        .iter()
-        .find(|entry| count(&initial, entry.race) < entry.kill_count)
-        .map(|entry| entry.race)
-        .ok_or_else(|| {
-            format!(
-                "QUERY after credited ATTACK has no Bestiary delta; before={:?} after={:?}",
-                initial.bestiary, current.bestiary
-            )
-        })?;
-    if count(&initial, race).checked_add(1) != Some(count(&current, race)) {
-        return Err("credited kill did not increment Bestiary by exactly one".into());
+    if after_reward.is_none() || after_reward == before_reward
+        || count(&initial, race).saturating_add(1).min(rat_limit) != count(&current, race)
+    {
+        return Err("credited Rat kill did not produce the expected Bestiary count".into());
     }
     evidence(&format!(
         "P01_CHECK kill-count PASS race={} count={}",
@@ -289,13 +315,36 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     evidence("P01_CHECK locked-assignment-refusal PASS disposition=CharmLocked");
 
     row.at("earn-unlock-currency");
-    while !race_complete(&current, race) {
-        hunt_once(&mut client, world, &metadata.spawns, "oteryn:creature.rat", "Rat").await?;
-        let next = query(&mut client).await?;
-        if count(&current, race).checked_add(1) != Some(count(&next, race)) {
-            return Err("rat hunt did not increment that race's Bestiary count".into());
+    let spawned: std::collections::BTreeSet<_> = metadata.spawns.sources.iter().flat_map(|source| &source.points)
+        .filter_map(|point| metadata.spawns.creatures.get(point.creature as usize))
+        .map(|creature| creature.key.as_str()).collect();
+    let mut candidates = Vec::new();
+    for (index, (authored, points)) in races.iter().enumerate() {
+        let id = NonZeroU32::new(u32::try_from(index + 1)?).ok_or("invalid Bestiary index")?;
+        let left = authored.final_kill_threshold().saturating_sub(count(&current, id));
+        if left > 0 && *points > 0 && id != race && spawned.contains(authored.key()) {
+            candidates.push((id, left, *points));
         }
-        current = next;
+    }
+    for id in std::iter::once(race).chain(
+        currency_plan(current.charms.charm_points_available.saturating_add(
+            if race_complete(&current, race) { 0 } else { races[rat_index].1 }
+        ), cost, &candidates),
+    ) {
+        let (authored, points) = &races[usize::try_from(id.get() - 1)?];
+        let name = super::full_row_p02::creature_display_name(authored.key())?;
+        while !race_complete(&current, id) {
+            hunt_once(&mut client, world, &metadata.spawns, authored.key(), &name).await?;
+            let next = query(&mut client).await?;
+            let next_count = count(&next, id);
+            let award = if next_count == authored.final_kill_threshold() { *points } else { 0 };
+            if count(&current, id).checked_add(1) != Some(next_count)
+                || current.charms.charm_points_available.checked_add(award) != Some(next.charms.charm_points_available)
+            {
+                return Err(format!("step=earn-unlock-currency observed=unexpected-count-or-award-on-{}", authored.key()).into());
+            }
+            current = next;
+        }
     }
     if current.charms.charm_points_available < cost {
         return Err(format!("step=earn-unlock-currency observed={};needed={cost}-player-earned-major-charm-points",
@@ -339,7 +388,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.at("assigned-combat-hook");
     use oteryn_protocol_oteryn::item_view::EquipmentSlot;
     use oteryn_protocol_oteryn::attack::{FightMode, FightModes, AttackIntentDisposition};
-    use sqlx::Connection;
     let hands = client.inventory().ok_or("step=combat observed=no-equipment-view")?.equipment.iter()
         .filter(|entry| matches!(entry.slot, EquipmentSlot::LeftHand | EquipmentSlot::RightHand))
         .map(|entry| entry.item.handle).collect::<Vec<_>>();
@@ -355,9 +403,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if stance.disposition != AttackIntentDisposition::Ok {
         return Err("step=combat observed=defensive-stance-refused".into());
     }
-    let mut database = sqlx::PgConnection::connect(clients.url).await?;
     let mut observed = false;
-    for _ in 0..32 {
+    // Stage-one Zap procs at 5%; 180 eligible trials keep random failure below 0.01%.
+    for _ in 0..180 {
         let before = rat_reward(&mut database, &clients.characters[1]).await?;
         let energy = hunt_once(&mut client, world, &metadata.spawns, "oteryn:creature.rat", "Rat").await?;
         let after = rat_reward(&mut database, &clients.characters[1]).await?;
@@ -422,5 +470,22 @@ mod combat_proof_tests {
         assert!(!charm_effect_observed(false, true));
         assert!(!charm_effect_observed(true, false));
         assert!(charm_effect_observed(true, true));
+    }
+}
+
+#[cfg(test)]
+mod delta_tests {
+    use super::*;
+
+    #[test]
+    fn currency_plan_from_zero_earns_the_full_zap_cost() -> TestResult {
+        let race = |n| NonZeroU32::new(n).ok_or("test race index is zero");
+        let available = [(race(1)?, 250, 5), (race(2)?, 1000, 50), (race(3)?, 400, 100),
+            (race(4)?, 400, 100), (race(5)?, 400, 100)];
+        let plan = currency_plan(0, 320, &available);
+        let points = plan.iter().map(|id| available.iter().find(|entry| entry.0 == *id).map_or(0, |entry| entry.2)).sum::<u32>();
+        assert!(points >= 320);
+        assert!(currency_plan(320, 320, &available).is_empty());
+        Ok(())
     }
 }

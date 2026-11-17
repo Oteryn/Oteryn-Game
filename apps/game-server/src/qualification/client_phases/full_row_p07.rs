@@ -16,7 +16,7 @@
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::wheel_allocation;
-use oteryn_protocol_oteryn::{atelier, wheel};
+use oteryn_protocol_oteryn::{atelier, wheel, wheel_presentation};
 
 #[derive(Default)]
 struct Observations {
@@ -130,6 +130,81 @@ fn reveal_delta(before: &AtelierState, after: &AtelierState, quote: &atelier::Qu
         .then_some(gem)
 }
 
+fn dismantle_preserves_other_assets(before: &AtelierState, after: &AtelierState, gem: [u8; 16], kind: u8) -> bool {
+    let mut expected = before.0.gems.clone();
+    expected.retain(|entry| entry.id != gem);
+    expected.len().checked_add(1) == Some(before.0.gems.len())
+        && expected == after.0.gems
+        && before.0.grades == after.0.grades
+        && unchanged_resources(before.1, after.1, kind)
+}
+
+fn unchanged_resources(
+    mut before: atelier::resources::ResourceBalances, after: atelier::resources::ResourceBalances, kind: u8,
+) -> bool {
+    match kind {
+        0 => before.basic_fragments = after.basic_fragments,
+        1 => before.supreme_fragments = after.supreme_fragments,
+        _ => return false,
+    }
+    before.bank_gold = after.bank_gold;
+    before.carried_gold = after.carried_gold;
+    before == after
+}
+
+fn grade_preserves_other_assets(before: &AtelierState, after: &AtelierState, kind: u8, modifier: u16, grade: u8) -> bool {
+    let mut expected = before.0.grades.clone();
+    let Some(target) = expected.iter_mut().find(|row| (row.kind, row.mod_id) == (kind, modifier)) else {
+        return false;
+    };
+    if target.grade.checked_add(1) != Some(grade) {
+        return false;
+    }
+    target.grade = grade;
+    expected == after.0.grades && before.0.gems == after.0.gems && unchanged_resources(before.1, after.1, kind)
+}
+
+fn socket_committed(reply: &wheel::WheelAllocationReply, after: &AtelierState, gem: [u8; 16]) -> bool {
+    !reply.refused && !after.0.refused && reply.vessels.is_some_and(|v| v[0] == Some(gem))
+        && after.0.gems.iter().any(|entry| entry.id == gem && entry.vessel && entry.domain == 0)
+        && after.0.gems.iter().filter(|entry| entry.vessel).all(|entry|
+            reply.vessels.and_then(|slots| slots.get(usize::from(entry.domain)).copied().flatten()) == Some(entry.id))
+}
+
+async fn socket_effect_is_live(
+    client: &mut DevClientSession,
+    wheel: &wheel::WheelAllocationReply,
+    atelier_revision: u64,
+    gem: [u8; 16],
+) -> TestResult<bool> {
+    let request = wheel_presentation::Request {
+        nonce: 1,
+        wheel_revision: wheel.revision,
+        atelier_revision,
+        points: wheel.points,
+        vessels: wheel.vessels.ok_or("step=socket observed=no-vessel-receipt")?,
+    };
+    let payload = request.encode().ok_or("step=socket observed=invalid-presentation-request")?;
+    let response = client.session_mut().gated_command(
+        wheel_presentation::CAPABILITY_WHEEL_PRESENTATION_V1,
+        wheel_presentation::COMMAND_TYPE_WHEEL_PRESENTATION,
+        &payload,
+    ).await?;
+    let prefix = format!("Socketed gem {:032X}: ", u128::from_be_bytes(gem));
+    Ok(response.status == CommandStatus::Accepted
+        && wheel_presentation::Reply::decode(&response.payload).is_some_and(|view| {
+            view.request == request && view.eligible && view.current.iter().any(|line| {
+                line.strip_prefix(&prefix).and_then(|value| value.split_once(" active positions, effective grades "))
+                    .is_some_and(|(positions, grades)| {
+                        let grades = grades.split(", ").map(str::parse::<u8>).collect::<Result<Vec<_>, _>>();
+                        grades.is_ok_and(|grades| !grades.is_empty()
+                            && positions.parse::<usize>().ok() == Some(grades.len())
+                            && grades.into_iter().all(|grade| (1..=4).contains(&grade)))
+                    })
+            })
+        }))
+}
+
 async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResult {
     let mut client = connect_world(clients, 0xa7).await?;
     let session = client.join_snapshot().game_session_id;
@@ -213,9 +288,9 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
                 && reply.revision > revision
                 && reply.revision == dismantled.0.revision
                 && !reply.gems.iter().any(|entry| entry.id == gem)
-                && !dismantled.0.gems.iter().any(|entry| entry.id == gem)
+                && dismantle_preserves_other_assets(&revealed, &dismantled, gem, quote.fragment_kind)
                 && fragments.is_some_and(|count| (u64::from(quote.fragment_min)..=u64::from(quote.fragment_max)).contains(&count))
-                && gold_debit(&revealed.1, &dismantled.1) == Some(0) =>
+                && (revealed.1.bank_gold, revealed.1.carried_gold) == (dismantled.1.bank_gold, dismantled.1.carried_gold) =>
         {
             revision = reply.revision;
             seen.pass("3-dismantle-fragments");
@@ -253,8 +328,9 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
                 && !reply.refused
                 && reply.revision > revision
                 && reply.revision == graded.0.revision
-                && selected_grade(&reply) && selected_grade(&graded.0)
+                && selected_grade(&reply) && grade_preserves_other_assets(&dismantled, &graded, target.0, target.1, grade)
                 && gold_debit(&dismantled.1, &graded.1) == Some(grade_quote.gold)
+                && graded.1.bank_gold <= dismantled.1.bank_gold && graded.1.carried_gold <= dismantled.1.carried_gold
                 && fragment_total(&dismantled.1, target.0).checked_sub(fragment_total(&graded.1, target.0)) == Some(u64::from(grade_quote.fragments)) =>
         {
             revision = reply.revision;
@@ -395,12 +471,24 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
             }
         }
     };
+    let before_socket = query(&mut client).await?;
+    if !before_socket.0.gems.iter().any(|entry| entry.id == gem && !entry.vessel) {
+        return Err("step=socket needed=unsocketed-original-gem".into());
+    }
+    let mut vessels = [None; wheel::WHEEL_VESSELS];
+    for entry in before_socket.0.gems.iter().filter(|entry| entry.vessel) {
+        let Some(cell) = vessels.get_mut(usize::from(entry.domain)) else {
+            return Err("step=socket observed=invalid-vessel-cell".into());
+        };
+        *cell = Some(entry.id);
+    }
+    vessels[0] = Some(gem);
     let socket = wheel::WheelAllocationRequest {
         action: 1,
         occurrence: occurrence(session, 8),
         expected_revision: wheel_state.revision,
         points: wheel_state.points,
-        vessels: Some([Some(gem), None, None, None]),
+        vessels: Some(vessels),
     };
     let response = raw(
         &mut client,
@@ -408,16 +496,19 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
         wheel::encode_wheel_request(&socket).map_err(|e| format!("socket encode: {e:?}"))?,
     )
     .await?;
+    let before_stale = query(&mut client).await?;
     if response.status == CommandStatus::Accepted
-        && wheel::decode_wheel_reply(&response.payload)
-            .is_ok_and(|reply| !reply.refused && reply.vessels.is_some_and(|v| v[0] == Some(gem)))
+        && let Ok(reply) = wheel::decode_wheel_reply(&response.payload)
+        && reply.revision > wheel_state.revision && reply.points == wheel_state.points
+        && reply.vessels == Some(vessels)
+        && socket_committed(&reply, &before_stale, gem)
+        && socket_effect_is_live(&mut client, &reply, before_stale.0.revision, gem).await?
     {
         seen.pass("5-socket-vessel-resonance");
     } else {
         seen.fail("5-socket-vessel-resonance", &response);
     }
 
-    let before_stale = query(&mut client).await?;
     let stale = atelier::MutateRequest {
         occurrence: occurrence(session, 9),
         expected_revision: initial.revision,
@@ -520,5 +611,41 @@ mod proof_tests {
         let after = (state(&[1, 2]), atelier::resources::ResourceBalances::default());
         assert!(!stale_unchanged(true, &before, &after));
         assert!(stale_unchanged(true, &before, &before));
+    }
+}
+
+#[cfg(test)]
+mod delta_tests {
+    use super::*;
+
+    fn assets() -> AtelierState {
+        let gem = |id| atelier::GemView { id: [id; 16], quality: 0, domain: 0, locked: false, vessel: false, modifiers: vec![1] };
+        let grade = |mod_id| atelier::GradeView { kind: 0, mod_id, grade: 1 };
+        (atelier::AtelierReply { refused: false, revision: 1, gems: vec![gem(1), gem(2)],
+            grades: vec![grade(1), grade(2)], quality_quotes: vec![], grade_quotes: vec![] },
+         atelier::resources::ResourceBalances::default())
+    }
+
+    #[test]
+    fn dismantle_and_grade_reject_collateral_mutations() {
+        let before = assets();
+        let mut dismantled = before.clone();
+        dismantled.0.gems.clear();
+        dismantled.1.supreme_fragments = 1;
+        let mut graded = before.clone();
+        graded.0.grades[0].grade = 2;
+        graded.0.grades[1].grade = 2;
+        assert_eq!((dismantle_preserves_other_assets(&before, &dismantled, [1; 16], 0),
+            grade_preserves_other_assets(&before, &graded, 0, 1, 2)), (false, false));
+    }
+
+    #[test]
+    fn socket_receipt_cannot_replace_live_socket_observation() {
+        let receipt = wheel::WheelAllocationReply { refused: false, revision: 2,
+            points: [0; wheel::WHEEL_SLOTS], vessels: Some([Some([1; 16]), None, None, None]) };
+        let mut live = assets();
+        assert!(!socket_committed(&receipt, &live, [1; 16]));
+        live.0.gems[0].vessel = true;
+        assert!(socket_committed(&receipt, &live, [1; 16]));
     }
 }

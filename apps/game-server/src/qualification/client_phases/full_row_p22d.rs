@@ -109,6 +109,13 @@ fn pushed_kills(events: Vec<SessionEvent>, after: u64) -> TestResult<Option<u32>
     Ok(count)
 }
 
+async fn finish_refresh<T>(
+    live: TestResult<T>,
+    mut readback: impl AsyncFnMut() -> TestResult<u32>,
+) -> TestResult<(TestResult<T>, u32)> {
+    Ok((live, readback().await?))
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let best = tr::COMMAND_TYPE_BESTIARY_TRACKER;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
@@ -131,70 +138,84 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     )?;
     let before = kills(&list, RAT);
 
-    travel_to_spawn(&mut client, world, &metadata.spawns, RAT).await?;
-    let here = client.world_spatial().actor_position;
-    let target = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entry| {
-                entry.kind == EntityKind::Creature
-                    && entry.display_name.is_some_and(|name| name.as_str().is_ok_and(|name| name == "Rat"))
-                    && entry.position.floor == here.floor
-                    && entry
-                        .position
-                        .x
-                        .abs_diff(here.x)
-                        .max(entry.position.y.abs_diff(here.y))
-                        <= 1
+    let live: TestResult<_> = async {
+        travel_to_spawn(&mut client, world, &metadata.spawns, RAT).await?;
+        let here = client.world_spatial().actor_position;
+        let target = client
+            .world_entities()
+            .and_then(|entities| {
+                entities.iter().find(|entry| {
+                    entry.kind == EntityKind::Creature
+                        && entry.display_name.is_some_and(|name| name.as_str().is_ok_and(|name| name == "Rat"))
+                        && entry.position.floor == here.floor
+                        && entry
+                            .position
+                            .x
+                            .abs_diff(here.x)
+                            .max(entry.position.y.abs_diff(here.y))
+                            <= 1
+                })
             })
-        })
-        .copied()
-        .ok_or("step=hunt;observed=no-adjacent-rat")?;
-    client.take_events();
-    let attack = client
-        .session_mut()
-        .attack_target(Some(&target.entity))
-        .await?;
-    expect(
-        attack.disposition == AttackIntentDisposition::Ok,
-        "attack",
-        attack.disposition,
-    )?;
+            .copied()
+            .ok_or("step=hunt;observed=no-adjacent-rat")?;
+        client.take_events();
+        let attack = client
+            .session_mut()
+            .attack_target(Some(&target.entity))
+            .await?;
+        expect(
+            attack.disposition == AttackIntentDisposition::Ok,
+            "attack",
+            attack.disposition,
+        )?;
 
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
-    verdict::Harness::global().bounded_wait(deadline, "tracker-push");
-    let mut pushed = None;
-    let mut push_error = None;
-    while tokio::time::Instant::now() < deadline {
-        if let Some(count) = pushed_kills(client.take_events(), attack.result_server_sequence)?
-            && count != before
-        {
-            pushed = Some(count);
-            break;
-        }
-        match tokio::time::timeout_at(deadline, client.service_liveness(Duration::from_millis(50))).await {
-            Ok(Ok(())) => {}
-            Ok(Err(error)) if is_domain_gap(&error) => {
-                push_error = Some(error);
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
+        verdict::Harness::global().bounded_wait(deadline, "tracker-push");
+        let mut pushed = None;
+        let mut push_error = None;
+        while tokio::time::Instant::now() < deadline {
+            if let Some(count) = pushed_kills(client.take_events(), attack.result_server_sequence)?
+                && count != before
+            {
+                pushed = Some(count);
                 break;
             }
-            Ok(Err(error)) => return Err(error.into()),
-            Err(_) => return Err("step=live-refresh;observed=tracker-push-timeout".into()),
+            match tokio::time::timeout_at(deadline, client.service_liveness(Duration::from_millis(50))).await {
+                Ok(Ok(())) => {}
+                Ok(Err(error)) if is_domain_gap(&error) => {
+                    push_error = Some(error);
+                    break;
+                }
+                Ok(Err(error)) => return Err(error.into()),
+                Err(_) => break,
+            }
         }
-    }
-    if push_error.is_none() {
-        logout(&mut client).await?;
-    }
+        Ok((pushed, push_error))
+    }.await;
+    // A decoder failure can leave the transport unusable. Always release the session,
+    // and prove the durable outcome and undo the row's tracking change independently.
+    let close = if live.as_ref().is_ok_and(|(_, error)| error.is_none()) {
+        logout(&mut client).await
+    } else {
+        let _ = tokio::time::timeout(Duration::from_secs(2), logout(&mut client)).await;
+        Ok(())
+    };
     drop(client);
 
-    let mut fresh = connect_world(clients, 0xd7).await?;
-    let list = read(&mut fresh, best).await?;
-    let after = kills(&list, RAT);
-    if !was_tracked {
-        let (status, list) = call(&mut fresh, best, &change(tr::TrackerAction::Remove, RAT)).await?;
-        expect(status == CommandStatus::Accepted && !has(&list, RAT), "cleanup", status)?;
-    }
-    logout(&mut fresh).await?;
+    let (live, after) = finish_refresh(live, async || {
+        let mut fresh = connect_world(clients, 0xd7).await?;
+        let list = read(&mut fresh, best).await?;
+        let after = kills(&list, RAT);
+        if !was_tracked {
+            let (status, list) = call(&mut fresh, best, &change(tr::TrackerAction::Remove, RAT)).await?;
+            expect(status == CommandStatus::Accepted && !has(&list, RAT), "cleanup", status)?;
+        }
+        logout(&mut fresh).await?;
+        Ok(after)
+    }).await?;
+    expect(before.checked_add(1) == Some(after), "kill-credit", (before, after, &live))?;
+    let (pushed, push_error) = live?;
+    close?;
     classify_refresh(before, after, pushed, push_error.as_ref())
 }
 
@@ -280,5 +301,26 @@ mod tests {
             domain_id: tr::STATE_DOMAIN_CYCLOPEDIA_TRACKER,
         })));
         assert!(!is_domain_gap(&DevClientError::Io(std::io::ErrorKind::ConnectionReset.into())));
+    }
+}
+
+#[cfg(test)]
+mod delta_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn live_refresh_failure_still_runs_durable_readback_and_cleanup() -> TestResult {
+        for failure in ["undecodable-tracker-snapshot", "tracker-push-timeout"] {
+            let mut read = false;
+            let result = finish_refresh(Err::<(), _>(failure.into()), async || {
+                read = true;
+                Ok(8)
+            }).await;
+            assert!(read);
+            let (live, after) = result?;
+            assert_eq!(after, 8);
+            assert_eq!(live.err().map(|error| error.to_string()).as_deref(), Some(failure));
+        }
+        Ok(())
     }
 }

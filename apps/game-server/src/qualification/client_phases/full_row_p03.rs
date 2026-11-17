@@ -80,6 +80,14 @@ fn valid_bonus_reroll(accepted: bool, unchanged_on_refusal: bool) -> bool {
     accepted && unchanged_on_refusal
 }
 
+fn reroll_current(response: &prey::PreyResponse, receipt: &Reply) -> TestResult<Reply> {
+    response.current.as_deref().map_or_else(|| Ok(receipt.clone()), |current| decoded(current, "bonus-reroll-current"))
+}
+
+fn reroll_epoch_matches(before: u64, after: u64) -> bool {
+    before.checked_add(1) == Some(after)
+}
+
 fn prey_effect_observed(timer_advanced: bool, awards_match: bool) -> bool {
     timer_advanced && awards_match
 }
@@ -204,11 +212,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 response.status, same_checkpoint(&selected, slot(&after, number)?)).into());
         }
         let receipt = decoded(&response.payload, "bonus-reroll")?;
-        let current = decoded(response.current.as_deref().ok_or("P03 step=bonus-reroll observed=missing-current-state")?,
-            "bonus-reroll-current")?;
+        let current = reroll_current(&response, &receipt)?;
         let rerolled = slot(&current, number)?.clone();
-        if !valid_bonus_reroll(receipt.status == 0 && receipt.wildcard_balance.checked_add(1) == Some(balance),
-            rerolled.selected == selected.selected && rerolled.selection_epoch == selected.selection_epoch
+        let checked = query(&mut client, "bonus-reroll-readback").await?;
+        if !valid_bonus_reroll(receipt.status == 0 && current.status == 0
+            && receipt.wildcard_balance.checked_add(1) == Some(balance)
+            && current.wildcard_balance == receipt.wildcard_balance
+            && checked.wildcard_balance == current.wildcard_balance
+            && same_checkpoint(&rerolled, slot(&checked, number)?),
+            rerolled.selected == selected.selected && reroll_epoch_matches(selected.selection_epoch, rerolled.selection_epoch)
                 && (rerolled.bonus, rerolled.grade, rerolled.percent) != (selected.bonus, selected.grade, selected.percent))
         {
             return Err(format!("P03 step=bonus-reroll observed=receipt:{receipt:?}-state:{rerolled:?}").into());
@@ -351,5 +363,20 @@ mod tests {
         left.selection_epoch -= 1;
         left.hunting_seconds -= 60;
         assert!(!same_checkpoint(&left, &right));
+    }
+}
+
+#[cfg(test)]
+mod delta_tests {
+    use super::*;
+
+    #[test]
+    fn charged_reroll_accepts_payload_and_next_epoch() {
+        let receipt = Reply { status: 0, wildcard_balance: 7, slots: vec![], list_size: 0,
+            expansion_owned: false, offered_today: vec![], offered_next: String::new() };
+        let response = prey::PreyResponse { request: wire::Request::BonusReroll { slot: 1 },
+            status: CommandStatus::Accepted, payload: vec![], current: None };
+        assert_eq!((reroll_current(&response, &receipt).ok(), reroll_epoch_matches(9, 10)), (Some(receipt), true));
+        assert!(!reroll_epoch_matches(9, 9));
     }
 }

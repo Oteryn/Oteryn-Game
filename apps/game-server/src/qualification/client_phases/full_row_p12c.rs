@@ -41,6 +41,10 @@ struct History {
     kills: Vec<String>,
 }
 
+fn death_page_delta(baseline: &Page, after: &Page, limit: u8) -> bool {
+    after.deaths == baseline.deaths.saturating_add(1).min(u16::from(limit)) && after.pvp_kills >= baseline.pvp_kills
+}
+
 fn received_one_death(before: &History, after: &History) -> bool {
     after.deaths.split_first().is_some_and(|(new, retained)| {
         !before.deaths.contains(new) && retained == before.deaths
@@ -264,7 +268,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     let after = query(&mut client, 0, 50).await?;
     let post_death = history(clients).await?;
-    if after.deaths != baseline.deaths.saturating_add(1) || after.pvp_kills < baseline.pvp_kills
+    if !death_page_delta(&baseline, &after, 50)
         || !received_one_death(&first_history, &post_death)
         || !page_counts_match(&after, &post_death, 0, 50)
     {
@@ -352,5 +356,21 @@ mod tests {
         bytes.push(0);
         assert!(decode_page(&bytes, 1).is_err());
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod delta_tests {
+    use super::*;
+
+    #[test]
+    fn death_page_stays_at_limit_after_a_new_record() {
+        let page = Page { level: 20, experience: 0, counters: [0; 6], deaths: 50, pvp_kills: 3 };
+        let mut after = History { deaths: (0..50).map(|id| id.to_string()).collect(), kills: vec!["one".into(), "two".into(), "three".into()] };
+        let before = History { deaths: after.deaths.clone(), kills: after.kills.clone() };
+        after.deaths.insert(0, "new".into());
+        assert!(death_page_delta(&page, &page, 50) && received_one_death(&before, &after)
+            && page_counts_match(&page, &after, 0, 50));
+        assert!(!received_one_death(&before, &before));
     }
 }

@@ -191,6 +191,15 @@ async fn first_book_page(
     Ok((book, has_next))
 }
 
+fn statistics_timestamp_is_current(stamp: i64, sent: i64, read: i64) -> bool {
+    (sent..=read).contains(&stamp)
+}
+
+async fn database_time(database: &mut sqlx::PgConnection) -> TestResult<i64> {
+    Ok(sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp())*1000000)::bigint")
+        .fetch_one(database).await?)
+}
+
 async fn body(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
     let filter = wire::Filter::default();
     let wire::Reply::Catalogue { items, .. } = ask(
@@ -231,6 +240,9 @@ async fn body(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestR
         return Err(format!("step=search observed=items:{}", found.len()).into());
     }
     let definition = first.definition;
+    use sqlx::Connection;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let statistics_sent = database_time(&mut database).await?;
     let wire::Reply::Statistics(statistics) =
         ask(client, &wire::Query::Statistics { definition }).await?
     else {
@@ -243,6 +255,8 @@ async fn body(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestR
         )
         .into());
     }
+    let statistics_read = database_time(&mut database).await?;
+    let book_sent = database_time(&mut database).await?;
     let wire::Reply::Book {
         definition: echoed,
         page,
@@ -263,14 +277,13 @@ async fn body(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestR
     if echoed != definition || page != 0 {
         return Err(format!("step=book observed=definition:{echoed},page:{page};needed={definition},0").into());
     }
-    use sqlx::Connection;
-    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let book_read = database_time(&mut database).await?;
     let index = provisioning::item_index()?;
     let (key, revision) = index.definition_at(std::num::NonZeroU32::new(definition).ok_or("step=catalogue observed=zero-definition")?)
         .ok_or("step=catalogue observed=unknown-item-definition")?;
-    let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp())*1000000)::bigint")
-        .fetch_one(&mut database).await?;
-    if [statistics.as_of_us, book_statistics.as_of_us].into_iter().any(|stamp| now.abs_diff(stamp) > 60_000_000) {
+    if !statistics_timestamp_is_current(statistics.as_of_us, statistics_sent, statistics_read)
+        || !statistics_timestamp_is_current(book_statistics.as_of_us, book_sent, book_read)
+    {
         return Err("step=statistics observed=noncurrent-statistics-window".into());
     }
     let expected = trade_statistics(&mut database, &clients.world, key, &statistics).await?;
@@ -330,5 +343,16 @@ mod tests {
     fn search_term_is_a_short_lowercase_prefix() {
         assert_eq!(search_term("Magic Plate Armor"), "magi");
         assert_eq!(search_term("Ax"), "ax");
+    }
+}
+
+#[cfg(test)]
+mod delta_tests {
+    use super::*;
+
+    #[test]
+    fn statistics_cutoff_cannot_predate_the_request() {
+        assert!(!statistics_timestamp_is_current(30_000_000, 45_000_000, 46_000_000));
+        assert!(statistics_timestamp_is_current(45_500_000, 45_000_000, 46_000_000));
     }
 }
