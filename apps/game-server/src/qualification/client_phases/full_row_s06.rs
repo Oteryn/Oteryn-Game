@@ -14,7 +14,7 @@
 //!    outfit colours/addons, earned mount availability, selected mount, and revisions to persist.
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
-use oteryn_protocol_oteryn::{appearance, world_object};
+use oteryn_protocol_oteryn::{appearance, refusal_detail, world_object};
 
 const ACTIONS: &[&str] = &[
     "outfit-select",
@@ -284,7 +284,7 @@ async fn approach_and_use_taming_target(
     world: &BundleWorld,
     target: oteryn_dev_client::EntityRef,
     source: oteryn_dev_client::ItemHandle,
-) -> TestResult<(u64, CommandStatus, world_object::UseDisposition, u64)> {
+) -> TestResult<(u64, CommandStatus, Vec<u8>, u64)> {
     for steps in 0..=32 {
         let here = client.world_spatial().actor_position;
         let target_position = client
@@ -303,12 +303,10 @@ async fn approach_and_use_taming_target(
             })
             .map_err(|error| format!("taming USE encode: {error:?}"))?;
             let reply = client.session_mut().world_context_use(&payload).await?;
-            let (result, _) = world_object::decode_use_result_with_gate(&reply.payload)
-                .map_err(|error| format!("step=taming-attempt observed=reply-decode-{error:?}"))?;
             return Ok((
                 before_use_sequence,
                 reply.status,
-                result,
+                reply.payload,
                 reply.server_sequence,
             ));
         }
@@ -371,7 +369,10 @@ async fn taming_attempt(
     let target = full_row_w02::named_creature(client, "modified gnarlhound")
         .await?
         .ok_or("step=taming-attempt observed=no-visible-modified-gnarlhound")?;
-    let before_use_sequence = use_taming_with_retry(async |retry| {
+    let refusal_detail_selected = client
+        .selected_capabilities()
+        .contains(&refusal_detail::CAPABILITY_REFUSAL_DETAIL_V1);
+    let before_use_sequence = use_taming_with_retry(refusal_detail_selected, async |retry| {
         if retry {
             client.service_liveness(Duration::from_millis(150)).await?;
         }
@@ -535,14 +536,27 @@ fn retry_taming_use(status: CommandStatus, result: world_object::UseDisposition)
 }
 
 async fn use_taming_with_retry(
+    refusal_detail_selected: bool,
     mut attempt: impl AsyncFnMut(
         bool,
     )
-        -> TestResult<(u64, CommandStatus, world_object::UseDisposition, u64)>,
+        -> TestResult<(u64, CommandStatus, Vec<u8>, u64)>,
 ) -> TestResult<u64> {
     for retry in 0..=3 {
-        let (before, status, disposition, sequence) = attempt(retry > 0).await?;
+        let (before, status, payload, sequence) = attempt(retry > 0).await?;
+        let (payload, detail) = if refusal_detail_selected {
+            refusal_detail::split_refusal_detail(&payload).map_err(|error| {
+                format!("step=taming-attempt observed=refusal-detail-decode-{error:?}")
+            })?
+        } else {
+            (payload.as_slice(), None)
+        };
+        let (disposition, _) = world_object::decode_use_result_with_gate(payload)
+            .map_err(|error| format!("step=taming-attempt observed=reply-decode-{error:?}"))?;
         if taming_committed(status, disposition) {
+            if detail.is_some() {
+                return Err("step=taming-attempt observed=refusal-detail-on-committed-use".into());
+            }
             return Ok(before);
         }
         if retry == 3 || !retry_taming_use(status, disposition) {
@@ -555,13 +569,28 @@ async fn use_taming_with_retry(
 #[tokio::test]
 async fn typed_too_far_reapproaches_the_same_taming_target() -> TestResult {
     use world_object::UseDisposition;
+    use oteryn_protocol_oteryn::refusal_detail::{
+        CAPABILITY_REFUSAL_DETAIL_V1, RefusalDetail, append_refusal_detail,
+    };
+    let mut too_far = world_object::encode_use_result_with_gate(UseDisposition::TooFar, None).map_err(|e| format!("{e:?}"))?;
+    append_refusal_detail(
+        &mut too_far,
+        &[CAPABILITY_REFUSAL_DETAIL_V1],
+        Some(RefusalDetail::TooFarAway),
+    );
+    let committed = world_object::encode_use_result_with_gate(UseDisposition::Committed, None).map_err(|e| format!("{e:?}"))?;
+    let mismatched_capability = use_taming_with_retry(false, async |_| {
+        Ok((10, CommandStatus::Accepted, too_far.clone(), 11))
+    })
+    .await;
+    assert!(mismatched_capability.is_err());
     let mut replies = [
-        (10, CommandStatus::Accepted, UseDisposition::TooFar, 11),
-        (15, CommandStatus::Accepted, UseDisposition::Committed, 16),
+        (10, CommandStatus::Accepted, too_far, 11),
+        (15, CommandStatus::Accepted, committed, 16),
     ]
     .into_iter();
     let mut retries = Vec::new();
-    let sequence = use_taming_with_retry(async |retry| {
+    let sequence = use_taming_with_retry(true, async |retry| {
         retries.push(retry);
         replies
             .next()

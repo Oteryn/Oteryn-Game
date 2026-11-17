@@ -212,11 +212,16 @@ fn carried_gold(client: &DevClientSession) -> TestResult<u64> {
 }
 
 fn utc_rashid_destination() -> TestResult<RashidDestination> {
+    Ok(utc_rashid_clock()?.0)
+}
+
+fn utc_rashid_clock() -> TestResult<(RashidDestination, Duration)> {
     let elapsed = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_err(|error| format!("step rashid-gate: server clock before epoch: {error}"))?;
-    Ok(oteryn_gameplay_entities::rashid_schedule::destination_at(
-        i64::try_from(elapsed.as_millis())?,
+    Ok((
+        oteryn_gameplay_entities::rashid_schedule::destination_at(i64::try_from(elapsed.as_millis())?),
+        Duration::new(elapsed.as_secs() % 86_400, elapsed.subsec_nanos()),
     ))
 }
 
@@ -341,7 +346,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .find(|npc| npc.key == "oteryn:npc.rashid")
         .ok_or("step rashid-gate: compiled world omitted Rashid")?;
     let (expected_rashid, (expected_rashid_position, trade)) =
-        observe_consistent_weekday(utc_rashid_destination, async |day| {
+        observe_consistent_weekday(utc_rashid_clock, async |day, settle| {
+            settle_rashid_rotation(&mut client, settle).await?;
             verify_rashid_trade(&mut client, world, authored_rashid, day, None).await
         })
         .await?;
@@ -367,7 +373,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("step fresh-admission: durable state mismatch position={:?}/{saved_position:?} gold={}/{}", fresh.world_spatial().actor_position, carried_gold(&fresh)?, saved_gold).into());
     }
-    let (_, (_, fresh_trade)) = observe_consistent_weekday(utc_rashid_destination, async |day| {
+    let (_, (_, fresh_trade)) = observe_consistent_weekday(utc_rashid_clock, async |day, settle| {
+        settle_rashid_rotation(&mut fresh, settle).await?;
         verify_rashid_trade(
             &mut fresh,
             world,
@@ -386,17 +393,37 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 type PlacementCoordinates = (u16, u16, i8);
 
 async fn observe_consistent_weekday<T>(
-    mut clock: impl FnMut() -> TestResult<RashidDestination>,
-    mut observe: impl AsyncFnMut(RashidDestination) -> TestResult<T>,
+    mut clock: impl FnMut() -> TestResult<(RashidDestination, Duration)>,
+    mut observe: impl AsyncFnMut(RashidDestination, Duration) -> TestResult<T>,
 ) -> TestResult<(RashidDestination, T)> {
     for _ in 0..2 {
-        let day = clock()?;
-        let observation = observe(day).await;
-        if day == clock()? {
+        // The Channel's source-item loop sleeps up to one second between passes.
+        // Allow a second pass before evaluating the newly active weekday.
+        let (day, since_midnight) = clock()?;
+        let settle = Duration::from_secs(2).saturating_sub(since_midnight);
+        let observation = observe(day, settle).await;
+        let observation = match observation {
+            Err(error)
+                if error.is::<oteryn_dev_client::SessionError>()
+                    || error.is::<oteryn_dev_client::DevClientError>() =>
+            {
+                return Err(error);
+            }
+            observation => observation,
+        };
+        if day == clock()?.0 {
             return Ok((day, observation?));
         }
     }
     Err("step rashid-gate: weekday changed during both observations".into())
+}
+
+async fn settle_rashid_rotation(client: &mut DevClientSession, duration: Duration) -> TestResult {
+    if !duration.is_zero() {
+        client.service_liveness(duration).await?;
+        client.take_events();
+    }
+    Ok(())
 }
 
 async fn verify_rashid_trade(
@@ -635,8 +662,8 @@ async fn rashid_observation_restarts_after_utc_rollover() -> TestResult {
     let mut clock = [before, after, after, after].into_iter();
     let mut observations = Vec::new();
     let (day, result) = observe_consistent_weekday(
-        || clock.next().ok_or_else(|| "fixture clock exhausted".into()),
-        async |day| {
+        || clock.next().map(|day| (day, Duration::from_secs(10))).ok_or_else(|| "fixture clock exhausted".into()),
+        async |day, _| {
             observations.push(day);
             if day == before {
                 return Err("old anchor saw a live actor after rollover".into());
@@ -647,5 +674,48 @@ async fn rashid_observation_restarts_after_utc_rollover() -> TestResult {
     .await?;
     assert_eq!(observations, [before, after]);
     assert_eq!((day, result), (after, "fresh trade"));
+    Ok(())
+}
+
+#[tokio::test]
+async fn rashid_audit_allows_owner_pass_after_midnight() -> TestResult {
+    use oteryn_gameplay_entities::rashid_schedule::destination_at;
+    let day = destination_at(86_400_025);
+    let (_, trade) = observe_consistent_weekday(
+        || Ok((day, Duration::from_millis(25))),
+        async |observed, settle| {
+            assert_eq!(observed, day);
+            if settle < Duration::from_millis(975) {
+                return Err("previous-day actor is still at the old anchor".into());
+            }
+            Ok("fresh trade")
+        },
+    )
+    .await?;
+    assert_eq!(trade, "fresh trade");
+    Ok(())
+}
+
+#[tokio::test]
+async fn rashid_rollover_preserves_the_original_transport_error() -> TestResult {
+    use oteryn_dev_client::SessionError;
+    use oteryn_gameplay_entities::rashid_schedule::destination_at;
+    let before = destination_at(86_399_999);
+    let after = destination_at(86_400_000);
+    let mut days = [before, after, after, after].into_iter();
+    let mut attempts = 0;
+    let result = observe_consistent_weekday(
+        || days.next().map(|day| (day, Duration::from_secs(10))).ok_or_else(|| "fixture clock exhausted".into()),
+        async |_, _| -> TestResult<()> {
+            attempts += 1;
+            Err(SessionError::from(std::io::Error::from(std::io::ErrorKind::UnexpectedEof)).into())
+        },
+    )
+    .await;
+    assert_eq!(attempts, 1);
+    let Err(error) = result else {
+        return Err("transport failure was discarded".into());
+    };
+    assert!(matches!(error.downcast_ref::<SessionError>(), Some(SessionError::Io(error)) if error.kind() == std::io::ErrorKind::UnexpectedEof));
     Ok(())
 }
