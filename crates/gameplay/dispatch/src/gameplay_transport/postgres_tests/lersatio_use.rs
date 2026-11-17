@@ -175,6 +175,33 @@ pub(super) async fn exercise(
             .map_err(super::fixture::debug)?;
         actor
     };
+    let present = {
+        let mut runtime = owner.runtime.lock().await;
+        let session = crate::foundation::GameSessionId::decode(&super::fixture::id(100))
+            .map_err(super::fixture::debug)?;
+        let reservation = runtime
+            .reserve_fresh_session(session)
+            .map_err(super::fixture::debug)?;
+        let actor = runtime
+            .commit_fresh_session(reservation)
+            .map_err(super::fixture::debug)?;
+        runtime
+            .initialize_pinned_test_position(actor, spectator_position)
+            .map_err(super::fixture::debug)?;
+        let mut states = owner.states.spell_states.lock().await;
+        let facts = states
+            .get(
+                &runtime,
+                admitted.runtime_actor.ok_or("actor")?,
+                admitted.game_session_id,
+            )
+            .ok_or("admitted player state")?
+            .character_facts();
+        states
+            .initialize(&runtime, actor, session, facts, (0, 0), owner.owner_now())
+            .ok_or("spectator player state")?;
+        actor
+    };
     let restored = object_target(
         owner,
         TilePos {
@@ -229,6 +256,22 @@ pub(super) async fn exercise(
             .position(),
         spectator_position,
         "monster spectators must remain in the source room"
+    );
+    assert_eq!(
+        runtime
+            .read_actor_position(present)
+            .map_err(super::fixture::debug)?
+            .position(),
+        destination,
+        "every player currently in the room transfers, including one sharing a monster tile"
+    );
+    assert_eq!(
+        runtime
+            .read_actor_position(departed)
+            .map_err(super::fixture::debug)?
+            .position(),
+        departed_position,
+        "a player who left the room must remain outside"
     );
     let census = runtime
         .positioned_melee_census()
