@@ -67,19 +67,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
-        let mut candidates = self.callback_content().iter().filter(|callback| {
+        let source_matches = self.callback_content().iter().any(|callback| {
             callback.selector.target_definition.is_some()
                 && callback
                     .item_on_target
                     .as_ref()
                     .is_some_and(|tool| tool.item == item.item.definition.production_key)
         });
-        let Some(callback) = candidates.next() else {
-            return Ok(None);
-        };
-        if candidates.next().is_some() {
-            return Ok(Some(UseOutcome::rejected()));
-        }
         let Some(ground) = self
             .root
             .read_item_loop_ground_for_scope(fence.runtime_scope)
@@ -88,10 +82,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .into_iter()
             .find(|entry| entry.item.item_instance_id == target)
         else {
-            return Ok(Some(UseOutcome::rejected()));
+            return Ok(source_matches.then(UseOutcome::rejected));
         };
-        if callback.selector.target_definition.as_deref()
-            != Some(ground.item.definition.production_key.as_str())
+        let mut candidates = self.callback_content().iter().filter(|callback| {
+            callback.selector.target_definition.as_deref()
+                == Some(ground.item.definition.production_key.as_str())
+        });
+        let Some(callback) = candidates.next() else {
+            return Ok(source_matches.then(UseOutcome::rejected));
+        };
+        if candidates.next().is_some()
+            || !callback
+                .item_on_target
+                .as_ref()
+                .is_some_and(|tool| tool.item == item.item.definition.production_key)
         {
             return Ok(Some(UseOutcome::rejected()));
         }
