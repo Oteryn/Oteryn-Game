@@ -1,5 +1,5 @@
 //! Frame-rate limits and the FPS/lag indicator from the retained performance preferences.
-use super::{owner::HostOwner, ui::Skins};
+use super::{game_ui::WorldRegion, owner::HostOwner, ui::Skins};
 use crate::play::PerformancePacer;
 use bevy::{prelude::*, window::PrimaryWindow};
 use oteryn_client_ui_bevy as source;
@@ -11,6 +11,7 @@ pub(super) struct Indicator;
 pub(super) fn install(app: &mut App) {
     app.init_non_send::<PerformancePacer>()
         .add_systems(Startup, setup.after(super::ui::setup))
+        .add_systems(Update, anchor)
         .add_systems(Last, pace);
 }
 
@@ -28,6 +29,23 @@ fn setup(mut commands: Commands, skins: Res<Skins>) {
         },
         ZIndex(30),
     ));
+}
+
+/// Keeps the indicator in the top-left corner of the map viewport, as the reference client
+/// draws it, rather than the corner of the OS window.
+fn anchor(
+    mut commands: Commands,
+    indicators: Query<(Entity, Option<&ChildOf>), With<Indicator>>,
+    regions: Query<Entity, With<WorldRegion>>,
+) {
+    let Some(region) = regions.iter().next() else {
+        return;
+    };
+    for (indicator, parent) in &indicators {
+        if parent.map(ChildOf::parent) != Some(region) {
+            commands.entity(region).add_child(indicator);
+        }
+    }
 }
 
 /// Waits out the rest of the current frame interval, then counts the frame and projects the
@@ -97,5 +115,33 @@ mod tests {
             .map(|(node, pickable)| (node.display, *pickable == Pickable::IGNORE))
             .collect();
         assert_eq!(found, vec![(Display::None, true)]);
+    }
+
+    #[test]
+    fn the_indicator_sits_in_the_map_viewport_corner() -> Result<(), Box<dyn std::error::Error>> {
+        let mut app = App::new();
+        app.insert_resource(Skins {
+            buttons: source::ButtonImages {
+                up: default(),
+                down: default(),
+            },
+            checked: default(),
+            unchecked: default(),
+            frame: default(),
+            inset: default(),
+            font: default(),
+        });
+        app.add_systems(Startup, setup).add_systems(Update, anchor);
+        let region = app.world_mut().spawn((WorldRegion, Node::default())).id();
+        app.update();
+        app.update();
+        let mut indicators = app
+            .world_mut()
+            .query_filtered::<(&ChildOf, &Node), With<Indicator>>();
+        let (parent, node) = indicators.single(app.world())?;
+        assert_eq!(parent.parent(), region);
+        assert_eq!(node.position_type, PositionType::Absolute);
+        assert_eq!((node.left, node.top), (px(4.), px(4.)));
+        Ok(())
     }
 }
