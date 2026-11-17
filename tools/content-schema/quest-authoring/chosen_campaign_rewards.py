@@ -1,8 +1,4 @@
-"""Generate the chosen campaign reward over the reused atomic NPC reward engine.
-
-The native coin owner represents 5,000 gold as 50 platinum coins (100 gold each).
-This preserves exact currency value without inventing an oversized coin stack.
-"""
+"""Generate itinerary completion without adding to source Grizzly task rewards."""
 import json
 from pathlib import Path
 
@@ -26,26 +22,22 @@ def generate():
         (650, ["Hydra"]), (1, ["The Many"]),
     ]:
         raise ValueError("campaign rule amendment required for changed chosen stages")
-    experience = next(reward["count"] for reward in recipe["reward_intents"] if reward["kind"] == "experience")
-    gold = next(reward["count"] for reward in recipe["reward_intents"] if reward["name"] == "Gold Coin")
-    if experience != 10000 or gold != 5000:
-        raise ValueError("campaign reward amendment required for changed chosen values")
-    if gold % 100 or not 0 < gold // 100 <= 100:
-        raise ValueError("campaign currency requires a supported exact denomination plan")
+    # The historical recipe labels its extra XP and gold as balancing choices.
+    # Keep its source facts, but do not issue those authored bonuses at runtime.
     callback = {
         "key": "oteryn:quest-reward/chosen/hunting-campaign",
         "quest": "oteryn:quest.killing_in_the_name_of_quest",
         "npc": "oteryn:npc.grizzly_adams",
         "keywords": ["campaign"], "topic": 0, "next_topic": 0,
-        "completes": True, "experience": experience,
+        "completes": True,
         "storage": [{"track": "oteryn:quest-progress/chosen/killing_in_the_name_of/phase",
                      "minimum": 10, "maximum": 10, "set": 11}],
         "required_receipts": [{'transition': 'oteryn:quest-transition/grizzly/report-boss-1', 'track': 'oteryn:quest-progress/storage/34100', 'value': 3}, {'transition': 'oteryn:quest-transition/grizzly/report-boss-3', 'track': 'oteryn:quest-progress/storage/34102', 'value': 3}, {'transition': 'oteryn:quest-transition/grizzly/report-boss-19', 'track': 'oteryn:quest-progress/storage/34118', 'value': 3}],
-        "take": [], "give": {"item": "oteryn:item.tibia.i3035", "count": gold // 100, "contents": []},
+        "take": [], "give": None,
         "outfit": None, "achievement": None,
-        "reply": ["Your hunting campaign is complete. You receive 10,000 experience and 5,000 gold."],
+        "reply": ["Your hunting campaign is complete."],
         "sources": [
-            "OTERYN_AUTHORED_APPROXIMATION: chosen Killing in the Name of... Quest recipe, stages s1-s11; exact currency value normalized by the native coin owner.",
+            "OTERYN_AUTHORED_APPROXIMATION: chosen Killing in the Name of... Quest itinerary, stages s1-s11; completion adds no XP or items to the source task and boss rewards.",
             "content/quests/definitions/quests-00100-00199.json#/records/64/definition/oteryn_recipe/payload/recipe",
             "https://tibia.fandom.com/index.php?curid=36695&oldid=843864",
         ]
