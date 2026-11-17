@@ -3825,10 +3825,10 @@ async fn boot_and_serve(
         )
         .map_err(|_| BootError::Bind("control socket mode"))?;
     }
-    event(&format!(
-        "event=listener_bound address={}",
-        config.listener.address
-    ));
+    let bound_address = listener
+        .local_addr()
+        .map_err(|_| BootError::Bind("gameplay listener address"))?;
+    event(&format!("event=listener_bound address={bound_address}"));
     let readiness = Readiness {
         root,
         proof: &proof,

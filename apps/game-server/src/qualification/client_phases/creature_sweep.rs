@@ -200,6 +200,7 @@ fn failure(step: &'static str, cause: &'static str, detail: impl std::fmt::Displ
 struct Definition {
     name: String,
     experience: u64,
+    reward_boss: bool,
 }
 
 struct LootEntry {
@@ -263,6 +264,9 @@ fn definitions(root: &Path) -> TestResult<BTreeMap<String, (Definition, Option<S
                 Definition {
                     name: name.to_owned(),
                     experience: profile["experience"].as_u64().unwrap_or(0),
+                    reward_boss: profile["details"]["system_eligibility"]["reward_boss"]
+                        .as_bool()
+                        .unwrap_or(false),
                 },
                 record["definition"]["loot"]["key"]
                     .as_str()
@@ -422,6 +426,7 @@ pub(super) async fn run(
             definition: Some(Definition {
                 name: definition.name.clone(),
                 experience: definition.experience,
+                reward_boss: definition.reward_boss,
             }),
             key: (*key).clone(),
             loot,
@@ -656,7 +661,7 @@ async fn hunt(
     let client = session
         .as_mut()
         .ok_or_else(|| failure("spawn", "precondition", "session absent after setup"))?;
-    let (xp_before, level) = read_stats(client)
+    let (xp_before, level, _) = read_stats(client)
         .await
         .map_err(|error| failure("spawn", "precondition", format!("stats:{error}")))?;
 
@@ -835,8 +840,11 @@ async fn hunt(
             ),
         ));
     }
-    let (dead, death_stamina, _) =
-        receipt.map_err(|error| failure("kill", "unconfirmed_death", error))?;
+    let HuntDeath {
+        actor: dead,
+        stamina: death_stamina,
+        ..
+    } = receipt.map_err(|error| failure("kill", "unconfirmed_death", error))?;
     let corpse_identity = dead.corpse_identity();
     rows.pass(
         "kill",
@@ -886,7 +894,7 @@ async fn hunt(
     let expected = u64::try_from(expected).map_err(|error| failure("xp", "content", error))?;
     let xp_deadline = tokio::time::Instant::now() + Duration::from_secs(20);
     let gained = loop {
-        let (xp, _) = read_stats(client)
+        let (xp, _, _) = read_stats(client)
             .await
             .map_err(|error| failure("xp", "protocol", error))?;
         let gained = xp.saturating_sub(xp_before);
@@ -945,32 +953,30 @@ async fn hunt(
         return Ok(());
     };
 
-    // The corpse may be empty only when the pinned base roll has no output
-    // for this death or the captured stamina suppresses hunting loot.
-    let expected_nonempty = match &species.loot {
-        LootBinding::Table(entries) if !entries.is_empty() => {
-            seeded_loot_nonempty(rewards, &species.key, dead, clients, death_stamina)
+    let expected = match &species.loot {
+        LootBinding::Table(entries)
+            if !entries.is_empty()
+                && expects_physical_loot(definition.reward_boss, death_stamina) =>
+        {
+            seeded_loot(rewards, &species.key, dead, clients, items)
                 .map_err(|error| failure("loot", "content", error))?
         }
-        _ => false,
+        _ => BTreeMap::new(),
     };
     match open_corpse(client, handle).await {
         Err(error) => rows.fail("loot", "protocol", &error.to_string()),
-        Ok(got) => judge_loot(rows, items, &species.loot, &got, expected_nonempty),
+        Ok(got) => judge_loot(rows, items, &species.loot, &got, &expected),
     }
     Ok(())
 }
 
-fn seeded_loot_nonempty(
+fn seeded_loot(
     rewards: &CreatureRewardTable,
     species: &str,
     dead: crate::foundation::ExactActorRef,
     clients: &SeamClients<'_>,
-    stamina: u16,
-) -> TestResult<bool> {
-    if !oteryn_gameplay_characters::stamina::hunting_loot_allowed(stamina) {
-        return Ok(false);
-    }
+    items: &crate::content::item_ref::ItemDefinitionIndex,
+) -> TestResult<BTreeMap<std::num::NonZeroU32, u64>> {
     let row = rewards
         .row(species)
         .map_err(|error| format!("pinned loot row: {error:?}"))?;
@@ -985,12 +991,20 @@ fn seeded_loot_nonempty(
         dead.actor_local_id(),
         dead.actor_local_generation(),
     );
-    Ok(
-        !crate::combat::plan_creature_loot(seed, reference, &row.loot_table)
-            .map_err(|error| format!("pinned loot draw: {error:?}"))?
-            .entries
-            .is_empty(),
-    )
+    let plan = crate::combat::plan_creature_loot(seed, reference, &row.loot_table)
+        .map_err(|error| format!("pinned loot draw: {error:?}"))?;
+    let mut expected = BTreeMap::new();
+    for entry in plan.entries.iter().filter(|entry| entry.parent.is_none()) {
+        let reference = items
+            .definition_ref(
+                &entry.item.family,
+                &entry.item.production_key,
+                &entry.item.revision_ref,
+            )
+            .ok_or_else(|| format!("unmapped pinned loot Item {}", entry.item.production_key))?;
+        *expected.entry(reference).or_default() += u64::from(entry.quantity);
+    }
+    Ok(expected)
 }
 
 // Each entry can miss, or contribute any count in its own interval. Merge the
@@ -1026,7 +1040,7 @@ fn judge_loot(
     items: &crate::content::item_ref::ItemDefinitionIndex,
     binding: &LootBinding,
     got: &BTreeMap<std::num::NonZeroU32, u64>,
-    expected_nonempty: bool,
+    expected: &BTreeMap<std::num::NonZeroU32, u64>,
 ) {
     let entries = match binding {
         LootBinding::Missing(table) => {
@@ -1088,14 +1102,6 @@ fn judge_loot(
             .or_default()
             .push((entry.min, entry.max));
     }
-    if got.is_empty() && expected_nonempty {
-        rows.fail(
-            "loot",
-            "missing_items",
-            "the seeded loot roll produced items but the corpse is empty",
-        );
-        return;
-    }
     for (reference, count) in got {
         match allowed.get(reference) {
             None => {
@@ -1118,6 +1124,14 @@ fn judge_loot(
             }
             Some(_) => {}
         }
+    }
+    if !matches_seeded_loot(got, expected) {
+        rows.fail(
+            "loot",
+            "seed_mismatch",
+            &format!("expected={expected:?};observed={got:?}"),
+        );
+        return;
     }
     rows.pass(
         "loot",
@@ -1167,23 +1181,67 @@ async fn open_corpse(
     Ok(got)
 }
 
+fn fixture_ready(_level: u32, classed: bool, equipped_and_supplied: bool) -> bool {
+    classed && equipped_and_supplied
+}
+
+fn expects_physical_loot(private_reward: bool, stamina: u16) -> bool {
+    !private_reward && oteryn_gameplay_characters::stamina::hunting_loot_allowed(stamina)
+}
+
+fn matches_seeded_loot<K: Ord>(got: &BTreeMap<K, u64>, expected: &BTreeMap<K, u64>) -> bool {
+    got == expected
+}
+
 /// Provision the level-100 axe build once (the fenced fixture command), then reuse it.
 async fn prepare_player(
     clients: &SeamClients<'_>,
     session: &mut Option<DevClientSession>,
 ) -> TestResult {
     let client = session.as_mut().ok_or("session absent")?;
-    let (_, level) = read_stats(client).await?;
-    if level >= SWEEP_LEVEL {
+    let (_, level, vocation) = read_stats(client).await?;
+    let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sorcerer".into());
+    let expected = character::vocation_id(if profile == "explorer" {
+        "knight"
+    } else {
+        &profile
+    });
+    let classed = vocation.is_some() && vocation == expected;
+    let items = provisioning::item_index()?;
+    let axe = provisioning::item_reference(&items, 3276)?;
+    let rope = provisioning::item_reference(&items, 3003)?;
+    let shovel = provisioning::item_reference(&items, 3457)?;
+    let supplied = client.inventory().is_some_and(|inventory| {
+        inventory
+            .equipment
+            .iter()
+            .any(|slot| slot.item.item_definition_ref == axe && slot.item.count.get() == 1)
+            && [rope, shovel].iter().all(|reference| {
+                inventory
+                    .entries
+                    .iter()
+                    .chain(inventory.equipment.iter().map(|slot| &slot.item))
+                    .any(|item| item.item_definition_ref == *reference && item.count.get() == 1)
+            })
+    });
+    if fixture_ready(level, classed, supplied) {
         return Ok(());
     }
     let fresh = session.take().ok_or("session absent")?;
-    *session = Some(provisioning::provision_fixture(fresh, clients, SWEEP_CHARACTER).await?);
+    *session = Some(
+        provisioning::provision_fixture(
+            fresh,
+            clients,
+            SWEEP_CHARACTER,
+            if classed { level } else { SWEEP_LEVEL },
+        )
+        .await?,
+    );
     Ok(())
 }
 
 /// Experience and level from the Cyclopedia GeneralStats tab (the same panel MP09 reads).
-async fn read_stats(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
+async fn read_stats(client: &mut DevClientSession) -> TestResult<(u64, u32, Option<u8>)> {
     let mut view = panel::CyclopediaCharacterPanel {
         selected: true,
         limit: 50,
@@ -1208,7 +1266,7 @@ async fn read_stats(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
     let stats = view
         .general
         .ok_or_else(|| format!("GeneralStats absent;reply={reply:?}"))?;
-    Ok((stats.experience, stats.level))
+    Ok((stats.experience, stats.level, view.vocation_id))
 }
 
 /// Logout with the combat lock honoured: wait it out with keep-alive Turns, never clear it.
@@ -1282,10 +1340,23 @@ mod evidence_tests {
             max: 1,
         }]);
         let mut missing = Rows::new("rat");
-        judge_loot(&mut missing, &items, &binding, &BTreeMap::new(), true);
+        let item = item_ref(&items, "oteryn:item.tibia.i100").ok_or("test Item reference")?;
+        judge_loot(
+            &mut missing,
+            &items,
+            &binding,
+            &BTreeMap::new(),
+            &BTreeMap::from([(item, 1)]),
+        );
         assert_eq!(missing.counts.fail, 1);
         let mut missed_roll = Rows::new("rat");
-        judge_loot(&mut missed_roll, &items, &binding, &BTreeMap::new(), false);
+        judge_loot(
+            &mut missed_roll,
+            &items,
+            &binding,
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+        );
         assert_eq!(missed_roll.counts.pass, 1);
         Ok(())
     }
@@ -1306,7 +1377,7 @@ mod evidence_tests {
             &items,
             &LootBinding::Table(vec![entry("oteryn:item.tibia.i101", 1, 1)]),
             &BTreeMap::new(),
-            false,
+            &BTreeMap::new(),
         );
         assert_eq!(unmapped.counts.fail, 1);
 
@@ -1320,10 +1391,35 @@ mod evidence_tests {
                 entry("oteryn:item.tibia.i100", 4, 4),
             ]),
             &BTreeMap::from([(item, 2)]),
-            false,
+            &BTreeMap::new(),
         );
         assert_eq!(wrong_count.counts.fail, 1);
         Ok(())
+    }
+
+    #[test]
+    fn delta_sweep_resumes_incomplete_build_and_reuses_equipped_class_after_death() {
+        assert!(!fixture_ready(100, false, false));
+        assert!(!fixture_ready(100, true, false));
+        assert!(fixture_ready(99, true, true));
+    }
+
+    #[test]
+    fn delta_sweep_checks_only_physical_seeded_loot() {
+        assert!(!expects_physical_loot(true, 2520));
+        assert!(!expects_physical_loot(false, 0));
+    }
+
+    #[test]
+    fn delta_sweep_rejects_partial_substitute_and_suppressed_loot() {
+        let expected = BTreeMap::from([(1, 2), (2, 3)]);
+        assert!(!matches_seeded_loot(&BTreeMap::from([(1, 2)]), &expected));
+        assert!(!matches_seeded_loot(
+            &BTreeMap::from([(1, 2), (3, 3)]),
+            &expected
+        ));
+        assert!(!matches_seeded_loot(&expected, &BTreeMap::new()));
+        assert!(matches_seeded_loot(&expected, &expected));
     }
 
     #[test]

@@ -61,12 +61,11 @@ readonly SERVICE_USER BASE
 # The Open PvP node has its own listener. Allow an override for parallel stacks.
 readonly PVP_BASE="$BASE/pvp"
 node_boot_game_port="${NODE_BOOT_GAME_PORT:-17181}"
-node_boot_pvp_default=$((node_boot_game_port + 1))
-if (( node_boot_pvp_default > 65535 )); then
-  node_boot_pvp_default=$((node_boot_game_port - 1))
-fi
-PVP_GAME_PORT="${NODE_BOOT_PVP_GAME_PORT:-$node_boot_pvp_default}"
-if (( PVP_GAME_PORT == node_boot_game_port )); then
+# Port zero lets the real listener bind atomically and report its assigned port.
+PVP_GAME_PORT="${NODE_BOOT_PVP_GAME_PORT:-0}"
+if [[ -n "${NODE_BOOT_PVP_GAME_PORT+x}" ]] && (( PVP_GAME_PORT == node_boot_game_port
+  || PVP_GAME_PORT == ${NODE_BOOT_PG_PORT:-15433}
+  || PVP_GAME_PORT == ${NODE_BOOT_PLATFORM_PORT:-18463} )); then
   echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_port_node_boot_pvp_game_port'; exit 2
 fi
 # NODE_BOOT_KEEP_STACK=1 leaves the stack up after the seam stage; NODE_BOOT_REUSE_STACK=1
@@ -82,39 +81,6 @@ case "$NODE_BOOT_KEEP_STACK/$NODE_BOOT_REUSE_STACK" in
   *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_stack_reuse_mode'; exit 2 ;;
 esac
 
-if [[ -z "${NODE_BOOT_PVP_GAME_PORT+x}" && "$NODE_BOOT_REUSE_STACK" == 0 \
-  && "${NODE_BOOT_WORLD:-1}/${NODE_BOOT_SPELLS:-0}/${NODE_BOOT_LIFECYCLE:-}" == 1/0/ ]]; then
-  PVP_GAME_PORT="$(python3 - "$PVP_GAME_PORT" "$node_boot_game_port" \
-    "${NODE_BOOT_PG_PORT:-15433}" "${NODE_BOOT_PLATFORM_PORT:-18463}" <<'PY_PVP_PORT'
-from contextlib import ExitStack
-import errno
-import socket
-import sys
-
-preferred, *reserved = map(int, sys.argv[1:])
-if preferred not in reserved:
-    with socket.socket() as probe:
-        try:
-            probe.bind(("127.0.0.1", preferred))
-        except OSError as error:
-            if error.errno != errno.EADDRINUSE:
-                raise
-        else:
-            print(preferred)
-            sys.exit(0)
-
-# Hold rejected ephemeral candidates until selection so the kernel cannot return one again.
-with ExitStack() as probes:
-    while True:
-        probe = probes.enter_context(socket.socket())
-        probe.bind(("127.0.0.1", 0))
-        port = probe.getsockname()[1]
-        if port not in reserved:
-            print(port)
-            break
-PY_PVP_PORT
-)"
-fi
 
 GAME_SOURCE="$(git rev-parse --show-toplevel)"
 # The separately pinned portal-rs lane owns only Platform lifecycle and its stages.
@@ -238,16 +204,24 @@ if [[ "$NODE_BOOT_REUSE_STACK" != 0 ]]; then
     echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_mode_mismatch'; exit 2
   fi
   if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
-    e2e_groups="${NODE_BOOT_E2E_ONLY:-}"
-    e2e_groups="${e2e_groups//[[:space:]]/}"
-    if [[ "$NODE_BOOT_WORLD" == 1 && ( -z "$e2e_groups" || ",$e2e_groups," == *,mp,* ) ]]; then
+    if [[ "$NODE_BOOT_WORLD" == 1 ]] && ! python3 - "${NODE_BOOT_E2E_ONLY:-}" <<'PY_REUSED_GROUPS'
+import os
+import sys
+
+try:
+    selection = os.fsencode(sys.argv[1]).decode("utf-8").strip()
+except UnicodeDecodeError:
+    sys.exit(1)
+sys.exit(0 if selection and "mp" not in (group.strip() for group in selection.split(",")) else 1)
+PY_REUSED_GROUPS
+    then
       echo 'NODE_BOOT_RESULT=BLOCKED reason=mp_requires_fresh_stack'; exit 2
     fi
     if [[ "$(docker inspect -f '{{.State.Running}}' "$PG_CONTAINER" 2>/dev/null)" != true ]] \
       || ! sudo kill -0 "$NODE_PID" 2>/dev/null || ! sudo test -S "$BASE/run/control.sock"; then
       echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_not_running'; exit 2
     fi
-    if [[ -n "${NODE_BOOT_PVP_GAME_PORT+x}" && "${kept_pvp_port:-$node_boot_pvp_default}" != "$PVP_GAME_PORT" ]]; then
+    if [[ -n "${NODE_BOOT_PVP_GAME_PORT+x}" && "${kept_pvp_port:-0}" != "$PVP_GAME_PORT" ]]; then
       echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_mode_mismatch'; exit 2
     fi
     PVP_GAME_PORT="${kept_pvp_port:-$PVP_GAME_PORT}"
@@ -1376,6 +1350,13 @@ SQL
   pvp_ops assignment assign --request assign-pvp.json --world "$PVP_WORLD_ID" --channel "$PVP_CHANNEL_ID" --node-id "$node" --revision "$revision"
   pvp_await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   pvp_await_log "event=readiness .*ready=true" 60
+  local bound_address
+  bound_address="$(sed -nE 's/.*event=listener_bound address=([^ ]+).*/\1/p' "$WORK/pvp-node.log" | tail -n 1)"
+  if [[ ! "$bound_address" =~ ^127\.0\.0\.1:([1-9][0-9]{3,4})$ ]] || (( BASH_REMATCH[1] > 65535 )); then
+    fail "PvP node did not report a valid bound listener"; return 1
+  fi
+  PVP_GAME_PORT="${BASH_REMATCH[1]}"
+  remember PVP_GAME_PORT "$PVP_GAME_PORT"
   local epoch_result
   epoch_result="$({
     echo 'PREPARE node_boot_world_epoch(UUID, UUID, TEXT) AS'
@@ -1448,6 +1429,7 @@ elif [[ ${STATUS[node_assigned_ready]:-PASS} == PASS ]]; then
     # The node was started inside a stage subshell; its pid is in $VARS.
     # shellcheck source=/dev/null
     NODE_PID="$(source "$VARS"; printf '%s' "${NODE_PID:-}")"
+    PVP_GAME_PORT="$(source "$VARS"; printf '%s' "$PVP_GAME_PORT")"
     [[ -z "$NODE_PID" ]] || save_reuse_state
   fi
   ORDER+=(stack_kept)

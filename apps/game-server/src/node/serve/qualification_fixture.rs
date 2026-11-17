@@ -12,7 +12,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let session = parse_operation_id(session.as_bytes())?;
     matches!(
         profile,
-        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk"
+        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "knight-underlevel"
     )
     .then_some((session, profile))
 }
@@ -264,32 +264,68 @@ async fn place(
         .map_err(|_| wild_spawn::SpawnRefusal::SessionUnknown)?;
     let source = wild_spawn::next_command_source()?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
-    let mut holder = qualification_build::retry_holder(
-        Some(root),
-        deadline,
-        |error| matches!(error, DurabilityError::RootUnavailable),
-        async || root.try_acquire_ready(),
-    )
-    .await
-    .map_err(|error| fence(format!("qualification spawn holder: {error:?}")))?;
+    let mut runtime = owners.runtime.lock().await;
+    let plan =
+        wild_spawn::snapshot_adjacent_spawn(owners.room, native, &mut runtime, key, session)?;
+    drop(runtime);
+    let acquire_holder = async || {
+        qualification_build::retry_holder(
+            Some(root),
+            deadline,
+            |error| matches!(error, DurabilityError::RootUnavailable),
+            async || root.try_acquire_ready(),
+        )
+        .await
+        .map_err(|error| fence(format!("qualification spawn holder: {error:?}")))
+    };
+    let mut holder = acquire_holder().await?;
     let mut tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(
         &mut holder,
         deadline.into_std(),
     )
     .await
     .map_err(|error| fence(format!("qualification spawn transaction: {error:?}")))?;
-    let mut runtime = owners.runtime.lock().await;
-    let plan =
-        wild_spawn::snapshot_adjacent_spawn(owners.room, native, &mut runtime, key, session)?;
-    drop(runtime);
     let eligible = wild_spawn::read_spawn_tiles(&mut tx, root, authority, proof, &plan).await?;
     tx.commit()
         .await
         .map_err(|error| fence(format!("qualification spawn commit: {error:?}")))?;
-    drop(holder);
-    // The durable fence is committed. Recheck the exact runtime and session before publication.
-    let mut runtime = owners.runtime.lock().await;
-    wild_spawn::publish_spawn(&mut runtime, plan, source, key, &eligible)
+
+    loop {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(fence("qualification spawn publication deadline".into()));
+        }
+        // Keep the same scope advisory lock used by Ground writers through
+        // publication. The transaction only reads and will be rolled back.
+        let mut collision_guard =
+            crate::durability::spell_item_transaction::begin_spell_owner_transaction(
+                &mut holder,
+                deadline.into_std(),
+            )
+            .await
+            .map_err(|error| fence(format!("qualification collision guard: {error:?}")))?;
+        let fresh =
+            wild_spawn::read_spawn_tiles(&mut collision_guard, root, authority, proof, &plan)
+                .await?;
+        if let Ok(mut runtime) = owners.runtime.try_lock() {
+            let eligible = publication_candidates(fresh, eligible);
+            return wild_spawn::publish_spawn(&mut runtime, plan, source, key, &eligible);
+        }
+        // Gameplay can own the runtime while waiting on Ground. Release the
+        // read guard and holder before waiting, then refresh the evidence again.
+        collision_guard
+            .rollback()
+            .await
+            .map_err(|error| fence(format!("qualification collision release: {error:?}")))?;
+        drop(holder);
+        drop(owners.runtime.lock().await);
+        holder = acquire_holder().await?;
+    }
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+fn publication_candidates<T: PartialEq>(fresh: Vec<T>, mut committed: Vec<T>) -> Vec<T> {
+    committed.retain(|candidate| fresh.contains(candidate));
+    committed
 }
 
 /// This fixture emits only classified errors/static context, never request bytes or node proof.
@@ -382,11 +418,12 @@ async fn prepare_build(
         .ok_or("qualification progression unavailable")?;
     let policy = progression.policy_for(profile_revision, ruleset_revision, content_revision)?;
     let context = policy.context.clone();
-    let vocation = if profile == "explorer" {
-        "knight"
-    } else {
-        profile
+    let (vocation, level) = match profile {
+        "knight-underlevel" => ("knight", 66),
+        "explorer" => ("knight", 100),
+        _ => (profile, 100),
     };
+    let occurrence_profile = if level == 100 { vocation } else { profile };
     qualification_build::prepare_character_with_policy_until(
         root,
         authority,
@@ -394,10 +431,14 @@ async fn prepare_build(
         &current,
         qualification_build::QualificationBuildSpec {
             vocation,
-            level: 100,
+            level,
             context,
-            xp_occurrence: fixture_occurrence(character.as_bytes(), vocation, b"xp"),
-            build_occurrence: fixture_occurrence(character.as_bytes(), vocation, b"vocation"),
+            xp_occurrence: fixture_occurrence(character.as_bytes(), occurrence_profile, b"xp"),
+            build_occurrence: fixture_occurrence(
+                character.as_bytes(),
+                occurrence_profile,
+                b"vocation",
+            ),
         },
         policy,
         deadline,
@@ -596,6 +637,12 @@ mod tests {
             .ok_or("missing durable read")?;
         assert!(release < read);
         Ok(())
+    }
+
+    #[test]
+    fn delta_spawn_drops_tiles_blocked_since_the_fence_commit() {
+        assert!(publication_candidates(Vec::<u8>::new(), vec![1]).is_empty());
+        assert_eq!(publication_candidates(vec![2], vec![1, 2]), vec![2]);
     }
 
     #[test]

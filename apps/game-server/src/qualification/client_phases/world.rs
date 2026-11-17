@@ -567,6 +567,13 @@ fn town_route_retry_delay(
         .then_some(Duration::from_millis(500))
 }
 
+struct HuntDeath {
+    actor: crate::foundation::ExactActorRef,
+    stamina: u16,
+    shared: bool,
+    awards: BTreeMap<[u8; 16], u64>,
+}
+
 /// Match the durable Channel death key to the exact wire incarnation before deriving
 /// its corpse identity. Creature type and a neighbouring floor tile are insufficient.
 async fn committed_hunt_death(
@@ -576,7 +583,7 @@ async fn committed_hunt_death(
     key: &str,
     target: oteryn_dev_client::EntityRef,
     deadline: tokio::time::Instant,
-) -> TestResult<(crate::foundation::ExactActorRef, u16, bool)> {
+) -> TestResult<HuntDeath> {
     use crate::foundation::{
         ActorLocalGeneration, ActorLocalId, ActorRef, ExactActorRef, ScopeOwnershipGeneration,
     };
@@ -593,23 +600,31 @@ async fn committed_hunt_death(
     tokio::time::timeout_at(deadline, async {
         let mut database = sqlx::PgConnection::connect(clients.url).await?;
         loop {
-            let actor_slots: Vec<(Vec<u8>, i32, bool)> = sqlx::query_as(
-                "SELECT substring(r.death_key FROM 41 FOR 4), m.stamina_minutes, r.shared
+            // The Channel death key is the exact byte sequence hashed by
+            // ExactActorRef::placement_identity after its domain separator.
+            let row: Option<(Vec<u8>, i32, bool)> = sqlx::query_as(
+                "SELECT r.death_key, m.stamina_minutes, r.shared
                  FROM game_party_kill_xp_receipts r JOIN game_party_kill_xp_members m
                  ON m.death_key=r.death_key AND m.character_id=r.principal_id
                  WHERE ($1::bytea IS NULL OR r.principal_id=encode($1,'hex')::uuid)
                  AND r.creature_key=$2
                  AND octet_length(r.death_key)=52 AND substring(r.death_key FROM 1 FOR 40)=$3
-                 AND substring(r.death_key FROM 45 FOR 8)=$4",
+                 AND substring(r.death_key FROM 45 FOR 8)=$4
+                 AND substring(sha256(convert_to('oteryn:runtime-player-placement:v1','UTF8')
+                     || r.death_key) FROM 1 FOR 16)=$5",
             )
             .bind(principal.as_ref().map(|id| id.as_slice()))
             .bind(key)
             .bind(&prefix)
             .bind(target.generation.to_be_bytes().as_slice())
-            .fetch_all(&mut database)
+            .bind(target.identity.as_slice())
+            .fetch_optional(&mut database)
             .await?;
-            for (slot, stamina, shared) in actor_slots {
-                let slot = <[u8; 4]>::try_from(slot).map_err(|_| "invalid death actor slot")?;
+            if let Some((death_key, stamina, shared)) = row {
+                let slot = death_key
+                    .get(40..44)
+                    .ok_or("missing death actor slot")?
+                    .try_into()?;
                 let actor = ExactActorRef(ActorRef::from_owner_parts(
                     world,
                     channel,
@@ -617,9 +632,30 @@ async fn committed_hunt_death(
                     ActorLocalId(u32::from_be_bytes(slot)),
                     ActorLocalGeneration(target.generation),
                 ));
-                if actor.placement_identity() == target.identity {
-                    return TestResult::Ok((actor, u16::try_from(stamina)?, shared));
+                if actor.placement_identity() != target.identity {
+                    return Err("durable death key did not match target".into());
                 }
+                let awards: Vec<(Vec<u8>, i64)> = sqlx::query_as(
+                    "SELECT uuid_send(character_id), xp_awarded FROM game_party_kill_xp_members
+                     WHERE death_key=$1 AND xp_awarded>0 LIMIT 51",
+                )
+                .bind(death_key)
+                .fetch_all(&mut database)
+                .await?;
+                if awards.len() > 50 {
+                    return Err("too many hunt award members".into());
+                }
+                return Ok(HuntDeath {
+                    actor,
+                    stamina: u16::try_from(stamina)?,
+                    shared,
+                    awards: awards
+                        .into_iter()
+                        .map(|(id, xp)| {
+                            TestResult::Ok((id.as_slice().try_into()?, u64::try_from(xp)?))
+                        })
+                        .collect::<TestResult<_>>()?,
+                });
             }
             client.service_liveness(Duration::from_millis(100)).await?;
             client.take_events();

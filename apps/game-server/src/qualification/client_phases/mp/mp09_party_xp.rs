@@ -3,14 +3,13 @@
 //! base XP per target is the authored creature `experience` in content/creatures/definitions (see HUNT_TARGET);
 //! src/creatures/players/grouping/party.cpp:548-594 (level, distance, activity);
 //! config.lua.dist:302 (share range multiplier 1.5, hence the 2/3 level rule).
-use super::observations::{analyser_fact, committed_swing};
+use super::observations::committed_swing;
 use super::*;
 use bots::{Bot, attack_target, party};
 use oteryn_dev_client::{
     EntityDetail, EntityKind, EntityRef, SessionEvent, client_ui::cyclopedia_character as panel,
 };
 use oteryn_protocol_oteryn::{
-    analyser::AnalyserFact,
     attack::{ChaseMode, FightMode, FightModes},
     cyclopedia_character as character,
     party::PartyIntent,
@@ -23,6 +22,7 @@ const HUNT_TARGET: (&str, &str, u64) = ("oteryn:creature.bonelord", "bonelord", 
 
 // A low-armour hostile creature lets the level-one fixture register real party activity.
 const ELIGIBILITY_TARGET: (&str, u64) = ("oteryn:creature.cave_rat", 10);
+const LEVEL_PROBE: (&str, u64, u64) = ("oteryn:creature.crazed_beggar", 35, 100);
 
 const XP_SOURCE: &str = "crates/gameplay/social-rules/src/shared_experience_split.rs:122";
 
@@ -61,7 +61,7 @@ pub(super) async fn run(
                 (core, 0, None),
                 (packets, 0, None),
                 (packets, 1, None),
-                (core, 1, None),
+                (core, 1, Some("knight-underlevel")),
             ])
             .await;
             (
@@ -115,13 +115,21 @@ pub(super) async fn run(
         )
     };
     let mut earned = None;
+    let mut activity_started = None;
     if enabled {
         let encounter =
             tokio::time::timeout(Duration::from_secs(240), encounter(&mut bots, world)).await;
         let result = match encounter { Ok(result) => result, Err(_) => Err("encounter deadline;source:crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs:1905".into()) };
         match result {
-            Ok((start, end, hits, pool)) => {
+            Ok(HuntResult {
+                start,
+                end,
+                hits,
+                pool,
+                started,
+            }) => {
                 earned = Some(end);
+                activity_started = Some(started);
                 check(
                     "all-contributed-kill",
                     Ok(format!(
@@ -176,8 +184,15 @@ pub(super) async fn run(
             check(&format!("stop-combat-{index}"), result, &mut failures);
         }
     }
-    if earned.is_some() {
-        let result = bounded("distance-inactive", 180, out_of_range(&mut bots, world)).await;
+    if let Some(started) = activity_started {
+        let deadline = started + Duration::from_secs(120);
+        verdict::Harness::global().bounded_wait(deadline, "MP09-distance-activity");
+        let observation = out_of_range(&mut bots, world, started);
+        let result = match tokio::time::timeout_at(deadline, observation).await {
+            Ok(result) => result,
+            Err(_) => Err("distance proof exceeded original damage activity window".into()),
+        };
+
         check(
             "distance-inactive",
             result.map(|(detail, after)| {
@@ -306,18 +321,6 @@ fn native_three_vocation_share(pool: u64) -> u64 {
     (pool * 160).div_ceil(300)
 }
 
-async fn bounded<T>(
-    stage: &str,
-    seconds: u64,
-    future: impl std::future::Future<Output = TestResult<T>>,
-) -> TestResult<T> {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(seconds);
-    verdict::Harness::global().bounded_wait(deadline, "MP09-phase");
-    tokio::time::timeout_at(deadline, future)
-        .await
-        .map_err(|_| format!("MP09 {stage} deadline;source:{}:{}", file!(), line!()))?
-}
-
 async fn stats(bot: &mut Bot<'_, '_>) -> TestResult<(u64, u32, Option<u8>)> {
     tokio::time::timeout(Duration::from_secs(15), read_stats(bot)).await
         .map_err(|_| "GeneralStats/durable observation deadline;source:crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:485")?
@@ -430,6 +433,7 @@ async fn icons(bot: &mut Bot<'_, '_>) -> TestResult<Vec<party_skull::PartyIcon>>
 async fn out_of_range(
     bots: &mut [Bot<'_, '_>],
     world: &BundleWorld,
+    started: tokio::time::Instant,
 ) -> TestResult<(String, [u64; 3])> {
     let own = bots[0].own()?;
     let active = icons(&mut bots[0]).await?;
@@ -461,7 +465,7 @@ async fn out_of_range(
     {
         return Err(format!("distant C own inactive shield absent;reply={peer_reply:?};source:crates/gameplay/dispatch/src/gameplay_transport/party_skull.rs:28").into());
     }
-    let (award, after) = solo_hunt_award(bots).await?;
+    let (award, after) = solo_hunt_award(bots, started).await?;
     // Returning is ordinary movement, allowing subsequent leader/leave commands nearby.
     bots::approach(bots, 2, 0, world, false).await?;
     Ok((
@@ -571,10 +575,15 @@ async fn prepare_hunt_ground(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> T
     Ok(leader)
 }
 
-async fn encounter(
-    bots: &mut [Bot<'_, '_>],
-    world: &BundleWorld,
-) -> TestResult<([u64; 3], [u64; 3], [bool; 3], u64)> {
+struct HuntResult {
+    start: [u64; 3],
+    end: [u64; 3],
+    hits: [bool; 3],
+    pool: u64,
+    started: tokio::time::Instant,
+}
+
+async fn encounter(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestResult<HuntResult> {
     let leader = prepare_hunt_ground(bots, world).await?;
     let (key, name, pool) = HUNT_TARGET;
     let mut start = [0; 3];
@@ -606,6 +615,8 @@ async fn encounter(
     )
     .await?;
 
+    // Start conservatively before the first hit, so every member is active at the distance award.
+    let started = tokio::time::Instant::now();
     let mut hits = [false; 3];
     let mut corpse_identity = [0; 16];
     for index in 0..bots.len() {
@@ -624,30 +635,15 @@ async fn encounter(
     }
 
     bots::pump(bots).await?;
-    let after = bots
-        .iter_mut()
-        .map(|bot| Ok(bot.client()?.last_server_sequence()))
-        .collect::<TestResult<Vec<_>>>()?;
-    // Each member has contributed. A single attacker finishes the same target.
     attack_target(&mut bots[0], Some(&target)).await?;
-    let mut killed = false;
-    bots::wait_observation(bots, deadline, "committed hunt kill", |bots, events| {
-        killed |= events.iter().zip(&after).any(|(stream, sequence)| {
-            stream.iter().any(|event| {
-                analyser_fact(event, *sequence, |fact| {
-                    matches!(fact, AnalyserFact::Kill { .. })
-                })
-            })
-        });
+    bots::wait_observation(bots, deadline, "exact hunt corpse", |bots, _| {
         let leader = bots[0].session.as_ref().ok_or("leader closed")?;
-        Ok(killed
-            && leader.world_entities().is_some_and(|view| {
-                view.get(&target).is_none()
-                    && view.iter().any(|entity| {
-                        entity.kind == EntityKind::Corpse
-                            && entity.entity.identity == corpse_identity
-                    })
-            }))
+        Ok(leader.world_entities().is_some_and(|view| {
+            view.get(&target).is_none()
+                && view.iter().any(|entity| {
+                    entity.kind == EntityKind::Corpse && entity.entity.identity == corpse_identity
+                })
+        }))
     })
     .await?;
     evidence(&format!(
@@ -656,21 +652,29 @@ async fn encounter(
     for bot in bots.iter_mut() {
         attack_target(bot, None).await?;
     }
-    let settled = tokio::time::Instant::now() + Duration::from_secs(20);
-    let mut end = [0; 3];
-    loop {
-        for (index, bot) in bots.iter_mut().enumerate() {
-            end[index] = stats(bot).await?.0;
-        }
-        if end.iter().zip(start).all(|(after, before)| *after > before) {
-            break;
-        }
-        if tokio::time::Instant::now() >= settled {
-            return Err(format!("XP settlement deadline;GeneralStats before={start:?} after={end:?};source:{XP_SOURCE}").into());
-        }
-        bots::pump(bots).await?;
+    let expected = bots
+        .iter()
+        .map(|bot| (bot.character, native_three_vocation_share(pool)))
+        .collect();
+    let death = observed_hunt_death(bots, None, key, target).await?;
+    if !exact_award_matches(death.shared, true, &death.awards, &expected) {
+        return Err(format!(
+            "exact hunt receipt has shared={} awards={:?}; expected={expected:?}",
+            death.shared, death.awards
+        )
+        .into());
     }
-    Ok((start, end, hits, pool))
+    let mut end = [0; 3];
+    for (index, bot) in bots.iter_mut().enumerate() {
+        end[index] = stats(bot).await?.0;
+    }
+    Ok(HuntResult {
+        start,
+        end,
+        hits,
+        pool,
+        started,
+    })
 }
 
 const HUNT_MODES: FightModes = FightModes {
@@ -766,7 +770,33 @@ async fn inspect_hunt_damage(
     ))
 }
 
-async fn solo_hunt_award(bots: &mut [Bot<'_, '_>]) -> TestResult<(String, [u64; 3])> {
+async fn observed_hunt_death(
+    bots: &mut [Bot<'_, '_>],
+    principal: Option<[u8; 16]>,
+    key: &str,
+    target: EntityRef,
+) -> TestResult<HuntDeath> {
+    let pair = bots[0].pair;
+    let (leader, peers) = bots.split_at_mut(1);
+    let death = committed_hunt_death(
+        leader[0].client()?,
+        pair,
+        principal,
+        key,
+        target,
+        tokio::time::Instant::now() + Duration::from_secs(20),
+    );
+    super::observations::while_servicing_liveness(death, async || {
+        bots::pump(peers).await?;
+        Ok(())
+    })
+    .await?
+}
+
+async fn solo_hunt_award(
+    bots: &mut [Bot<'_, '_>],
+    activity_started: tokio::time::Instant,
+) -> TestResult<(String, [u64; 3])> {
     let (key, pool) = ELIGIBILITY_TARGET;
     let mut start = Vec::new();
     for bot in bots.iter_mut() {
@@ -803,33 +833,24 @@ async fn solo_hunt_award(bots: &mut [Bot<'_, '_>]) -> TestResult<(String, [u64; 
     attack_target(&mut bots[0], None).await?;
     let leader = tile(bots[0].client()?.world_spatial().actor_position)?;
     let distant = tile(bots[2].client()?.world_spatial().actor_position)?;
-    if distant.floor == leader.floor
-        && distant
-            .x
-            .abs_diff(leader.x)
-            .max(distant.y.abs_diff(leader.y))
-            <= 30
-    {
+    if distant.x.abs_diff(leader.x).max(distant.y.abs_diff(leader.y)) <= 30 {
         return Err("solo XP creature died with C inside shared XP range".into());
     }
     let character = bots[0].character;
-    let pair = bots[0].pair;
-    let (leader, peers) = bots.split_at_mut(1);
-    let death = committed_hunt_death(
-        leader[0].client()?,
-        pair,
-        Some(character),
-        key,
-        target,
-        tokio::time::Instant::now() + Duration::from_secs(20),
-    );
-    let (_, _, shared) = super::observations::while_servicing_liveness(death, async || {
-        bots::pump(peers).await?;
-        Ok(())
-    })
-    .await??;
-    if shared {
-        return Err("server committed a shared hunt award while C was out of range".into());
+    let death = observed_hunt_death(bots, Some(character), key, target).await?;
+    if !distance_activity_is_current(activity_started.elapsed())
+        || !exact_award_matches(
+            death.shared,
+            false,
+            &death.awards,
+            &BTreeMap::from([(character, pool)]),
+        )
+    {
+        return Err(format!(
+            "out-of-range receipt did not prove a live-activity solo award: {:?}",
+            death.awards
+        )
+        .into());
     }
     let mut end = Vec::new();
     // Observe all totals after the exact durable award committed.
@@ -854,7 +875,7 @@ async fn solo_hunt_award(bots: &mut [Bot<'_, '_>]) -> TestResult<(String, [u64; 
 async fn underlevel_party(bots: &mut Vec<Bot<'_, '_>>, world: &BundleWorld) -> TestResult {
     let (_, leader_level, _) = stats(&mut bots[0]).await?;
     let (_, low_level, _) = stats(&mut bots[3]).await?;
-    if u64::from(low_level) * 3 >= u64::from(leader_level) * 2 {
+    if !is_threshold_probe(leader_level, low_level) {
         return Err(format!(
             "underlevel probe is eligible: leader={leader_level};member={low_level}"
         )
@@ -886,9 +907,9 @@ async fn underlevel_party(bots: &mut Vec<Bot<'_, '_>>, world: &BundleWorld) -> T
         return Err(format!("underlevel shared-XP toggle refused: {reply:?}").into());
     }
     let session = uuid_text(bots[3].client()?.join_snapshot().game_session_id.as_bytes());
-    let answer = request_spawn(session, ELIGIBILITY_TARGET.0.into()).await?;
+    let answer = request_spawn(session, LEVEL_PROBE.0.into()).await?;
     let target = parse_spawned_entity(&answer)?;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(45);
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(100);
     bots::wait_observation(
         bots,
         deadline,
@@ -907,6 +928,12 @@ async fn underlevel_party(bots: &mut Vec<Bot<'_, '_>>, world: &BundleWorld) -> T
     let (damage, corpse) = inspect_hunt_damage(bots, 3, target).await?;
     if damage == 0 {
         return Err("underlevel member did not exercise attack activity".into());
+    }
+    contribute(bots, 0, target, deadline).await?;
+    attack_target(&mut bots[0], None).await?;
+    let (leader_damage_before_finish, leader_corpse) = inspect_hunt_damage(bots, 0, target).await?;
+    if leader_damage_before_finish == 0 || leader_corpse != corpse {
+        return Err("underlevel probe lacked an active leader on the same target".into());
     }
     let own = bots[3].own()?;
     let view = icons(&mut bots[3]).await?;
@@ -939,23 +966,28 @@ async fn underlevel_party(bots: &mut Vec<Bot<'_, '_>>, world: &BundleWorld) -> T
     })
     .await?;
     attack_target(&mut bots[0], None).await?;
-    let pair = bots[0].pair;
-    let (leader, peers) = bots.split_at_mut(1);
-    let death = committed_hunt_death(
-        leader[0].client()?,
-        pair,
-        None,
-        ELIGIBILITY_TARGET.0,
-        target,
-        tokio::time::Instant::now() + Duration::from_secs(20),
-    );
-    let (_, _, shared) = super::observations::while_servicing_liveness(death, async || {
-        bots::pump(peers).await?;
-        Ok(())
-    })
-    .await??;
-    if shared {
-        return Err("server split the exact hunt award across an underlevel party".into());
+    let death = observed_hunt_death(bots, None, LEVEL_PROBE.0, target).await?;
+    // The spawned Crazed Beggar has 100 HP and only its melee ability. The ledger credits
+    // actual HP removed, including the capped lethal strike.
+    let leader_damage = LEVEL_PROBE
+        .2
+        .checked_sub(damage)
+        .filter(|remaining| *remaining > 0)
+        .ok_or("underlevel participant exhausted the target's starting HP")?;
+    let expected = [
+        (bots[0].character, leader_damage),
+        (bots[3].character, damage),
+    ]
+    .into_iter()
+    .map(|(id, amount)| (id, LEVEL_PROBE.1 * amount / LEVEL_PROBE.2))
+    .filter(|(_, xp)| *xp > 0)
+    .collect();
+    if !exact_award_matches(death.shared, false, &death.awards, &expected) {
+        return Err(format!(
+            "underlevel receipt awards={:?}; expected damage shares={expected:?}",
+            death.awards
+        )
+        .into());
     }
     clear_fight(bots).await?;
     party(&mut bots[3], Some(PartyIntent::Leave)).await?;
@@ -981,9 +1013,64 @@ fn hunt_health(detail: EntityDetail) -> Option<u8> {
     }
 }
 
+fn exact_award_matches<K: Ord>(
+    shared: bool,
+    expected_shared: bool,
+    awards: &BTreeMap<K, u64>,
+    expected: &BTreeMap<K, u64>,
+) -> bool {
+    shared == expected_shared && awards == expected
+}
+
+fn distance_activity_is_current(age: Duration) -> bool {
+    age < Duration::from_secs(120)
+}
+
+fn is_threshold_probe(high: u32, low: u32) -> bool {
+    let threshold = (u64::from(high) * 2).div_ceil(3);
+    u64::from(low) + 1 == threshold && u64::from(low) * 2 >= u64::from(high)
+}
+
 #[cfg(test)]
 mod qualification_review_tests {
     use super::*;
+
+    #[test]
+    fn delta_mp09_requires_exact_shared_and_solo_receipt_members() {
+        let expected = BTreeMap::from([(1, 91), (2, 91), (3, 91)]);
+        assert!(!exact_award_matches(
+            true,
+            true,
+            &BTreeMap::new(),
+            &expected
+        ));
+        assert!(!exact_award_matches(
+            true,
+            true,
+            &BTreeMap::from([(1, 91), (2, 91), (4, 91)]),
+            &expected
+        ));
+        assert!(!exact_award_matches(
+            false,
+            false,
+            &BTreeMap::from([(1, 0)]),
+            &BTreeMap::from([(1, 10)])
+        ));
+        assert!(exact_award_matches(true, true, &expected, &expected));
+    }
+
+    #[test]
+    fn delta_mp09_distance_probe_requires_unexpired_contribution() {
+        assert!(distance_activity_is_current(Duration::from_secs(119)));
+        assert!(!distance_activity_is_current(Duration::from_secs(120)));
+    }
+
+    #[test]
+    fn delta_mp09_threshold_probe_distinguishes_half_from_two_thirds() {
+        assert!(!is_threshold_probe(100, 1));
+        assert!(is_threshold_probe(100, 66));
+        assert!(!is_threshold_probe(100, 67));
+    }
 
     #[test]
     fn qualification_mp09_rejects_foreign_damage_and_foreign_corpses() -> TestResult {

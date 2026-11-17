@@ -237,10 +237,11 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         .find(|threshold| threshold.level == level)
         .ok_or("qualification level absent from the served progression policy")?
         .minimum_experience;
+    let classed = before.vocation() != NO_VOCATION;
     let checkpoint = if level > 1
         && progression
             .as_ref()
-            .is_some_and(|state| state.level >= level)
+            .is_some_and(|state| classed || state.level >= level)
     {
         retry_holder(Some(root), deadline, progression_busy, async || {
             root.reconcile_character_experience(authority, xp_occurrence)
@@ -258,7 +259,6 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     } else {
         false
     };
-    let classed = before.vocation() != NO_VOCATION;
     if classed && !(checkpoint && before.vocation() == vocation) {
         return Err("spell fixture vocation is set".into());
     }

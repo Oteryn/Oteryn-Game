@@ -61,13 +61,24 @@ class KnobTests(unittest.TestCase):
         self.assertIn('PG_PORT="${NODE_BOOT_PG_PORT:-15433}"', RUN_TEXT)
         self.assertIn('WP5_PORT="${NODE_BOOT_PLATFORM_PORT:-18463}"', RUN_TEXT)
 
+    def test_pvp_override_cannot_alias_another_listener(self):
+        for port in ('15433', '18463'):
+            result = self.knobs(NODE_BOOT_PVP_GAME_PORT=port)
+            self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+
+    def test_pvp_auto_port_is_allocated_by_the_real_listener(self):
+        script = 'set -Eeuo pipefail\n' + KNOBS + 'printf "%s" "$PVP_GAME_PORT"\n'
+        result = bash(script, {'NODE_BOOT_GAME_PORT': '65535'})
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout, '0')
+
     def test_pvp_port_can_override_an_unusable_adjacent_port(self):
         script = 'set -Eeuo pipefail\n' + KNOBS + 'printf "%s" "$PVP_GAME_PORT"\n'
         result = bash(script, {'NODE_BOOT_GAME_PORT': '65535', 'NODE_BOOT_PVP_GAME_PORT': '17191'})
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(result.stdout, '17191')
 
-    def test_pvp_port_falls_back_when_the_adjacent_port_is_busy(self):
+    def test_pvp_port_allocation_leaves_an_occupied_adjacent_listener_untouched(self):
         script = 'set -Eeuo pipefail\n' + KNOBS + 'printf "%s" "$PVP_GAME_PORT"\n'
         with socket.socket() as listener:
             listener.bind(('127.0.0.1', 0))
@@ -75,15 +86,7 @@ class KnobTests(unittest.TestCase):
             adjacent = listener.getsockname()[1]
             result = bash(script, {'NODE_BOOT_GAME_PORT': str(adjacent - 1)})
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            selected = int(result.stdout)
-            self.assertTrue(1024 <= selected <= 65535)
-            self.assertNotIn(selected, (adjacent - 1, adjacent))
-
-    def test_pvp_port_default_stays_in_range(self):
-        script = 'set -Eeuo pipefail\n' + KNOBS + 'printf "%s" "$PVP_GAME_PORT"\n'
-        result = bash(script, {'NODE_BOOT_GAME_PORT': '65535'})
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual(result.stdout, '65534')
+            self.assertEqual(result.stdout, '0')
 
     def test_parallel_stack_overrides_are_accepted(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -206,9 +209,9 @@ class ReuseTests(unittest.TestCase):
     def test_world_mp_requires_fresh_stack_but_can_teardown(self):
         with tempfile.TemporaryDirectory() as temp:
             self.assertEqual(self.save_state(temp).returncode, 0)
-            for groups in ('', 'mp', 'rows, mp'):
+            for groups in ('', 'mp', 'rows, mp', '\u2003mp\u2003', '\u2003'):
                 with self.subTest(groups=groups):
-                    result = self.run_guard(temp, 1, f'NODE_BOOT_E2E_ONLY="{groups}"')
+                    result = self.run_guard(temp, 1, f'export LC_ALL=C; NODE_BOOT_E2E_ONLY="{groups}"')
                     self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
                     self.assertEqual(result.stdout.strip(),
                                      'NODE_BOOT_RESULT=BLOCKED reason=mp_requires_fresh_stack')
