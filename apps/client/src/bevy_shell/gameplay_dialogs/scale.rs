@@ -22,15 +22,15 @@ impl Default for ModuleScale {
     }
 }
 impl ModuleScale {
-    pub(in crate::bevy_shell) const MIN: f32 = 0.5;
-    pub(in crate::bevy_shell) const MAX: f32 = 3.;
+    pub(in crate::bevy_shell) const MIN: f32 = 0.75;
+    pub(in crate::bevy_shell) const MAX: f32 = 2.;
     pub(in crate::bevy_shell) fn get(&self, module: Module) -> f32 {
         match module {
             Module::Chat => self.chat,
             Module::ActionBars => self.bars,
         }
     }
-    /// Sets a module's scale, kept within 50% to 300%; a non-finite value resets it.
+    /// Sets a module's scale, kept within 75% to 200%; a non-finite value resets it.
     pub(in crate::bevy_shell) fn set(&mut self, module: Module, value: f32) {
         let value = if value.is_finite() {
             value.clamp(Self::MIN, Self::MAX)
@@ -143,10 +143,52 @@ mod tests {
         assert_eq!(scale.get(Module::ActionBars), 1.);
         scale.set(Module::ActionBars, 9.);
         assert_eq!(scale.get(Module::ActionBars), ModuleScale::MAX);
+        scale.set(Module::Chat, 0.5);
+        assert_eq!(scale.get(Module::Chat), 0.75);
+        scale.set(Module::ActionBars, 3.);
+        assert_eq!(scale.get(Module::ActionBars), 2.);
         scale.set(Module::Chat, f32::NAN);
         assert_eq!(scale.get(Module::Chat), 1.);
         assert_eq!(zoomed(1., 3.), 1.1);
         assert_eq!(zoomed(1.5, -1.), 1.4);
-        const { assert!(ModuleScale::MIN < 1. && ModuleScale::MAX > 1.) };
+        const { assert!(ModuleScale::MIN == 0.75 && ModuleScale::MAX == 2.) };
+    }
+
+    #[test]
+    fn ctrl_wheel_stops_at_75_and_200_percent_and_ctrl_0_resets() {
+        let mut app = App::new();
+        app.init_resource::<ModuleScale>()
+            .init_resource::<ButtonInput<KeyCode>>()
+            .init_resource::<bevy::input::mouse::AccumulatedMouseScroll>()
+            .add_systems(Update, zoom);
+        app.world_mut().spawn((
+            ModuleRoot(Module::Chat),
+            bevy::picking::hover::Hovered(true),
+        ));
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::ControlLeft);
+        for (delta, limit) in [(1., 2.), (-1., 0.75)] {
+            app.world_mut()
+                .resource_mut::<bevy::input::mouse::AccumulatedMouseScroll>()
+                .delta
+                .y = delta;
+            for _ in 0..20 {
+                app.update();
+            }
+            assert_eq!(
+                app.world().resource::<ModuleScale>().get(Module::Chat),
+                limit
+            );
+        }
+        app.world_mut()
+            .resource_mut::<bevy::input::mouse::AccumulatedMouseScroll>()
+            .delta
+            .y = 0.;
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::Digit0);
+        app.update();
+        assert_eq!(app.world().resource::<ModuleScale>().get(Module::Chat), 1.);
     }
 }
