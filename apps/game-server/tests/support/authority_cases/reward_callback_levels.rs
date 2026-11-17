@@ -343,7 +343,7 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
     let hello = say(17000, "hi".into()).await;
     assert_eq!(hello.disposition, NpcIntentDisposition::Ok);
     let outcome = say(17001, callback.keywords[0].clone()).await;
-    let gold: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3035' AND lifecycle=1").fetch_one(&h.pool).await?;
+    let gold: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity * 100),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3035' AND lifecycle=1").fetch_one(&h.pool).await?;
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
     )
@@ -365,7 +365,7 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
             let amount: i64 = sqlx::query_scalar("SELECT coalesce((SELECT sum(amount) FROM game_character_quest_xp_obligations),(SELECT sum(experience_awarded) FROM game_character_xp_receipts),0)::bigint").fetch_one(&h.pool).await?;
             assert_eq!(amount, 50 * level);
         } else {
-            assert_eq!(gold, 20);
+            assert_eq!(gold, 2000);
         }
     }
     Ok(())
