@@ -127,7 +127,7 @@ pub(super) async fn run(
     row!(90, "E05", E05, market, world);
     row!(240, "E07", E07, storage, clients, world);
     row!(90, "S01", S01, party, clients, world);
-    row!(90, "S03", S03, guild);
+    row!(1500, "S03", S03, guild, clients, world, npcs);
     row!(1500, "S09", S09, logout, clients, world);
     row!(240, "S18", S18, speech, clients, world);
     let Some(client) = client.as_mut() else {
@@ -1522,20 +1522,17 @@ async fn party(
     result
 }
 
-async fn guild(row: &mut Row, client: &mut DevClientSession) -> TestResult {
-    use oteryn_dev_client::client_runtime::guild as runtime;
-    row.missing_server = Some("source:crates/protocol-oteryn/src/guild.rs:17");
-    let reply = runtime::send(
-        client.session_mut(),
-        &runtime::GuildCommand::Query(runtime::guild::GuildQuery::Own),
-    )
-    .await?;
-    // Native GuildIntent has membership/rank writers but no MOTD writer. Reading
-    // GuildSummary.message cannot prove an update. Keep every other gap visible too.
-    evidence(
-        "E2EF4_MISSING S03 motd source:crates/protocol-oteryn/src/guild.rs:17 native-GuildIntent-has-no-MOTD-write",
-    );
-    Err(format!("guild-query={reply:?};BLOCKED guild/ranks/chat/bank/wars/relog: not authored (S03 is outside packet E2E-G1);MOTD-write-unavailable").into())
+#[path = "full_e2ef4_f4s03.rs"]
+mod full_e2ef4_f4s03;
+
+async fn guild(
+    row: &mut Row,
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+) -> TestResult {
+    full_e2ef4_f4s03::run(row, client, clients, world, npcs).await
 }
 
 async fn logout(
