@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.ahmet",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 21,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qd/steal_from_thieves/state",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "What are you talking about?? I was robbed!!!! Someone catch those filthy thieves!!!!! GUARDS! ... YOU! Want to earn some quick money?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ahmet",
+      "keywords": [
+        "quest"
+      ],
+      "topic": 0,
+      "next_topic": 22,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qd/steal_from_thieves/state",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Did you find my stuff?"
+      ]
+    }
+  ]
+}

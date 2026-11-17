@@ -4704,6 +4704,33 @@ mod equipment_projection_tests {
             Some("equipment ambiguous source pattern")
         );
     }
+
+    /// MP01: hatchet (3276) and axe (3274) carry no Crystal level or vocation, so the shipped
+    /// native profile must project level 0 with any vocation instead of an unknown pattern.
+    #[test]
+    fn shipped_unrestricted_weapons_project_equipment_claims() {
+        let document: serde_json::Value = serde_json::from_slice(
+            &std::fs::read(
+                std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("../../../content/items/definitions/spell-native-profiles.json"),
+            )
+            .expect("native item profiles"),
+        )
+        .expect("native item profiles json");
+        for key in ["oteryn:item.tibia.i3276", "oteryn:item.tibia.i3274"] {
+            let record = document["records"]
+                .as_array()
+                .expect("records")
+                .iter()
+                .find(|row| row["production_definition"]["production_key"] == key)
+                .expect("profile record");
+            let semantics: ReferenceItemSemantics =
+                serde_json::from_value(record["semantics"].clone()).expect("semantics");
+            let claims = projected_equipment_claims(&semantics, 5).expect(key);
+            assert_eq!((claims.slots, claims.level), (vec![5], 0), "{key}");
+            assert!(claims.vocations.is_empty(), "{key}");
+        }
+    }
 }
 
 /// Return only a compiler-qualified, immutable source Item effect body.
