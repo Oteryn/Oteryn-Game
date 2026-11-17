@@ -51,6 +51,18 @@ fn manage_buttons_persists_visibility_order_and_restores_defaults() -> TestResul
     click(&mut app, |action| {
         matches!(action, Edit::Move("shell.market", true))
     })?;
+    for &(id, _, _) in super::super::grid::EXTRA {
+        click(
+            &mut app,
+            |action| matches!(action, Edit::Toggle(entry) if *entry == id),
+        )?;
+    }
+    assert!(
+        !app.world_mut()
+            .query::<&Edit>()
+            .iter(app.world())
+            .any(|e| matches!(e, Edit::Toggle("shell.options" | "store")))
+    );
     let expected = order(app.world().non_send::<HostOwner>());
     assert!(!expected.iter().any(|id| id == "battle"));
     assert_eq!(

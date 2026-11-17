@@ -182,14 +182,10 @@ pub(in crate::bevy_shell) fn project_manager(
         .id();
     commands.entity(panel).add_child(list);
     let ids = order(&owner);
-    let mut entries: Vec<_> = TOOLBAR.iter().collect();
-    entries.sort_by_key(|(_, control)| {
-        ids.iter()
-            .position(|id| id == control.id())
-            .unwrap_or(usize::MAX)
-    });
-    for (caption, control) in entries {
-        let id = control.id();
+    let mut entries: Vec<_> = grid::entries().collect();
+    entries
+        .sort_by_key(|(_, entry, _)| ids.iter().position(|id| id == entry).unwrap_or(usize::MAX));
+    for (caption, id, _) in entries {
         let visible = ids.iter().any(|entry| entry == id);
         let row = commands
             .spawn(Node {

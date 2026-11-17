@@ -236,14 +236,16 @@ pub(in crate::bevy_shell) fn spawn(
 /// entry.
 pub(in crate::bevy_shell) fn layout(
     windows: Query<&Window>,
+    scale: Option<Res<UiScale>>,
     mut menus: Query<(&PopupMenu, &ComputedNode, &mut Node)>,
     mut entries: Query<(&Hovered, &mut BackgroundColor), With<PopupEntry>>,
 ) {
     if let Ok(window) = windows.single() {
-        let bounds = Vec2::new(window.width(), window.height());
+        let scale = scale.as_deref().map_or(1., |scale| scale.0);
+        let bounds = Vec2::new(window.width(), window.height()) / scale;
         for (menu, computed, mut node) in &mut menus {
             let size = computed.size() * computed.inverse_scale_factor;
-            let at = clamp(menu.anchor, size, bounds);
+            let at = clamp(menu.anchor / scale, size, bounds);
             if node.left != px(at.x) {
                 node.left = px(at.x);
             }
@@ -276,6 +278,34 @@ pub(in crate::bevy_shell) fn cursor(windows: &Query<&Window>) -> Vec2 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn scaled_menu_clamps_in_ui_units() -> Result<(), Box<dyn std::error::Error>> {
+        let mut app = App::new();
+        app.insert_resource(UiScale(2.)).add_systems(Update, layout);
+        app.world_mut().spawn(Window {
+            resolution: (1024, 768).into(),
+            ..default()
+        });
+        let root = app
+            .world_mut()
+            .spawn((
+                PopupMenu {
+                    anchor: Vec2::new(1000., 100.),
+                },
+                Node::default(),
+                ComputedNode {
+                    size: Vec2::new(240., 80.),
+                    inverse_scale_factor: 0.5,
+                    ..default()
+                },
+            ))
+            .id();
+        app.update();
+        let node = app.world().get::<Node>(root).ok_or("menu")?;
+        assert_eq!((node.left, node.top), (px(392.), px(50.)));
+        Ok(())
+    }
 
     #[test]
     fn a_menu_near_the_edges_stays_inside_the_window() {

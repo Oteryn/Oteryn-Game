@@ -31,15 +31,7 @@ pub(super) struct RollingFile {
     directory: PathBuf,
     keep: usize,
     cap: u64,
-    state: Mutex<FileState>,
-}
-#[derive(Default)]
-struct FileState {
-    date: String,
-    file: Option<fs::File>,
-    size: u64,
-    budget: u64,
-    capped: bool,
+    capped_date: Mutex<Option<String>>,
 }
 const CAPPED: &str = "log size cap reached; further lines today go to the crash ring only\n";
 
@@ -49,7 +41,7 @@ impl RollingFile {
             directory,
             keep: keep.max(1),
             cap,
-            state: Mutex::default(),
+            capped_date: Mutex::default(),
         }
     }
     pub fn directory(&self) -> &Path {
@@ -59,43 +51,38 @@ impl RollingFile {
         self.write_dated(&Utc::at(now).date(), text)
     }
     pub(super) fn write_dated(&self, date: &str, text: &str) -> io::Result<()> {
-        let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
-        if state.file.is_none() || state.date != date {
-            fs::create_dir_all(&self.directory)?;
-            let name = format!("client-{date}.log");
-            let file = fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(self.directory.join(&name))?;
-            let size = file.metadata()?.len();
-            let others = self.prune(&name)?;
-            *state = FileState {
-                date: date.to_owned(),
-                file: Some(file),
-                size,
-                budget: self.cap.saturating_sub(others),
-                capped: false,
-            };
-        }
-        if state.capped {
+        let mut capped_date = self
+            .capped_date
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        if capped_date.as_deref() == Some(date) {
             return Ok(());
         }
+        *capped_date = None;
+        fs::create_dir_all(&self.directory)?;
+        let lock = fs::File::options()
+            .create(true)
+            .truncate(false)
+            .read(true)
+            .write(true)
+            .open(self.directory.with_added_extension("lock"))?;
+        lock.lock()?;
+        let name = format!("client-{date}.log");
+        let mut file = fs::File::options()
+            .create(true)
+            .append(true)
+            .open(self.directory.join(&name))?;
         let length = text.len() as u64;
-        let state = &mut *state;
-        let Some(file) = state.file.as_mut() else {
-            return Ok(());
-        };
-        if state.size + length + CAPPED.len() as u64 > state.budget {
-            state.capped = true;
-            if state.size + CAPPED.len() as u64 <= state.budget {
+        let size = file.metadata()?.len();
+        let budget = self.cap.saturating_sub(self.prune(&name)?);
+        if size + length + CAPPED.len() as u64 > budget {
+            if size + CAPPED.len() as u64 <= budget {
                 file.write_all(CAPPED.as_bytes())?;
-                state.size += CAPPED.len() as u64;
             }
+            *capped_date = Some(date.to_owned());
             return Ok(());
         }
-        file.write_all(text.as_bytes())?;
-        state.size += length;
-        Ok(())
+        file.write_all(text.as_bytes())
     }
     /// Removes the oldest other files beyond the count, then until the others use at most half
     /// of the cap; returns the size the others keep.
@@ -415,6 +402,22 @@ mod tests {
             .chain(["client-2030-01-10.log".into(), "unrelated.txt".into()])
             .collect();
         assert_eq!(names(&directory)?, expected);
+        fs::remove_dir_all(directory)?;
+        Ok(())
+    }
+
+    #[test]
+    fn two_clients_share_the_daily_budget() -> TestResult {
+        let directory = temp("shared");
+        let writers = [
+            RollingFile::new(directory.clone(), 7, 1000),
+            RollingFile::new(directory.clone(), 7, 1000),
+        ];
+        for i in 0..100 {
+            writers[i % 2].write_text(SystemTime::now(), "a shared line of log output\n")?;
+        }
+        let path = fs::read_dir(&directory)?.next().ok_or("log")??.path();
+        assert!(fs::metadata(path)?.len() <= 1000);
         fs::remove_dir_all(directory)?;
         Ok(())
     }

@@ -72,6 +72,7 @@ pub(in crate::bevy_shell) fn open(
     mut commands: Commands,
     parents: Query<&ChildOf>,
     ids: Query<&WindowId>,
+    depths: Query<&GlobalZIndex>,
     controls: Controls,
     menus: Query<Entity, With<WindowMenu>>,
     skins: Option<Res<Skins>>,
@@ -106,7 +107,15 @@ pub(in crate::bevy_shell) fn open(
         .spawn((
             WindowMenu,
             Name::new("window.menu"),
-            GlobalZIndex(BAND.1 + 1),
+            GlobalZIndex(
+                std::iter::once(event.entity)
+                    .chain(parents.iter_ancestors(event.entity))
+                    .filter_map(|entity| depths.get(entity).ok().map(|z| z.0))
+                    .max()
+                    .unwrap_or(BAND.1)
+                    .max(BAND.1)
+                    .saturating_add(1),
+            ),
             source::frame(skins.frame.clone(), [4.; 4]),
             Node {
                 position_type: PositionType::Absolute,

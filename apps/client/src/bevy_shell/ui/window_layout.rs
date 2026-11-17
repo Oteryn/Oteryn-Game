@@ -22,7 +22,7 @@ pub(in crate::bevy_shell) use stack::{OpenWindows, WindowLayer, WindowStack};
 pub(in crate::bevy_shell) fn install(app: &mut App) {
     app.init_resource::<WindowLayouts>()
         .init_resource::<WindowStack>()
-        .init_resource::<LoadedLayoutTick>()
+        .init_resource::<SavedBaseline>()
         .add_observer(stack::raise_on_press)
         .add_observer(menu::open)
         .add_observer(menu::dismiss)
@@ -278,9 +278,24 @@ impl WindowLayouts {
     }
     /// Writes beside the target and renames, so a crash never leaves half a file.
     pub(in crate::bevy_shell) fn save(&self, path: &Path) -> io::Result<()> {
+        Self::locked(path, || self.publish(path))
+    }
+
+    fn locked(path: &Path, write: impl FnOnce() -> io::Result<()>) -> io::Result<()> {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
         }
+        let lock = std::fs::File::options()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .open(path.with_extension("json.lock"))?;
+        lock.lock()?;
+        write()
+    }
+
+    fn publish(&self, path: &Path) -> io::Result<()> {
         let bytes = serde_json::to_vec_pretty(self)
             .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
         let staging = path.with_extension("json.tmp");
@@ -452,12 +467,12 @@ type Fonts<'w, 's> = Query<
 const SAVE_DELAY: std::time::Duration = std::time::Duration::from_secs(1);
 
 #[derive(Resource, Default)]
-struct LoadedLayoutTick(Option<bevy::ecs::change_detection::Tick>);
+struct SavedBaseline(Option<WindowLayouts>);
 
 fn load_layouts(
     owner: Option<NonSend<crate::bevy_shell::owner::HostOwner>>,
     mut layouts: ResMut<WindowLayouts>,
-    mut loaded: ResMut<LoadedLayoutTick>,
+    mut loaded: ResMut<SavedBaseline>,
 ) {
     if loaded.0.is_some() {
         return;
@@ -469,7 +484,7 @@ fn load_layouts(
         Ok(saved) => *layouts = saved,
         Err(error) => eprintln!("Could not load window layouts: {error}"),
     }
-    loaded.0 = Some(layouts.last_changed());
+    loaded.0 = Some(layouts.clone());
 }
 
 /// Observe edits after the final resize correction, including on the exit frame.
@@ -477,20 +492,43 @@ fn persist(
     owner: Option<NonSend<crate::bevy_shell::owner::HostOwner>>,
     time: Res<Time<Real>>,
     layouts: Res<WindowLayouts>,
-    loaded: Res<LoadedLayoutTick>,
+    mut loaded: ResMut<SavedBaseline>,
     mut pending: Local<Option<std::time::Duration>>,
     mut exits: MessageReader<AppExit>,
 ) {
     let exiting = exits.read().count() > 0;
-    if layouts.is_changed() && Some(layouts.last_changed()) != loaded.0 {
+    if layouts.is_changed()
+        && loaded
+            .0
+            .as_ref()
+            .is_some_and(|baseline| baseline != &*layouts)
+    {
         *pending = Some(time.elapsed());
     }
     if pending.is_some_and(|since| exiting || time.elapsed().saturating_sub(since) >= SAVE_DELAY)
         && let Some(path) = owner.and_then(|owner| owner.window_layouts_path())
     {
-        *pending = None;
-        if let Err(error) = layouts.save(&path) {
-            leprintln!("Could not save window layout: {error}", error = error);
+        let Some(baseline) = loaded.0.as_ref() else {
+            return;
+        };
+        let result = WindowLayouts::locked(&path, || {
+            let mut latest = WindowLayouts::load(&path)?;
+            for (&id, layout) in &layouts.0 {
+                if baseline.0.get(id) != Some(layout) {
+                    latest.0.insert(id, *layout);
+                }
+            }
+            latest.publish(&path)
+        });
+        match result {
+            Ok(()) => {
+                loaded.0 = Some(layouts.clone());
+                *pending = None;
+            }
+            Err(error) => {
+                *pending = Some(time.elapsed());
+                leprintln!("Could not save window layout: {error}", error = error);
+            }
         }
     }
 }
@@ -511,17 +549,7 @@ pub(in crate::bevy_shell) fn project(
 ) {
     let viewport = viewport(&screens, scale.as_deref());
     let screen_changed = viewport != *seen;
-    if let Some(viewport) = viewport
-        && screen_changed
-    {
-        *seen = Some(viewport);
-        let mut next = layouts.0.clone();
-        next.values_mut().for_each(|layout| layout.fit(viewport));
-        if next != layouts.0 {
-            // Fitting the viewport is a projection, not a player edit.
-            layouts.bypass_change_detection().0 = next;
-        }
-    }
+    *seen = viewport;
     let changed = layouts.is_changed();
     for (entity, id, mut node, transform) in &mut roots {
         let Some(layout) = layouts.0.get(id.0).copied() else {
@@ -545,7 +573,11 @@ pub(in crate::bevy_shell) fn project(
             }
         }
         if changed || screen_changed || id.is_added() {
-            layout.apply(&mut node, *seen);
+            let mut projected = layout;
+            if let Some(viewport) = viewport {
+                projected.fit(viewport);
+            }
+            projected.apply(&mut node, viewport);
         }
     }
     for (entity, base, mut node) in &mut scaled {

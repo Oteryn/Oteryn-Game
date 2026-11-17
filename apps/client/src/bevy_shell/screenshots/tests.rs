@@ -173,3 +173,36 @@ fn death_event_captures_without_f12_and_deduplicates() -> TestResult {
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
+
+#[cfg(unix)]
+#[test]
+fn f12_without_config_home_saves_capture() -> TestResult {
+    const CHILD: &str = "OTERYN_TEST_F12_NO_HOME";
+    if std::env::var_os(CHILD).is_none() {
+        assert!(
+            std::process::Command::new(std::env::current_exe()?)
+                .args([
+                    "--exact",
+                    "bevy_shell::screenshots::tests::f12_without_config_home_saves_capture"
+                ])
+                .env(CHILD, "1")
+                .env_remove("HOME")
+                .env_remove("LOCALAPPDATA")
+                .env_remove("XDG_CONFIG_HOME")
+                .status()?
+                .success()
+        );
+        return Ok(());
+    }
+    let mut app = app(std::path::Path::new(""), false)?;
+    capture(&mut app)?;
+    let path = app
+        .world()
+        .non_send::<HostOwner>()
+        .status
+        .strip_prefix("Screenshot saved: ")
+        .ok_or("capture failed")?;
+    assert!(std::path::Path::new(path).is_file());
+    std::fs::remove_file(path)?;
+    Ok(())
+}

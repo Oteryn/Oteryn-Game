@@ -33,21 +33,22 @@ fn picker_buttons_return_server_channel_through_existing_callback()
     app.update();
     let account_callback = callback.clone();
     let worker = thread::spawn(move || {
-        callback(
-            &[crate::character_selection::CharacterRow {
-                character: OwnerCharacter {
-                    character_id: "server-character".into(),
-                    world_id: "server-world".into(),
-                    name: "Server character".into(),
-                    availability: CharacterAvailability::Available,
-                },
-                world_name: "Server world".into(),
-                channels: vec![("server-channel".into(), "Server channel".into())],
-                available: true,
-            }],
-            "server-character",
-            CancellationToken::new(),
-        )
+        let row = crate::character_selection::CharacterRow {
+            character: OwnerCharacter {
+                character_id: "server-character".into(),
+                world_id: "server-world".into(),
+                name: "Server character".into(),
+                availability: CharacterAvailability::Available,
+            },
+            world_name: "Server world".into(),
+            channels: vec![("server-channel".into(), "Server channel".into())],
+            available: true,
+        };
+        let mut rows = vec![row; 20];
+        for (index, row) in rows.iter_mut().enumerate().take(19) {
+            row.character.character_id = format!("character-{index}");
+        }
+        callback(&rows, "character-0", CancellationToken::new())
     });
     let deadline = Instant::now() + Duration::from_secs(3);
     while app
@@ -121,9 +122,43 @@ fn picker_buttons_return_server_channel_through_existing_callback()
             .is_some(),
         "quit Escape must not cancel the underlying selector callback"
     );
+    let list = |app: &mut App| -> Result<Entity, &'static str> {
+        app.world_mut()
+            .query_filtered::<(Entity, &Name), With<bevy::ui_widgets::ScrollArea>>()
+            .iter(app.world())
+            .find(|(_, name)| name.as_str() == "selection.list")
+            .map(|(entity, _)| entity)
+            .ok_or("character list")
+    };
+    let scroll = |app: &mut App| -> Result<f32, &'static str> {
+        let entity = list(app)?;
+        Ok(app
+            .world()
+            .get::<ScrollPosition>(entity)
+            .ok_or("scroll")?
+            .0
+            .y)
+    };
+    let entity = list(&mut app)?;
+    app.world_mut()
+        .get_mut::<ScrollPosition>(entity)
+        .ok_or("scroll")?
+        .0
+        .y = 300.;
+    let row = app
+        .world_mut()
+        .query::<(Entity, &Target)>()
+        .iter(app.world())
+        .find(|(_, t)| matches!(t.choice, Choice::Row(19)))
+        .map(|(e, _)| e)
+        .ok_or("last row")?;
+    app.world_mut().trigger(Activate { entity: row });
+    app.update();
+    assert_eq!(scroll(&mut app)?, 300.);
     let channel = find(&mut app, true)?;
     app.world_mut().trigger(Activate { entity: channel });
     app.update();
+    assert_eq!(scroll(&mut app)?, 300.);
     let play = find(&mut app, false)?;
     assert_eq!(app.world().resource::<InputFocus>().get(), Some(play));
     app.world_mut().trigger(Activate { entity: play });

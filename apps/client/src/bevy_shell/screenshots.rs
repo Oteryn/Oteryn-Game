@@ -14,7 +14,7 @@ pub(super) fn request(commands: &mut Commands, owner: &mut HostOwner, viewport: 
     let folder = if preferences.directory.is_empty() {
         crate::play::PreferenceStore::path()
             .and_then(|path| path.parent().map(|parent| parent.join("screenshots")))
-            .unwrap_or_else(|| PathBuf::from("screenshots"))
+            .unwrap_or_default()
     } else {
         PathBuf::from(&preferences.directory)
     };
