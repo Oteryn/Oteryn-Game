@@ -60,6 +60,13 @@ pub(super) fn register(
                 });
         }
     }
+    Ok(())
+}
+
+pub(super) fn register_sandra(
+    active: &mut QuestStateCatalogue,
+    source: &NpcRuleCatalog,
+) -> Result<(), String> {
     if let Some(program) = source.programs().iter().find(|program| {
         program.document.program_key.as_deref() == Some("oteryn:quest-npc-program.sandra-lottery")
     }) {

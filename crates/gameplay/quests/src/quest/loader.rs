@@ -373,7 +373,10 @@ pub(super) fn lower_embedded_quest_state(
             }
         }
     }
-    restrict_runtime_scope(lowered, content_revision)
+    let mut runtime = restrict_runtime_scope(lowered, content_revision)?;
+    super::npc_rules::register_sandra_predecessor(&mut runtime.catalogue)
+        .map_err(QuestLoadError::Json)?;
+    Ok(runtime)
 }
 
 fn restrict_runtime_scope(

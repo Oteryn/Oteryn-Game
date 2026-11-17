@@ -869,6 +869,16 @@ pub(super) fn extend(
     Ok(active)
 }
 
+/// Outfit reward overlays must be complete before deriving Sandra's predecessor.
+pub(super) fn register_sandra_predecessor(
+    catalogue: &mut super::QuestStateCatalogue,
+) -> Result<(), String> {
+    completion_predecessors::register_sandra(
+        catalogue,
+        NpcRuleCatalog::runtime().map_err(|error| error.to_string())?,
+    )
+}
+
 /// Only an exact registered predecessor retains its old absent-track values.
 /// Existing rows, their values, pins and receipts are never rewritten.
 pub fn legacy_defaults<'a>(
