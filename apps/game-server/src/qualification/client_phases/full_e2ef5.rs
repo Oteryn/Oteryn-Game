@@ -987,35 +987,7 @@ pub(super) async fn with_observer_liveness<T>(
     observer: &mut DevClientSession,
     operation: impl std::future::Future<Output = TestResult<T>>,
 ) -> TestResult<T> {
-    let mut operation = std::pin::pin!(operation);
-    let mut completed = None;
-    loop {
-        let mut service = std::pin::pin!(observer.service_liveness(Duration::from_millis(50)));
-        let serviced = std::future::poll_fn(|context| {
-            if completed.is_none()
-                && let std::task::Poll::Ready(result) = operation.as_mut().poll(context)
-            {
-                completed = Some(result);
-            }
-            // Finish an in-progress frame even when the operation completed;
-            // cancelling service_liveness mid-frame would corrupt this socket.
-            service.as_mut().poll(context)
-        })
-        .await;
-        if let Err(error) = serviced {
-            // In particular, let peer cleanup finish if the caster connection
-            // failed. Do not cancel a logout/return operation with its observer.
-            if let Some(result) = completed.take() {
-                result?;
-            } else {
-                operation.await?;
-            }
-            return Err(error.into());
-        }
-        if let Some(result) = completed.take() {
-            return result;
-        }
-    }
+    observer.with_liveness(operation).await
 }
 
 async fn player_logout(client: &mut DevClientSession) -> TestResult {

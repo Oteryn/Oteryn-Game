@@ -42,14 +42,19 @@ pub(super) async fn pair(
         );
         return Ok(());
     };
-    let mut partner = client_world::connect_character(clients, 0x74, 0).await?;
+    // Admission can wait through the partner's previous control-loss grace. Keep the
+    // already admitted core peer answering probes throughout that independent wait.
+    let mut partner = client
+        .with_liveness(client_world::connect_character(clients, 0x74, 0))
+        .await?;
     let Some(counter) = partner
         .inventory()
         .and_then(|inventory| inventory.entries.first())
         .copied()
     else {
-        let (result, logout, attempts, busy_timed_out) =
-            client_world::logout_retrying_busy(&mut partner).await?;
+        let (result, logout, attempts, busy_timed_out) = client
+            .with_liveness(client_world::logout_retrying_busy(&mut partner))
+            .await?;
         if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Err(format!("trade partner logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
         }
@@ -166,8 +171,9 @@ pub(super) async fn pair(
     evidence(
         "mechanic=player_trade completion=committed both_inventories=changed exchanged_definitions=present",
     );
-    let (result, logout, attempts, busy_timed_out) =
-        client_world::logout_retrying_busy(&mut partner).await?;
+    let (result, logout, attempts, busy_timed_out) = client
+        .with_liveness(client_world::logout_retrying_busy(&mut partner))
+        .await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("trade partner logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
