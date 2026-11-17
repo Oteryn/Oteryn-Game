@@ -876,6 +876,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
     ) -> Option<world_spatial::ChannelEntities> {
+        self.named_channel_entities(actor).await.ok()
+    }
+
+    async fn observe_named_visible_entities_result(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<world_spatial::ChannelEntities, AdmissionRefusal> {
         self.named_channel_entities(actor).await
     }
 
