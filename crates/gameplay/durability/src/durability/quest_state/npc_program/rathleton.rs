@@ -50,13 +50,12 @@ pub(super) async fn cast(
     if spent != 1 {
         return Ok(false);
     }
-    // Fortnights start on Monday 2000-01-03 at the repository's Berlin 06:00 server-save day boundary.
-    let period = "(((statement_timestamp() AT TIME ZONE 'Europe/Berlin')-interval '6 hours')::date-date '2000-01-03')/14";
     let world = fence.runtime_scope.world_id();
-    sqlx::query(&format!("INSERT INTO game_rathleton_election_ballots(character_id,game_session_id,command_id,world_id,period,option_code) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,encode($4,'hex')::uuid,{period},$5)"))
-        .bind(character.as_slice()).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(world.as_bytes().as_slice()).bind(option).execute(&mut ***tx).await?;
-    sqlx::query(&format!("INSERT INTO game_rathleton_election_tallies(world_id,period,option_code,votes) VALUES(encode($1,'hex')::uuid,{period},$2,1) ON CONFLICT(world_id,period,option_code) DO UPDATE SET votes=game_rathleton_election_tallies.votes+1"))
-        .bind(world.as_bytes().as_slice()).bind(option).execute(&mut ***tx).await?;
+    // Fortnights start on Monday 2000-01-03 at the repository's Berlin 06:00 server-save day boundary.
+    let period: i32 = sqlx::query_scalar("INSERT INTO game_rathleton_election_ballots(character_id,game_session_id,command_id,world_id,period,option_code) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,encode($4,'hex')::uuid,(((statement_timestamp() AT TIME ZONE 'Europe/Berlin')-interval '6 hours')::date-date '2000-01-03')/14,$5) RETURNING period")
+        .bind(character.as_slice()).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(world.as_bytes().as_slice()).bind(option).fetch_one(&mut ***tx).await?;
+    sqlx::query("INSERT INTO game_rathleton_election_tallies(world_id,period,option_code,votes) VALUES(encode($1,'hex')::uuid,$2,$3,1) ON CONFLICT(world_id,period,option_code) DO UPDATE SET votes=game_rathleton_election_tallies.votes+1")
+        .bind(world.as_bytes().as_slice()).bind(period).bind(option).execute(&mut ***tx).await?;
     Ok(true)
 }
 
