@@ -1913,3 +1913,54 @@ fn srx3_regeneration_marker_does_not_admit_arbitrary_zero_gain_subids() {
         );
     }
 }
+
+#[test]
+fn charm_gaps_single_tick_selection_preserves_order_and_shared_budget() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    for element in [DotElement::Poison, DotElement::Fire] {
+        apply(
+            &mut store,
+            &dot(element, 100, 100, true),
+            ConditionSourceKind::Creature,
+            &facts(0, &root),
+        )
+        .unwrap();
+    }
+    let mut batched = store.clone();
+    let now = 10_000 * MS;
+    let expected = batched.take_due(now, TickFacts::default());
+    for tick in &expected {
+        assert_eq!(
+            store.take_next_due(now, TickFacts::default()).as_ref(),
+            Some(tick)
+        );
+    }
+    assert_eq!(expected.len(), COND0_RL_03_DAMAGE_TICKS_PER_SIM_TICK);
+    assert!(store.take_next_due(now, TickFacts::default()).is_none());
+    assert!(store.take_due(now, TickFacts::default()).is_empty());
+    assert_eq!(store, batched);
+    assert!(store.take_next_due(now + 1, TickFacts::default()).is_some());
+}
+
+#[test]
+fn charm_gaps_single_tick_allows_cleanse_before_next_overdue_occurrence() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    apply(
+        &mut store,
+        &dot(DotElement::Poison, 30, 30, true),
+        ConditionSourceKind::Creature,
+        &facts(0, &root),
+    )
+    .unwrap();
+    let now = 4_000 * MS;
+    assert_eq!(
+        store.take_next_due(now, TickFacts::default()).unwrap().due,
+        2_000 * MS
+    );
+    let plan = store.prepare_cleanse(&facts(now, &root)).unwrap().unwrap();
+    assert!(store.commit_cleanse(plan));
+    assert!(store.take_next_due(now, TickFacts::default()).is_none());
+    assert!(store.cleanse_immunity_remaining(ConflictKey::Element(DotElement::Poison), now) > 0);
+}
