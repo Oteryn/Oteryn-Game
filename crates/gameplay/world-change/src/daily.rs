@@ -39,8 +39,10 @@ const FLOWER_MONTH: crate::owner::SeasonalWindow = crate::owner::SeasonalWindow 
 const ROSEMARIE: (&str, (u16, u16, i8)) = ("oteryn:npc.rosemarie", (32_534, 32_827, 7));
 /// `thawing.lua:1`: the ice flower Item placed by Thawing.
 pub const ICE_FLOWER: u16 = 13_842;
-/// `thawing.lua:4-19`, in donor order: `(x, y, z)`.
-pub const THAWING_ICE_FLOWERS: [(u16, u16, i8); 14] = [
+/// `thawing.lua:4-19`, in donor order, then the fifteenth flower the donor omits:
+/// TibiaWiki Thawing Mini World Change (rev 890265) lists 15 Ice Flowers, the last
+/// "south of the immovable Mammoth" (Mapper 125.152|121.55). `(x, y, z)`.
+pub const THAWING_ICE_FLOWERS: [(u16, u16, i8); 15] = [
     (32_255, 31_079, 5),
     (32_255, 31_066, 5),
     (32_204, 31_054, 5),
@@ -55,6 +57,7 @@ pub const THAWING_ICE_FLOWERS: [(u16, u16, i8); 14] = [
     (32_155, 31_085, 5),
     (32_183, 31_091, 5),
     (32_217, 31_091, 5),
+    (32_152, 31_031, 5),
 ];
 
 /// Where Yasir would arrive (`oriental_trader.lua:4-24`, picked at :44).
@@ -445,7 +448,7 @@ mod tests {
     }
 
     #[test]
-    fn w05b_thawing_places_fourteen_ice_flowers_only_on_a_thawing_day() {
+    fn w05b_thawing_places_fifteen_ice_flowers_only_on_a_thawing_day() {
         let day = |draws: [u64; 4]| {
             let mut draws = draws.into_iter();
             DailyWorldChanges::roll(1, 1, 1, |_| draws.next().unwrap_or(u64::MAX))
@@ -453,19 +456,19 @@ mod tests {
         let items = day([0, u64::MAX, u64::MAX, u64::MAX])
             .items()
             .collect::<Vec<_>>();
-        assert_eq!(items.len(), 14);
+        assert_eq!(items.len(), 15);
         assert!(
             items
                 .iter()
                 .all(|(appearance, (_, _, z))| { *appearance == ICE_FLOWER && *z == 5 })
         );
         assert_eq!(items.first(), Some(&(ICE_FLOWER, (32_255, 31_079, 5))));
-        assert_eq!(items.last(), Some(&(ICE_FLOWER, (32_217, 31_091, 5))));
+        assert_eq!(items.last(), Some(&(ICE_FLOWER, (32_152, 31_031, 5))));
         let positions = items
             .iter()
             .map(|(_, position)| position)
             .collect::<std::collections::BTreeSet<_>>();
-        assert_eq!(positions.len(), 14);
+        assert_eq!(positions.len(), 15);
         assert_eq!(day([u64::MAX; 4]).items().count(), 0);
     }
 }

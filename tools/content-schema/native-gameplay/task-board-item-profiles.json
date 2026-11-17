@@ -7162,7 +7162,8 @@
                     "value": "WEAPON"
                   },
                   "vocations": {
-                    "state": "UNKNOWN"
+                    "state": "KNOWN",
+                    "value": []
                   }
                 }
               ]
@@ -8070,7 +8071,8 @@
                     "state": "UNKNOWN"
                   },
                   "level": {
-                    "state": "UNKNOWN"
+                    "state": "KNOWN",
+                    "value": 0
                   },
                   "mutually_exclusive_groups": {
                     "state": "KNOWN",
@@ -10652,7 +10654,8 @@
                     "state": "UNKNOWN"
                   },
                   "level": {
-                    "state": "UNKNOWN"
+                    "state": "KNOWN",
+                    "value": 0
                   },
                   "mutually_exclusive_groups": {
                     "state": "KNOWN",
@@ -10664,7 +10667,8 @@
                     "value": "WEAPON"
                   },
                   "vocations": {
-                    "state": "UNKNOWN"
+                    "state": "KNOWN",
+                    "value": []
                   }
                 }
               ]
@@ -15321,7 +15325,8 @@
                     "value": "WEAPON"
                   },
                   "vocations": {
-                    "state": "UNKNOWN"
+                    "state": "KNOWN",
+                    "value": []
                   }
                 }
               ]
@@ -15551,7 +15556,8 @@
                     "value": "WEAPON"
                   },
                   "vocations": {
-                    "state": "UNKNOWN"
+                    "state": "KNOWN",
+                    "value": []
                   }
                 }
               ]
@@ -30727,7 +30733,8 @@
                     "value": "WEAPON"
                   },
                   "vocations": {
-                    "state": "UNKNOWN"
+                    "state": "KNOWN",
+                    "value": []
                   }
                 }
               ]
