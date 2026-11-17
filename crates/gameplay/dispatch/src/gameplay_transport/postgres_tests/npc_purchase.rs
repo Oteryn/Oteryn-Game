@@ -264,7 +264,7 @@ fn uuid_bytes(value: &str) -> TestResult<[u8; 16]> {
         return Err("fixture UUID length".into());
     }
     let mut bytes = [0; 16];
-    for (index, part) in value.as_bytes().chunks_exact(2).enumerate() {
+    for (index, part) in value.as_bytes().as_chunks::<2>().0.iter().enumerate() {
         bytes[index] = u8::from_str_radix(std::str::from_utf8(part)?, 16)?;
     }
     Ok(bytes)
