@@ -415,14 +415,14 @@ pub(super) async fn run(
         .await;
         seconds.push(started.elapsed().as_secs_f64());
     }
-    if let Some(mut client) = session.take() {
-        if let Err(error) = release(&mut client).await {
-            tally.fail += 1;
-            evidence(&format!(
-                "creature_sweep release_failed error={}",
-                token(&error.to_string())
-            ));
-        }
+    if let Some(mut client) = session.take()
+        && let Err(error) = release(&mut client).await
+    {
+        tally.fail += 1;
+        evidence(&format!(
+            "creature_sweep release_failed error={}",
+            token(&error.to_string())
+        ));
     }
     let mean = seconds.iter().sum::<f64>() / seconds.len().max(1) as f64;
     evidence(&format!(
