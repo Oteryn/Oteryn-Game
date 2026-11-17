@@ -2890,7 +2890,12 @@ pub(super) async fn journeys(
     } // [DBG-hunt]
     // Character 1's hunt, death and relog run in the separate Newhaven leg (newhaven_leg).
     drop(client);
-    profile_result
+    profile_result.map_err(|error| {
+        verdict::context(
+            "world_profile failed before core disconnect/resume continuation".into(),
+            error,
+        )
+    })
 }
 
 /// The tutorial islet temple: a vocationless Character's first entry and death respawn

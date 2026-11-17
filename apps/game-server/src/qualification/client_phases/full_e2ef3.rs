@@ -262,20 +262,28 @@ pub(super) async fn run(
     let started = std::time::Instant::now();
     let mut primal = false;
     let mut covet = false;
+    let mut step = "primal-bag";
     let observations = async {
         primal = reward_bag(&mut client, "PRIMAL_BAG").await?;
+        step = "coveted-bag";
         covet = reward_bag(&mut client, "BAG_YOU_COVET").await?;
+        step = "inventory-quantities";
         let saved_quantities = quantities(&client)?;
+        step = "open-backpack";
         open_backpack(&mut client).await?;
+        step = "inspect-backpack";
         let before = backpack_inspection(&mut client).await?;
         let session = client.join_snapshot().game_session_id;
         let saved_position = client.world_spatial().actor_position;
+        step = "logout";
         let (result, logout, attempts, busy_timed_out) = super::logout_retrying_busy(&mut client).await?;
         if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Err(format!("E2EF3 fresh admission logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
         }
         drop(client);
+        step = "fresh-admission";
         client = connect_world(clients, 0x79).await?;
+        step = "relogin-session-position";
         if client.join_snapshot().game_session_id == session
             || client.world_spatial().actor_position != saved_position
         {
@@ -287,7 +295,9 @@ pub(super) async fn run(
             )
             .into());
         }
+        step = "relogin-open-backpack";
         open_backpack(&mut client).await?;
+        step = "relogin-inspection-quantities";
         if backpack_inspection(&mut client).await? != before
             || quantities(&client)? != saved_quantities
         {
@@ -307,6 +317,12 @@ pub(super) async fn run(
         Err(error) => verdict::classify(error.as_ref()),
     };
     for row in ROWS {
+        if let Err(error) = &observations {
+            evidence(&format!(
+                "E2EF3_GAP row={} step={step} error={error}",
+                row.id
+            ));
+        }
         if observations.is_ok() && ((row.id == "I08" && primal) || (row.id == "I13" && covet)) {
             evidence(&format!(
                 "e2e_all scenario={}.full status=PASS seconds={:.3} evidence=use-consume-pinned-reward-fresh-admission-quantities",
@@ -314,6 +330,13 @@ pub(super) async fn run(
                 started.elapsed().as_secs_f64()
             ));
             continue;
+        }
+        if observations.is_ok() {
+            let action = row.missing.split(',').next().unwrap_or("lifecycle");
+            evidence(&format!(
+                "E2EF3_GAP row={} step={action} error=full_action_unimplemented starter_observation=passed",
+                row.id
+            ));
         }
         result(
             row,

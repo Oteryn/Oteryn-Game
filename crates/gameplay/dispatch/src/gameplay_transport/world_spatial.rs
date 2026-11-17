@@ -268,6 +268,30 @@ impl SessionVisibility {
         })
     }
 
+    /// An icon-only delta leaves the entity positions already shown to this connection intact.
+    pub fn stationary_delta(
+        &self,
+        observation: WorldSpatialObservation,
+    ) -> Result<WorldSpatialEntitiesDelta, WorldSpatialError> {
+        let identity = self
+            .shown
+            .as_ref()
+            .and_then(|shown| shown.entities().first())
+            .ok_or(WorldSpatialError::Malformed)?
+            .identity;
+        let own = self
+            .entities
+            .get(&identity)
+            .ok_or(WorldSpatialError::Malformed)?;
+        Ok(WorldSpatialEntitiesDelta {
+            content_generation: observation.content_generation,
+            actor_position: own.position,
+            enter: Vec::new(),
+            update: Vec::new(),
+            leave: Vec::new(),
+        })
+    }
+
     /// A view that shows objects (corpses) when `objects`, the session's capability 4.
     pub fn with_objects(objects: bool) -> Self {
         Self {

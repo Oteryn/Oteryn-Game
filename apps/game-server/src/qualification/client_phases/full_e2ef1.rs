@@ -635,6 +635,8 @@ mod e2ef1 {
         }
         let mut ready = tokio::time::Instant::now();
         let mut exhausted = Vec::new();
+        let mut prerequisite = None;
+        let mut failure = None;
         for teleport in [false, true] {
             // Settle the spell's own cooldown before starting a distinct floor experiment.
             while tokio::time::Instant::now() < ready {
@@ -644,16 +646,36 @@ mod e2ef1 {
                 let from = tile(client.world_spatial().actor_position)?;
                 let outside = |at: TilePos| world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone());
                 if teleport {
-                    // Canary Player::onCreatureMove starts the stairhop window on `teleport || z
-                    // change`. The node-boot slice's only floor-changing teleport that lands
-                    // outside a protection zone is far beyond the town budget, so any authored
-                    // teleport whose landing is outside one and leads back to this leg's start.
-                    let object = approach_across(client, world, objects, |o| world.floors().teleport(o.at).is_some_and(|to| outside(to) && route(world, to, |at| at == from).is_some()), 1, 2).await?;
+                    // Movement can be proved at a PZ landing too. Its combat suitability
+                    // is a separate prerequisite; filtering combat suitability here hid legitimate movement targets.
+                    let mut seen = BTreeSet::new();
+                    let mut candidates = Vec::new();
+                    for &object in objects.iter().filter(|o| o.at.floor.abs_diff(from.floor) <= 2
+                        && o.at.x.abs_diff(from.x).max(o.at.y.abs_diff(from.y)) <= 160)
+                    {
+                        let Some(to) = world.floors().teleport(object.at) else { continue };
+                        if !seen.insert(object.at) { continue; }
+                        pump(client).await?;
+                        if route(world, to, |at| at == from).is_some() {
+                            candidates.push(object);
+                        }
+                    }
+                    evidence(&format!("E2EF1_TELEPORT_CANDIDATES returnable={} outside_pz={} origin={from:?}",
+                        candidates.len(), candidates.iter().filter(|o| world.floors().teleport(o.at).is_some_and(outside)).count()));
+                    candidates.sort_by_key(|o| (
+                        !world.floors().teleport(o.at).is_some_and(outside), distance(from, o.at),
+                    ));
+                    let object = approach_across(client, world, &candidates, |_| true, 1, 2).await?;
                     let at = tile(client.world_spatial().actor_position)?;
                     let expected = world.floors().teleport(object.at).ok_or("teleport destination")?;
                     let direction = DIRS.into_iter().find(|d| destination(world, at, *d) == Some(expected)).ok_or("no automatic teleport entry edge")?;
                     walk(client, world, &[direction]).await?;
                     checks.pass("teleport", (object.at, expected));
+                    if !outside(expected) {
+                        return Err(verdict::HarnessError::boxed(verdict::Cause::Precondition {
+                            name: "teleport-landing-outside-pz".into(),
+                        }, "authored teleport moved correctly; aggressive-exhaust requires an outside-PZ landing"));
+                    }
                 } else {
                     let path = route(world, from, |at| at.floor != from.floor && outside(at)).ok_or("no reachable outside-PZ stair transition")?;
                     walk(client, world, &path).await?;
@@ -688,18 +710,40 @@ mod e2ef1 {
                             _ => return Err(format!("aggressive action {words} left the floor exhaust early or spent resources: {result:?}").into()),
                         }
                     }
-                    if refused.len() == spells.len() { return Err(format!("no aggressive action of this character became executable after floor exhaust: {refused:?}; every aggressive instant needs a vocation (the knight sweep also a weapon), set through the real character path").into()); }
+                    if refused.len() == spells.len() {
+                        return Err(verdict::HarnessError::boxed(verdict::Cause::Precondition {
+                            name: "level8-vocation".into(),
+                        }, format!("no executable aggressive instant after exhaust: {refused:?}; prerequisite=level8-vocation and the real starter weapon")));
+                    }
                     if tokio::time::Instant::now() >= deadline { return Err(format!("aggressive action did not become executable after floor exhaust: refused={refused:?}").into()); }
                 }
             }.await;
             match result {
                 Ok(words) => exhausted.push(words),
-                Err(error) => evidence(&format!(
-                    "E2EF1_GAP row=M03 teleport={teleport} error={error}"
-                )),
+                Err(error) => {
+                    if let verdict::Cause::Precondition { name } = verdict::classify(error.as_ref())
+                    {
+                        evidence(&format!(
+                            "E2EF1_PREREQUISITE row=M03 case=aggressive-exhaust teleport={teleport} name={name} error={error}"
+                        ));
+                        if prerequisite.is_none() {
+                            prerequisite = Some(error);
+                        }
+                    } else {
+                        evidence(&format!(
+                            "E2EF1_GAP row=M03 teleport={teleport} error={error}"
+                        ));
+                        if failure.is_none() {
+                            failure = Some(error);
+                        }
+                    }
+                }
             }
         }
         if exhausted.len() != 2 {
+            if let Some(error) = failure.or(prerequisite) {
+                return Err(error);
+            }
             return Err(
                 "stairs and teleport must each prove two-second aggressive exhaust and recovery"
                     .into(),
@@ -749,6 +793,9 @@ mod e2ef1 {
         let player = player_push(client, peer, world, checks).await;
         if let Err(error) = &player {
             evidence(&format!("E2EF1_GAP row=M04 case=push-player error={error}"));
+        }
+        if needs_fresh_transport(&player) {
+            return player;
         }
         let creature = creature_push(client, world, bytes, checks).await;
         if let Err(error) = &creature {
@@ -1139,6 +1186,54 @@ mod e2ef1 {
         }
         result
     }
+    fn needs_fresh_transport(result: &TestResult) -> bool {
+        result.as_ref().err().is_some_and(|error| {
+            matches!(
+                verdict::classify(error.as_ref()),
+                verdict::Cause::Transport { .. }
+            )
+        })
+    }
+
+    fn finish_row(
+        verdicts: &mut Verdicts,
+        checks: &Checks,
+        required: &[&str],
+        result: &TestResult,
+        durable: bool,
+        seconds: f64,
+    ) -> bool {
+        let row = checks.row;
+        let passed = result.is_ok() && durable && checks.complete(required);
+        let gaps: Vec<_> = required
+            .iter()
+            .filter(|case| !checks.passed.contains(**case))
+            .copied()
+            .collect();
+        evidence(&format!(
+            "E2EF1_ROW row={row} missing={gaps:?} result={result:?} durable={durable}"
+        ));
+        verdicts.done.insert(row);
+        let suffix = if passed {
+            String::new()
+        } else {
+            let cause = match result {
+                Err(error) => verdict::classify(error.as_ref()),
+                Ok(()) => verdict::Cause::Assertion,
+            };
+            let root = match &cause {
+                verdict::Cause::Precondition { name } => format!("{row}/{name}"),
+                _ => format!("{row}/{}", gaps.first().copied().unwrap_or("durable")),
+            };
+            cause.suffix(&root)
+        };
+        evidence(&format!(
+            "e2e_all scenario={row}.full status={} seconds={seconds:.3} evidence=journey:apps/game-server/src/qualification/client_phases/full_e2ef1.rs{suffix}",
+            if passed { "PASS" } else { "FAIL" },
+        ));
+        passed
+    }
+
     async fn rows(
         mut client: DevClientSession,
         clients: &SeamClients<'_>,
@@ -1191,6 +1286,48 @@ mod e2ef1 {
             if let Err(error) = &result {
                 evidence(&format!("E2EF1_GAP row={row} error={error}"));
             }
+            if needs_fresh_transport(&result) {
+                // Both sockets may have failed while the other client drove a command.
+                // Drop them before waiting; never send logout on a poisoned reducer.
+                let had_peer = peer.is_some();
+                drop(peer.take());
+                drop(client);
+                if had_peer {
+                    wait_character_released(clients, 0).await?;
+                }
+                wait_character_released(clients, 1).await?;
+                if had_peer {
+                    let mut restored =
+                        connect_character(clients, 0xc0 + u8::try_from(ordinal)?, 0).await?;
+                    let back = route(
+                        world,
+                        tile(restored.world_spatial().actor_position)?,
+                        |at| at == TOWN,
+                    )
+                    .ok_or("recovered profile peer has no return route")?;
+                    walk(&mut restored, world, &back).await?;
+                    logout(&mut restored).await?;
+                    drop(restored);
+                }
+                client = connect_world(clients, 0xd0 + u8::try_from(ordinal)?).await?;
+                failed |= !finish_row(
+                    verdicts,
+                    &checks,
+                    required,
+                    &result,
+                    false,
+                    started.elapsed().as_secs_f64(),
+                );
+                evidence(&format!(
+                    "E2EF1_RECOVERY row={row} state=fresh_transport next_row=independent"
+                ));
+                let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
+                    at == origin
+                })
+                .ok_or("recovered movement row has no return route")?;
+                walk(&mut client, world, &back).await?;
+                continue;
+            }
             // Every position-changing row saves its actual landing via ordinary
             // logout, gets a fresh Platform admission and compares the saved cell.
             let saved = client.world_spatial().actor_position;
@@ -1222,34 +1359,14 @@ mod e2ef1 {
             if durable && required.contains(&"relogin") {
                 checks.pass("relogin", saved);
             }
-            let passed = result.is_ok() && durable && checks.complete(required);
-            failed |= !passed;
-            let gaps: Vec<_> = required
-                .iter()
-                .filter(|case| !checks.passed.contains(**case))
-                .copied()
-                .collect();
-            evidence(&format!(
-                "E2EF1_ROW row={row} missing={gaps:?} result={result:?} durable={durable}"
-            ));
-            verdicts.done.insert(row);
-            let suffix = if passed {
-                String::new()
-            } else {
-                let cause = match &result {
-                    Err(error) => verdict::classify(error.as_ref()),
-                    Ok(()) => verdict::Cause::Assertion,
-                };
-                cause.suffix(&format!(
-                    "{row}/{}",
-                    gaps.first().copied().unwrap_or("durable")
-                ))
-            };
-            evidence(&format!(
-                "e2e_all scenario={row}.full status={} seconds={:.3} evidence=journey:apps/game-server/src/qualification/client_phases/full_e2ef1.rs{suffix}",
-                if passed { "PASS" } else { "FAIL" },
-                started.elapsed().as_secs_f64()
-            ));
+            failed |= !finish_row(
+                verdicts,
+                &checks,
+                required,
+                &result,
+                durable,
+                started.elapsed().as_secs_f64(),
+            );
             let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
                 at == origin
             })
@@ -1274,6 +1391,23 @@ mod e2ef1 {
             assert_eq!((ground.x, ground.y), (spatial.x, spatial.y));
             assert_eq!(tile(spatial)?, TOWN);
             Ok(())
+        }
+
+        #[test]
+        fn qualification_movement_reconnects_after_reducer_or_exchange_failure() {
+            let inconsistent: TestResult = Err(Box::new(
+                oteryn_dev_client::SessionError::EntityStoreInconsistent {
+                    reason: "own actor is gone or not at the header position",
+                },
+            ));
+            assert!(needs_fresh_transport(&inconsistent));
+            let unusable: TestResult =
+                Err(Box::new(oteryn_dev_client::SessionError::SessionUnusable));
+            assert!(needs_fresh_transport(&unusable));
+            assert!(!needs_fresh_transport(
+                &Err("ordinary row assertion".into())
+            ));
+            assert!(!needs_fresh_transport(&Ok(())));
         }
 
         #[test]

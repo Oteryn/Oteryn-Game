@@ -33,13 +33,9 @@ where
         .ok_or(ServeEnd::Disconnected)?;
     let mut payload =
         oteryn_protocol_oteryn::world_spatial_entities::encode_world_spatial_entities_delta(
-            &oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntitiesDelta {
-                content_generation: position.content_generation,
-                actor_position: position.actor_position,
-                enter: Vec::new(),
-                update: Vec::new(),
-                leave: Vec::new(),
-            },
+            &view
+                .stationary_delta(position)
+                .map_err(|_| ServeEnd::Disconnected)?,
         )
         .map_err(|_| ServeEnd::Disconnected)?;
     let encoded = encode_party_icons(&icons).map_err(|_| ServeEnd::Disconnected)?;
