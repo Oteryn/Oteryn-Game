@@ -21,7 +21,8 @@ remain mandatory at mutation.
 the native scope/generation, character, session, lease, creature and death area.
 An arbitrary command or death occurrence cannot supply that evidence. Shared
 party credit uses the existing frozen party-membership owner, independently of
-XP amounts. No minimum damage percentage is imposed on damaging-player credit.
+XP amounts. Damaging-player credit reads the physical Player damage map, not
+summon-master reward attribution. No minimum damage percentage is imposed.
 
 `BoundQuest.creature_removals` binds despawn declarations to any declared
 noninitial track value, including NPC and world callback stages.

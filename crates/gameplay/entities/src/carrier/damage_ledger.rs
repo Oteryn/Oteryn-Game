@@ -975,16 +975,8 @@ impl ChannelActorCarrier {
             return Err(CarrierError::StaleActorGeneration);
         }
         let lethal_player = if next == 0 {
-            attacker
-                .map(|attacker| {
-                    (
-                        attacker.character,
-                        attacker.lease_generation,
-                        attacker.session,
-                    )
-                })
-                .or_else(|| {
-                    let actor = source?.actor?;
+            if let Some(source) = source {
+                source.actor.and_then(|actor| {
                     let source_index = self.validate_ref(continuity, actor.0).ok()?;
                     let Slot::Occupied {
                         game_session_id: Some(session),
@@ -998,6 +990,15 @@ impl ChannelActorCarrier {
                         .ok()?;
                     Some((lease.character_id(), lease.generation(), *session))
                 })
+            } else {
+                attacker.map(|attacker| {
+                    (
+                        attacker.character,
+                        attacker.lease_generation,
+                        attacker.session,
+                    )
+                })
+            }
         } else {
             None
         };

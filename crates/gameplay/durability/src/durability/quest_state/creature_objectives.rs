@@ -26,6 +26,17 @@ impl ObjectiveDeath {
         let lease = runtime.bound_attacker_lease(actor, session).ok()?;
         let character = lease.character_id();
         let generation = lease.generation();
+        let dealt_damage = if credit == CreditRule::DamagingPlayers {
+            runtime
+                .source_player_damage_shares(target)
+                .ok()?
+                .iter()
+                .any(|share| {
+                    share.actor == actor && share.character == character && share.total > 0
+                })
+        } else {
+            false
+        };
         let owner = runtime.borrow_combat_death();
         let eligible = match credit {
             CreditRule::MostDamageParty => false,
@@ -47,18 +58,7 @@ impl ObjectiveDeath {
                         id == character && lease == generation && observed == session
                     })
             }
-            CreditRule::DamagingPlayers => {
-                owner
-                    .reward_damage_shares(target)
-                    .ok()?
-                    .iter()
-                    .any(|share| {
-                        share.character == character
-                            && share.total > 0
-                            && share.session == Some(session)
-                            && share.lease_generation == Some(generation)
-                    })
-            }
+            CreditRule::DamagingPlayers => dealt_damage,
         };
         if !eligible {
             return None;
