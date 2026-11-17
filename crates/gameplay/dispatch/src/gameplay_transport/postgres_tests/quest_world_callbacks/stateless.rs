@@ -114,6 +114,28 @@ pub(super) async fn exercise(
         "authored stateless STEP destination for {}",
         callback.key
     );
+    if callback.selector.action == Some(25018) {
+        let effects = owner
+            .bundle_map()
+            .ok_or("map")?
+            .facts
+            .movement_effects_since(0);
+        assert_eq!(effects.len(), 1, "one donor stair arrival cue");
+        assert_eq!(
+            (
+                effects[0].1.x,
+                effects[0].1.y,
+                effects[0].1.floor,
+                effects[0].2
+            ),
+            (
+                expected_destination.x,
+                expected_destination.y,
+                expected_destination.floor,
+                11
+            )
+        );
+    }
     // Crystal201189f movements_waterfall.lua:16-29. Expectations are literal
     // donor values, independent of the authored callback's effect fields.
     let snapshot = owner

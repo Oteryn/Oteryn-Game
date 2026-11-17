@@ -68,7 +68,7 @@ fn actmark_all_four_stairs_run_donor_stepin_postgres() -> TestResult {
     std::thread::Builder::new()
         .name("actmark-stairs".into())
         .stack_size(256 << 20)
-        .spawn(|| -> TestResult {
+        .spawn(|| -> Result<(), String> {
             for (name, from, to) in routes() {
                 super::quest_world_callbacks::stateless_scenario(
                     name,
@@ -80,14 +80,23 @@ fn actmark_all_four_stairs_run_donor_stepin_postgres() -> TestResult {
         })?
         .join()
         .map_err(|_| "actmark thread panicked")?
+        .map_err(Into::into)
 }
 
 #[test]
 fn actmark_tile_without_action_does_nothing_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty());
     negative("actmark-no-marker")
 }
 #[test]
 fn actmark_unmatched_position_keeps_donor_feedback_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    assert!(!admin.is_empty());
     negative("actmark-unmatched-position")
 }
 fn negative(name: &'static str) -> TestResult {
@@ -100,9 +109,11 @@ fn negative(name: &'static str) -> TestResult {
         .stack_size(256 << 20)
         .spawn(move || {
             super::quest_world_callbacks::scenario(name, position((31973, 32905, -11)), false)
+                .map_err(|error| error.to_string())
         })?
         .join()
         .map_err(|_| "actmark thread panicked")?
+        .map_err(Into::into)
 }
 
 pub(super) fn callback() -> TestResult<Callback> {
@@ -173,7 +184,7 @@ pub(super) async fn exercise(
     assert_eq!(
         actual,
         crate::foundation::MovementLocalPosition {
-            x: entered.x + (steps - 1) as i32,
+            x: entered.x + i32::try_from(steps - 1)?,
             ..entered
         }
     );
