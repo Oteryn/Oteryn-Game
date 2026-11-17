@@ -97,13 +97,17 @@ struct PreparedKillExperience {
     amount: oteryn_simulation_determinism::ExactI64,
 }
 
+#[derive(Debug, Clone)]
+pub(super) struct CapturedWorldChangeKill {
+    epoch: u64,
+    event: Option<crate::durability::world_event::changes::counters::CreditEvent>,
+    thornfire_home_bit: Option<i64>,
+}
+
 /// One captured kill awaiting its settle.
 #[derive(Debug, Clone)]
 pub struct PendingKillSettlement {
-    pub(super) world_change: Option<(
-        u64,
-        crate::durability::world_event::changes::counters::CreditEvent,
-    )>,
+    pub(super) world_change: Option<CapturedWorldChangeKill>,
     pub facts: ProjectedCreatureDeathFacts,
     pub creature: String,
     pub row: Option<Arc<CreatureRewardRow>>,
@@ -2068,7 +2072,16 @@ pub fn record_creature_kill(
                     credits.push((CounterKind::TheirMastersVoice, Credit::VoiceMage));
                 }
             }
-            if credits.is_empty() {
+            let thornfire_home_bit = creature
+                .strip_prefix("oteryn:creature.")
+                .filter(|key| matches!(*key, "elf" | "elf_scout" | "elf_arcanist" | "elf_overseer"))
+                .and_then(|key| {
+                    let home = runtime.world_spawn_home(target)?;
+                    oteryn_gameplay_world_change::thornfire::elf_home_bit(
+                        key, home.x, home.y, home.floor,
+                    )
+                });
+            if credits.is_empty() && thornfire_home_bit.is_none() {
                 return None;
             }
             let mut generations = [0; 8];
@@ -2085,17 +2098,20 @@ pub fn record_creature_kill(
                     generations[kind.index()] = generation;
                 }
             }
-            Some((
-                *epoch,
-                crate::durability::world_event::changes::counters::CreditEvent {
-                    source_kind: 1,
-                    occurrence: crate::durability::party_kill_xp::encode_death_key(facts.death),
-                    credits,
-                    counter_generations: generations,
-                    occurred_at_ms: facts.died_at_unix_ms,
-                    character: Some(principal.character),
-                },
-            ))
+            Some(CapturedWorldChangeKill {
+                epoch: *epoch,
+                thornfire_home_bit,
+                event: (!credits.is_empty()).then(|| {
+                    crate::durability::world_event::changes::counters::CreditEvent {
+                        source_kind: 1,
+                        occurrence: crate::durability::party_kill_xp::encode_death_key(facts.death),
+                        credits,
+                        counter_generations: generations,
+                        occurred_at_ms: facts.died_at_unix_ms,
+                        character: Some(principal.character),
+                    }
+                }),
+            })
         })
     } else {
         None
@@ -3589,7 +3605,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         inflight_before: usize,
     ) -> SettleReport {
         let admission = self.admission;
-        if let Some((epoch, event)) = &entry.world_change {
+        if let Some(captured) = &entry.world_change {
             let current = {
                 let runtime = admission.runtime.lock().await;
                 let digest = runtime.content_pin().server_artifact_digest();
@@ -3615,13 +3631,35 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                     no_progression: false,
                 };
             };
-            match admission.root.credit_world_change_event(admission.character, admission.holder, scope, generation, *epoch, event.clone()).await {
-                Ok(crate::durability::world_event::changes::counters::CreditOutcome::Applied { .. } |
-                   crate::durability::world_event::changes::counters::CreditOutcome::AlreadyApplied) => {},
-                Ok(crate::durability::world_event::changes::counters::CreditOutcome::Refused) => {
-                    operator_event("world_change_credit_refused reason=stale_source_or_cycle");
-                },
-                Err(_) => return SettleReport { verdict: SettleVerdict::Retry, no_progression: false },
+            if let Some(home_bit) = captured.thornfire_home_bit
+                && matches!(scope, crate::foundation::RuntimeScopeRefV1::Channel { .. })
+                && admission
+                    .root
+                    .credit_thornfire_elf(
+                        admission.character,
+                        admission.holder,
+                        scope,
+                        generation,
+                        captured.epoch,
+                        home_bit,
+                    )
+                    .await
+                    .is_err()
+            {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            }
+            if let Some(event) = &captured.event {
+                match admission.root.credit_world_change_event(admission.character, admission.holder, scope, generation, captured.epoch, event.clone()).await {
+                    Ok(crate::durability::world_event::changes::counters::CreditOutcome::Applied { .. } |
+                       crate::durability::world_event::changes::counters::CreditOutcome::AlreadyApplied) => (),
+                    Ok(crate::durability::world_event::changes::counters::CreditOutcome::Refused) => {
+                        operator_event("world_change_credit_refused reason=stale_source_or_cycle");
+                    },
+                    Err(_) => return SettleReport { verdict: SettleVerdict::Retry, no_progression: false },
+                }
             }
         }
         if entry.soulpit_experience.is_some() {

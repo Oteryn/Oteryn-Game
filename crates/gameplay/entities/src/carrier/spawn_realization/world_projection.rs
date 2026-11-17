@@ -22,6 +22,18 @@ impl ChannelRuntimeV1 {
             .point(usize::from(point.ordinal))?
             .enabled)
     }
+    /// Authored home of the exact actor currently assigned to a spawn slot.
+    pub fn world_spawn_home(&self, actor: ExactActorRef) -> Option<MovementLocalPosition> {
+        let (source, ordinal) = self.carrier.locate_spawn_cell(actor)?;
+        let source = &self.carrier.spawns[self.carrier.spawn_index(source)?];
+        let cell = source.definition.placement_cells.get(ordinal)?;
+        Some(MovementLocalPosition {
+            x: cell.x,
+            y: cell.y,
+            floor: cell.floor,
+        })
+    }
+
     /// The actual actor's source cohort survives a delayed global phase observation.
     /// A newer cache cannot relabel a still-reserved actor from the preceding cohort.
     pub fn world_spawn_cohort(

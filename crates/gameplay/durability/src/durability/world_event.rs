@@ -94,6 +94,9 @@ pub(super) async fn record_reset(
     }
     capture_calendar(tx, world, epoch, catalogue).await?;
     changes::record(tx, world, epoch).await?;
+    if is_new {
+        changes::thornfire::record_save(tx, world, epoch).await?;
+    }
     super::world_event_outcomes::capture_reset(tx, world, epoch).await?;
     Ok(())
 }
