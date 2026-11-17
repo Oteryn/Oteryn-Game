@@ -115,6 +115,7 @@ use crate::spell::cast::{CastContext, CharacterCastFacts, PlayerSpellState, cast
 #[derive(Debug)]
 pub struct ChannelSpellStates {
     pub(super) encounter_phases: super::encounter_phases::Registry,
+    observer_eye_pair: Option<actor_movement::ObserverEyePair>,
     pub(super) native_self_heals: crate::foundation::CreatureSelfHealLedger,
     pub(super) native_self_heal_content: Option<[u8; 32]>,
     pub(super) analyser: std::sync::Arc<super::analyser::AnalyserStreams>,
@@ -328,6 +329,7 @@ impl Default for ChannelSpellStates {
     fn default() -> Self {
         Self {
             encounter_phases: Default::default(),
+            observer_eye_pair: None,
             native_self_heals: Default::default(),
             native_self_heal_content: None,
             enchanting_pending: Vec::new(),

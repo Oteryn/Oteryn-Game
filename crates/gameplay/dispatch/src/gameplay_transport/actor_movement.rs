@@ -6,6 +6,10 @@
 )]
 #[path = "actor_movement/observer_eye.rs"]
 mod observer_eye;
+#[cfg(test)]
+#[path = "actor_movement/observer_eye_tests.rs"]
+mod observer_eye_tests;
+pub(super) use observer_eye::ObserverEyePair;
 
 use super::ChannelSpellStates;
 use crate::content::{LogicalCell, NativeEntryMovementCells};
@@ -234,7 +238,8 @@ pub fn step_in_channel_with_source_step(
     prepared_source_step: Option<crate::movement::source_floor_change::SourceStepProof<'_>>,
 ) -> StepInChannel {
     use oteryn_gameplay_spell_rules::cast::{STAIRHOP_COOLDOWN_KEY, STAIRHOP_MICROS};
-    let direction = if runtime.forced_player_step_current(actor, session) {
+    let forced = runtime.forced_player_step_current(actor, session);
+    let direction = if forced {
         direction
     } else {
         states.drome_step_direction(runtime, actor, session, now_us, direction)?
@@ -242,6 +247,9 @@ pub fn step_in_channel_with_source_step(
     let expected = runtime
         .read_actor_position(actor)
         .map_err(MovementError::Actor)?;
+    if !forced && observer_eye::holds_partner(runtime, states, actor, now_us) {
+        return Err(MovementError::Blocked);
+    }
     let starts_stairhop = if crate::map::floor::table_of(cells).is_some() {
         crate::map::floor::prepare_bundle_step(
             runtime, cells, actor, session, expected, direction, false, blocking,
@@ -296,16 +304,19 @@ pub fn step_in_channel_with_source_step(
     {
         state.cooldowns = cooldowns;
     }
-    observer_eye::mirror_step(
-        runtime,
-        states,
-        cells,
-        actor,
-        expected.position(),
-        result.0.position(),
-        now_us,
-        blocking,
-    );
+    if !forced {
+        observer_eye::mirror_step(
+            runtime,
+            states,
+            cells,
+            actor,
+            session,
+            expected.position(),
+            result.0.position(),
+            now_us,
+            blocking,
+        );
+    }
     Ok(result)
 }
 
@@ -1644,7 +1655,3 @@ mod creature_field_step_tests {
         );
     }
 }
-
-#[cfg(test)]
-#[path = "actor_movement/observer_eye_tests.rs"]
-mod observer_eye_tests;
