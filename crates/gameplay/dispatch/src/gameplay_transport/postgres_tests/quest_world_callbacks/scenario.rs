@@ -1531,7 +1531,9 @@ fn scenario_case(
                 5
             } else if monk {
                 4
-            } else if callback.effects.encounter.is_some() {
+            } else if callback.effects.encounter.is_some()
+                || name == super::super::lersatio_use::NAME
+            {
                 16
             } else {
                 2
