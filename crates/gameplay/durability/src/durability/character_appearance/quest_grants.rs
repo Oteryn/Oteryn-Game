@@ -91,6 +91,18 @@ pub(crate) async fn grant_content_outfit(
         if sqlx::query("INSERT INTO game_account_appearance_unlocks(account_id,unlock_key,grant_occurrence_id) VALUES($1,$2,encode($3,'hex')::uuid)").bind(account).bind(&key).bind(id.as_slice()).execute(&mut **tx).await?.rows_affected() != 1 { return Err(DurabilityError::InvalidStoredState); }
         granted.push(key);
     }
+    if reward.addons != 0 {
+        super::evaluate_full_outfit(
+            tx,
+            character,
+            native
+                .cosmetics()
+                .ok_or(DurabilityError::InvalidStoredState)?,
+            &reward.outfit,
+            occurrence,
+        )
+        .await?;
+    }
     Ok(granted)
 }
 

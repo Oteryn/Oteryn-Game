@@ -131,7 +131,8 @@ async fn prepare_with_custody(
     let owned = EarnedCosmetics {
         content,
         facts: &facts,
-    }.with_sex(sex);
+    }
+    .with_sex(sex);
     let component_keys: Vec<_> = rule.components.iter().map(|p| p.key.as_str()).collect();
     let rows: Vec<(String, i64)> = sqlx::query_as(
         "SELECT component_key,contributions FROM game_character_item_cosmetic_progress WHERE character_id=encode($1,'hex')::uuid AND component_key=ANY($2::text[]) FOR UPDATE",
@@ -243,6 +244,7 @@ pub(super) async fn apply(
     _request: &ConsumeTransformRequest,
     plan: &ActionPlan,
     transaction: &str,
+    native: &NativeGameplayState,
 ) -> Result<(), DurabilityError> {
     let Some(value) = plan.effects.get("cosmetic") else {
         return Ok(());
@@ -274,6 +276,20 @@ pub(super) async fn apply(
             .bind(fence.character_id.as_bytes().as_slice()).bind(transaction).execute(&mut ***tx).await?;
         sqlx::query("INSERT INTO game_account_appearance_unlocks(account_id,unlock_key,grant_occurrence_id) VALUES($1,$2,$3)")
             .bind(account).bind(&grant.grant_key).bind(occurrence).execute(&mut ***tx).await?;
+    }
+    for grant in &effect.grants {
+        if grant.kind == rules::GrantKind::Addon {
+            super::character_appearance::evaluate_full_outfit(
+                tx,
+                fence.character_id,
+                native
+                    .cosmetics()
+                    .ok_or(DurabilityError::InvalidStoredState)?,
+                &grant.cosmetic_key,
+                transaction.as_bytes(),
+            )
+            .await?;
+        }
     }
     if let Some(progress) = &effect.progress {
         if progress.after

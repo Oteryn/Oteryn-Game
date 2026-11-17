@@ -919,7 +919,7 @@ async fn persist_action(
         .bind(i32::try_from(parent_capacity).map_err(|_| DurabilityError::InvalidStoredState)?)
         .bind(plan.consume_source).bind(&plan.effects).bind(json!(extra_inputs)).bind(source_kind)
         .bind(native.source_digest().as_slice()).bind(source_location).bind(i64::from(plan.source_count)).bind(&audit_context).bind(audit_commitment).execute(&mut ***tx).await?;
-    super::consume_transform_cosmetics::apply(tx, fence, request, plan, &transaction).await?;
+    super::consume_transform_cosmetics::apply(tx, fence, request, plan, &transaction, native).await?;
     if source_kind == 5 {
         house::apply_in_transaction(tx, &transaction).await?;
     }

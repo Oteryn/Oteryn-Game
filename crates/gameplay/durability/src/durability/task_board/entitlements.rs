@@ -188,6 +188,16 @@ pub(super) async fn apply(
         .bind(fence.character_id.as_bytes().as_slice()).execute(&mut ***tx).await?;
     sqlx::query("INSERT INTO game_account_appearance_unlocks(account_id,unlock_key,grant_occurrence_id) VALUES($1,$2,$3)")
         .bind(owner).bind(&grant.key).bind(occurrence).execute(&mut ***tx).await?;
+    if grant.kind == TaskBoardShopKind::Outfit && grant.addon > 0 {
+        crate::durability::character_appearance::evaluate_full_outfit(
+            tx,
+            fence.character_id,
+            cosmetics,
+            &grant.target,
+            occurrence.as_bytes(),
+        )
+        .await?;
+    }
     Ok(None)
 }
 

@@ -153,6 +153,8 @@ pub struct AppearanceValidationContext<C> {
 mod character_sex;
 mod current_appearance;
 mod earned_unlocks;
+mod full_outfit;
+pub(crate) use full_outfit::evaluate as evaluate_full_outfit;
 mod grant_lock;
 pub(crate) use grant_lock::{item_action_sex, lock_account_grants};
 mod marriage;
