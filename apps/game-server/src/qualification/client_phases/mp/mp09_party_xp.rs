@@ -44,15 +44,20 @@ pub(super) async fn run(
     world: &BundleWorld,
 ) -> TestResult {
     let started = std::time::Instant::now();
-    // MP01 precedes this row and already owns the only permitted provisioning of these roles.
-    let (mut bots, setup) =
-        bots::connect_bots(&[(core, 0, None), (packets, 0, None), (packets, 1, None)]).await;
+    let (mut bots, setup) = match profile_roles(core, packets).await {
+        Ok(profiles) => {
+            let (bots, setup) =
+                bots::connect_bots(&[(core, 0, None), (packets, 0, None), (packets, 1, None)])
+                    .await;
+            (
+                bots,
+                setup.map(|()| format!("three distinct real sessions;{profiles}")),
+            )
+        }
+        Err(error) => (Vec::new(), Err(error)),
+    };
     let mut failures = Vec::new();
-    let admitted = check(
-        "admissions",
-        setup.map(|()| "three distinct real sessions; MP01 profiles reused".into()),
-        &mut failures,
-    );
+    let admitted = check("admissions", setup, &mut failures);
     let mut before = Vec::new();
     let prepared = if admitted {
         check("join-and-level-range", async {
@@ -244,6 +249,47 @@ pub(super) async fn run(
     } else {
         Err(failures.join("; ").into())
     }
+}
+
+/// MP01 normally profiles these roles, but an aborted MP01 admission leaves later roles
+/// fresh. The fixture provisions only fresh Characters
+/// (apps/game-server/src/qualification_spell_character.rs:234-269), so each role is
+/// read from durable build state and a fresh one is provisioned with no other bot online: another
+/// session's admission churn closed MP01's waiting leader
+/// (crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:412).
+async fn profile_roles(core: &SeamClients<'_>, packets: &SeamClients<'_>) -> TestResult<String> {
+    let mut reused = Vec::new();
+    let mut provisioned = Vec::new();
+    for (pair, index, profile) in [
+        (core, 0, "knight"),
+        (packets, 0, "druid"),
+        (packets, 1, "paladin"),
+    ] {
+        let mut database = sqlx::PgConnection::connect(pair.url).await?;
+        let stored: Option<String> = sqlx::query_scalar("SELECT vocation FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid")
+            .bind(pair.characters[index].as_slice()).fetch_optional(&mut database).await?;
+        database.close().await?;
+        match stored.as_deref() {
+            Some(stored) if stored == profile => {
+                reused.push(profile);
+                continue;
+            }
+            None | Some("none") => {}
+            Some(stored) => return Err(format!("role={profile} durable vocation={stored};fixture provisions only fresh Characters;source:apps/game-server/src/qualification_spell_character.rs:234").into()),
+        }
+        let (mut alone, setup) = bots::connect_bots(&[(pair, index, Some(profile))]).await;
+        let released = bots::release_all(&mut alone, core, packets).await;
+        if let Err(error) = setup {
+            return Err(
+                format!("provision role={profile} error={error};release={released:?}").into(),
+            );
+        }
+        released?;
+        provisioned.push(profile);
+    }
+    Ok(format!(
+        "profiles reused={reused:?} provisioned={provisioned:?}"
+    ))
 }
 
 fn crystal_share(pool: u64) -> u64 {
