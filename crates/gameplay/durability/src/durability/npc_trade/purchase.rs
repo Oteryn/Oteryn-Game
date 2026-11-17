@@ -111,7 +111,8 @@ pub(super) async fn prepare(
 ) -> Result<PreparedPurchase> {
     if request.cause.side != NpcTradeSide::Buy
         || request.quantity != 1
-        || request.offer_count != 1
+        || !(1..=100).contains(&request.offer_count)
+        || !selection.amount.is_multiple_of(request.offer_count)
         || !(1..=5).contains(&selection.category)
     {
         return Err(NpcTradeError::InvalidInput);
@@ -147,7 +148,7 @@ pub(super) async fn prepare(
     };
     let total = request
         .unit_price
-        .checked_mul(u64::from(selection.amount))
+        .checked_mul(u64::from(selection.amount / request.offer_count))
         .and_then(|cost| cost.checked_add(u64::from(bags) * 20))
         .ok_or(NpcTradeError::InvalidInput)?;
     // Preserve the ordinary deterministic coin fee plan. Replace only its singleton item MINT.
@@ -280,7 +281,7 @@ pub(super) async fn prepare(
     let input = PurchaseInput {
         amount: selection.amount,
         stack_size,
-        unit_price: request.unit_price,
+        unit_price: 0,
         in_backpacks: selection.in_backpacks,
         ignore_cap: selection.ignore_cap,
         free_slots: u32::try_from(main_free)
@@ -430,6 +431,7 @@ pub(super) async fn prepare(
         return Err(NpcTradeError::CapacityExceeded);
     }
     let audit = OneItemNpcBulkPurchaseV1 {
+        offer_count: request.offer_count,
         in_backpacks: selection.in_backpacks,
         ignore_cap: selection.ignore_cap,
         stack_size,
@@ -452,8 +454,8 @@ pub(super) async fn store(
     request: &NpcTradeRequest,
     prepared: &PreparedPurchase,
 ) -> std::result::Result<(), DurabilityError> {
-    sqlx::query("INSERT INTO game_npc_purchase_details(transaction_id,in_backpacks,ignore_cap,stack_size,bag_count,response_text) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5,$6)")
-        .bind(request.transaction_id.as_slice()).bind(prepared.audit.in_backpacks).bind(prepared.audit.ignore_cap).bind(i32::try_from(prepared.audit.stack_size).map_err(|_|DurabilityError::InvalidStoredState)?).bind(prepared.bag.as_ref().map_or(0,|_|prepared.units.div_ceil(prepared.audit.stack_size).div_ceil(20)) as i32).bind(&prepared.text).execute(&mut **tx).await?;
+    sqlx::query("INSERT INTO game_npc_purchase_details(transaction_id,in_backpacks,ignore_cap,stack_size,bag_count,response_text,offer_count) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5,$6,$7)")
+        .bind(request.transaction_id.as_slice()).bind(prepared.audit.in_backpacks).bind(prepared.audit.ignore_cap).bind(i32::try_from(prepared.audit.stack_size).map_err(|_|DurabilityError::InvalidStoredState)?).bind(prepared.bag.as_ref().map_or(0,|_|prepared.units.div_ceil(prepared.audit.stack_size).div_ceil(20)) as i32).bind(&prepared.text).bind(i64::from(request.offer_count)).execute(&mut **tx).await?;
     for (index, output) in prepared.audit.outputs.iter().enumerate() {
         let line = prepared
             .plan
@@ -543,10 +545,10 @@ impl DurabilityRoot {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
             lock_occurrence(&mut tx,&occurrence).await?;
-            let row=sqlx::query("SELECT t.occurrence_id::text,t.catalogue_revision::text,t.offer_index,t.quantity,t.unit_price::text,p.in_backpacks,p.ignore_cap,p.response_text FROM game_npc_trades t JOIN game_npc_purchase_details p USING(transaction_id) WHERE t.character_id=encode($1,'hex')::uuid AND t.game_session_id=encode($2,'hex')::uuid AND t.command_id=$3::text::numeric")
+            let row=sqlx::query("SELECT t.occurrence_id::text,t.catalogue_revision::text,t.offer_index,t.quantity,t.unit_price::text,p.in_backpacks,p.ignore_cap,p.response_text,p.offer_count FROM game_npc_trades t JOIN game_npc_purchase_details p USING(transaction_id) WHERE t.character_id=encode($1,'hex')::uuid AND t.game_session_id=encode($2,'hex')::uuid AND t.command_id=$3::text::numeric")
                 .bind(character.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_optional(&mut *tx).await?;
             let answer=if let Some(row)=row {
-                if uuid_text(&row.try_get::<String,_>("occurrence_id")?)?!=occurrence || numeric_u64(&row,"catalogue_revision")?!=intent.offer.catalogue_revision || row.try_get::<i32,_>("offer_index")?!=intent.offer.offer_index as i32 || row.try_get::<i64,_>("quantity")?!=i64::from(intent.amount) || numeric_u64(&row,"unit_price")?!=u64::from(intent.offer.expected_unit_price) || row.try_get::<bool,_>("in_backpacks")?!=intent.in_backpacks || row.try_get::<bool,_>("ignore_cap")?!=intent.ignore_cap {return Ok(Err(NpcTradeError::ConflictingOccurrence));}
+                if uuid_text(&row.try_get::<String,_>("occurrence_id")?)?!=occurrence || numeric_u64(&row,"catalogue_revision")?!=intent.offer.catalogue_revision || row.try_get::<i32,_>("offer_index")?!=intent.offer.offer_index as i32 || row.try_get::<i64,_>("quantity")?!=i64::from(intent.amount) * row.try_get::<i64,_>("offer_count")? || numeric_u64(&row,"unit_price")?!=u64::from(intent.offer.expected_unit_price) || row.try_get::<bool,_>("in_backpacks")?!=intent.in_backpacks || row.try_get::<bool,_>("ignore_cap")?!=intent.ignore_cap {return Ok(Err(NpcTradeError::ConflictingOccurrence));}
                 Some(row.try_get("response_text")?)
             } else {None};
             commit_semantic_transaction(tx,deadline).await?;

@@ -5,6 +5,8 @@ use oteryn_gameplay_economy::npc_purchase::{SHOPPING_BAG_PRICE, SHOPPING_BAG_SLO
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemNpcBulkPurchaseV1 {
+    #[prost(uint32, tag = "7")]
+    pub offer_count: u32,
     #[prost(bool, tag = "1")]
     pub in_backpacks: bool,
     #[prost(bool, tag = "2")]
@@ -58,6 +60,8 @@ pub(super) fn check(
     if item.family != "Item" || Coin::from_production_key(&item.production_key).is_some() {
         return Err(bad());
     }
+    let count = purchase.offer_count.max(1);
+    if count > 100 || !value.quantity.is_multiple_of(count) { return Err(bad()); }
     let stacks = value.quantity.div_ceil(purchase.stack_size);
     let bags = if purchase.in_backpacks {
         stacks.div_ceil(SHOPPING_BAG_SLOTS)
@@ -66,7 +70,7 @@ pub(super) fn check(
     };
     if value
         .unit_price
-        .checked_mul(u64::from(value.quantity))
+        .checked_mul(u64::from(value.quantity / count))
         .and_then(|cost| cost.checked_add(u64::from(bags) * SHOPPING_BAG_PRICE))
         != Some(value.total_gold_units)
         || purchase.outputs.len() != usize::try_from(stacks + bags).map_err(|_| bad())?

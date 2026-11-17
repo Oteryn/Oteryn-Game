@@ -860,6 +860,7 @@ message OneItemNpcBulkPurchaseV1 {
   OneItemTypedDefinitionRevisionV1 item_definition = 4;
   optional OneItemTypedDefinitionRevisionV1 bag_definition = 5;
   repeated OneItemNpcBulkPurchaseOutputV1 outputs = 6;
+  uint32 offer_count = 7; // Zero in historical payloads means one; quantity is physical units.
 }
 message OneItemNpcBulkPurchaseOutputV1 {
   bytes item_instance_id = 1;

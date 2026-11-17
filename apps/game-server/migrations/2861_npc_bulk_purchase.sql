@@ -20,6 +20,7 @@ ALTER TABLE game_npc_trade_lines DROP CONSTRAINT game_npc_trade_lines_line_ordin
 CREATE TABLE game_npc_purchase_details (
  transaction_id UUID PRIMARY KEY REFERENCES game_npc_trades(transaction_id),
  in_backpacks BOOLEAN NOT NULL, ignore_cap BOOLEAN NOT NULL,
+ offer_count BIGINT NOT NULL CHECK(offer_count BETWEEN 1 AND 100),
  stack_size INTEGER NOT NULL CHECK(stack_size BETWEEN 1 AND 100),
  bag_count INTEGER NOT NULL CHECK(bag_count BETWEEN 0 AND 128),
  response_text TEXT NOT NULL CHECK(octet_length(response_text) BETWEEN 1 AND 1024),
@@ -55,7 +56,7 @@ BEGIN
  IF NOT FOUND OR p.created_xact_id<>pg_current_xact_id() THEN RETURN FALSE; END IF;
  stacks:=(t.quantity+p.stack_size-1)/p.stack_size;
  bags:=CASE WHEN p.in_backpacks THEN (stacks+19)/20 ELSE 0 END;
- IF p.bag_count<>bags OR t.item_units<>t.quantity OR t.total_gold_units<>t.unit_price*t.quantity+20*bags
+ IF p.bag_count<>bags OR t.item_units<>t.quantity OR t.quantity%p.offer_count<>0 OR t.total_gold_units<>t.unit_price*(t.quantity/p.offer_count)+20*bags
   OR NOT EXISTS(SELECT 1 FROM game_item_container_slots WHERE character_id=t.character_id AND item_instance_id=t.backpack_item_instance_id AND world_id=t.world_id)
   OR (SELECT count(*) FROM game_npc_purchase_outputs WHERE transaction_id=p_transaction)<>stacks+bags
   OR (SELECT max(purchase_index) FROM game_npc_purchase_outputs WHERE transaction_id=p_transaction)<>stacks+bags-1

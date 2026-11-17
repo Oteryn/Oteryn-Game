@@ -530,19 +530,24 @@ pub(super) async fn trade_mode(
         };
         let (stack_size, _) = crate::durability::item_transfer::stack_maximum(request.item.stack)
             .map_err(|_| Box::new(NpcTradeStep::rejected()))?;
+        let amount = purchase
+            .amount
+            .checked_mul(request.offer_count)
+            .filter(|amount| *amount <= 10_000)
+            .ok_or_else(|| Box::new(NpcTradeStep::rejected()))?;
         let bags = if purchase.in_backpacks {
-            purchase.amount.div_ceil(stack_size).div_ceil(20)
+            amount.div_ceil(stack_size).div_ceil(20)
         } else {
             0
         };
         purchase_text = Some(oteryn_gameplay_economy::npc_purchase::purchase_message(
-            purchase.amount,
+            amount,
             &name,
             bags,
             request.unit_price * u64::from(purchase.amount) + u64::from(bags) * 20,
         ));
         let selection = npc_trade::purchase::PurchaseSelection {
-            amount: purchase.amount,
+            amount,
             in_backpacks: purchase.in_backpacks,
             ignore_cap: purchase.ignore_cap,
             category,

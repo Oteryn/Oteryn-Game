@@ -1275,6 +1275,7 @@ fn shopping_bag_purchase() -> OneItemNpcTradeV1 {
         }
     }
     value.purchase = Some(OneItemNpcBulkPurchaseV1 {
+        offer_count: 1,
         in_backpacks: true,
         ignore_cap: false,
         stack_size: 1,
@@ -1325,5 +1326,15 @@ fn purchase_audit_preserves_native_fluid_bounds_for_bag_contents() {
     }
     assert_eq!(check_npc_trade(&value), Ok(()));
     value.fluid_subtype = Some(21);
+    assert!(check_npc_trade(&value).is_err());
+}
+
+#[test]
+fn purchase_audit_proves_bundle_count_separately_from_physical_outputs() {
+    let mut value = shopping_bag_purchase();
+    value.purchase.as_mut().unwrap().offer_count = 5;
+    value.unit_price *= 5;
+    assert_eq!(check_npc_trade(&value), Ok(()));
+    value.purchase.as_mut().unwrap().offer_count = 4;
     assert!(check_npc_trade(&value).is_err());
 }

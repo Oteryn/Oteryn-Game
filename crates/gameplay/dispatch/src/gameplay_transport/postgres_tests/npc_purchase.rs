@@ -39,6 +39,7 @@ const RASHID: &str = "oteryn:npc.rashid";
 enum Case {
     Bags,
     Bank,
+    Bundle,
     Stackable,
     Unfunded,
     Obtain,
@@ -53,6 +54,15 @@ fn npc_buy_in_backpacks_uses_bank_once() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     std::thread::Builder::new().stack_size(256 << 20)
         .spawn(move || scenario(admin, Case::Bank).map_err(|error| error.to_string()))?
+        .join().map_err(|_| "bank purchase scenario thread panicked")??;
+    Ok(())
+}
+
+#[test]
+fn npc_buy_bundled_offer_prices_bundles_and_mints_all_units() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    std::thread::Builder::new().stack_size(256 << 20)
+        .spawn(move || scenario(admin, Case::Bundle).map_err(|error| error.to_string()))?
         .join().map_err(|_| "bank purchase scenario thread panicked")??;
     Ok(())
 }
@@ -316,6 +326,9 @@ fn scenario(admin: String, case: Case) -> TestResult {
         let h =
             Harness::create_with_admission_seed(admin, "npc_purchase_wire", true, false).await?;
         prepare_current_session(&h).await?;
+        if case == Case::Bank {
+            sqlx::query("INSERT INTO game_type2_audit_activation VALUES (1, now())").execute(&h.pool).await?;
+        }
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -340,7 +353,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
         owner.active_generation = Some(active);
         deps.initialize(&owner).await;
         // Freeze a two-gold native offer while retaining the normal NPC catalogue and route.
-        let sold_item = if case == Case::Stackable {
+        let sold_item = if matches!(case, Case::Stackable | Case::Bundle) {
             "oteryn:item.tibia.i3446"
         } else {
             "oteryn:item.tibia.i3264"
@@ -362,7 +375,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
             direction: ProjectV2ServiceOfferDirection::SellToPlayer,
             unit_price: u64::from(unit_price),
             currency: None,
-            count: None,
+            count: (case == Case::Bundle).then_some(100),
             sub_type: None,
             parity_pending: false,
         };
@@ -641,6 +654,7 @@ fn scenario(admin: String, case: Case) -> TestResult {
             let amount = match case {
                 Case::Bags | Case::Unfunded | Case::Bank => 45,
                 Case::Stackable => 250,
+                Case::Bundle => 3,
                 Case::Drop => 3,
                 _ => 1,
             };
@@ -735,6 +749,11 @@ fn scenario(admin: String, case: Case) -> TestResult {
                         "Bought 250x bolt and 1 shopping bag for 520 gold coins."
                     };
                     assert_eq!(std::str::from_utf8(&text)?, expected);
+                }
+                if case == Case::Bundle {
+                    let stacks: Vec<i64> = sqlx::query_scalar("SELECT quantity FROM game_npc_purchase_outputs ORDER BY purchase_index").fetch_all(&h.pool).await?;
+                    assert_eq!(stacks, vec![100,100,100]);
+                    assert_eq!(std::str::from_utf8(&text)?, "Bought 300x bolt for 6 gold coins.");
                 }
                 if case == Case::Drop {
                     assert_eq!(
