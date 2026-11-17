@@ -160,7 +160,8 @@ async fn use_at(
             y: at.y,
             floor: at.floor,
         },
-        1,
+        // The door is the first object above the ground; the body lies under a second item.
+        if at == FUGIO_BODY { 2 } else { 1 },
     )
     .ok_or("qd-b2 placement key")?;
     let mut placement = map.overlay.base().digest().to_vec();
@@ -302,14 +303,16 @@ async fn white_raven(
         FUGIO_STAND,
     )
     .await?;
-    assert_eq!(count(h, BACKPACK).await?, 0);
+    // The starter kit already carries a backpack; count the one the body yields.
+    let backpacks = count(h, BACKPACK).await?;
+    assert_eq!(count(h, DIARY).await?, 0);
     assert_eq!(
         use_at(owner, admitted, FUGIO_BODY, plain).await?,
         UseDisposition::Committed
     );
     assert_eq!(
         count(h, BACKPACK).await?,
-        1,
+        backpacks + 1,
         "Fugio's body holds a backpack"
     );
     assert_eq!(
@@ -374,11 +377,24 @@ async fn troll_sabotage(
         ],
     )
     .await?;
-    let name = owner
+    // The fixture chat name is a placeholder; the source answer is the durable Character name.
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(debug)?
+        .ok_or("fence")?;
+    let name: String = sqlx::query_scalar(
+        "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    let now = owner.owner_now();
+    owner
         .states
         .chat
-        .speaker_name(admitted.game_session_id)
-        .ok_or("speaker name")?;
+        .admit(admitted.game_session_id, &name, now);
+    owner.states.chat.set_npc_service(admitted.game_session_id);
     let mut command = admitted.continuity.next_command_id + 1000;
     let progress = super::classic_quests::progress;
     // Grarkharok ignores a threat before Jerom's mission.
