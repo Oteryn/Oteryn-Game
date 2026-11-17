@@ -77,3 +77,8 @@ Assertions are retained while the transaction refusal is diagnosed.
 
 Status: implementation authored; PostgreSQL green qualification and remaining
 validation are pending. This branch is WIP and has no PR.
+
+Native admission regression `test_brain_ground_output_closes_native_item_provider`
+passed (116.75 seconds), proving 19078 has ordinary nonstackable portable admission
+and weight 1500 without changing canonical Item facts. The full profile test module
+and real-USE diagnostic run are in progress; native regeneration is next.
