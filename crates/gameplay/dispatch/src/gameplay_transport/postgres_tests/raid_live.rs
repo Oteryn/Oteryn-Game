@@ -17,6 +17,21 @@ use oteryn_gameplay_entities::carrier::RaidSpawnOutcome;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 #[test]
+fn horse_station_postgres_places_native_raid_horses() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    let started = std::time::Instant::now();
+    run_case("horse_raid_live", "oteryn:raid.horse_station", 24, false)?;
+    println!(
+        "PASS horse_station_postgres_places_native_raid_horses elapsed_ms={}",
+        started.elapsed().as_millis()
+    );
+    Ok(())
+}
+
+#[test]
 fn world_src_postgres_flower_month_places_canonical_dryads_and_replays_once() -> TestResult {
     run_case(
         "world_src_flower_physical",
@@ -142,6 +157,7 @@ async fn scenario(
     let key = ProductionKey::new(key).map_err(debug)?;
     let phased_boss = key.as_str() == "raid:venore.dracola";
     let flower = key.as_str() == "oteryn:raid.raid.dryad_invasion";
+    let horse_station = key.as_str() == "oteryn:raid.horse_station";
     let catalogue = RaidCatalogue::embedded().map_err(debug)?;
     let selected = catalogue
         .get(&key)
@@ -160,7 +176,7 @@ async fn scenario(
         selected.areas.len(),
         if flower {
             4
-        } else if phased_boss {
+        } else if phased_boss || horse_station {
             2
         } else {
             1
@@ -363,6 +379,12 @@ async fn scenario(
         .map_err(|_| "physical raid wave")?;
     assert_eq!(outcomes.len(), expected);
     assert!(outcomes.iter().all(|outcome| outcome.placed));
+    let CommittedRaidAction::Wave {
+        creatures: plans, ..
+    } = &wave.action
+    else {
+        return Err("expected committed physical raid wave".into());
+    };
     assert_eq!(
         owner
             .apply_raid_wave(&wave, &selected, bundle_digest)
@@ -385,7 +407,20 @@ async fn scenario(
                 .read_actor_position(actor)
                 .map_err(debug)?
                 .position();
-            assert!(first_area.contains(RaidPosition {
+            let plan = plans.iter().find(|plan| {
+                plan.identity.wave == status.identity.wave
+                    && plan.identity.entry == status.identity.entry
+                    && plan.identity.index == status.identity.index
+            });
+            let spawn_area = if horse_station {
+                selected
+                    .areas
+                    .get(&plan.ok_or("horse placement plan")?.area_anchor)
+                    .ok_or("horse raid area")?
+            } else {
+                first_area
+            };
+            assert!(spawn_area.contains(RaidPosition {
                 x: at.x,
                 y: at.y,
                 floor: at.floor
@@ -395,7 +430,11 @@ async fn scenario(
             assert!(snapshot.maximum_health > 0);
             assert_eq!(
                 snapshot.state.policy.definition_key,
-                selected.definition.waves[0].entries[0].creature.as_str()
+                if horse_station {
+                    plan.ok_or("horse placement plan")?.creature.as_str()
+                } else {
+                    selected.definition.waves[0].entries[0].creature.as_str()
+                }
             );
         }
         statuses
