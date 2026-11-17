@@ -58,7 +58,7 @@ pub(super) async fn exercise(
     owner.runtime.lock().await.bind_attacker_lease(actor, admitted.game_session_id,
         CharacterLease::new(CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
             fence.character_lease_generation).map_err(debug)?).map_err(debug)?;
-    admitted.continuity.selected_capabilities = super::super::capabilities::SelectedCapabilities::select(
+    admitted.continuity.selected_capabilities = crate::gameplay_transport::capabilities::SelectedCapabilities::select(
         owner.offered_capabilities(), &[4, 6, 11, 15, 18]).ok_or("capabilities")?;
     for (ordinal, item) in [(901, "oteryn:item.tibia.i7532"), (902, "oteryn:item.tibia.i3031")] {
         super::quest_world_callbacks::input_item(owner, fence.item_fence(), &world_callbacks::Offering {
@@ -139,7 +139,7 @@ pub(super) async fn exercise_ground(owner: &mut ComposedFreshAdmission<'_, '_, '
     let actor = admitted.runtime_actor.ok_or("actor")?;
     owner.runtime.lock().await.bind_attacker_lease(actor, admitted.game_session_id,
         CharacterLease::new(CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?, fence.character_lease_generation).map_err(debug)?).map_err(debug)?;
-    admitted.continuity.selected_capabilities = super::super::capabilities::SelectedCapabilities::select(owner.offered_capabilities(), &[4,6,11,15,18]).ok_or("capabilities")?;
+    admitted.continuity.selected_capabilities = crate::gameplay_transport::capabilities::SelectedCapabilities::select(owner.offered_capabilities(), &[4,6,11,15,18]).ok_or("capabilities")?;
     for (n,item) in [(901,"oteryn:item.tibia.i7532"),(902,"oteryn:item.tibia.i3031")] {
         super::quest_world_callbacks::input_item(owner, fence.item_fence(), &world_callbacks::Offering { position:target,item:item.into(),count:1 }, n, true).await?;
     }
