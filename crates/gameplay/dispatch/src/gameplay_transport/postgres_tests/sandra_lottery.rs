@@ -397,7 +397,9 @@ pub(super) async fn exercise_outcome(
                         y: 31677,
                         floor: -15,
                     },
-                    item: "oteryn:item.tibia.i3264".into(),
+                    // Separate, light non-stackable rings fill slots without
+                    // making the fixture fail its carrying-weight check first.
+                    item: "oteryn:item.tibia.i3052".into(),
                     count: 1,
                 },
                 7000 + u64::from(index),
