@@ -3062,6 +3062,16 @@ pub(super) async fn connect_character(
     index: usize,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     wait_character_released(clients, index).await?;
+    admit_character(clients, tag, index).await
+}
+
+/// One admission of the fixture character, without the release wait: the caller proved the slot
+/// free (the creature sweep recovery polls the release itself and retries a refused admission).
+pub(super) async fn admit_character(
+    clients: &SeamClients<'_>,
+    tag: u8,
+    index: usize,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
     let generation = platform_generation(clients.descriptor, &clients.accounts[index]).await?;
     let (nonce, attempt) = fresh_grant_material(tag)?;
     let grant = Grant {

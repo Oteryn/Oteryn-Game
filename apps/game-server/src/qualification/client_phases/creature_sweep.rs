@@ -59,6 +59,18 @@ const KILL_SECONDS: u64 = 150;
 /// Long sweep (`OTERYN_E2E_SWEEP_LONG_SECONDS=<n>`): only the species over the normal
 /// `KILL_SECONDS` budget run, each with `n` seconds to kill; the rest belong to the normal sweep.
 const LONG_VARIABLE: &str = "OTERYN_E2E_SWEEP_LONG_SECONDS";
+/// Recovery after a setup failure (a refused logout or release, a server close): the server's
+/// control-loss grace is awaited and the character admitted again within this bound.
+const RECOVER_SECONDS: u64 = 300;
+/// Pause after a refused admission; grows with each attempt and stays at the last value.
+const RECOVER_BACKOFF_MILLIS: [u64; 4] = [1_000, 2_000, 4_000, 8_000];
+/// Consecutive species whose setup failed even after a successful re-admission end the batch.
+const RECOVER_LIMIT: u32 = 3;
+/// Wire code 1200 (`oteryn_protocol_oteryn` `NotSupported`, `E{number:04}` rendering): the first
+/// code of the 1200..1999 "future wire" block of `FOUNDATION_ERROR_VOCABULARY.md`; the live
+/// readiness review plans the maintenance graceful stop on it. The server ended the connection
+/// with it, so the session is gone and the character stays held until control-loss grace ends.
+const E1200_MEANING: &str = "E1200=wire-code-1200-NotSupported-server-ended-the-connection";
 
 fn long_seconds() -> TestResult<Option<u64>> {
     match std::env::var(LONG_VARIABLE) {
@@ -145,6 +157,8 @@ struct Rows<'a> {
     counts: Tally,
     /// Seconds from the first observed damage to the death, set by a kill.
     kill_seconds: Option<f64>,
+    /// The error of a failed setup (logout, release or admission); the sweep recovers from it.
+    setup_error: Option<String>,
 }
 
 impl<'a> Rows<'a> {
@@ -155,6 +169,7 @@ impl<'a> Rows<'a> {
             lap: std::time::Instant::now(),
             counts: Tally::default(),
             kill_seconds: None,
+            setup_error: None,
         }
     }
 
@@ -444,6 +459,8 @@ pub(super) async fn run(
     let mut tally = Tally::default();
     let mut seconds = Vec::new();
     let mut session: Option<DevClientSession> = None;
+    let mut blocked: Option<String> = None;
+    let mut setup_failures = 0u32;
     // Calibration: one weak melee-only species is killed first; its authored health over the time
     // from the first damage to the death is the DPS every other species is budgeted against.
     if !keys.iter().any(|key| key.as_str() == CALIBRATION_KEY) {
@@ -466,6 +483,7 @@ pub(super) async fn run(
             &mut session,
             &mut tally,
             &mut measured,
+            &mut None,
         )),
     )
     .await;
@@ -510,9 +528,19 @@ pub(super) async fn run(
             tally.skipped += rows.counts.skipped;
             continue;
         }
+        if let Some(cause) = &blocked {
+            let mut rows = Rows::new(&species.short);
+            let detail = format!("blocked-by-recovery:{cause}");
+            for step in STEPS {
+                rows.emit(step, "FAIL", &detail, Some(detail.as_str()));
+            }
+            tally.fail += rows.counts.fail;
+            continue;
+        }
         let scenario: &'static str =
             Box::leak(format!("CS.{}.full", species.short).into_boxed_str());
         let started = std::time::Instant::now();
+        let mut setup_error = None;
         verdict::indexed(
             scenario,
             Box::pin(sweep_species(
@@ -523,10 +551,36 @@ pub(super) async fn run(
                 &mut session,
                 &mut tally,
                 &mut None,
+                &mut setup_error,
             )),
         )
         .await;
         seconds.push(started.elapsed().as_secs_f64());
+        let Some(error) = setup_error else {
+            setup_failures = 0;
+            continue;
+        };
+        // The species row is already a FAIL with the exact cause; the character is still held by
+        // the server, so the next species would only burn its setup bound on the same close.
+        setup_failures += 1;
+        let cause = recover_cause(&error);
+        let waited = std::time::Instant::now();
+        let outcome = if setup_failures > RECOVER_LIMIT {
+            Err(format!(
+                "setup-failed-{RECOVER_LIMIT}-times-after-re-admission"
+            ))
+        } else {
+            recover(clients, &mut session).await
+        };
+        evidence(&format!(
+            "creature_sweep recover species={} cause={cause} waited_ms={} outcome={}",
+            species.short,
+            waited.elapsed().as_millis(),
+            if outcome.is_ok() { "ok" } else { "failed" }
+        ));
+        if let Err(reason) = outcome {
+            blocked = Some(token(&format!("{reason};after={}:{cause}", species.short)));
+        }
     }
     if let Some(mut client) = session.take()
         && let Err(error) = release(&mut client).await
@@ -603,6 +657,7 @@ async fn sweep_species(
     session: &mut Option<DevClientSession>,
     tally: &mut Tally,
     kill_seconds: &mut Option<f64>,
+    setup_error: &mut Option<String>,
 ) -> TestResult {
     let started = std::time::Instant::now();
     let mut rows = Rows::new(&species.short);
@@ -611,6 +666,7 @@ async fn sweep_species(
         rows.block_rest(stop.step);
     }
     *kill_seconds = rows.kill_seconds;
+    *setup_error = rows.setup_error.take();
     let failed = rows.counts.fail > 0;
     // The `.full` verdict line is the indexed Watch's own; this line carries the species counts.
     evidence(&format!(
@@ -682,6 +738,57 @@ async fn reconnect(
     wait_character_released(clients, CORE_CHARACTER).await?;
     *session = Some(connect_character(clients, 0x80, CORE_CHARACTER).await?);
     Ok(())
+}
+
+/// The recover evidence cause: the setup error, with the meaning of a server close by code 1200.
+fn recover_cause(error: &str) -> String {
+    let cause = token(error);
+    if error.contains("E1200") {
+        format!("{cause};{E1200_MEANING}")
+    } else {
+        cause
+    }
+}
+
+/// Wait for the server to release the character (loss detection and grace, polled on the durable
+/// session row, not slept) and admit it again; a refused admission is retried with a growing pause
+/// until `RECOVER_SECONDS` pass. Returns the last error when the bound ends. The release poll
+/// does not poison the fixture gate: it is the recovery itself.
+async fn recover(
+    clients: &SeamClients<'_>,
+    session: &mut Option<DevClientSession>,
+) -> Result<(), String> {
+    *session = None;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(RECOVER_SECONDS);
+    let mut attempt = 0usize;
+    loop {
+        verdict::Harness::global().progress("sweep-recover");
+        let error = match recover_once(clients).await {
+            Ok(client) => {
+                *session = Some(client);
+                return Ok(());
+            }
+            Err(error) => error,
+        };
+        let now = tokio::time::Instant::now();
+        if now >= deadline {
+            return Err(format!("recovery-{RECOVER_SECONDS}s:{error}"));
+        }
+        let pause = Duration::from_millis(
+            RECOVER_BACKOFF_MILLIS[attempt.min(RECOVER_BACKOFF_MILLIS.len() - 1)],
+        );
+        attempt += 1;
+        tokio::time::sleep(pause.min(deadline - now)).await;
+    }
+}
+
+async fn recover_once(clients: &SeamClients<'_>) -> Result<DevClientSession, String> {
+    wait_fixture_released(clients, CORE_CHARACTER)
+        .await
+        .map_err(|error| format!("release-wait:{error}"))?;
+    admit_character(clients, 0x80, CORE_CHARACTER)
+        .await
+        .map_err(|error| format!("admission:{error}"))
 }
 
 fn is_low(session: &Option<DevClientSession>) -> bool {
@@ -785,6 +892,7 @@ async fn hunt(
     if let Err(error) = ready(clients, world, session).await {
         // A failed setup leaves no trusted session; the next species starts fresh.
         *session = None;
+        rows.setup_error = Some(error.to_string());
         return Err(failure("spawn", "precondition", format!("setup:{error}")));
     }
     let client = session
