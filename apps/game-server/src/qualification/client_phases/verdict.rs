@@ -521,6 +521,8 @@ pub(super) struct Row {
     invalid: Vec<&'static str>,
     started: std::time::Instant,
     evidence: Option<(&'static str, &'static str)>,
+    /// Failure evidence names the first unproven step and its error text.
+    fail_detail: bool,
     /// A known absent server route turns an incomplete row into MISSING-SERVER.
     pub(super) missing_server: Option<&'static str>,
     watch: Watch,
@@ -550,6 +552,7 @@ impl Row {
             invalid: Vec::new(),
             started: std::time::Instant::now(),
             evidence: None,
+            fail_detail: false,
             missing_server: None,
             watch: Watch::new(id, harness),
         }
@@ -569,6 +572,13 @@ impl Row {
     /// The `evidence=` field of the `e2e_all` line on PASS and on failure.
     pub(super) fn evidence(mut self, pass: &'static str, fail: &'static str) -> Self {
         self.evidence = Some((pass, fail));
+        self
+    }
+
+    /// A FAIL line's `evidence=` becomes `<first-unproven-step>:<error>` instead of the fixed
+    /// fallback; the `_GAP` lines are unchanged.
+    pub(super) fn fail_detail(mut self) -> Self {
+        self.fail_detail = true;
         self
     }
 
@@ -696,7 +706,20 @@ impl Row {
             (Some(_), Some(source)) => ("MISSING-SERVER", Some(source)),
             (Some(_), None) => ("FAIL", self.evidence.map(|(_, fail)| fail)),
         };
-        self.report(status, field, failure);
+        let detail = (self.fail_detail && status == "FAIL")
+            .then(|| match result {
+                Err(error) => {
+                    let step = self
+                        .unproven()
+                        .next()
+                        .or_else(|| self.invalid.first().copied())
+                        .unwrap_or("lifecycle");
+                    Some(fail_cause(step, &error.to_string()))
+                }
+                Ok(()) => None,
+            })
+            .flatten();
+        self.report(status, detail.as_deref().or(field), failure);
     }
 
     /// The row is incomplete because a known server route is absent.
@@ -732,6 +755,21 @@ impl Row {
             self.id
         ));
     }
+}
+
+/// Evidence-safe text: whitespace becomes `-`, bounded to 200 characters.
+pub(super) fn sanitize_cause(text: &str) -> String {
+    text.split_whitespace()
+        .collect::<Vec<_>>()
+        .join("-")
+        .chars()
+        .take(200)
+        .collect()
+}
+
+/// `<step>:<error>` for a failing row's `evidence=` field.
+fn fail_cause(step: &str, error: &str) -> String {
+    sanitize_cause(&format!("{step}:{error}"))
 }
 
 /// Journey groups `NODE_BOOT_E2E_ONLY` selects, each with the groups whose
@@ -804,6 +842,15 @@ mod verdict_tests {
             failfast,
             no_progress.map(Duration::from_secs),
         )))
+    }
+
+    #[test]
+    fn fail_cause_joins_step_and_sanitized_error() {
+        assert_eq!(
+            fail_cause("cast-rat", "reply  refused\nby server"),
+            "cast-rat:reply-refused-by-server"
+        );
+        assert_eq!(fail_cause("a", &"x".repeat(500)).chars().count(), 200);
     }
 
     fn paused() -> TestResult<tokio::runtime::Runtime> {

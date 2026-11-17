@@ -21,10 +21,14 @@ const ILLUSION_ACTIONS: &[&str] = &[
 struct Row(verdict::Row);
 impl Row {
     fn new(id: &'static str, required: &'static [&'static str]) -> Self {
-        Self(verdict::Row::new("E2EF5", id, required).evidence(
-            "observed-all-required-actions",
-            "required-actions-unproven-see-E2EF5_GAP",
-        ))
+        Self(
+            verdict::Row::new("E2EF5", id, required)
+                .evidence(
+                    "observed-all-required-actions",
+                    "required-actions-unproven-see-E2EF5_GAP",
+                )
+                .fail_detail(),
+        )
     }
     fn pass(&mut self, action: &'static str, sequence: u64) {
         // A zero sequence cannot identify an observed server frame.

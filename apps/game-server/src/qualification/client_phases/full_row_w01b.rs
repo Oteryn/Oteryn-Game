@@ -45,8 +45,15 @@ impl Progress {
                 self.step
             ));
         }
+        let cause = match result {
+            Err(error) => format!(
+                " evidence={}",
+                verdict::sanitize_cause(&format!("{}:{error}", self.step))
+            ),
+            Ok(()) => String::new(),
+        };
         evidence(&format!(
-            "e2e_all scenario={ROW}.full status={status} seconds={:.3}",
+            "e2e_all scenario={ROW}.full status={status} seconds={:.3}{cause}",
             self.started.elapsed().as_secs_f64()
         ));
     }
@@ -147,6 +154,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xb1).await?;
+    progress.step = "route-to-rat-spawn";
     travel_to_spawn(
         &mut client,
         world,
