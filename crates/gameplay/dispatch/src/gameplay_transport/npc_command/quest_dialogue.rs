@@ -481,6 +481,21 @@ pub(super) async fn apply(
     let newly_committed = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
     match outcome {
         Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => {
+            if let Some(callback) = &reward_callback {
+                let guards =
+                    oteryn_gameplay_npc::greeting::orc_king_guards(&callback.key, newly_committed);
+                if !guards.is_empty() {
+                    let mut runtime = admission.runtime.lock().await;
+                    super::djinn_greetings::spawn_guards(
+                        admission,
+                        &mut runtime,
+                        actor,
+                        command.game_session_id,
+                        &intent,
+                        guards,
+                    );
+                }
+            }
             #[cfg(test)]
             if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
                 && let Some(state) = sessions.get_mut(&command.game_session_id)
@@ -498,21 +513,7 @@ pub(super) async fn apply(
             admission
                 .refresh_level_up_vitals(actor, command.game_session_id)
                 .await;
-            let mut runtime = admission.runtime.lock().await;
-            if let Some(callback) = &reward_callback {
-                let guards =
-                    oteryn_gameplay_npc::greeting::orc_king_guards(&callback.key, newly_committed);
-                if !guards.is_empty() {
-                    super::djinn_greetings::spawn_guards(
-                        admission,
-                        &mut runtime,
-                        actor,
-                        command.game_session_id,
-                        &intent,
-                        guards,
-                    );
-                }
-            }
+            let runtime = admission.runtime.lock().await;
             if newly_committed && let Some(callback) = &reward_callback {
                 super::magic_effects::publish(
                     admission,
