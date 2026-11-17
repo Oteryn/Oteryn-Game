@@ -1,7 +1,7 @@
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
-const THANITA: &str = "oteryn:npc.thanita";
+pub(super) const NPC: &str = "oteryn:npc.thanita";
 
 #[test]
 fn qtowerdef_password_is_issued_and_validated_through_npc_dispatch() -> TestResult {
@@ -29,5 +29,3 @@ pub(super) async fn issue(
     super::classic_quests::talk(owner, admitted, thanita, command + 2, "bye").await?;
     Ok(code.to_owned())
 }
-
-pub(super) const NPC: &str = THANITA;

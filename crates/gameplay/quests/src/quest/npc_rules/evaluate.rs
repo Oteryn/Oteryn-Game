@@ -455,6 +455,8 @@ fn plan_with_teleport(
                 if password == 0 {
                     password = draw_tower_password()?;
                     state.set_track(TOWER_PASSWORD, password)?;
+                } else if !(1000..=9999).contains(&password) {
+                    return Err(NpcRuleError::Invalid("invalid stored Tower Defence password".into()));
                 }
                 let password = password.to_string();
                 reply.extend(
