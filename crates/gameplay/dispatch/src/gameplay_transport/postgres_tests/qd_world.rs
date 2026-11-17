@@ -323,6 +323,7 @@ pub(super) fn select_talk_capabilities(
     selected.extend([3, 6, 25]);
     selected.sort_unstable();
     selected.dedup();
+    use crate::gameplay_transport::connection::authority::FreshAdmissionAuthority as _;
     let offered = crate::gameplay_transport::appearance_change::offer::offered(
         owner.offered_capabilities(),
         owner.appearance_available(),
