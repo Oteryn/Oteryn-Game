@@ -3,7 +3,8 @@ use super::{Callback, Trigger};
 use serde::Deserialize;
 use std::collections::BTreeSet;
 
-pub const EMBEDDED: &str = include_str!("../../../../../../content/quests/action-marker-bindings.json");
+pub const EMBEDDED: &str =
+    include_str!("../../../../../../content/quests/action-marker-bindings.json");
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -36,13 +37,16 @@ pub fn load(source: &str) -> Result<Vec<Callback>, String> {
             || binding.callbacks.iter().any(|callback| {
                 callback.trigger != Trigger::StepIn
                     || callback.selector.action != Some(binding.action)
-                    || callback.selector.ordinal != Some(0)
+                    || callback.selector.ordinal != Some(1)
                     || callback.selector.position.is_none()
                     || callback.teleport.is_none()
                     || !callback.storage.is_empty()
             })
         {
-            return Err(format!("unknown or invalid native StepIn action {}", binding.action));
+            return Err(format!(
+                "unknown or invalid native StepIn action {}",
+                binding.action
+            ));
         }
         callbacks.extend(binding.callbacks);
     }

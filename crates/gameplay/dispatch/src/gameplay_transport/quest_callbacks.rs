@@ -1382,6 +1382,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Ambiguous content never chooses one action by incidental registration order.
         if selected.is_empty() {
             if !had_callbacks && trigger == Trigger::StepIn {
+                // Crystal movements_StepIn_CursedCrystal.lua:44-48: an AID25018
+                // outside the four stair branches stays put and emits two cues.
+                // The shrine is a separate storage/message branch, not a refusal.
+                let shrine = at.x == 32017 && (at.y == 32917 || at.y == 32918) && at.floor == -10;
+                if !shrine
+                    && (0..base.depths().iter().filter(|d| **d == 0).count()).any(|ordinal| {
+                        u8::try_from(ordinal)
+                            .ok()
+                            .and_then(|ordinal| placement_key(at, ordinal))
+                            .is_some_and(|key| {
+                                !map.facts.base_hidden(key)
+                                    && map.facts.action_at(key) == Some(25018)
+                            })
+                    })
+                {
+                    let runtime = self.runtime.lock().await;
+                    if runtime.read_actor_position(actor) == Ok(entered)
+                        && runtime.positioned_player_for_session(session)
+                            == Ok(Some((actor, entered)))
+                    {
+                        map.facts.emit_movement_effect(at, 11);
+                        map.facts.emit_movement_effect(at, 11);
+                    }
+                    return entered;
+                }
                 return self
                     .step_daily_world_gate(permit, actor, session, origin, entered)
                     .await;
