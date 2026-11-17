@@ -79,10 +79,31 @@ pub(super) async fn exercise(
     )
     .fetch_one(pool)
     .await?;
-    assert_eq!(receipts, 2, "one depot ordinal receipt per rotated placement");
+    assert_eq!(
+        receipts, 2,
+        "one depot ordinal receipt per rotated placement"
+    );
     // The same command with the same slot replays; with another slot it conflicts.
     assert_eq!(outcome(3, c_handle, c, Some(1)).await?, DepotOutcome::Moved);
-    assert_eq!(outcome(3, c_handle, c, Some(0)).await?, DepotOutcome::Rejected);
+    assert_eq!(
+        outcome(3, c_handle, c, Some(0)).await?,
+        DepotOutcome::Rejected
+    );
+    assert_eq!(order(pool).await?, vec![text(a), text(c), text(b)]);
+    let stale = owner
+        .depot_at(
+            actor,
+            command(4),
+            DepotIntent {
+                action: DepotAction::Withdraw(1),
+                ..deposit(a_handle)
+            },
+            None,
+            Some(ItemKey::Instance(a)),
+        )
+        .await
+        .ok_or("stale withdrawal")?;
+    assert_eq!(stale.reply.outcome, DepotOutcome::Stale);
     assert_eq!(order(pool).await?, vec![text(a), text(c), text(b)]);
     // The receipt triggers admit no ordinal change outside a current depot move.
     let forged = sqlx::query(

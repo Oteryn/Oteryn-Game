@@ -222,6 +222,12 @@ pub(in crate::gameplay_transport) fn prewalk_forecast(
         return [0; 8];
     };
     if states.is_dead(actor)
+        || states.get(runtime, actor, session).is_some_and(|state| {
+            state.owned_conditions().has_status(
+                oteryn_gameplay_domain::domain::condition::StatusKind::Drunk,
+                now_us,
+            )
+        })
         || runtime.player_control_facts(actor, session).is_err()
         || (states.get(runtime, actor, session).is_some()
             && !states.native_condition_movement_allowed(

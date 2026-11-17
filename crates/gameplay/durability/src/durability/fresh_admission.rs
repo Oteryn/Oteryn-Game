@@ -1738,7 +1738,8 @@ impl FreshAdmissionStore {
         self.current_session_locked(tx, session).await
     }
 
-    async fn current_session_locked(
+    /// Requires one consistent snapshot of the admission receipts, guards and session.
+    pub(super) async fn current_session_locked(
         &self,
         tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
         session: GameSessionId,

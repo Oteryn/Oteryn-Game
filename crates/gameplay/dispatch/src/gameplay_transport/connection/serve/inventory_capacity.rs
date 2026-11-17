@@ -12,31 +12,19 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
-    if !session
-        .selected_capabilities
-        .contains(CAPABILITY_INVENTORY_CAPACITY_V1)
-        || session.visibility.is_none()
-    {
+    if session.visibility.is_none() {
         return Ok(());
     }
-    // Visibility ticks every 250 ms; capacity is advisory and also sees out-of-connection
-    // changes through this bounded refresh. Failed reads share the same bound. This
-    // connection's own item commits and maximum-vitals changes (a level) open the gate
-    // at once, so the next tick rereads (`reread_after_command`, `reread_after_vitals`).
-    let now = tokio::time::Instant::now();
-    if session
-        .inventory_capacity_refresh_at
-        .is_some_and(|next| now < next)
-    {
-        return Ok(());
-    }
-    session.inventory_capacity_refresh_at = Some(now + std::time::Duration::from_secs(5));
-    let Some(capacity) = authority.observe_inventory_capacity(session.admitted).await else {
+    let Some(capacity) = changed(
+        authority,
+        session.admitted,
+        session.inventory_capacity,
+        &mut session.inventory_capacity_refresh_at,
+    )
+    .await
+    else {
         return Ok(());
     };
-    if session.inventory_capacity == Some(capacity) {
-        return Ok(());
-    }
     super::sidecar::write(stream, session, &DeltaSidecar::InventoryCapacity(capacity)).await?;
     session.inventory_capacity = Some(capacity);
     Ok(())
@@ -74,4 +62,34 @@ pub(super) fn reread_after_vitals(
     {
         session.inventory_capacity_refresh_at = None;
     }
+}
+
+use oteryn_protocol_oteryn::inventory_capacity::InventoryCapacity;
+pub(super) async fn changed<A: FreshAdmissionAuthority>(
+    authority: &A,
+    admitted: AdmittedSession,
+    previous: Option<InventoryCapacity>,
+    refresh_at: &mut Option<tokio::time::Instant>,
+) -> Option<InventoryCapacity> {
+    if !admitted
+        .continuity
+        .selected_capabilities
+        .contains(CAPABILITY_INVENTORY_CAPACITY_V1)
+    {
+        return None;
+    }
+    // Visibility ticks every 250 ms; capacity is advisory and also sees out-of-connection
+    // changes through this bounded refresh. Failed reads share the same bound. This
+    // connection's own item commits and maximum-vitals changes (a level) open the gate
+    // at once, so the next tick rereads (`reread_after_command`, `reread_after_vitals`).
+    let now = tokio::time::Instant::now();
+    if refresh_at.is_some_and(|next| now < next) {
+        return None;
+    }
+    *refresh_at = Some(now + std::time::Duration::from_secs(5));
+    let capacity = authority.observe_inventory_capacity(admitted).await?;
+    if previous == Some(capacity) {
+        return None;
+    }
+    Some(capacity)
 }

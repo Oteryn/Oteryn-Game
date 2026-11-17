@@ -187,7 +187,10 @@ pub(super) async fn execute(
             DepotAction::Withdraw(ordinal) => page
                 .entries
                 .iter()
-                .find(|entry| entry.ordinal == ordinal)
+                .find(|entry| {
+                    entry.ordinal == ordinal
+                        && selected_item == Some(ItemKey::Instance(entry.item.item_instance_id))
+                })
                 .map(|entry| entry.item.item_instance_id),
             DepotAction::Browse => None,
         };

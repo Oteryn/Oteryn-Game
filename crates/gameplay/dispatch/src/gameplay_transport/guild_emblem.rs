@@ -25,23 +25,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // The Channel's positioned players and their bound characters, under the runtime lock.
         let players: Vec<(EntityRef, [u8; 16])> = {
             let runtime = self.runtime.lock().await;
-            let visible = runtime.visible_entities();
             let mut players = Vec::new();
-            for (actor, _, session) in runtime.positioned_actor_census().ok()? {
-                let Some(session) = session else { continue };
-                let Ok(lease) = runtime.bound_attacker_lease(actor, session) else {
-                    continue;
-                };
-                let Some(entity) = visible.players.iter().find(|p| p.actor == actor) else {
-                    continue;
-                };
-                players.push((
-                    EntityRef {
-                        identity: actor.placement_identity(),
-                        generation: entity.generation,
-                    },
-                    *lease.character_id().as_bytes(),
-                ));
+            if let Some((session, house)) = runtime.house_observer(admitted.runtime_actor?).ok()? {
+                if session != admitted.game_session_id
+                    || house.scope != fence.runtime_scope
+                    || house.generation != fence.scope_ownership_generation
+                {
+                    return None;
+                }
+                for entity in runtime
+                    .house_visible_players(admitted.runtime_actor?, session)
+                    .ok()?
+                {
+                    let (_, resident) = runtime.house_observer(entity.actor).ok()??;
+                    players.push((
+                        EntityRef {
+                            identity: entity.actor.placement_identity(),
+                            generation: entity.generation,
+                        },
+                        *resident.lease.character_id().as_bytes(),
+                    ));
+                }
+            } else {
+                for (actor, _, session) in runtime.positioned_melee_census().ok()? {
+                    let Some(session) = session else { continue };
+                    let Ok(lease) = runtime.bound_attacker_lease(actor, session) else {
+                        continue;
+                    };
+                    players.push((
+                        EntityRef {
+                            identity: actor.placement_identity(),
+                            generation: actor.actor_local_generation(),
+                        },
+                        *lease.character_id().as_bytes(),
+                    ));
+                }
             }
             players
         };

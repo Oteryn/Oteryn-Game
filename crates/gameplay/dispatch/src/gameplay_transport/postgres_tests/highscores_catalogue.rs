@@ -120,6 +120,26 @@ fn highscores_catalogue_and_type_predicate_reach_dispatch_client_state_and_selec
                 page: 1,
                 snapshot_id: 0,
             };
+            // Both public requests must validate the asking session while a login holds
+            // its EXCLUSIVE relation lock. Ordinary snapshot reads remain compatible.
+            if mode == 1 {
+                use crate::durability::highscore_snapshot::reply::HighscoresReply;
+                use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+                let mut writer = h.pool.begin().await?;
+                sqlx::query("LOCK TABLE game_durability_reconnect_sessions IN EXCLUSIVE MODE")
+                    .execute(&mut *writer)
+                    .await?;
+                for request in [None, Some((query, Some(kind)))] {
+                    let reply = owner
+                        .highscores_catalogue(world, admitted.game_session_id, request)
+                        .await;
+                    assert!(
+                        matches!(reply, HighscoresReply::Result(_)),
+                        "concurrent login: {reply:?}"
+                    );
+                }
+                writer.rollback().await?;
+            }
             let wrong = wire::encode_query(
                 query,
                 Some(if kind == WorldType::Optional {

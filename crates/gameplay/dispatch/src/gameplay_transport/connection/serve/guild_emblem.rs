@@ -13,28 +13,41 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
-    if !session
-        .selected_capabilities
-        .contains(CAPABILITY_GUILD_EMBLEM_V1)
-    {
-        return Ok(());
-    }
     let Some(view) = session.visibility.as_ref() else {
         return Ok(());
     };
-    let Some(mut emblems) = authority.observe_guild_emblems(session.admitted).await else {
+    let Some(emblems) = changed(authority, session.admitted, view, &session.guild_emblems).await
+    else {
         return Ok(());
     };
-    // Only the players this session currently sees; the session rejects any other.
-    emblems.retain(|emblem| view.shows(emblem.entity));
-    emblems.sort_by_key(|emblem| emblem.entity);
-    if emblems == session.guild_emblems {
-        return Ok(());
-    }
     let sidecar = DeltaSidecar::GuildEmblems(emblems);
     super::sidecar::write(stream, session, &sidecar).await?;
     if let DeltaSidecar::GuildEmblems(emblems) = sidecar {
         session.guild_emblems = emblems;
     }
     Ok(())
+}
+
+use oteryn_protocol_oteryn::guild_emblem::GuildEmblem;
+pub(super) async fn changed<A: FreshAdmissionAuthority>(
+    authority: &A,
+    admitted: AdmittedSession,
+    view: &SessionVisibility,
+    previous: &[GuildEmblem],
+) -> Option<Vec<GuildEmblem>> {
+    if !admitted
+        .continuity
+        .selected_capabilities
+        .contains(CAPABILITY_GUILD_EMBLEM_V1)
+    {
+        return None;
+    }
+    let mut emblems = authority.observe_guild_emblems(admitted).await?;
+    // Only the players this session currently sees; the session rejects any other.
+    emblems.retain(|emblem| view.shows(emblem.entity));
+    emblems.sort_by_key(|emblem| emblem.entity);
+    if emblems == previous {
+        return None;
+    }
+    Some(emblems)
 }

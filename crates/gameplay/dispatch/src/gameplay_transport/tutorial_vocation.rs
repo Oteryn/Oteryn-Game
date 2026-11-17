@@ -8,7 +8,38 @@ use crate::foundation::{ExactActorRef, GameSessionId};
 use oteryn_gameplay_quests::tutorial::TutorialStep;
 use oteryn_protocol_oteryn::tutorial_vocation as wire;
 
+use crate::durability::character_progression::CurrentCharacterGameplayFence;
+
+pub(super) fn retained_fence(
+    original: CurrentCharacterGameplayFence,
+    current: CurrentCharacterGameplayFence,
+) -> Option<CurrentCharacterGameplayFence> {
+    // A resume changes transport generation while the occurrence and its original
+    // expected revision still identify the same durable build request.
+    if original.connection_generation.get() > current.connection_generation.get() {
+        return None;
+    }
+    let rebound = CurrentCharacterGameplayFence {
+        connection_generation: current.connection_generation,
+        ..original
+    };
+    same_authority(&rebound, &current).then_some(rebound)
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
+    async fn confirm_tutorial_starter(
+        &self,
+        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    ) -> Option<()> {
+        use crate::durability::starter_grant::NewhavenStarterOutcome;
+        match self.grant_newhaven_starter(fence).await.ok()? {
+            NewhavenStarterOutcome::NotAdmitted => None,
+            NewhavenStarterOutcome::Granted
+            | NewhavenStarterOutcome::AlreadyGranted
+            | NewhavenStarterOutcome::NotApplicable => Some(()),
+        }
+    }
+
     async fn tutorial_vocation_current(
         &self,
         actor: ExactActorRef,
@@ -89,9 +120,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let offered = progress && before.vocation() == NO_VOCATION;
             if choice.is_none() {
                 if chosen != 0 {
-                    self.grant_newhaven_starter(initial.item_fence())
-                        .await
-                        .ok()?;
+                    self.confirm_tutorial_starter(initial.item_fence()).await?;
                 }
                 return wire::Observation { offered, chosen }.encode();
             }
@@ -118,12 +147,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
-        let retained = if let Some(retained) = retained {
-            if !same_authority(&retained.fence, &fence)
-                || choice.is_some_and(|id| {
-                    retained.request.after.vocation() != wire::VOCATIONS[usize::from(id - 1)]
-                })
-            {
+        let retained = if let Some(mut retained) = retained {
+            retained.fence = retained_fence(retained.fence, fence)?;
+            if choice.is_some_and(|id| {
+                retained.request.after.vocation() != wire::VOCATIONS[usize::from(id - 1)]
+            }) {
                 return None;
             }
             retained
@@ -254,9 +282,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.states
             .tutorial_sessions
             .clear_vocation(session, retained.request.occurrence);
-        self.grant_newhaven_starter(current.item_fence())
-            .await
-            .ok()?;
+        self.confirm_tutorial_starter(current.item_fence()).await?;
         let chosen = wire::VOCATIONS
             .iter()
             .position(|key| *key == build.vocation())? as u8

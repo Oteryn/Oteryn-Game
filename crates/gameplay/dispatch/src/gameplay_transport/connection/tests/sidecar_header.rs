@@ -49,6 +49,18 @@ impl FreshAdmissionAuthority for RelocatingAuthority {
         Err(AdmissionRefusal::Rejected)
     }
 
+    async fn house_scope_ack(&self, _: AdmittedSession) -> Result<Option<(u64, Vec<u8>)>, ()> {
+        Ok(Some((1, vec![1])))
+    }
+
+    async fn server_info_query(&self, _: AdmittedSession, payload: &[u8]) -> Option<Vec<u8>> {
+        use oteryn_protocol_oteryn::server_info::{Query, Reply};
+        match Query::decode(payload)? {
+            Query::Spells(_) => Reply::Spells(Vec::new()).encode(),
+            Query::Quests => None,
+        }
+    }
+
     async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
         Some(at(self.x.get()))
     }
@@ -106,6 +118,7 @@ impl FreshAdmissionAuthority for RelocatingAuthority {
 /// position and the own position the client holds when it arrives.
 fn sidecar_headers(
     during: Relocating,
+    house: bool,
 ) -> Result<Vec<(ActorPosition, ActorPosition)>, Box<dyn Error>> {
     std::thread::Builder::new()
         .stack_size(64 << 20)
@@ -122,6 +135,9 @@ fn sidecar_headers(
                 let mut admitted = positioned()?;
                 admitted.continuity.selected_capabilities =
                     SelectedCapabilities::select(&offered, &ids).ok_or("capabilities")?;
+                if house {
+                    house_fence(&mut admitted)?;
+                }
                 let fields = EntityFields::selected(&ids);
                 let (mut server, mut client) = tokio::io::duplex(256 * 1024);
                 let serving = serve_admitted(&mut server, admitted, &authority, IDLE_LIVENESS);
@@ -179,7 +195,7 @@ fn sidecar_headers(
 }
 
 fn assert_headers_at_published_position(during: Relocating) -> Result<(), Box<dyn Error>> {
-    let headers = sidecar_headers(during)?;
+    let headers = sidecar_headers(during, false)?;
     assert_eq!(
         headers.len(),
         3,
@@ -210,4 +226,78 @@ fn guild_emblem_sidecar_keeps_the_published_position_after_a_relocation()
 fn party_icon_sidecar_keeps_the_published_position_after_a_relocation() -> Result<(), Box<dyn Error>>
 {
     assert_headers_at_published_position(Relocating::Party)
+}
+
+fn house_fence(admitted: &mut AdmittedSession) -> Result<(), Box<dyn Error>> {
+    use crate::foundation::{ConnectionGeneration, RuntimeScopeRefV1, ScopeOwnershipGeneration};
+    admitted.item_fence = Some(CurrentCharacterItemFence {
+        character_id: crate::domain::CharacterId::from_bytes(CHARACTER)
+            .map_err(|e| format!("{e:?}"))?,
+        game_session_id: admitted.game_session_id,
+        connection_generation: ConnectionGeneration::new(1)?,
+        character_lease_generation: 1,
+        runtime_scope: RuntimeScopeRefV1::instance(admitted.world_id, uuid_v7(0x66))
+            .map_err(|e| format!("{e:?}"))?,
+        scope_ownership_generation: ScopeOwnershipGeneration::new(1)?,
+    });
+    Ok(())
+}
+
+#[test]
+fn house_visibility_sends_capacity_and_emblem_sidecars() -> Result<(), Box<dyn Error>> {
+    let headers = sidecar_headers(Relocating::Emblem, true)?;
+    assert_eq!(headers.len(), 2);
+    assert!(headers.iter().all(|(header, held)| header == held));
+    Ok(())
+}
+
+#[test]
+fn house_routes_selected_server_info_query() -> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            run(async {
+                let mut admitted = positioned()?;
+                use oteryn_protocol_oteryn::server_info::{
+                    CAPABILITY_SERVER_INFO_V1, COMMAND_TYPE_SERVER_INFO_QUERY, Query, Reply,
+                };
+                house_fence(&mut admitted)?;
+                admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                    &[OfferedCapability {
+                        id: CAPABILITY_SERVER_INFO_V1,
+                        requires: &[],
+                    }],
+                    &[CAPABILITY_SERVER_INFO_V1],
+                )
+                .ok_or("selection")?;
+                let authority = RelocatingAuthority {
+                    x: Cell::new(0),
+                    during: Relocating::Emblem,
+                };
+                let frame = oteryn_protocol_oteryn::encode_client_command(
+                    1,
+                    &oteryn_protocol_oteryn::ClientCommandValue {
+                        command_id: 1,
+                        command_type: COMMAND_TYPE_SERVER_INFO_QUERY,
+                        payload: &Query::Spells(vec![1]).encode().ok_or("spell query")?,
+                    },
+                )?;
+                let (_, frames) = drive_session(&authority, admitted, &[frame]).await?;
+                let result = frames
+                    .iter()
+                    .filter_map(|frame| decode_wire_envelope(frame).ok())
+                    .find(|env| env.message_type() == MessageType::CommandResult)
+                    .ok_or("house reply")?;
+                let reply = oteryn_protocol_oteryn::decode_command_result(result.payload())?;
+                assert_eq!(
+                    (reply.status, Reply::decode(reply.payload)),
+                    (CommandStatus::Accepted, Some(Reply::Spells(Vec::new())))
+                );
+                Ok(())
+            })
+            .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "House route test panicked")?
+        .map_err(Into::into)
 }

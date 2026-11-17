@@ -556,6 +556,9 @@ pub struct SessionItemView {
     /// a text compositor must recheck locker reach and custody under its retained lane.
     /// Like container-tree views, this is deliberately absent from continuity.
     pub(super) open_depot: Option<(u16, u8)>,
+    /// A slotted deposit can reassign the ordinal in a queued withdrawal.
+    /// Require an explicit browse before resolving another withdrawal from this view.
+    pub(super) depot_withdraw_needs_browse: bool,
     /// Exact native instances on the last shown depot page, never guessed from ordinals.
     /// These are historical selection data; writing must revalidate under its own lane.
     pub(super) depot_items: Vec<(u64, [u8; 16])>,
@@ -578,6 +581,7 @@ impl SessionItemView {
             equip_drop: false,
             appearances: false,
             open_depot: None,
+            depot_withdraw_needs_browse: false,
             depot_items: Vec::new(),
         }
     }

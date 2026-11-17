@@ -18,6 +18,9 @@ pub(super) struct State {
     visibility: Option<SessionVisibility>,
     appearances: SessionAppearance,
     spatial_revision: u64,
+    inventory_capacity: Option<oteryn_protocol_oteryn::inventory_capacity::InventoryCapacity>,
+    capacity_refresh_at: Option<tokio::time::Instant>,
+    guild_emblems: Vec<oteryn_protocol_oteryn::guild_emblem::GuildEmblem>,
     movement_effect_revision: u64,
     npc_shown: Option<WireEntityRef>,
     npc_active: bool,
@@ -81,6 +84,21 @@ impl State {
         if command.command_type == oteryn_protocol_oteryn::house_rotation::COMMAND {
             self.stash_rows = None;
             return routing::house_rotation::route(authority, admitted, command).await;
+        }
+        match command.command_type {
+            oteryn_protocol_oteryn::server_info::COMMAND_TYPE_SERVER_INFO_QUERY => {
+                return Some(routing::server_info::route(authority, admitted, command).await);
+            }
+            oteryn_protocol_oteryn::actor_motion::COMMAND_TYPE_MOUNT => {
+                return Some(routing::mount::route(authority, self.actor, admitted, command).await);
+            }
+            oteryn_protocol_oteryn::item_inscription::COMMAND_TYPE_ITEM_INSCRIPTION_READ => {
+                return Some(
+                    routing::item_inscription::route(authority, admitted, command, &self.items)
+                        .await,
+                );
+            }
+            _ => {}
         }
         // Ordinary item USE and container views keep their existing capability gates
         // in a House without requiring the independent hireling mechanic.
@@ -274,6 +292,9 @@ impl State {
                 self.npc(stream, authority, admitted, &update).await?;
             }
             Dispatch::NpcTrade(_, update, deltas) | Dispatch::NpcShop(_, _, update, deltas) => {
+                if !deltas.is_empty() {
+                    self.capacity_refresh_at = None;
+                }
                 for delta in deltas {
                     self.item_delta(stream, admitted, &delta).await?;
                 }
@@ -434,6 +455,47 @@ impl State {
             };
             self.spatial_revision = revision;
             admitted.continuity.spatial_revision = revision;
+            use oteryn_protocol_oteryn::world_spatial_entities::DeltaSidecar;
+            if let Some(capacity) = super::inventory_capacity::changed(
+                authority,
+                *admitted,
+                self.inventory_capacity,
+                &mut self.capacity_refresh_at,
+            )
+            .await
+            {
+                (admitted.continuity.server_sequence, self.spatial_revision) =
+                    super::sidecar::write_view(
+                        stream,
+                        view,
+                        admitted.continuity.connection_generation,
+                        admitted.continuity.server_sequence,
+                        self.spatial_revision,
+                        &DeltaSidecar::InventoryCapacity(capacity),
+                    )
+                    .await?;
+                admitted.continuity.spatial_revision = self.spatial_revision;
+                self.inventory_capacity = Some(capacity);
+            }
+            if let Some(emblems) =
+                super::guild_emblem::changed(authority, *admitted, view, &self.guild_emblems).await
+            {
+                let sidecar = DeltaSidecar::GuildEmblems(emblems);
+                (admitted.continuity.server_sequence, self.spatial_revision) =
+                    super::sidecar::write_view(
+                        stream,
+                        view,
+                        admitted.continuity.connection_generation,
+                        admitted.continuity.server_sequence,
+                        self.spatial_revision,
+                        &sidecar,
+                    )
+                    .await?;
+                admitted.continuity.spatial_revision = self.spatial_revision;
+                if let DeltaSidecar::GuildEmblems(emblems) = sidecar {
+                    self.guild_emblems = emblems;
+                }
+            }
         }
         self.refresh_map(stream, authority, admitted).await?;
         super::native_cues::refresh_house_effects(

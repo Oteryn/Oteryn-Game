@@ -4,6 +4,7 @@ use super::super::{
     AdmittedSession, ExactActorRef, FreshAdmissionAuthority, SessionItemView, UseCommand,
 };
 use super::Dispatch;
+use crate::gameplay_transport::item_view::ItemKey;
 use oteryn_protocol_oteryn::ClientCommandView;
 
 pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
@@ -25,6 +26,21 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             let item = match intent.action {
                 oteryn_protocol_oteryn::depot::DepotAction::Deposit(handle) => {
                     item_view.as_ref().and_then(|view| view.resolve(handle))
+                }
+                oteryn_protocol_oteryn::depot::DepotAction::Withdraw(ordinal) => {
+                    item_view.as_ref().and_then(|view| {
+                        if view.depot_withdraw_needs_browse {
+                            return None;
+                        }
+                        let (town, box_number) = view.open_depot?;
+                        if Some(town) != intent.town || box_number != intent.box_number {
+                            return None;
+                        }
+                        view.depot_items
+                            .iter()
+                            .find(|(shown, _)| *shown == ordinal)
+                            .map(|(_, item)| ItemKey::Instance(*item))
+                    })
                 }
                 _ => None,
             };
@@ -61,12 +77,27 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 )
                 && oteryn_protocol_oteryn::depot::encode_depot_reply(&reply).is_ok()
                 && observation.items.len() == reply.entries.len()
-                && observation.items.iter().zip(&reply.entries)
+                && observation
+                    .items
+                    .iter()
+                    .zip(&reply.entries)
                     .all(|((ordinal, _), entry)| *ordinal == entry.ordinal)
-                && !observation.items.iter().enumerate().any(|(index, (_, item))|
-                    observation.items[..index].iter().any(|(_, previous)| previous == item))
+                && !observation
+                    .items
+                    .iter()
+                    .enumerate()
+                    .any(|(index, (_, item))| {
+                        observation.items[..index]
+                            .iter()
+                            .any(|(_, previous)| previous == item)
+                    })
             {
                 view.open_depot = reply.town.map(|town| (town, reply.box_number));
+                if intent.action == oteryn_protocol_oteryn::depot::DepotAction::Browse {
+                    view.depot_withdraw_needs_browse = false;
+                } else if slot.is_some() {
+                    view.depot_withdraw_needs_browse = true;
+                }
                 if view.open_depot.is_some() {
                     view.depot_items = observation.items;
                 }

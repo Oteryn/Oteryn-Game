@@ -7,10 +7,19 @@ use oteryn_protocol_oteryn::CommandStatus;
 
 #[test]
 fn tutorial_vocation_offer_and_submit_real_dispatch() -> TestResult {
+    scenario(false)
+}
+
+#[test]
+fn tutorial_vocation_missing_bag_retries_kit() -> TestResult {
+    scenario(true)
+}
+
+fn scenario(missing_bag: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("tutorial-vocation", || {
+    super::kill_reward_e2e::scenario_thread::run("tutorial-vocation", move || {
         run(async |admin| {
             let h = Harness::create_newhaven(admin, "tutorial_vocation").await?;
             let request = prepare_current_session(&h).await?;
@@ -114,6 +123,26 @@ fn tutorial_vocation_offer_and_submit_real_dispatch() -> TestResult {
                 .await
                 .map_err(|()| "tutorial fence")?
                 .ok_or("tutorial fence")?;
+            if !missing_bag {
+                let mut resumed = fence;
+                resumed.connection_generation = crate::foundation::ConnectionGeneration::new(
+                    fence.connection_generation.get() + 1,
+                )
+                .map_err(debug)?;
+                let expected = resumed;
+                resumed.expected_character_revision = crate::domain::CharacterRevision::new(
+                    fence.expected_character_revision.get() + 1,
+                )
+                .map_err(debug)?;
+                use crate::gameplay_transport::tutorial_vocation::retained_fence;
+                assert_eq!(
+                    retained_fence(fence, resumed),
+                    Some(expected),
+                    "replay keeps the pre-commit revision and adopts only the live transport"
+                );
+                resumed.character_lease_generation += 1;
+                assert_eq!(retained_fence(fence, resumed), None);
+            }
             owner
                 .reconcile_tutorial_position(fence, landing)
                 .await
@@ -128,8 +157,39 @@ fn tutorial_vocation_offer_and_submit_real_dispatch() -> TestResult {
                     .0,
                 CommandStatus::Rejected
             );
-            let (status, selected) =
-                super::cyclopedia::support::exchange(&owner, &mut admitted, 6, 6243, &[4]).await?;
+            // Temporarily unequip the only backpack while preserving its contents.
+            let set_bag_owner = async |character: u8| -> TestResult {
+                let mut tx = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role = replica")
+                    .execute(&mut *tx)
+                    .await?;
+                assert_eq!(
+                    sqlx::query(
+                        "UPDATE game_item_container_slots SET character_id=encode($1,'hex')::uuid"
+                    )
+                    .bind(id(character).as_slice())
+                    .execute(&mut *tx)
+                    .await?
+                    .rows_affected(),
+                    1
+                );
+                tx.commit().await?;
+                Ok(())
+            };
+            if missing_bag {
+                set_bag_owner(98).await?;
+                assert!(owner.tutorial_vocation_wire(admitted, &[4]).await.is_none());
+                assert!(owner.tutorial_vocation_wire(admitted, &[]).await.is_none());
+                set_bag_owner(41).await?;
+            }
+            let (status, selected) = super::cyclopedia::support::exchange(
+                &owner,
+                &mut admitted,
+                6,
+                6243,
+                if missing_bag { &[] } else { &[4] },
+            )
+            .await?;
             assert_eq!(status, CommandStatus::Accepted, "submit Paladin");
             assert_eq!(selected, [0, 4]);
             let build = h

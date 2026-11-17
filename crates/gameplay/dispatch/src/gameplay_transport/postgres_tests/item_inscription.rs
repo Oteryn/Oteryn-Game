@@ -51,7 +51,15 @@ fn item_inscription_read_returns_carried_text_and_refuses_foreign_items_postgres
             let sealed=read(admitted,id(71)).await.flatten().ok_or("sealed document")?;
             assert_eq!(sealed.text,"One inscription: żółw 🐢");
             assert!(!sealed.writable,"the write-once target only shows its text");
-            // Not carried (unknown), the main backpack itself and a map entry are refused.
+            let foreign = id(88);
+            crate::durability::guild_chat_fixture::historical_character(&h.pool,88,
+                crate::domain::CharacterId::from_bytes(foreign).map_err(debug)?, id(89),id(42),"Foreign Scribe").await?;
+            super::item_look::seed_character_backpack(&h,88,98,&[("oteryn:item.tibia.i3505",1)]).await?;
+            let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid")
+                .bind(id(99).as_slice()).bind(foreign.as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(count,1,"the refused letter belongs to another character");
+            assert_eq!(read(admitted,id(100)).await,None,"unknown item");
+            // The foreign letter, the main backpack itself and a map entry are refused.
             assert_eq!(read(admitted,id(99)).await,None);
             assert_eq!(read(admitted,id(70)).await,None);
             assert_eq!(owner.item_inscription_read(admitted,Some(ItemKey::MapBase{bundle_digest:[0;32],placement_key:1,reset_epoch:0})).await,None);

@@ -966,6 +966,23 @@ fn drome_drunk_actual_movement_refusal_replay_and_exact_expiry() -> Result<(), B
                     .borrow()
                     .0
                     .read_actor_position(authority.actor)?;
+                {
+                    let owned = authority.owner.borrow();
+                    assert_eq!(
+                        crate::gameplay_transport::actor_spell::actor_movement::prewalk_forecast(
+                            &owned.0,
+                            &owned.1,
+                            authority.room.movement_cells(),
+                            authority.actor,
+                            authority.session,
+                            authority.now_us.get(),
+                            None,
+                            &std::collections::BTreeSet::new(),
+                        ),
+                        [0; 8],
+                        "drunk steering makes client prewalk unpredictable"
+                    );
+                }
                 let player_before = authority
                     .owner
                     .borrow()

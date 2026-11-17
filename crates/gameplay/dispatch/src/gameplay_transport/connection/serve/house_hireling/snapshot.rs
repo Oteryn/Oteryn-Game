@@ -18,6 +18,9 @@ impl State {
                 || selected.contains(
                     oteryn_protocol_oteryn::house_wrap::CAPABILITY_HOUSE_FURNITURE_WRAP_V1,
                 )
+                || selected.contains(
+                    oteryn_protocol_oteryn::item_inscription::CAPABILITY_ITEM_INSCRIPTION_READ_V1,
+                )
                 || selected.contains(CAPABILITY_ITEM_USE_V1)
                 || selected.contains(CAPABILITY_CONTAINER_TREE_V1)
                 || selected
@@ -204,6 +207,9 @@ impl State {
                 visibility,
                 appearances,
                 spatial_revision,
+                inventory_capacity: None,
+                capacity_refresh_at: None,
+                guild_emblems: Vec::new(),
                 movement_effect_revision: authority
                     .observe_current_actor_movement_effects(actor, admitted.game_session_id, 0)
                     .await
