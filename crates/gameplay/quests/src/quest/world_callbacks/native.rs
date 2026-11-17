@@ -19,6 +19,13 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
             &crate::quest::barbarian_mead::RANGES,
             crate::quest::barbarian_mead::SOURCE,
         ),
+        NativeRule::SeaSerpentTelescope => (
+            Trigger::Use,
+            (31942, 31045, -2),
+            None,
+            &crate::quest::sea_serpent::RANGES,
+            crate::quest::sea_serpent::SOURCE,
+        ),
         NativeRule::CultsSymbol { symbol } => {
             let Some(position) = cults::SYMBOL_POSITIONS.get(usize::from(symbol)).copied() else {
                 return false;
@@ -54,15 +61,18 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
         && callback.selector.native
             == match rule {
                 NativeRule::BarbarianMead => Some(crate::quest::barbarian_mead::NATIVE),
+                NativeRule::SeaSerpentTelescope => Some(crate::quest::sea_serpent::SELECTOR),
                 _ => None,
             }
         && callback.trigger == trigger
         && callback.selector.position
-            == Some(Position {
+            == (rule != NativeRule::SeaSerpentTelescope).then_some(Position {
                 x: position.0,
                 y: position.1,
                 floor: position.2,
             })
+        && (rule != NativeRule::SeaSerpentTelescope
+            || callback.key == crate::quest::sea_serpent::KEY)
         && callback.selector.position_aliases.is_empty()
         && callback.selector.action == action
         && callback.selector.ordinal.is_none()
@@ -121,6 +131,7 @@ impl Callback {
     pub fn committed_message<'a>(&'a self, changes: &[QuestTrackChange]) -> Option<&'a str> {
         match self.native_rule {
             Some(NativeRule::BarbarianMead) => crate::quest::barbarian_mead::message(changes),
+            Some(NativeRule::SeaSerpentTelescope) => crate::quest::sea_serpent::message(changes),
             // Crystal actions_cult_symbol.lua:43-47. Mission-only repair is silent.
             Some(NativeRule::CultsSymbol { .. }) => {
                 let count = changes

@@ -73,6 +73,8 @@ mod questpc7_compat;
 #[cfg(test)]
 mod scripted_teleport_tests;
 #[cfg(test)]
+mod sea_serpent_tests;
+#[cfg(test)]
 mod selected_tool_tests;
 #[cfg(test)]
 mod solid_repair_tests;
@@ -1452,17 +1454,16 @@ fn extend_callbacks(
                     track.max = track.max.max(maximum);
                 }
             } else {
-                if callback.native_rule.is_some()
-                    && !(mead && storage.track == super::barbarian_mead::DRAW)
-                {
+                let native_outcome = (mead && storage.track == super::barbarian_mead::DRAW)
+                    || (callback.native_rule == Some(NativeRule::SeaSerpentTelescope)
+                        && storage.track == super::sea_serpent::OUTCOME);
+                if callback.native_rule.is_some() && !native_outcome {
                     return Err(format!(
                         "native callback {} requires an existing track {}",
                         callback.key, storage.track
                     ));
                 }
-                let initial = if (mead && storage.track == super::barbarian_mead::DRAW)
-                    || callback.craft_reward_epoch(&storage.track)
-                {
+                let initial = if native_outcome || callback.craft_reward_epoch(&storage.track) {
                     0
                 } else {
                     callback

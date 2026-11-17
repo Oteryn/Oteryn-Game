@@ -1800,6 +1800,19 @@ impl DurabilityRoot {
                         let draw: i16 = sqlx::query_scalar("SELECT (1 + floor(random() * 5))::smallint")
                             .fetch_one(&mut *tx).await?;
                         Some(u8::try_from(draw).map_err(|_| DurabilityError::InvalidStoredState)?)
+                    } else if transition.effects.iter().any(|effect| matches!(
+                        effect.effect,
+                        oteryn_gameplay_quests::quest::QuestEffectKind::Native(
+                            oteryn_gameplay_quests::quest::native_rules::NativeRule::SeaSerpentTelescope
+                        )
+                    )) {
+                        use oteryn_gameplay_quests::quest::sea_serpent;
+                        let value = |index: usize| stored.get(sea_serpent::TRACKS[index]).copied().unwrap_or(0);
+                        if value(0) == 1 && let Some(count) = sea_serpent::draw_count(value(1), value(2), value(3)) {
+                            let draw: i16 = sqlx::query_scalar("SELECT floor(random() * $1::smallint)::smallint")
+                                .bind(count).fetch_one(&mut *tx).await?;
+                            Some(u8::try_from(draw).map_err(|_| DurabilityError::InvalidStoredState)?)
+                        } else { None }
                     } else { None };
                     let mut changes = match refusal
                         .map_or_else(|| grizzly_plan.as_ref().map_or_else(

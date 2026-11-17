@@ -5,7 +5,7 @@
 
 use super::{
     QuestEffect, QuestEffectKind, QuestRefusal, barbarian_mead, cults_of_tibia, ice_islands_seals,
-    unnatural_selection,
+    sea_serpent, unnatural_selection,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -19,6 +19,7 @@ pub enum NativeRule {
     UnnaturalDance { tile: u8 },
     IceSealPaint { seal: u16 },
     SoulWarRemorse,
+    SeaSerpentTelescope,
     SoulWarEnergy,
 }
 
@@ -26,6 +27,7 @@ impl NativeRule {
     pub const fn quest(self) -> &'static str {
         match self {
             Self::LionTrial { .. } => super::lions_rock::QUEST,
+            Self::SeaSerpentTelescope => sea_serpent::QUEST,
             Self::BarbarianMead => barbarian_mead::QUEST,
             Self::CultsSymbol { .. } => cults_of_tibia::QUEST,
             Self::UnnaturalDance { .. } => unnatural_selection::QUEST,
@@ -37,6 +39,7 @@ impl NativeRule {
     pub fn tracks(self) -> Vec<&'static str> {
         match self {
             Self::BarbarianMead => barbarian_mead::NATIVE_TRACKS.to_vec(),
+            Self::SeaSerpentTelescope => sea_serpent::TRACKS.to_vec(),
             Self::LionTrial { trial: 0 } => super::lions_rock::TRACKS[0].to_vec(),
             Self::LionTrial { trial: 1 } => super::lions_rock::TRACKS[1].to_vec(),
             Self::LionTrial { .. } => super::lions_rock::TRACKS[2].to_vec(),
@@ -63,6 +66,7 @@ impl NativeRule {
                 out.push(5);
                 out.extend_from_slice(&seal.to_be_bytes());
             }
+            Self::SeaSerpentTelescope => out.push(7),
             Self::SoulWarRemorse => out.push(6),
             Self::SoulWarEnergy => out.push(4),
         }
@@ -70,7 +74,7 @@ impl NativeRule {
 
     const fn valid_id(self) -> bool {
         match self {
-            Self::BarbarianMead => true,
+            Self::BarbarianMead | Self::SeaSerpentTelescope => true,
             Self::LionTrial { trial } => trial < 3,
             Self::CultsSymbol { symbol } => symbol < cults_of_tibia::SYMBOL_COUNT,
             Self::UnnaturalDance { tile } => tile >= 1 && tile <= 9,
@@ -135,6 +139,21 @@ impl NativeRule {
                 let mut after = barbarian_mead::apply(before, roll)?.to_vec();
                 after.push(if random { i64::from(roll) } else { 0 });
                 after
+            }
+            Self::SeaSerpentTelescope => {
+                let [line, bait, direction, success, access, outcome] = sea_serpent::TRACKS;
+                sea_serpent::apply(
+                    [
+                        read(line)?,
+                        read(bait)?,
+                        read(direction)?,
+                        read(success)?,
+                        read(access)?,
+                        read(outcome)?,
+                    ],
+                    roll,
+                )?
+                .to_vec()
             }
             Self::CultsSymbol { symbol } => {
                 let snapshot = cults_of_tibia::apply_symbol(
