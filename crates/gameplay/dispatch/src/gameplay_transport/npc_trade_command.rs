@@ -175,7 +175,7 @@ pub(super) async fn trade_mode(
     let command_ref = CommandRef::new(session, command_id);
     let occurrence = occurrence(session, command.command_id, intent.npc_actor);
     if let Some(purchase) = purchase {
-        match admission
+        let prior = match admission
             .root
             .read_npc_purchase(
                 admission.character,
@@ -186,16 +186,16 @@ pub(super) async fn trade_mode(
             )
             .await
         {
-            Ok(Some(text)) => {
-                return Ok(SoldUnits {
-                    units: purchase.amount,
-                    gold: 0,
-                    message: Some(text),
-                });
-            }
-            Ok(None) => {}
+            Ok(prior) => prior,
             Err(NpcTradeError::Unavailable(error)) => return Err(unavailable("admission", error)),
             Err(_) => return Err(Box::new(NpcTradeStep::rejected())),
+        };
+        if let Some(text) = prior {
+            return Ok(SoldUnits {
+                units: purchase.amount,
+                gold: 0,
+                message: Some(text),
+            });
         }
     }
     match admission
