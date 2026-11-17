@@ -264,7 +264,7 @@ pub(super) async fn exercise(
                 fence.item_fence(),
                 &quest::world_callbacks::Offering {
                     position: START,
-                    item: "oteryn:item.tibia.i3031".into(),
+                    item: "oteryn:item.tibia.i3267".into(),
                     count: 1,
                 },
                 8800 + n,
@@ -288,9 +288,9 @@ pub(super) async fn exercise(
     );
     assert_eq!(counts(h).await?, (0, 1, 1));
     if name.ends_with("-full") {
-        let gold:i64=sqlx::query_scalar("SELECT coalesce(sum(i.quantity),0)::bigint FROM game_item_container_entries c JOIN game_item_instances i USING(item_instance_id) WHERE i.definition_production_key='oteryn:item.tibia.i3031' AND i.lifecycle=1").fetch_one(&h.pool).await?;
+        let daggers:i64=sqlx::query_scalar("SELECT coalesce(sum(i.quantity),0)::bigint FROM game_item_container_entries c JOIN game_item_instances i USING(item_instance_id) WHERE i.definition_production_key='oteryn:item.tibia.i3267' AND i.lifecycle=1").fetch_one(&h.pool).await?;
         assert_eq!(
-            gold, 20,
+            daggers, 20,
             "inventory contents survive the ground-output transaction"
         );
     }
