@@ -1,5 +1,8 @@
 //! Live inventory projection; handles retain their session identity.
-pub use oteryn_session::{CharacterInventory, ItemEntry, ItemHandle};
+pub use oteryn_session::{
+    CharacterInventory, ItemEntry, ItemHandle, MAX_CORPSE_CONTAINER_48_ENTRIES,
+    MAX_OPEN_CONTAINER_ENTRIES,
+};
 
 #[must_use]
 pub fn initial<S: oteryn_session::SessionStream>(

@@ -1,0 +1,7 @@
+{
+  "mechanic": "0512-corpse-container-48",
+  "kind": "panels",
+  "id": "0512-corpse-container-48-window",
+  "status": "supported",
+  "entry": "protocol.rs::open_corpse_capacity"
+}

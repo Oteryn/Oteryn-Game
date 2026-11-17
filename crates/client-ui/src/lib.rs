@@ -391,6 +391,9 @@ pub mod support_intake;
 #[path = "features/0499-item-appearance/protocol.rs"]
 pub mod item_appearance;
 
+#[path = "features/0512-corpse-container-48/protocol.rs"]
+pub mod corpse_container_48;
+
 #[path = "features/0372-native-creature-icons/mod.rs"]
 pub mod native_creature_icons;
 
