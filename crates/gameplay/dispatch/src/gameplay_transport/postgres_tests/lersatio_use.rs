@@ -213,6 +213,25 @@ pub(super) async fn exercise(
         runtime
             .initialize_pinned_test_position(actor, spectator_position)
             .map_err(super::fixture::debug)?;
+        let generation = runtime
+            .bound_attacker_lease(
+                admitted.runtime_actor.ok_or("actor")?,
+                admitted.game_session_id,
+            )
+            .map_err(super::fixture::debug)?
+            .generation();
+        runtime
+            .bind_attacker_lease(
+                actor,
+                session,
+                crate::foundation::CharacterLease::new(
+                    crate::foundation::CharacterId::decode(&super::fixture::id(ordinal + 20))
+                        .map_err(super::fixture::debug)?,
+                    generation,
+                )
+                .map_err(super::fixture::debug)?,
+            )
+            .map_err(super::fixture::debug)?;
         let mut states = owner.states.spell_states.lock().await;
         let facts = states
             .get(
