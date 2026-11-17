@@ -99,7 +99,15 @@ pub(super) async fn run(
         ($secs:literal, $id:literal, $actions:ident, $journey:ident $(, $arg:expr)*) => {{
             let mut row = Row::new("E2EF4", $id, $actions).evidence(PASS, FAIL);
             let watch = row.watch();
-            let result = if let Some(active) = client.as_mut() {
+            let result: TestResult = async {
+                // An interrupted or poisoned exchange cannot be resumed by another row.
+                let active = match &mut *client {
+                    Some(active) => active,
+                    slot => {
+                        let _admission = watch.enter();
+                        slot.insert(connect_character(clients, 0x89, 1).await?)
+                    }
+                };
                 let mut completed = false;
                 let result = watch.bound(
                     Duration::from_secs($secs),
@@ -111,13 +119,18 @@ pub(super) async fn run(
                     },
                 ).await;
                 if !completed {
-                    // An interrupted command or frame cannot be resumed by another row.
                     *client = None;
+                    return result;
+                }
+                // This checks the actual session even when cleanup wrapped the original error
+                // or a successful logout was followed by a failed re-admission.
+                if let Err(error) = active.service_liveness(Duration::from_millis(1)).await {
+                    *client = None;
+                    result?;
+                    return Err(error.into());
                 }
                 result
-            } else {
-                Err("prior-native-journey-deadline;connection-closed;actions-unproven".into())
-            };
+            }.await;
             row.finish(&result);
         }};
     }
@@ -147,6 +160,18 @@ pub(super) async fn run(
     }
 }
 
+// Adapt native command errors to the existing observer-liveness driver.
+async fn while_serving<T, E>(
+    idle: &mut DevClientSession,
+    operation: impl std::future::Future<Output = Result<T, E>>,
+) -> TestResult<T>
+where
+    E: Into<Box<dyn std::error::Error>>,
+{
+    super::full_e2ef5::with_observer_liveness(idle, async { operation.await.map_err(Into::into) })
+        .await
+}
+
 fn own(client: &DevClientSession) -> TestResult<EntityRef> {
     let entities = client.world_entities().ok_or("native entities absent")?;
     entities
@@ -162,6 +187,14 @@ async fn approach_peer(
     world: &BundleWorld,
 ) -> TestResult {
     let other = tile(peer.world_spatial().actor_position)?;
+    approach_peer_tile(client, other, world).await
+}
+
+async fn approach_peer_tile(
+    client: &mut DevClientSession,
+    other: TilePos,
+    world: &BundleWorld,
+) -> TestResult {
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         at != other
             && at.floor == other.floor
@@ -519,11 +552,16 @@ async fn shop(
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult {
-    // The transfer recipient is a real second player, online and visible in town.
-    let mut peer = connect_character(clients, 0x87, 0).await?;
+    let mut peer = None;
     let result = shop_journey(row, client, &mut peer, clients, world, npcs).await;
+    let Some(mut peer) = peer else {
+        return result;
+    };
     let (cleanup_result, cleanup, attempts, busy_timed_out) =
-        super::logout_retrying_busy(&mut peer).await?;
+        match while_serving(client, super::logout_retrying_busy(&mut peer)).await {
+            Ok(cleanup) => cleanup,
+            Err(error) => return result.and(Err(error)),
+        };
     if cleanup_result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("shop peer cleanup logout refused: {cleanup}; attempts={attempts}; busy_timed_out={busy_timed_out}; journey={result:?}").into());
     }
@@ -533,7 +571,7 @@ async fn shop(
 async fn shop_journey(
     row: &mut Row,
     client: &mut DevClientSession,
-    peer: &mut DevClientSession,
+    peer: &mut Option<DevClientSession>,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
@@ -541,7 +579,6 @@ async fn shop_journey(
     use oteryn_dev_client::client_runtime::npc_shop as runtime;
     use oteryn_protocol_oteryn::npc_shop as shop;
     let refs = coin_refs()?;
-    let recipient = own_name(peer)?;
     let sam = npcs
         .npcs
         .iter()
@@ -791,20 +828,30 @@ async fn shop_journey(
     row.pass("withdraw", "bank-balance-debited-and-backpack-credited");
     beat(row);
 
-    // The recipient reads its own balance at the same banker before and after.
-    let peer_actor = approach_npc(peer, world, banker).await?;
-    speak(peer, peer_actor, "hi").await?;
-    let peer_before = bank_balance(peer, peer_actor).await?;
-    bank_exchange(
-        client,
-        bank,
-        &format!("transfer 1 gold to {recipient}"),
-        &format!("Do you want to transfer 1 gold to {recipient}?"),
-        &format!("Very well. You have transferred 1 gold to {recipient}."),
-    )
+    // Admit the real recipient only when needed, and read its own balance before and after.
+    let peer = peer.insert(while_serving(client, connect_character(clients, 0x87, 0)).await?);
+    let recipient = own_name(peer)?;
+    let (peer_actor, peer_before) = while_serving(client, async {
+        let actor = approach_npc(peer, world, banker).await?;
+        speak(peer, actor, "hi").await?;
+        bank_balance(peer, actor)
+            .await
+            .map(|balance| (actor, balance))
+    })
     .await?;
-    let after_transfer = bank_balance(client, bank).await?;
-    let peer_after = bank_balance(peer, peer_actor).await?;
+    let after_transfer = while_serving(peer, async {
+        bank_exchange(
+            client,
+            bank,
+            &format!("transfer 1 gold to {recipient}"),
+            &format!("Do you want to transfer 1 gold to {recipient}?"),
+            &format!("Very well. You have transferred 1 gold to {recipient}."),
+        )
+        .await?;
+        bank_balance(client, bank).await
+    })
+    .await?;
+    let peer_after = while_serving(client, bank_balance(peer, peer_actor)).await?;
     if after_transfer != after_withdraw - 1 || peer_after != peer_before + 1 {
         return Err(format!(
             "transfer: sender {after_withdraw}->{after_transfer}, recipient {peer_before}->{peer_after}"
@@ -814,29 +861,32 @@ async fn shop_journey(
     row.pass("transfer", "sender-debited-and-real-recipient-credited");
     beat(row);
 
-    let carried = inventory_units(client)?;
-    relog(client, clients).await?;
-    if inventory_units(client)? != carried {
-        return Err(format!(
-            "fresh admission changed carried custody: before={carried:?} after={:?}",
-            inventory_units(client)?
-        )
-        .into());
-    }
-    let bank = approach_npc(client, world, banker).await?;
-    speak(client, bank, "hi").await?;
-    let remembered = bank_balance(client, bank).await?;
-    if remembered != after_transfer {
-        return Err(format!(
-            "fresh admission changed the bank balance: {after_transfer}->{remembered}"
-        )
-        .into());
-    }
-    row.pass(
-        "relog-inventory-bank",
-        "fresh-admission-inventory-and-bank-balance-retained",
-    );
-    Ok(())
+    while_serving(peer, async {
+        let carried = inventory_units(client)?;
+        relog(client, clients).await?;
+        if inventory_units(client)? != carried {
+            return Err(format!(
+                "fresh admission changed carried custody: before={carried:?} after={:?}",
+                inventory_units(client)?
+            )
+            .into());
+        }
+        let bank = approach_npc(client, world, banker).await?;
+        speak(client, bank, "hi").await?;
+        let remembered = bank_balance(client, bank).await?;
+        if remembered != after_transfer {
+            return Err(format!(
+                "fresh admission changed the bank balance: {after_transfer}->{remembered}"
+            )
+            .into());
+        }
+        row.pass(
+            "relog-inventory-bank",
+            "fresh-admission-inventory-and-bank-balance-retained",
+        );
+        TestResult::Ok(())
+    })
+    .await
 }
 
 async fn coins(
@@ -950,34 +1000,39 @@ async fn trade(
         .and_then(|i| i.entries.first())
         .copied()
         .ok_or("no direct-backpack leaf for real trade;starter backpack itself is not a leaf")?;
-    let mut peer = connect_character(clients, 0x81, 0).await?;
+    let mut peer = while_serving(client, connect_character(clients, 0x81, 0)).await?;
     let result: TestResult = async {
-        approach_peer(client, &peer, world).await?;
+        let other = tile(peer.world_spatial().actor_position)?;
+        while_serving(&mut peer, approach_peer_tile(client, other, world)).await?;
         let command = runtime::PlayerTradeCommand::new(runtime::player_trade::Intent::Offer {
             partner: own(&peer)?,
             item: item.handle.get(),
         })
         .ok_or("trade offer encoding")?;
-        let reply = runtime::send(client.session_mut(), &command).await?;
+        let (reply, offer_delta) = tokio::join!(
+            runtime::send(client.session_mut(), &command),
+            peer.session_mut().read_gated_delta(26, 1),
+        );
+        let reply = reply?;
         if reply.result != runtime::player_trade::ResultCode::Offered {
             return Err(format!("trade request: {:?}", reply.result).into());
         }
         row.pass("request", "real-peer-offer-opened");
-        peer.session_mut().read_gated_delta(26, 1).await?;
+        offer_delta?;
         let id = reply.state.trade_id.ok_or("offer has no trade id")?;
         let command = runtime::PlayerTradeCommand::new(runtime::player_trade::Intent::Look {
             trade_id: id,
             counter_offer: false,
         })
         .ok_or("trade look encoding")?;
-        let reply = runtime::send(client.session_mut(), &command).await?;
+        let reply = while_serving(&mut peer, runtime::send(client.session_mut(), &command)).await?;
         if reply.state.look.is_empty() {
             return Err("offered leaf look was empty".into());
         }
         row.pass("look", "offered-leaf-description");
         let command = runtime::PlayerTradeCommand::new(runtime::player_trade::Intent::Cancel)
             .ok_or("trade cancel encoding")?;
-        let reply = runtime::send(client.session_mut(), &command).await?;
+        let reply = while_serving(&mut peer, runtime::send(client.session_mut(), &command)).await?;
         if reply.result != runtime::player_trade::ResultCode::Cancelled || reply.state.phase != 4 {
             return Err("active trade cancellation did not close escrow".into());
         }
@@ -1001,7 +1056,7 @@ async fn trade(
             item: item.handle.get(),
         })
         .ok_or("second offer encoding")?;
-        let reply = runtime::send(client.session_mut(), &offer).await?;
+        let reply = while_serving(&mut peer, runtime::send(client.session_mut(), &offer)).await?;
         if reply.result != runtime::player_trade::ResultCode::Offered {
             return Err(format!("second offer: {:?}", reply.result).into());
         }
@@ -1011,17 +1066,17 @@ async fn trade(
             item: peer_item.handle.get(),
         })
         .ok_or("counter offer encoding")?;
-        let reply = runtime::send(peer.session_mut(), &counter).await?;
+        let reply = while_serving(client, runtime::send(peer.session_mut(), &counter)).await?;
         if reply.result != runtime::player_trade::ResultCode::Offered && reply.result != runtime::player_trade::ResultCode::Accepted {
             return Err(format!("peer counter-offer: {:?}", reply.result).into());
         }
         let accept = runtime::PlayerTradeCommand::new(runtime::player_trade::Intent::Accept { trade_id: id })
             .ok_or("accept encoding")?;
-        let first = runtime::send(client.session_mut(), &accept).await?;
+        let first = while_serving(&mut peer, runtime::send(client.session_mut(), &accept)).await?;
         if first.result != runtime::player_trade::ResultCode::Accepted {
             return Err(format!("first accept: {:?}", first.result).into());
         }
-        let second = runtime::send(peer.session_mut(), &accept).await?;
+        let second = while_serving(client, runtime::send(peer.session_mut(), &accept)).await?;
         if second.result != runtime::player_trade::ResultCode::Completed {
             return Err(format!("second accept: {:?}", second.result).into());
         }
@@ -1039,8 +1094,8 @@ async fn trade(
         let b = (peer_item.item_definition_ref.get(), u64::from(peer_item.count.get()));
         let client_after = swap(&mine, a.0, b.0, a.1, b.1);
         let peer_after = swap(&theirs, b.0, a.0, b.1, a.1);
-        settle(client, "trade-accept", |now| *now == client_after).await?;
-        settle(&mut peer, "trade-accept-peer", |now| *now == peer_after).await?;
+        while_serving(&mut peer, settle(client, "trade-accept", |now| *now == client_after)).await?;
+        while_serving(client, settle(&mut peer, "trade-accept-peer", |now| *now == peer_after)).await?;
         row.pass("accept", "both-accepts-swapped-custody-exactly");
         beat(row);
         // Round three: the owner logs out while the partner accepts; the trade can never
@@ -1062,7 +1117,7 @@ async fn trade(
             item: item.handle.get(),
         })
         .ok_or("race offer encoding")?;
-        let reply = runtime::send(client.session_mut(), &offer).await?;
+        let reply = while_serving(&mut peer, runtime::send(client.session_mut(), &offer)).await?;
         if reply.result != runtime::player_trade::ResultCode::Offered {
             return Err(format!("race offer: {:?}", reply.result).into());
         }
@@ -1072,32 +1127,42 @@ async fn trade(
             item: peer_item.handle.get(),
         })
         .ok_or("race counter encoding")?;
-        runtime::send(peer.session_mut(), &counter).await?;
+        while_serving(client, runtime::send(peer.session_mut(), &counter)).await?;
         let accept = runtime::PlayerTradeCommand::new(runtime::player_trade::Intent::Accept {
             trade_id: id,
         })
         .ok_or("race accept encoding")?;
-        let first = runtime::send(client.session_mut(), &accept).await?;
+        let first = while_serving(&mut peer, runtime::send(client.session_mut(), &accept)).await?;
         if first.result != runtime::player_trade::ResultCode::Accepted {
             return Err(format!("owner accept before the race: {:?}", first.result).into());
         }
-        let (accepted, logout) = tokio::join!(
-            runtime::send(peer.session_mut(), &accept),
-            super::logout_retrying_busy(client)
-        );
-        let (logout_result, logout_text, attempts, busy_timed_out) = logout?;
+        let (accepted, (logout_result, logout_text, attempts, busy_timed_out)) = {
+            let mut logout = std::pin::pin!(super::logout_retrying_busy(client));
+            let first = {
+                let mut accepting = std::pin::pin!(runtime::send(peer.session_mut(), &accept));
+                tokio::select! {
+                    accepted = &mut accepting => Ok(accepted),
+                    logged_out = &mut logout => Err((logged_out, accepting.await)),
+                }
+            };
+            match first {
+                Ok(accepted) => (accepted, while_serving(&mut peer, logout).await?),
+                Err((logged_out, accepted)) => (accepted, logged_out?),
+            }
+        };
         if logout_result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Err(format!("race logout refused: {logout_text}; attempts={attempts}; busy_timed_out={busy_timed_out}; peer accept={:?}", accepted.map(|r| r.result)).into());
         }
+        accepted?;
         row.pass("logout-race", "partner-accept-raced-owner-logout-without-error");
-        *client = connect_character(clients, 0x85, 1).await?;
+        *client = while_serving(&mut peer, connect_character(clients, 0x85, 1)).await?;
         let a = (item.item_definition_ref.get(), u64::from(item.count.get()));
         let b = (peer_item.item_definition_ref.get(), u64::from(peer_item.count.get()));
         let swapped_client = swap(&before_client, a.0, b.0, a.1, b.1);
         let swapped_peer = swap(&before_peer, b.0, a.0, b.1, a.1);
-        let now_client = settle(client, "race-relog", |now| {
+        let now_client = while_serving(&mut peer, settle(client, "race-relog", |now| {
             *now == before_client || *now == swapped_client
-        })
+        }))
         .await?;
         let completed = now_client == swapped_client && now_client != before_client;
         let (expected_peer, side) = if completed {
@@ -1105,7 +1170,7 @@ async fn trade(
         } else {
             (&before_peer, "cancelled-unchanged")
         };
-        settle(&mut peer, "race-peer", |now| now == expected_peer).await?;
+        while_serving(client, settle(&mut peer, "race-peer", |now| now == expected_peer)).await?;
         row.pass(
             "relog-custody",
             format!("fresh-admission-custody-exactly-{side}-on-both-sides"),
@@ -1114,7 +1179,10 @@ async fn trade(
     }
     .await;
     let (cleanup_result, cleanup, attempts, busy_timed_out) =
-        super::logout_retrying_busy(&mut peer).await?;
+        match while_serving(client, super::logout_retrying_busy(&mut peer)).await {
+            Ok(cleanup) => cleanup,
+            Err(error) => return result.and(Err(error)),
+        };
     if cleanup_result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("trade peer cleanup logout refused: {cleanup}; attempts={attempts}; busy_timed_out={busy_timed_out}; journey={result:?}").into());
     }
@@ -1538,12 +1606,38 @@ async fn guild(row: &mut Row, client: &mut DevClientSession) -> TestResult {
     Err(format!("guild-query={reply:?};BLOCKED guild/ranks/chat/bank/wars/relog: not authored (S03 is outside packet E2E-G1);MOTD-write-unavailable").into())
 }
 
+// Every message a session received, so a refusal or warning is read from the wire.
+fn notices(session: &mut DevClientSession) -> Vec<String> {
+    use oteryn_dev_client::SessionEvent;
+    use oteryn_protocol_oteryn::tutorial_notices::TutorialNotice;
+    session
+        .take_events()
+        .into_iter()
+        .filter_map(|event| match event {
+            SessionEvent::TutorialNotice(delta) => match delta.value {
+                TutorialNotice::StatusText(text) => Some(text),
+                TutorialNotice::Hint(_) => None,
+            },
+            _ => None,
+        })
+        .collect()
+}
+
 async fn logout(
     row: &mut Row,
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult {
+    let failures = while_serving(client, logout_peer_checks(row, clients, world)).await?;
+    logout_idle(row, client, clients, world, failures).await
+}
+
+async fn logout_peer_checks(
+    row: &mut Row,
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+) -> TestResult<Vec<String>> {
     let mut peer = connect_character(clients, 0x83, 0).await?;
     let position = peer.world_spatial().actor_position;
     if !world
@@ -1574,22 +1668,6 @@ async fn logout(
     }
     row.pass("relog-position", "fresh-session-retained-saved-position");
     let mut failures: Vec<String> = Vec::new();
-    // Every message a session received, so a refusal or warning is read from the wire.
-    fn notices(session: &mut DevClientSession) -> Vec<String> {
-        use oteryn_dev_client::SessionEvent;
-        use oteryn_protocol_oteryn::tutorial_notices::TutorialNotice;
-        session
-            .take_events()
-            .into_iter()
-            .filter_map(|event| match event {
-                SessionEvent::TutorialNotice(delta) => match delta.value {
-                    TutorialNotice::StatusText(text) => Some(text),
-                    TutorialNotice::Hint(_) => None,
-                },
-                _ => None,
-            })
-            .collect()
-    }
     // Fight refusal: a real rat fight, then the native LOGOUT is refused as InFight.
     let fight: TestResult = async {
         use oteryn_protocol_oteryn::{attack::AttackIntentDisposition, logout::LogoutResult};
@@ -1721,11 +1799,21 @@ async fn logout(
         failures.push(format!("nologout: {error}"));
     }
     beat(row);
+    Ok(failures)
+}
+
+async fn logout_idle(
+    row: &mut Row,
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    mut failures: Vec<String>,
+) -> TestResult {
     // Idle: the server's idle policy runs on the real monotonic clock (warning at 15 minutes,
     // removal at 16), so this is a real wait. The peer stays silent; the main client acts once
     // at 14 minutes and must not be warned at 15.
     let idle: TestResult = async {
-        let mut silent = connect_character(clients, 0x8c, 0).await?;
+        let mut silent = while_serving(client, connect_character(clients, 0x8c, 0)).await?;
         let silent_session = silent.join_snapshot().game_session_id;
         let start = tokio::time::Instant::now();
         let mut warned_at = None;
@@ -1742,13 +1830,18 @@ async fn logout(
                         && at.x.abs_diff(from.x).max(at.y.abs_diff(from.y)) <= 1
                 })
                 .ok_or("no adjacent tile for the idle-reset step")?;
-                walk(client, world, &path).await?;
+                while_serving(&mut silent, walk(client, world, &path)).await?;
                 if anchored {
                     stepped = true;
                 }
                 anchored = true;
             }
-            match silent.service_liveness(Duration::from_secs(1)).await {
+            let (silent_liveness, client_liveness) = tokio::join!(
+                silent.service_liveness(Duration::from_secs(1)),
+                client.service_liveness(Duration::from_secs(1)),
+            );
+            client_liveness?;
+            match silent_liveness {
                 Ok(_) => {
                     if warned_at.is_none()
                         && notices(&mut silent).iter().any(|t| {
@@ -1760,20 +1853,17 @@ async fn logout(
                 }
                 Err(_) => removed_at = Some(start.elapsed()),
             }
-            if client
-                .service_liveness(Duration::from_millis(10))
-                .await
-                .is_ok()
-                && notices(client)
-                    .iter()
-                    .any(|t| t.starts_with("There was no variation in your behaviour"))
+            if notices(client)
+                .iter()
+                .any(|t| t.starts_with("There was no variation in your behaviour"))
             {
                 warned_actor = true;
             }
             beat(row);
         }
         if removed_at.is_none() {
-            let (done, text, ..) = super::logout_retrying_busy(&mut silent).await?;
+            let (done, text, ..) =
+                while_serving(client, super::logout_retrying_busy(&mut silent)).await?;
             if done != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
                 return Err(format!(
                     "silent peer was never removed and its logout was refused: {text}"
@@ -1790,7 +1880,7 @@ async fn logout(
         }
         match removed_at {
             Some(at) => {
-                let reconnect: TestResult<_> = async {
+                let reconnect = while_serving(client, async {
                     let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
                     loop {
                         progress();
@@ -1806,7 +1896,7 @@ async fn logout(
                                         format!("reconnected peer logout refused: {text}").into()
                                     );
                                 }
-                                break Ok(id);
+                                break Ok::<_, Box<dyn std::error::Error>>(id);
                             }
                             Err(error) if tokio::time::Instant::now() >= deadline => {
                                 break Err(error);
@@ -1814,7 +1904,7 @@ async fn logout(
                             Err(_) => tokio::time::sleep(Duration::from_millis(500)).await,
                         }
                     }
-                }
+                })
                 .await;
                 match reconnect {
                     Ok(session) if session != silent_session => row.pass(
@@ -1895,6 +1985,17 @@ async fn listen(
     }
 }
 
+async fn speech_cooldown(client: &mut DevClientSession, peer: &mut DevClientSession) -> TestResult {
+    let duration = Duration::from_millis(1200);
+    let (speaker, listener) = tokio::join!(
+        client.service_liveness(duration),
+        peer.service_liveness(duration),
+    );
+    speaker?;
+    listener?;
+    Ok(())
+}
+
 async fn speech(
     row: &mut Row,
     client: &mut DevClientSession,
@@ -1903,10 +2004,11 @@ async fn speech(
 ) -> TestResult {
     use oteryn_dev_client::{ChatDisposition, ChatIntent, ChatSpeechMode};
     // Recipients are a real second player; every spoken line is read on the listener's own log.
-    let mut peer = connect_character(clients, 0x88, 0).await?;
+    let mut peer = while_serving(client, connect_character(clients, 0x88, 0)).await?;
     let result: TestResult = async {
         let mut failures: Vec<String> = Vec::new();
-        approach_peer(client, &peer, world).await?;
+        let other = tile(peer.world_spatial().actor_position)?;
+        while_serving(&mut peer, approach_peer_tile(client, other, world)).await?;
         let window = Duration::from_secs(5);
         let mut yell_client = None;
         for (action, mode) in [
@@ -1914,14 +2016,13 @@ async fn speech(
             ("whisper", ChatSpeechMode::Whisper),
             ("yell", ChatSpeechMode::Yell),
         ] {
-            tokio::time::sleep(Duration::from_millis(1200)).await;
+            speech_cooldown(client, &mut peer).await?;
             let text = format!("E2EF4 {action}");
-            let result = client
-                .chat(&ChatIntent::Say {
-                    mode,
-                    text: text.clone(),
-                })
-                .await?;
+            let intent = ChatIntent::Say {
+                mode,
+                text: text.clone(),
+            };
+            let result = while_serving(&mut peer, client.chat(&intent)).await?;
             if mode == ChatSpeechMode::Yell {
                 yell_client = Some(result.disposition);
             }
@@ -1937,9 +2038,9 @@ async fn speech(
             } else {
                 text
             };
-            if !listen(client, mode, &expected, window).await? {
+            if !while_serving(&mut peer, listen(client, mode, &expected, window)).await? {
                 failures.push(format!("{action}: own local line absent"));
-            } else if !listen(&mut peer, mode, &expected, window).await? {
+            } else if !while_serving(client, listen(&mut peer, mode, &expected, window)).await? {
                 failures.push(format!("{action}: adjacent real peer never heard it"));
             } else {
                 row.pass(action, "speaker-and-adjacent-listener-exact-mode-and-text");
@@ -1959,17 +2060,16 @@ async fn speech(
         let mut range_proof = Vec::new();
         match near {
             Some(path) => {
-                walk(client, world, &path).await?;
-                tokio::time::sleep(Duration::from_millis(1200)).await;
-                let result = client
-                    .chat(&ChatIntent::Say {
-                        mode: ChatSpeechMode::Whisper,
-                        text: "E2EF4 range whisper".into(),
-                    })
-                    .await?;
+                while_serving(&mut peer, walk(client, world, &path)).await?;
+                speech_cooldown(client, &mut peer).await?;
+                let intent = ChatIntent::Say {
+                    mode: ChatSpeechMode::Whisper,
+                    text: "E2EF4 range whisper".into(),
+                };
+                let result = while_serving(&mut peer, client.chat(&intent)).await?;
                 if result.disposition != ChatDisposition::Ok {
                     failures.push(format!("range: whisper refused: {:?}", result.disposition));
-                } else if listen(&mut peer, ChatSpeechMode::Whisper, "pspsps", window).await? {
+                } else if while_serving(client, listen(&mut peer, ChatSpeechMode::Whisper, "pspsps", window)).await? {
                     range_proof.push("whisper-obscured-at-distance");
                 } else {
                     failures.push("range: distant whisper was not delivered obscured as pspsps".into());
@@ -1979,20 +2079,19 @@ async fn speech(
         }
         match far {
             Some(path) => {
-                walk(client, world, &path).await?;
-                tokio::time::sleep(Duration::from_millis(1200)).await;
+                while_serving(&mut peer, walk(client, world, &path)).await?;
+                speech_cooldown(client, &mut peer).await?;
                 let text = "E2EF4 range say";
-                let result = client
-                    .chat(&ChatIntent::Say {
-                        mode: ChatSpeechMode::Say,
-                        text: text.into(),
-                    })
-                    .await?;
+                let intent = ChatIntent::Say {
+                    mode: ChatSpeechMode::Say,
+                    text: text.into(),
+                };
+                let result = while_serving(&mut peer, client.chat(&intent)).await?;
                 if result.disposition != ChatDisposition::Ok {
                     failures.push(format!("range: far say refused: {:?}", result.disposition));
-                } else if !listen(client, ChatSpeechMode::Say, text, window).await? {
+                } else if !while_serving(&mut peer, listen(client, ChatSpeechMode::Say, text, window)).await? {
                     failures.push("range: far say has no own local line".into());
-                } else if listen(&mut peer, ChatSpeechMode::Say, text, Duration::from_secs(2)).await? {
+                } else if while_serving(client, listen(&mut peer, ChatSpeechMode::Say, text, Duration::from_secs(2))).await? {
                     failures.push("range: say beyond eight tiles was heard".into());
                 } else {
                     range_proof.push("say-unheard-beyond-eight-tiles");
@@ -2004,36 +2103,38 @@ async fn speech(
             row.pass("range", range_proof.join("+"));
         }
         // Yell level/premium matrix: the same refusal rule for both real players.
-        tokio::time::sleep(Duration::from_millis(1200)).await;
-        let yell_peer = peer
-            .chat(&ChatIntent::Say {
-                mode: ChatSpeechMode::Yell,
-                text: "E2EF4 peer yell".into(),
-            })
-            .await?
-            .disposition;
+        speech_cooldown(client, &mut peer).await?;
+        let intent = ChatIntent::Say {
+            mode: ChatSpeechMode::Yell,
+            text: "E2EF4 peer yell".into(),
+        };
+        let yell_peer = while_serving(client, peer.chat(&intent)).await?.disposition;
         // The matrix needs one refused ineligible speaker and one accepted eligible speaker.
         // Two starter characters are both level 1 and non-premium, so it can never be proven
         // here; two accepted yells would show the gate is missing, not that it holds.
         failures.push(format!(
             "yell-level-premium: yell dispositions client={yell_client:?} peer={yell_peer:?}; the matrix needs a level 20 or premium character that real play cannot reach in node boot"
         ));
-        tokio::time::sleep(Duration::from_millis(1200)).await;
-        let mut last = None;
-        for index in 0..64 {
-            progress();
-            let result = client
-                .chat(&ChatIntent::Say {
-                    mode: ChatSpeechMode::Say,
-                    text: format!("E2EF4 mute {index}"),
-                })
-                .await?;
-            last = Some((result.disposition, result.wait_seconds));
-            if result.disposition == ChatDisposition::Muted && result.wait_seconds > 0 {
-                row.pass("mute", "native-spam-gate-muted-with-positive-wait");
-                break;
+        speech_cooldown(client, &mut peer).await?;
+        let last = while_serving(&mut peer, async {
+            let mut last = None;
+            for index in 0..64 {
+                progress();
+                let result = client
+                    .chat(&ChatIntent::Say {
+                        mode: ChatSpeechMode::Say,
+                        text: format!("E2EF4 mute {index}"),
+                    })
+                    .await?;
+                last = Some((result.disposition, result.wait_seconds));
+                if result.disposition == ChatDisposition::Muted && result.wait_seconds > 0 {
+                    row.pass("mute", "native-spam-gate-muted-with-positive-wait");
+                    break;
+                }
             }
-        }
+            Ok::<_, oteryn_dev_client::DevClientError>(last)
+        })
+        .await?;
         if !row.passed.contains("mute") {
             failures.push(format!("mute: 64 rapid says never muted; last={last:?}"));
         }
@@ -2045,7 +2146,10 @@ async fn speech(
     }
     .await;
     let (cleanup_result, cleanup, attempts, busy_timed_out) =
-        super::logout_retrying_busy(&mut peer).await?;
+        match while_serving(client, super::logout_retrying_busy(&mut peer)).await {
+            Ok(cleanup) => cleanup,
+            Err(error) => return result.and(Err(error)),
+        };
     if cleanup_result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("speech peer cleanup logout refused: {cleanup}; attempts={attempts}; busy_timed_out={busy_timed_out}; journey={result:?}").into());
     }
