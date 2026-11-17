@@ -72,7 +72,11 @@ fn select(app: &mut App, tool: Tool) -> TestResult {
         .iter(app.world())
         .filter(|(text, _)| text.0 == tool.title())
         .map(|(_, parent)| parent.parent())
-        .find(|parent| app.world().get::<bevy::ui_widgets::Button>(*parent).is_some())
+        .find(|parent| {
+            app.world()
+                .get::<bevy::ui_widgets::Button>(*parent)
+                .is_some()
+        })
         .ok_or("selector")?;
     app.world_mut().trigger(Activate { entity: selector });
     app.update();
