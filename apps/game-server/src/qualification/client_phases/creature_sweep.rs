@@ -797,7 +797,10 @@ async fn hunt(
     let name = definition.name.as_str();
     let named = |entry: &oteryn_dev_client::WorldSpatialEntity| {
         entry.kind == EntityKind::Creature
-            && matches!(entry.detail, EntityDetail::Actor { .. })
+            && matches!(
+                entry.detail,
+                EntityDetail::Actor { .. } | EntityDetail::ActorWithIcons { .. }
+            )
             && entry.display_name.is_some_and(|label| {
                 label
                     .as_str()
@@ -897,8 +900,9 @@ async fn hunt(
         .collect();
     let mut last_position = target.position;
     let mut last_health = match target.detail {
-        EntityDetail::Actor { health_percent, .. } => health_percent,
-        EntityDetail::Object { .. } => 100,
+        EntityDetail::Actor { health_percent, .. }
+        | EntityDetail::ActorWithIcons { health_percent, .. } => health_percent,
+        EntityDetail::Object { .. } | EntityDetail::ObjectWithAppearance { .. } => 100,
     };
     let mut damaged = false;
     let mut first_damage = None;
@@ -941,7 +945,9 @@ async fn hunt(
             None => break true,
             Some(now) => {
                 last_position = now.position;
-                if let EntityDetail::Actor { health_percent, .. } = now.detail {
+                if let EntityDetail::Actor { health_percent, .. }
+                | EntityDetail::ActorWithIcons { health_percent, .. } = now.detail
+                {
                     if health_percent < last_health && first_damage.is_none() {
                         first_damage = Some(tokio::time::Instant::now());
                     }
@@ -1090,10 +1096,14 @@ async fn hunt(
         "corpse",
         &format!("entity:{:?};at:{last_position:?}", corpse.entity),
     );
-    let EntityDetail::Object {
+    let (EntityDetail::Object {
         item_handle: Some(handle),
         ..
-    } = corpse.detail
+    }
+    | EntityDetail::ObjectWithAppearance {
+        item_handle: Some(handle),
+        ..
+    }) = corpse.detail
     else {
         rows.fail(
             "loot",
