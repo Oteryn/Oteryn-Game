@@ -437,12 +437,54 @@ fn tile(position: ActorPosition) -> TestResult<TilePos> {
     })
 }
 
-/// Plan from immutable production map facts; only replies to real STEP commands prove travel.
+/// A route edge is an ordinary STEP or an in-reach USE of an authored map entry.
+#[derive(Clone, Copy, Debug)]
+enum WalkAction {
+    Step(StepDirection),
+    Use { at: TilePos, ordinal: u8 },
+}
+
+impl From<StepDirection> for WalkAction {
+    fn from(direction: StepDirection) -> Self {
+        Self::Step(direction)
+    }
+}
+
+/// Keep STEP-only paths for callers that inspect individual movement directions.
+#[track_caller]
 fn route(
     world: &BundleWorld,
     from: TilePos,
     goal: impl Fn(TilePos) -> bool,
 ) -> Option<Vec<StepDirection>> {
+    plan_route(world, from, std::panic::Location::caller(), false, goal)?
+        .into_iter()
+        .map(|action| match action {
+            WalkAction::Step(direction) => Some(direction),
+            WalkAction::Use { .. } => None,
+        })
+        .collect()
+}
+
+/// Player journeys can use the same sewer/ladder entries as the server's USE owner.
+#[track_caller]
+fn route_toward(
+    world: &BundleWorld,
+    from: TilePos,
+    target: impl std::fmt::Debug,
+    goal: impl Fn(TilePos) -> bool,
+) -> Option<Vec<WalkAction>> {
+    plan_route(world, from, target, true, goal)
+}
+
+#[track_caller]
+fn plan_route(
+    world: &BundleWorld,
+    from: TilePos,
+    target: impl std::fmt::Debug,
+    include_uses: bool,
+    goal: impl Fn(TilePos) -> bool,
+) -> Option<Vec<WalkAction>> {
     let mut queue = VecDeque::from([from]);
     let mut parents = BTreeMap::from([(from, None)]);
     while let Some(at) = queue.pop_front() {
@@ -456,12 +498,19 @@ fn route(
             path.reverse();
             return Some(path);
         }
-        for direction in [
+        let mut actions: Vec<_> = [
             StepDirection::North,
             StepDirection::East,
             StepDirection::South,
             StepDirection::West,
-        ] {
+        ]
+        .into_iter()
+        .map(WalkAction::Step)
+        .collect();
+        if include_uses {
+            actions.extend(walk_uses(world, at));
+        }
+        for direction in actions {
             let Some(next) = destination(world, at, direction) else {
                 continue;
             };
@@ -476,11 +525,24 @@ fn route(
             queue.push_back(next);
         }
     }
+    evidence(&format!(
+        "route_failed start={from:?} target={target:?} caller={} visited={} uses={include_uses} radius=160 floors=2",
+        std::panic::Location::caller(),
+        parents.len(),
+    ));
     None
 }
 
 /// Use the production floor resolver over the production bundle's collision facts.
-fn destination(world: &BundleWorld, from: TilePos, direction: StepDirection) -> Option<TilePos> {
+fn destination(
+    world: &BundleWorld,
+    from: TilePos,
+    action: impl Into<WalkAction>,
+) -> Option<TilePos> {
+    let direction = match action.into() {
+        WalkAction::Step(direction) => direction,
+        WalkAction::Use { at, ordinal } => return use_destination(world, from, at, ordinal),
+    };
     use crate::map::floor::{Ground, resolve_landing};
     use crate::movement::CardinalStep;
     let direction = match direction {
@@ -519,6 +581,172 @@ fn destination(world: &BundleWorld, from: TilePos, direction: StepDirection) -> 
     position(next)
 }
 
+// Mirror composed_admission/objects/dropdown.rs and bundle_ladder.rs. A sewer
+// goes straight down; ladders prefer S/N/E/W/SW/SE/NW/NE upstairs, without
+// following another floor-change tile. These are USE targets, never STEP overrides.
+fn use_destination(
+    world: &BundleWorld,
+    from: TilePos,
+    at: TilePos,
+    ordinal: u8,
+) -> Option<TilePos> {
+    use crate::map::view::MapFacts;
+    let facts = world.facts().pinned();
+    if from.floor != at.floor
+        || from.x.abs_diff(at.x).max(from.y.abs_diff(at.y)) > 1
+        || facts.house_tile(at)
+    {
+        return None;
+    }
+    let tile = world.base().tile(at.x, at.y, at.floor)?;
+    let id = tile.appearance(ordinal)?;
+    let definition = tile
+        .ids()
+        .iter()
+        .zip(tile.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .nth(usize::from(ordinal))?
+        .0;
+    let entry = facts.base_entry(at, ordinal, *definition)?;
+    if entry.pickupable || entry.bound {
+        return None;
+    }
+    let enterable = |pos: TilePos| {
+        world
+            .base()
+            .tile(pos.x, pos.y, pos.floor)
+            .is_some_and(|tile| tile.walkable())
+            && world.enterable(pos)
+            && !facts.house_tile(pos)
+    };
+    if id == 435 {
+        let next = TilePos {
+            floor: at.floor.checked_sub(1).filter(|floor| *floor >= -15)?,
+            ..at
+        };
+        return enterable(next).then_some(next);
+    }
+    if !crate::map::floor::is_ladder_appearance(id) {
+        return None;
+    }
+    let floor = at.floor.checked_add(1).filter(|floor| *floor <= 0)?;
+    for (dx, dy) in [
+        (0, 1),
+        (0, -1),
+        (1, 0),
+        (-1, 0),
+        (-1, 1),
+        (1, 1),
+        (-1, -1),
+        (1, -1),
+    ] {
+        let Some((x, y)) = at.x.checked_add_signed(dx).zip(at.y.checked_add_signed(dy)) else {
+            continue;
+        };
+        let next = TilePos { x, y, floor };
+        if enterable(next) {
+            return Some(next);
+        }
+    }
+    None
+}
+
+fn walk_uses(world: &BundleWorld, from: TilePos) -> Vec<WalkAction> {
+    let mut actions = Vec::new();
+    for dy in -1..=1 {
+        for dx in -1..=1 {
+            let Some((x, y)) = from
+                .x
+                .checked_add_signed(dx)
+                .zip(from.y.checked_add_signed(dy))
+            else {
+                continue;
+            };
+            let at = TilePos {
+                x,
+                y,
+                floor: from.floor,
+            };
+            let Some(tile) = world.base().tile(x, y, at.floor) else {
+                continue;
+            };
+            for ordinal in 0..tile.depths().iter().filter(|depth| **depth == 0).count() {
+                let Ok(ordinal) = u8::try_from(ordinal) else {
+                    continue;
+                };
+                if tile
+                    .appearance(ordinal)
+                    .is_some_and(|id| id == 435 || crate::map::floor::is_ladder_appearance(id))
+                    && use_destination(world, from, at, ordinal).is_some()
+                {
+                    actions.push(WalkAction::Use { at, ordinal });
+                }
+            }
+        }
+    }
+    actions
+}
+
+async fn walk_use(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    at: TilePos,
+    ordinal: u8,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::*;
+    let from = tile(client.world_spatial().actor_position)?;
+    let expected =
+        use_destination(world, from, at, ordinal).ok_or("route USE landing unavailable")?;
+    let key =
+        crate::map::view::placement_key(at, ordinal).ok_or("route USE placement unavailable")?;
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let payload = encode_use_intent(&WorldObjectTarget {
+        placement,
+        expected_revision: 0,
+    })
+    .map_err(|error| format!("route USE encode: {error:?}"))?;
+    for attempt in 1..=6 {
+        let reply = client
+            .session_mut()
+            .gated_command(CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, &payload)
+            .await?;
+        let disposition = decode_use_result(&reply.payload)
+            .map_err(|error| format!("route USE decode: {error:?}"))?;
+        if disposition == UseDisposition::Exhausted
+            && tile(client.world_spatial().actor_position)? == from
+            && attempt < 6
+        {
+            tokio::time::sleep(Duration::from_millis(500)).await;
+            continue;
+        }
+        if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
+            return Err(format!("route USE refused start={from:?} target={at:?} ordinal={ordinal} expected={expected:?} reply={reply:?}").into());
+        }
+        break;
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while tile(client.world_spatial().actor_position)? == from {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "route USE has no movement frame start={from:?} target={at:?} expected={expected:?}"
+            )
+            .into());
+        }
+        client.service_liveness(Duration::from_millis(20)).await?;
+    }
+    let actual = tile(client.world_spatial().actor_position)?;
+    if actual != expected {
+        return Err(format!("route USE landing changed start={from:?} target={at:?} expected={expected:?} actual={actual:?}").into());
+    }
+    evidence(&format!(
+        "route_use start={from:?} target={at:?} ordinal={ordinal} landed={actual:?}"
+    ));
+    client.take_events();
+    verdict::Harness::global().progress("walk-use");
+    Ok(())
+}
+
 fn near_locker(world: &BundleWorld, at: TilePos) -> bool {
     (-1..=1).any(|dy| {
         (-1..=1).any(|dx| {
@@ -553,9 +781,16 @@ fn town_route_retry_delay(
 async fn walk(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
-    path: &[StepDirection],
+    path: &[impl Copy + Into<WalkAction>],
 ) -> TestResult {
-    for &direction in path {
+    for &action in path {
+        let direction = match action.into() {
+            WalkAction::Use { at, ordinal } => {
+                walk_use(client, world, at, ordinal).await?;
+                continue;
+            }
+            WalkAction::Step(direction) => direction,
+        };
         let before = client.world_spatial().actor_position;
         let mut outcome = client.step_retrying(direction).await?;
         for attempt in 1..=6 {
@@ -2831,7 +3066,7 @@ pub(super) async fn journeys(
     evidence(&format!(
         "world_fixture role=core phase=return_to_town from={from:?} to={TOWN:?}"
     ));
-    let back = route(world, from, |at| at == TOWN).ok_or_else(|| {
+    let back = route_toward(world, from, TOWN, |at| at == TOWN).ok_or_else(|| {
         format!("required core has no return route to town: from={from:?} to={TOWN:?}")
     })?;
     walk(&mut client, world, &back).await?;
@@ -2953,9 +3188,12 @@ async fn profile_journey(
     }
     .await;
     let pz = pz.and(outside);
-    let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        at == TOWN
-    })
+    let back = route_toward(
+        world,
+        tile(client.world_spatial().actor_position)?,
+        TOWN,
+        |at| at == TOWN,
+    )
     .ok_or("PZ comparison has no return route")?;
     walk(&mut client, world, &back).await?;
     let map = map_journey::run(&mut client, world, &model).await;
@@ -2982,9 +3220,12 @@ async fn profile_journey(
     }
     drop(client);
     client = connect_character(clients, 0x6f, 0).await?;
-    let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        at == TOWN
-    })
+    let back = route_toward(
+        world,
+        tile(client.world_spatial().actor_position)?,
+        TOWN,
+        |at| at == TOWN,
+    )
     .ok_or("profile journey has no return route")?;
     walk(&mut client, world, &back).await?;
     let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
@@ -3075,7 +3316,7 @@ async fn travel_to_spawn(
                 .is_some_and(|entry| entry.key == creature)
         })
         .collect();
-    let path = route(world, from, |at| {
+    let path = route_toward(world, from, (creature, "adjacent non-PZ spawn"), |at| {
         !world
             .base()
             .tile(at.x, at.y, at.floor)
@@ -3187,11 +3428,10 @@ pub(crate) fn smoke() -> TestResult {
         .map(|point| point.cell)
         .collect();
     assert!(
-        route(world, TOWN, |at| rats.iter().any(|&(x, y, z)| i16::from(
-            at.floor
-        )
-            == -i16::from(z)
-            && at.x.abs_diff(x).max(at.y.abs_diff(y)) <= 1))
+        route_toward(world, TOWN, "authored rat spawn", |at| rats
+            .iter()
+            .any(|&(x, y, z)| i16::from(at.floor) == -i16::from(z)
+                && at.x.abs_diff(x).max(at.y.abs_diff(y)) <= 1))
         .is_some(),
         "town hunt must reach an authored rat with an admitted corpse and loot table"
     );
@@ -3326,3 +3566,7 @@ fn qualification_nbroute_retries_only_stationary_rejections_with_a_bound() {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "nbroute_tests.rs"]
+mod nbroute_tests;
