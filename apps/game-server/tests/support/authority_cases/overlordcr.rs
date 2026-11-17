@@ -157,8 +157,8 @@ async fn exercise(h: &fixture::Harness, element: &str) -> fixture::TestResult {
             &h.node,
             fixture::fence(2)?,
             cause,
-            death,
-            catalogue,
+            death.clone(),
+            Arc::clone(&catalogue),
         )
         .await
         .map_err(fixture::debug)?;
@@ -167,6 +167,41 @@ async fn exercise(h: &fixture::Harness, element: &str) -> fixture::TestResult {
         QuestTransitionOutcome::AlreadyCommitted(_)
     ));
     assert_eq!(h.root_revision().await?, "2");
+    // A distinct later overlord death shares this flag and must not rewrite it.
+    let other = if element == "earth" {
+        "energy"
+    } else {
+        "earth"
+    };
+    let other_creature = format!("oteryn:creature.{other}_overlord");
+    let other_rule = source_deaths::rules()?
+        .iter()
+        .find(|rule| rule.creature == other_creature)
+        .ok_or("second overlord rule")?;
+    death.creature = other_creature;
+    death.transition = other_rule.transition.clone();
+    death.observed_revision = 2;
+    let later_cause = QuestCause::CreatureDeath(
+        ExperienceRewardOccurrence::from_bytes(fixture::id(101)).map_err(fixture::debug)?,
+    );
+    let later = h
+        .root
+        .commit_character_native_quest_kill(
+            &authority,
+            &h.node,
+            fixture::fence(2)?,
+            later_cause,
+            death,
+            catalogue,
+        )
+        .await
+        .map_err(fixture::debug)?;
+    assert!(matches!(later, QuestTransitionOutcome::Refused(_)));
+    assert_eq!(
+        h.root_revision().await?,
+        "2",
+        "shared donor flag is monotone"
+    );
     let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
         .fetch_one(&h.pool)
         .await?;
