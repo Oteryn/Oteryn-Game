@@ -181,9 +181,25 @@ impl CourtWarlock {
                     .start
                     .wrapping_add((self.next * 31 + self.pending * 17) as u64);
                 let creature = wave.creatures[(seed as usize) % wave.creatures.len()];
-                let at = self
-                    .free_tile(runtime, seed, &admits)
-                    .ok_or(CarrierError::PlanConflict)?;
+                let at = if self.next + 1 < schedule.len() {
+                    // Source force=true deliberately creates the Raubritters on
+                    // the first staging player's position, even when occupied.
+                    self.phase
+                        .participants
+                        .iter()
+                        .filter_map(|(actor, _)| {
+                            runtime
+                                .read_actor_position(*actor)
+                                .ok()
+                                .map(|p| p.position())
+                        })
+                        .find(|at| self.in_room(*at) && admits(runtime, *at))
+                        .or_else(|| self.free_tile(runtime, seed, &admits))
+                        .ok_or(CarrierError::PlanConflict)?
+                } else {
+                    self.free_tile(runtime, seed, &admits)
+                        .ok_or(CarrierError::PlanConflict)?
+                };
                 let health = runtime.companion_policy(creature)?.maximum_health;
                 let actors = runtime.commit_quest_creature_spawn(&[(creature, health, at)])?;
                 self.minions
@@ -202,13 +218,10 @@ impl CourtWarlock {
             }) {
                 return Ok(());
             }
-            let at = if runtime.native_summon_cell_free(self.center) && admits(runtime, self.center)
-            {
-                self.center
-            } else {
-                self.free_tile(runtime, now, &admits)
-                    .ok_or(CarrierError::PlanConflict)?
-            };
+            if !admits(runtime, self.center) {
+                return Err(CarrierError::PlanConflict);
+            }
+            let at = self.center;
             let maximum = runtime.companion_policy(WARLOCK)?.maximum_health;
             let health = if self.spawned == 0 {
                 maximum

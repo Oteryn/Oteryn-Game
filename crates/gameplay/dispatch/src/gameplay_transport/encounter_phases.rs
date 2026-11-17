@@ -340,10 +340,12 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, 
         } = phase;
         if let Fight::CourtWarlock(fight) = fight {
             let result = (|| {
-                fight.advance(runtime, now, |runtime, at| placement(cells, runtime, at))?;
                 let census = runtime.positioned_melee_census()?;
                 let players: Vec<_> = census.into_iter().filter(|(_,at,s)| s.is_some() && fight.in_room(at.position())).collect();
-                if !players.is_empty() && !fight.exit_due(now) { return Ok(true); }
+                if !players.is_empty() && !fight.exit_due(now) {
+                    fight.advance(runtime, now, |runtime, at| placement(cells, runtime, at))?;
+                    return Ok(true);
+                }
                 let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) = cells.index() else { return Err(CarrierError::PlanConflict); };
                 let closed = crate::map::floor::BundleDoors(&index.map().facts);
                 let exit = oteryn_gameplay_quests::quest::world_callbacks::court_warlock::EXIT;
@@ -351,7 +353,7 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, 
                 for (actor, expected, session) in players {
                     let session = session.ok_or(CarrierError::PlanConflict)?;
                     proofs.push(crate::map::floor::prepare_quest_callback_teleport(runtime, cells, actor, session, expected,
-                        MovementLocalPosition { x:i32::from(exit.x), y:i32::from(exit.y), floor:-i16::from(exit.floor) }, false, &closed)?);
+                        MovementLocalPosition { x:i32::from(exit.x), y:i32::from(exit.y), floor:-i16::from(exit.floor) }, false, &closed).map_err(|_| CarrierError::PlanConflict)?);
                 }
                 runtime.commit_quest_relocation(proofs, || true)?;
                 fight.retire(runtime)?;
