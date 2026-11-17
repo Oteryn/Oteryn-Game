@@ -3306,3 +3306,27 @@ mod srvenc_live_requirements_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod deepling_ramp_tests {
+    #[test]
+    fn crystal_coral_ramp_requires_one_crate_and_crystal_twelve() -> Result<(), String> {
+        let callbacks = super::load()?;
+        let ramp = callbacks
+            .iter()
+            .find(|callback| callback.key == "oteryn:quest-callback/deeplings-ramp-1106")
+            .ok_or("missing Coral Mine ramp")?;
+        assert_eq!(ramp.selector.unique, Some(1106));
+        assert_eq!(ramp.selector.appearance, Some(14164));
+        let [phase] = ramp.storage.as_slice() else {
+            return Err("expected one Crystal progress guard".into());
+        };
+        assert_eq!((phase.minimum, phase.maximum, phase.set), (12, 12, 13));
+        let [crate_input] = ramp.effects.carried_inputs.as_slice() else {
+            return Err("expected one Coral Mine crate input".into());
+        };
+        assert_eq!(crate_input.item, "oteryn:item.tibia.i14165");
+        assert_eq!(crate_input.count, 1);
+        Ok(())
+    }
+}
