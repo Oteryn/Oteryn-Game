@@ -17,6 +17,8 @@ import tarfile
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = Path(__file__).with_name("world-change-item-profiles.json")
 IDS = frozenset({4103, 4104, 2576, 12059, 12060, 13853, 13854, 13855, 13856, 12065, 12063, 12061, 12062, 21803, 21804, 12077, 21805, 22059, 21812, 22074, 5963, 12368, 12369, 14163, 14164, 21893, 21894, 21895, 21896, 3990, 13974, 13976, 14255, 14018, 14020, 14051, 14052, 14053, 14054, 14055, 14064, 21752, 14074, 3583})
+FATHER_CORPSES = frozenset({11589, 11590})
+FATHER_OUTPUT = OUTPUT.with_name("fathers-burden-corpse-item-profiles.json")
 RESERVED = 12064
 SCHEMA = "OTERYN_NATIVE_WORLD_CHANGE_ITEM_PROFILES/v1"
 CORPUS = "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz"
@@ -61,7 +63,7 @@ def read_xml(source_root: Path) -> bytes:
         return stream.read()
 
 
-def build(source_root: Path = ROOT) -> dict:
+def build(source_root: Path = ROOT, ids: frozenset[int] = IDS) -> dict:
     # --source-root lets a sparse authoring checkout read immutable full source inputs.
     # OUTPUT always remains beside this script, never under the source-root override.
     sys.path.insert(0, str(source_root / "tools/content-schema/native-gameplay"))
@@ -79,16 +81,16 @@ def build(source_root: Path = ROOT) -> dict:
     objects = native.engine_items.load_appearance_objects(appearance_raw)
     if RESERVED in objects or xml[RESERVED].get("name") != "RESERVED SPRITE":
         raise ValueError("WORLD_CHANGE_RESERVED_SPRITE_SOURCE")
-    if IDS - set(xml) or IDS - set(objects):
+    if ids - set(xml) or ids - set(objects):
         raise ValueError("WORLD_CHANGE_SOURCE_ITEM_MISSING")
     physical = {row["server_item_id"]: row for row in
-                native.policies(appearance_raw, xml_raw, IDS)}
+                native.policies(appearance_raw, xml_raw, ids)}
     binding_raw = native.BINDINGS.read_bytes()
     bindings = native.binding_index(binding_raw)
     records = [native.profile(number, xml[number], objects[number], physical[number],
-                              bindings, None) for number in sorted(IDS)]
+                              bindings, None) for number in sorted(ids)]
     bound = native.bind_profiles({"schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
-                                  "records": records}, bindings, IDS)
+                                  "records": records}, bindings, ids)
     # The donor weight stays in the capture; the Global client weight wins (ITEMGLOB).
     sys.path.insert(0, str(source_root / "tools/content-migration"))
     importlib.import_module("import_cyclopedia_global").apply_profile_weights(
@@ -104,13 +106,13 @@ def build(source_root: Path = ROOT) -> dict:
              "manifest_sha256": digest(manifest_raw)},
         ],
         "binding_table_sha256": digest(binding_raw),
-        "reserved_ids_excluded": [RESERVED],
+        "reserved_ids_excluded": [RESERVED] if ids == IDS else [],
         "source_rows": [
             {"id": number, "xml_name": xml[number].get("name"),
              "xml_attributes": native.attrs(xml[number]),
              "appearance_flags": objects[number]["flags"],
              "projected_physical": physical[number]}
-            for number in sorted(IDS)
+            for number in sorted(ids)
         ],
         "records": bound["records"],
     }
@@ -124,10 +126,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-root", type=Path, default=ROOT)
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--father-corpses", action="store_true")
     args = parser.parse_args()
-    data = encoded(build(args.source_root))
+    output, ids = (FATHER_OUTPUT, FATHER_CORPSES) if args.father_corpses else (OUTPUT, IDS)
+    data = encoded(build(args.source_root, ids))
     if args.check:
-        if OUTPUT.read_bytes() != data:
+        if output.read_bytes() != data:
             raise SystemExit("WORLD_CHANGE_ITEM_PROFILE_DRIFT")
     else:
-        OUTPUT.write_bytes(data)
+        output.write_bytes(data)

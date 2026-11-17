@@ -7,19 +7,21 @@ from native_profile_composition import encode_native_profile
 
 PATH = "tools/content-schema/native-gameplay/world-change-item-profiles.json"
 IDS = frozenset({4103, 4104, 2576, 12059, 12060, 13853, 13854, 13855, 13856, 12065, 12063, 12061, 12062, 21803, 21804, 12077, 21805, 22059, 21812, 22074, 5963, 12368, 12369, 14163, 14164, 21893, 21894, 21895, 21896, 3990, 13974, 13976, 14255, 14018, 14020, 14051, 14052, 14053, 14054, 14055, 14064, 21752, 14074, 3583})
+FATHER_PATH = "tools/content-schema/native-gameplay/fathers-burden-corpse-item-profiles.json"
+FATHER_CORPSES = frozenset({11589, 11590})
 SCHEMA = "OTERYN_NATIVE_WORLD_CHANGE_ITEM_PROFILES/v1"
 XML_SHA256 = "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
 APPEARANCES_SHA256 = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
 
 
-def validate(overlay):
+def validate(overlay, ids=IDS):
     records = overlay["records"]
-    expected = {f"oteryn:item.tibia.i{number}" for number in IDS}
+    expected = {f"oteryn:item.tibia.i{number}" for number in ids}
     keys = [row["production_definition"]["production_key"] for row in records]
     source_rows = overlay["source_rows"]
-    if (overlay["schema"] != SCHEMA or len(keys) != len(IDS) or set(keys) != expected
-            or overlay["reserved_ids_excluded"] != [12064]
-            or len(source_rows) != len(IDS) or {row["id"] for row in source_rows} != IDS):
+    if (overlay["schema"] != SCHEMA or len(keys) != len(ids) or set(keys) != expected
+            or overlay["reserved_ids_excluded"] != ([12064] if ids == IDS else [])
+            or len(source_rows) != len(ids) or {row["id"] for row in source_rows} != ids):
         raise ValueError("WORLD_CHANGE_ITEM_PROFILE_SET")
     sources = {row["role"]: row for row in overlay["sources"]}
     if (len(overlay["sources"]) != 2
@@ -50,7 +52,8 @@ def validate(overlay):
             raise ValueError("WORLD_CHANGE_ITEM_PROFILE_PHYSICAL")
         chains = {5963:(10,10000,3990),3990:(10,300000,4103),4103:(8,300000,4104),4104:(None,60000,None),
                   13853:(18,10000,13854),13854:(18,300000,13855),13855:(9,300000,13856),13856:(None,60000,None),
-                  21893:(36,10000,21894),21894:(36,300000,21895),21895:(19,300000,21896),21896:(None,60000,None)}
+                  21893:(36,10000,21894),21894:(36,300000,21895),21895:(19,300000,21896),21896:(None,60000,None),
+                  11589:(None,500000,None),11590:(None,500000,None)}
         if number in chains:
             capacity, duration, target = chains[number]
             expected_container = ({"state":"KNOWN","value":{"capacity":{"state":"KNOWN","value":capacity}}}
@@ -66,9 +69,9 @@ def validate(overlay):
     return records
 
 
-def admit(root, generated, profile_path, manifest_path, order, canonical):
-    overlay = json.loads((root / PATH).read_bytes())
-    records = validate(overlay)
+def admit(root, generated, profile_path, manifest_path, order, canonical, *, overlay_path=PATH, ids=IDS):
+    overlay = json.loads((root / overlay_path).read_bytes())
+    records = validate(overlay, ids)
     document = json.loads(generated[profile_path])
     present = {row["production_definition"]["production_key"]: row for row in document["records"]}
     additions = []

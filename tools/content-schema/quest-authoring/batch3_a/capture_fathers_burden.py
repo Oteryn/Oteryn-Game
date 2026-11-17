@@ -5,6 +5,10 @@ The eight temporary donor targetMessage values are encoded as session topics
 """
 
 import argparse
+import hashlib
+import json
+
+from build_dialogues import HERE, REPO
 
 from capture import Capture, inventory, topic
 from lua_tables import assignments
@@ -27,7 +31,9 @@ def capture(donor):
     config = assignments(source, {"TerebanConfig"})["TerebanConfig"]
     g, e, r = c.guard, c.effect, c.rule
     r(npc, "mission-pending", 132, ["mission"], [g("Status", "eq", 1), g("Progress", "ne", 8)], say=135, topics=[0], exclude=["cloak"])
-    r(npc, "mission-complete", 139, ["mission"], [g("Status", "eq", 1), g("Progress", "eq", 8)], [e("Status", 2), inventory("give_item", 11701), {"kind": "experience", "amount": 8000}], say=142, topics=[0], exclude=["cloak"])
+    # The wiki packet's reward and spoiler list 8,000 gp. Crystal's dialogue
+    # mentions the coins, but its completion branch implements the cape and XP.
+    r(npc, "mission-complete", 139, ["mission"], [g("Status", "eq", 1), g("Progress", "eq", 8)], [e("Status", 2), inventory("give_item", 11701), {"kind": "experience", "amount": 8000}, {"kind": "give_money", "amount": 8000}], say=142, topics=[0], exclude=["cloak"], completes=True)
     r(npc, "mission-already-complete", 146, ["mission"], [g("Status", "eq", 2)], say=147, topics=[0], exclude=["cloak"])
     r(npc, "mission-offer", 150, ["mission"], [g("Status", "ne", 1), g("Status", "ne", 2)], [topic(1)], say=150, topics=[0], exclude=["cloak"])
 
@@ -60,6 +66,14 @@ def capture(donor):
     for rule in c.rules:
         rule["npc"] = "oteryn:npc.tereban"
     c.save()
+    captured = HERE / "npc/fathers_burden.json"
+    intent_path = HERE.parent.parent / "native-gameplay/authored-npc-item-custody.json"
+    intent = json.loads(intent_path.read_bytes())
+    entry, = (entry for entry in intent["inputs"]
+              if entry["path"] == captured.relative_to(REPO).as_posix() and entry["quest"] == c.key)
+    entry["sha256"] = hashlib.sha256(captured.read_bytes()).hexdigest()
+    intent_path.write_text(json.dumps(intent, indent=2) + "\n")
+
 
 
 if __name__ == "__main__":

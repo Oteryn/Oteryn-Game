@@ -190,6 +190,10 @@
         {
           "kind": "experience",
           "amount": 8000
+        },
+        {
+          "kind": "give_money",
+          "amount": 8000
         }
       ],
       "sources": [
