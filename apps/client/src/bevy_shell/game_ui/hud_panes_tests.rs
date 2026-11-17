@@ -1109,3 +1109,41 @@ fn a_floating_module_docks_again_when_dropped_on_a_column() -> TestResult {
     assert_eq!(parent(&app, frame), Some(sidebar.right_widgets));
     Ok(())
 }
+
+#[test]
+fn text_spawned_while_docked_follows_the_floating_window_zoom() -> TestResult {
+    use crate::bevy_shell::ui::window_layout::WindowLayouts;
+    let mut app = floating_app("float-font")?;
+    let slot = entity_with::<Name>(&mut app, |name| name.as_str() == "minimap-zoom-in")?;
+    let caption = app
+        .world()
+        .get::<Children>(slot)
+        .and_then(|children| children.first().copied())
+        .ok_or("caption")?;
+    let size = |app: &App| match app
+        .world()
+        .get::<TextFont>(caption)
+        .map(|font| font.font_size)
+    {
+        Some(bevy::text::FontSize::Px(size)) => Ok(size),
+        _ => Err("font size"),
+    };
+    let base = size(&app)?;
+    let toggle = entity_with::<float::FloatToggle>(&mut app, |toggle| toggle.0 == float::MINIMAP)?;
+    activate(&mut app, toggle);
+    settle(&mut app);
+    for zoom in [2., 1.25] {
+        app.world_mut()
+            .resource_mut::<WindowLayouts>()
+            .0
+            .get_mut("minimap")
+            .ok_or("layout")?
+            .set_zoom(zoom, Vec2::splat(4000.));
+        settle(&mut app);
+        assert_eq!(size(&app)?, base * zoom);
+    }
+    activate(&mut app, toggle);
+    settle(&mut app);
+    assert_eq!(size(&app)?, base, "docked text returns to its size");
+    Ok(())
+}

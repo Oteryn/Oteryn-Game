@@ -534,7 +534,9 @@ pub(in crate::bevy_shell) fn project(
     for (entity, mut font, line, base) in &mut fonts {
         let base = match base {
             Some(base) if changed => *base,
-            None if font.is_added() => {
+            // Text spawned outside a window (a docked region) takes its base when the region
+            // moves into one, which marks the layouts changed.
+            None if font.is_added() || changed => {
                 let FontSize::Px(size) = font.font_size else {
                     continue;
                 };
