@@ -313,7 +313,18 @@ pub(super) async fn apply_in_transaction(
     let mut restore = None;
     if mutation.tool_key == thornfire::FILLED_BUCKET
         && mutation.after == 0
-        && thornfire::FIRE_APPEARANCES.contains(&mutation.before)
+        && mutation
+            .placement
+            .get(32..)
+            .and_then(|bytes| <[u8; 8]>::try_from(bytes).ok().map(u64::from_be_bytes))
+            .is_some_and(|placement| {
+                thornfire::is_shadowthorn_fire(
+                    mutation.before,
+                    ((placement >> 32) & 0xffff) as u16,
+                    ((placement >> 16) & 0xffff) as u16,
+                    ((placement >> 8) & 0xff) as u8,
+                )
+            })
     {
         let world = fence.runtime_scope.world_id();
         let clocks: Option<(i64, i64)> = sqlx::query_as(
