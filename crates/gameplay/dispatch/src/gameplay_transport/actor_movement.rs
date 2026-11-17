@@ -7,7 +7,7 @@
 #[path = "actor_movement/observer_eye.rs"]
 mod observer_eye;
 #[cfg(test)]
-#[path = "actor_movement/observer_eye_tests.rs"]
+#[path = "postgres_tests/qoptic_observer_eye/rule.rs"]
 mod observer_eye_tests;
 pub(super) use observer_eye::ObserverEyePair;
 
