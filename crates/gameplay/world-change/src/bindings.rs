@@ -47,10 +47,53 @@ pub struct InvalidNativeBinding;
 
 mod active_layer;
 
+/// Physical bindings for one side of an authoritative World change.
+#[derive(Clone, Copy, Default)]
+struct Phase<'a> {
+    layer: Option<&'a str>,
+    spawn_variant: Option<&'a str>,
+}
+
+#[derive(Clone, Copy)]
+struct StateBinding<'a> {
+    key: &'a str,
+    inactive: Phase<'a>,
+    active: Phase<'a>,
+}
+
 impl NativeBindings {
     /// Compile only identities already implemented by map, spawn, NPC and raid owners.
     /// The durable owner binds the resulting bytes to the World and immutable reset day.
     pub fn compile(day: &DailyWorldChanges) -> Result<Self, InvalidNativeBinding> {
+        let bindings = [
+            StateBinding {
+                key: "grimvale",
+                inactive: Phase {
+                    spawn_variant: Some("ordinary"),
+                    ..Phase::default()
+                },
+                active: Phase {
+                    spawn_variant: Some("full_moon"),
+                    ..Phase::default()
+                },
+            },
+            StateBinding {
+                key: "their_masters_voice",
+                inactive: Phase::default(),
+                active: Phase {
+                    spawn_variant: Some("fungus"),
+                    ..Phase::default()
+                },
+            },
+        ];
+        Self::compile_with_states(day, &bindings, |key| crate::owner::is_active(day, key))
+    }
+
+    fn compile_with_states(
+        day: &DailyWorldChanges,
+        states: &[StateBinding<'_>],
+        active: impl Fn(&str) -> bool,
+    ) -> Result<Self, InvalidNativeBinding> {
         if !FURY_LAYERS.contains(&day.fury_exit)
             || !NIGHTMARE_LAYERS.contains(&day.nightmare_isles)
             || day.fury_gates.is_some_and(|layer| layer != day.fury_exit)
@@ -104,20 +147,28 @@ impl NativeBindings {
                 position,
             });
         }
-        result.bindings.push(Binding::SpawnPolicy {
-            key: "grimvale".into(),
-            variant: if day.grimvale_full_moon {
-                "full_moon"
-            } else {
-                "ordinary"
+        let mut keys = std::collections::BTreeSet::new();
+        for state in states {
+            if !crate::rules::valid_key(state.key) || !keys.insert(state.key) {
+                return Err(InvalidNativeBinding);
             }
-            .into(),
-        });
-        if day.their_masters_voice {
-            result.bindings.push(Binding::SpawnPolicy {
-                key: "their_masters_voice".into(),
-                variant: "fungus".into(),
-            });
+            let phase = if active(state.key) {
+                state.active
+            } else {
+                state.inactive
+            };
+            if let Some(key) = phase.layer {
+                result.bindings.push(Binding::Layer {
+                    key: key.into(),
+                    exit_only: false,
+                });
+            }
+            if let Some(variant) = phase.spawn_variant {
+                result.bindings.push(Binding::SpawnPolicy {
+                    key: state.key.into(),
+                    variant: variant.into(),
+                });
+            }
         }
         if day.stampede {
             result.bindings.push(Binding::SpawnPolicy {
@@ -221,6 +272,44 @@ mod tests {
         assert!(compiled.bindings.iter().any(
             |b| matches!(b, Binding::Raid { requirement, .. } if requirement == "fury_gates")
         ));
+        Ok(())
+    }
+
+    #[test]
+    fn native_bindings_select_layer_and_spawns_from_the_same_state() -> Result<(), String> {
+        let day = DailyWorldChanges::roll(1, 6, 13, |_| 0);
+        let bindings = [StateBinding {
+            key: "grimvale",
+            inactive: Phase {
+                layer: None,
+                spawn_variant: Some("ordinary"),
+            },
+            active: Phase {
+                layer: Some(day.fury_exit),
+                spawn_variant: Some("full_moon"),
+            },
+        }];
+        for (active, expected_variant) in [(false, "ordinary"), (true, "full_moon")] {
+            let compiled = NativeBindings::compile_with_states(&day, &bindings, |key| {
+                assert_eq!(key, "grimvale");
+                active
+            })
+            .map_err(|err| format!("{err:?}"))?;
+            assert_eq!(
+                compiled
+                    .bindings
+                    .iter()
+                    .filter(|binding| matches!(
+                        binding, Binding::Layer { key, exit_only: false } if key == day.fury_exit
+                    ))
+                    .count(),
+                usize::from(day.fury_gates.is_some()) + usize::from(active)
+            );
+            assert!(compiled.bindings.contains(&Binding::SpawnPolicy {
+                key: "grimvale".into(),
+                variant: expected_variant.into(),
+            }));
+        }
         Ok(())
     }
 
