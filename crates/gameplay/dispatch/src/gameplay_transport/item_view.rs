@@ -645,7 +645,7 @@ impl SessionItemView {
     }
 
     /// Capability 512 is selected: domain 11 shows up to 48 corpse entries.
-    pub const fn with_corpse_container_48(mut self) -> Self {
+    pub fn with_corpse_container_48(mut self) -> Self {
         self.corpse_48 = true;
         self.table = self.table.with_corpse_container_48();
         self
