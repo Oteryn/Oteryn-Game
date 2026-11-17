@@ -5,7 +5,11 @@ use oteryn_session::{
     world_map::{MapOrigin, MapViewHeader},
 };
 
-pub(super) fn current<S: SessionStream>(session: &Session<S>, command: &Command) -> bool {
+pub(super) fn current<S: SessionStream>(
+    session: &Session<S>,
+    command: &Command,
+    raw_wire: bool,
+) -> bool {
     if let super::Action::UseOn(source) = command.action {
         if !item_current(session, source) {
             return false;
@@ -43,7 +47,12 @@ pub(super) fn current<S: SessionStream>(session: &Session<S>, command: &Command)
                 (entity.entity.identity != *entities.own_identity()
                     || matches!(command.action, super::Action::UseOn(_)))
                     && entity.entity == reference
-                    && entity.position == selection.position
+                    && entity.position
+                        == if raw_wire {
+                            super::wire_floor(selection.position)
+                        } else {
+                            selection.position
+                        }
                     && matches!(
                         entity.detail,
                         EntityDetail::Actor {

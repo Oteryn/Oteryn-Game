@@ -3,6 +3,7 @@ use super::{Mailbox, Outbox, Pushed, SessionEvent, lock};
 
 impl Mailbox {
     pub(in crate::play) fn cancel_activity_requests(&mut self) {
+        self.reset_wire_frame();
         self.chat.scope = self.chat.scope.wrapping_add(1);
         // Every queued command belonged to the source namespace, including panel queries.
         // Release their controls without inventing success or retrying a mutation.

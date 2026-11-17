@@ -387,6 +387,8 @@ struct HandoffPeer {
     initial_modal: bool,
     feature_calls: Arc<AtomicUsize>,
     serve_calls: Arc<AtomicUsize>,
+    /// When each post-handoff modal query reached the session.
+    queries: Arc<std::sync::Mutex<Vec<tokio::time::Instant>>>,
 }
 impl Stepper for HandoffPeer {
     fn feature_selected(&self, capability: u32) -> bool {
@@ -416,15 +418,24 @@ impl Stepper for HandoffPeer {
                 payload: reply.encode().map_err(|_| SessionError::SessionUnusable)?,
             });
         }
+        self.queries
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push(tokio::time::Instant::now());
         if self.feature_calls.fetch_add(1, Ordering::SeqCst) == 0 {
             Err(SessionError::ActivityScopeChanged)
         } else {
             Err(SessionError::SessionUnusable)
         }
     }
-    async fn serve(&mut self, _duration: Duration) -> Result<(), SessionError> {
+    async fn serve(&mut self, duration: Duration) -> Result<(), SessionError> {
         self.serve_calls.fetch_add(1, Ordering::SeqCst);
-        Err(SessionError::SessionUnusable)
+        if !self.modal {
+            return Err(SessionError::SessionUnusable);
+        }
+        // A modal handoff keeps play alive until the destination query is due.
+        tokio::time::sleep(duration.min(Duration::from_millis(100))).await;
+        Ok(())
     }
     async fn step(&mut self, _direction: StepDirection) -> Result<StepOutcome, SessionError> {
         Ok(moved_to(100, 199, 0))
@@ -453,11 +464,13 @@ fn modal_and_support_handoffs_recover_before_servicing_destination() -> Result<(
                 link.use_shared_frontend();
                 let feature_calls = Arc::default();
                 let serve_calls = Arc::default();
+                let queries = Arc::default();
                 let peer = HandoffPeer {
                     modal,
                     initial_modal: false,
                     feature_calls: Arc::clone(&feature_calls),
                     serve_calls: Arc::clone(&serve_calls),
+                    queries: Arc::clone(&queries),
                 };
                 if !modal {
                     assert!(
@@ -497,6 +510,11 @@ fn modal_and_support_handoffs_recover_before_servicing_destination() -> Result<(
                         2,
                         "handoff must release the pending modal query"
                     );
+                    assert_destination_query_waits_for_the_scope_reset(&queries)?;
+                    assert!(
+                        serve_calls.load(Ordering::SeqCst) > 0,
+                        "the destination keeps servicing play until its query is due"
+                    );
                 } else {
                     assert_eq!(
                         serve_calls.load(Ordering::SeqCst),
@@ -521,11 +539,13 @@ fn modal_answer_handoff_drops_source_answer_and_queries_destination() -> Result<
             let (link, commands, outbox) = play_channel();
             link.use_shared_frontend();
             let feature_calls = Arc::default();
+            let queries = Arc::default();
             let mut peer = HandoffPeer {
                 modal: true,
                 initial_modal: true,
                 feature_calls: Arc::clone(&feature_calls),
                 serve_calls: Arc::default(),
+                queries: Arc::clone(&queries),
             };
             let mut driver =
                 super::feature_0450_server_modal::protocol::Driver::new(true).with_outbox(&outbox);
@@ -545,10 +565,29 @@ fn modal_answer_handoff_drops_source_answer_and_queries_destination() -> Result<
             ));
             super::session_loop::run_session_with_modal(peer, commands, outbox, driver).await;
             assert_eq!(feature_calls.load(Ordering::SeqCst), 2);
+            assert_destination_query_waits_for_the_scope_reset(&queries)?;
             assert!(link.server_modal_panel().is_none());
             Ok::<(), String>(())
         })
     })
+}
+
+/// The destination is queried exactly once more, and only after the scope-reset delay: before
+/// that point the session saw just the query that observed the handoff.
+fn assert_destination_query_waits_for_the_scope_reset(
+    queries: &std::sync::Mutex<Vec<tokio::time::Instant>>,
+) -> Result<(), String> {
+    let queries = queries
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let [handoff, destination] = queries.as_slice() else {
+        return Err(format!("expected two modal queries, saw {}", queries.len()));
+    };
+    assert!(
+        destination.duration_since(*handoff) >= Duration::from_secs(5),
+        "the destination query must wait for the scope-reset delay"
+    );
+    Ok(())
 }
 
 fn on_session_test_thread(test: fn() -> Result<(), String>) -> Result<(), String> {

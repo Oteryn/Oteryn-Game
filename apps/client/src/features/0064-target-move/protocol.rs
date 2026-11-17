@@ -74,6 +74,7 @@ impl Outbox {
         session: &mut impl Stepper,
         position: ActorPosition,
     ) -> Result<(), SessionError> {
+        let position = lock(&self.0).wire_position(position);
         let response = session.target_walk(position).await?;
         oteryn_client_ui::target_move::apply(&mut lock(&self.0).target_walk, response);
         Ok(())

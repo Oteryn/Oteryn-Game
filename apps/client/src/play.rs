@@ -121,6 +121,7 @@ pub use feature_0233_touch_controls::promoted::is_touch_promoted;
 pub use feature_0233_touch_controls::state::Phase as TouchPhase;
 pub use resource_hud::ResourceHudOptions;
 mod window_controls;
+mod wire_frame;
 pub use window_controls::window_icon;
 
 include!(concat!(env!("OUT_DIR"), "/play_features.rs"));

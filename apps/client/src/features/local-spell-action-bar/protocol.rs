@@ -52,7 +52,12 @@ impl Outbox {
         &self,
         actor: Option<oteryn_session::WorldSpatialEntity>,
     ) {
-        lock(&self.0).bar_actions.own_actor = actor;
+        let mut mailbox = lock(&self.0);
+        let frame = mailbox.wire_frame();
+        mailbox.bar_actions.own_actor = actor.map(|mut actor| {
+            actor.position = frame.to_native(actor.position);
+            actor
+        });
     }
 }
 

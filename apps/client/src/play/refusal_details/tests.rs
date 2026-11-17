@@ -46,7 +46,7 @@ impl Stepper for Peer {
         })
     }
 
-    async fn world_context(&mut self, command: &Command) -> Result<String, SessionError> {
+    async fn world_context(&mut self, command: &Command, _: bool) -> Result<String, SessionError> {
         assert_eq!(command.action, Action::Use);
         self.uses.pop_front().ok_or(SessionError::SessionUnusable)
     }

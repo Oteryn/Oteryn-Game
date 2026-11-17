@@ -7,8 +7,12 @@ impl Outbox {
         lock(&self.0).player_typing_shutdown
     }
 
-    pub(in crate::play) fn stepped(&self, outcome: StepOutcome) {
+    pub(in crate::play) fn stepped(&self, mut outcome: StepOutcome) {
         let mut mailbox = lock(&self.0);
+        if let Some(delta) = &mut outcome.world_spatial_delta {
+            mailbox.wire.observe_wire(delta.value.actor_position);
+            delta.value.actor_position = mailbox.wire_frame().to_native(delta.value.actor_position);
+        }
         mailbox.movement_turn = None;
         let older = std::mem::take(&mut mailbox.pushed);
         mailbox.before.absorb(older);
@@ -114,13 +118,16 @@ impl Outbox {
         }
     }
 
+    /// `entities` are as the server sent them; the shell gets them in the native frame.
     pub(in crate::play) fn entities(&self, entities: Vec<WorldSpatialEntity>) {
         let mut mailbox = lock(&self.0);
         oteryn_client_ui::player_typing::protocol::retain_visible(
             &mut mailbox.player_typing,
             &entities,
         );
-        mailbox.pushed.entities = Some(entities);
+        let native = mailbox.native_entities(&entities);
+        mailbox.pushed.entities = Some(native);
+        mailbox.entities_wire = entities;
     }
 
     pub(in crate::play) fn logout_refused(&self, result: Option<LogoutResult>) {

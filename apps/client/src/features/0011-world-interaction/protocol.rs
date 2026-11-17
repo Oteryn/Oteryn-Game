@@ -25,7 +25,10 @@ impl Outbox {
         ) {
             self.target_walk_replaced();
         }
-        let result = session.world_context(command).await;
+        // Selections stay native (map tiles); only creature checks and the position target
+        // are taken to the wire frame, inside the runtime send.
+        let raw_wire = lock(&self.0).wire_frame() == crate::play::wire_frame::WireFrame::Raw;
+        let result = session.world_context(command, raw_wire).await;
         let mut mailbox = lock(&self.0);
         mailbox.world_context.pending = false;
         mailbox.use_with_pending = false;
@@ -67,6 +70,7 @@ macro_rules! session_trait {
             fn world_context(
                 &mut self,
                 _command: &oteryn_client_runtime::world_interaction::Command,
+                _raw_wire: bool,
             ) -> impl std::future::Future<
                 Output = Result<String, oteryn_session::SessionError>,
             > + Send {

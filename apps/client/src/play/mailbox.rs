@@ -246,6 +246,9 @@ pub(super) struct Mailbox {
     pub(super) guild: oteryn_client_ui::guild::GuildPanel,
     /// Last published connection-local presentation, including appearance-only updates.
     pub(super) appearance_state: Vec<oteryn_session::VisibleAppearance>,
+    /// The wire frame of domain-1 positions, and the entity list as the server sent it.
+    pub(super) wire: super::wire_frame::WireTracker,
+    pub(super) entities_wire: Vec<WorldSpatialEntity>,
     /// Pushes that arrived before `stepped` was stored: older than its outcome.
     before: Pushed,
     stepped: Option<Box<StepOutcome>>,

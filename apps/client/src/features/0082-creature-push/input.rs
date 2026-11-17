@@ -122,11 +122,13 @@ impl PlayView {
                                     });
                                     let intent = CreaturePushIntent {
                                         target,
-                                        destination: ActorPosition {
-                                            x: tile.x,
-                                            y: tile.y,
-                                            floor,
-                                        },
+                                        destination: lock(&link.mailbox).wire_position(
+                                            ActorPosition {
+                                                x: tile.x,
+                                                y: tile.y,
+                                                floor,
+                                            },
+                                        ),
                                     };
                                     if let Some(command) =
                                         oteryn_client_ui::creature_push::request(intent)

@@ -21,7 +21,8 @@ impl crate::play::Outbox {
             PlayCommand::Combat(command) => (command, None),
             _ => return Err(oteryn_session::SessionError::SessionUnusable),
         };
-        let report = session.combat(command).await?;
+        let wire = crate::play::mailbox::lock(&self.0).wire_combat(command);
+        let report = session.combat(wire).await?;
         self.battle_result(report, session.battle_state(), panel_command);
         Ok(())
     }
@@ -46,11 +47,47 @@ impl crate::play::Outbox {
     ) {
         let mut mailbox = crate::play::mailbox::lock(&self.0);
         mailbox.battle.combat = state;
-        mailbox.battle.replace_entities(entities, own_floor);
+        let frame = mailbox.wire_frame();
+        let entities = mailbox.native_entities(entities);
+        mailbox
+            .battle
+            .replace_entities(&entities, own_floor.map(|floor| frame.floor_to_native(floor)));
     }
 }
 
 impl crate::play::mailbox::Mailbox {
+    /// Cursor-aimed casts name their tile in the wire frame.
+    fn wire_combat(&self, command: CombatCommand) -> CombatCommand {
+        let wire = |position: oteryn_session::SpellTargetPosition| {
+            let wire = self.wire_position(oteryn_session::ActorPosition {
+                x: position.x,
+                y: position.y,
+                floor: position.floor,
+            });
+            oteryn_session::SpellTargetPosition {
+                x: wire.x,
+                y: wire.y,
+                floor: wire.floor,
+            }
+        };
+        match command {
+            CombatCommand::CastCursor {
+                spell,
+                position,
+                direction,
+            } => CombatCommand::CastCursor {
+                spell,
+                position: wire(position),
+                direction,
+            },
+            CombatCommand::CastAt { spell, position } => CombatCommand::CastAt {
+                spell,
+                position: wire(position),
+            },
+            other => other,
+        }
+    }
+
     pub(in crate::play) fn battle_feedback(
         &mut self,
         report: CombatReport,
