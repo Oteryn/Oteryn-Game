@@ -8,6 +8,9 @@ use oteryn_protocol_oteryn::npc_service as wire;
 
 use verdict::Row;
 
+#[path = "full_e2ef4_f4e05.rs"]
+mod full_e2ef4_f4e05;
+
 #[path = "full_e2ef4_f4e07.rs"]
 mod full_e2ef4_f4e07;
 
@@ -140,7 +143,7 @@ pub(super) async fn run(
     row!(600, "E01", E01, shop, clients, world, npcs);
     row!(180, "E03", E03, coins, clients);
     row!(240, "E04", E04, trade, clients, world);
-    row!(90, "E05", E05, market, world);
+    row!(1200, "E05", E05, market, clients, world);
     row!(240, "E07", E07, storage, clients, world);
     row!(90, "S01", S01, party, clients, world);
     row!(1500, "S03", S03, guild, clients, world, npcs);
@@ -1183,67 +1186,13 @@ async fn trade(
     result
 }
 
-async fn market(row: &mut Row, client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
-    use oteryn_dev_client::{client_runtime::market as runtime, client_ui::market as ui};
-    locker(client, world).await?;
-    let mut panel = ui::MarketPanel {
-        selected: true,
-        ..Default::default()
-    };
-    for (intent, action) in [
-        (ui::Intent::Browse, "browse"),
-        (ui::Intent::History, "history"),
-    ] {
-        let command = ui::request(&mut panel, intent).ok_or("market request input")?;
-        let reply = runtime::send(client.session_mut(), &command).await?;
-        if !ui::apply_result(&mut panel, &reply) {
-            return Err(format!("market {action}: {:?}", reply.reply).into());
-        }
-        // Empty history is a successful query, but not settlement history evidence.
-        if action == "browse" {
-            row.pass("browse", "native-market-browse-decoded");
-        }
-    }
-    let item = client
-        .inventory()
-        .and_then(|i| i.entries.first().or(i.main_backpack.as_ref()))
-        .copied()
-        .ok_or("no native item definition for market offer")?;
-    panel.definition = item.item_definition_ref.get();
-    panel.sell = false;
-    let command = ui::request(&mut panel, ui::Intent::CreateOffer).ok_or("market create input")?;
-    let reply = runtime::send(client.session_mut(), &command).await?;
-    if !ui::apply_result(&mut panel, &reply) {
-        return Err(format!(
-            "market-create-refused:{:?};no-minted-funds-or-premium",
-            reply.reply
-        )
-        .into());
-    }
-    let id = reply.reply.ok_or("market create receipt missing")?.offer;
-    let command = ui::request(&mut panel, ui::Intent::OwnOffers).ok_or("market own input")?;
-    let reply = runtime::send(client.session_mut(), &command).await?;
-    if !ui::apply_result(&mut panel, &reply)
-        || !panel.rows.iter().any(|r| {
-            r.offer == id && r.amount == 1 && r.price == 1 && r.definition == panel.definition
-        })
-    {
-        return Err("created market offer absent or quantity/price differ".into());
-    }
-    row.pass("create", "own-offers-exact-id-definition-amount-price");
-    panel.selected_offer = Some(id);
-    let command = ui::request(&mut panel, ui::Intent::CancelOffer).ok_or("market cancel input")?;
-    let reply = runtime::send(client.session_mut(), &command).await?;
-    if !ui::apply_result(&mut panel, &reply) {
-        return Err("market cancellation refused".into());
-    }
-    let command = ui::request(&mut panel, ui::Intent::OwnOffers).ok_or("market verify cancel")?;
-    let reply = runtime::send(client.session_mut(), &command).await?;
-    if !ui::apply_result(&mut panel, &reply) || panel.rows.iter().any(|r| r.offer == id) {
-        return Err("cancelled offer remains active".into());
-    }
-    row.pass("cancel", "cancelled-id-absent-from-own-offers");
-    Err("BLOCKED market accept/history/relog-settlement: not authored; needs a second player funded by real sales to accept the offer and the history/relog reads".into())
+async fn market(
+    row: &mut Row,
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+) -> TestResult {
+    full_e2ef4_f4e05::run(row, client, clients, world).await
 }
 
 async fn depot_call(
