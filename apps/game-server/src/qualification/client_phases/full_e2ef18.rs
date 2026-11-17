@@ -278,7 +278,37 @@ fn carry_capacity_grew(before: Option<u64>, after: Option<u64>) -> bool {
     matches!((before, after), (Some(before), Some(after)) if before > 0 && after > before)
 }
 
-async fn fixture_request(
+// C14 uses a solo free account with no personal boosts. Keep its oracle
+// independent of the award owner, with a single final truncation.
+fn expected_rat_award(base: u64, level: u32, stamina: u16) -> u64 {
+    let steps = u64::from(level.clamp(2, 50) - 2);
+    let scaled = u128::from(base) * u128::from(2400 - 25 * steps);
+    match stamina {
+        0 => 0,
+        1..=840 => (scaled / 2400) as u64,
+        _ => (scaled / 1200) as u64,
+    }
+}
+
+async fn await_level_publication(
+    client: &mut DevClientSession,
+    deadline: tokio::time::Instant,
+    expected_health: u32,
+    expected_mana: u32,
+) -> TestResult<oteryn_protocol_oteryn::actor_spell::ActorVitals> {
+    while tokio::time::Instant::now() < deadline {
+        if let Some(vitals) = client.actor_vitals().copied()
+            && vitals.max_health == expected_health && vitals.max_mana == expected_mana
+        {
+            return Ok(vitals);
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
+    Err(format!("level-and-maxima: expected health={expected_health} mana={expected_mana}, observed {:?}", client.actor_vitals()).into())
+}
+
+pub(super) async fn fixture_request(
     client: &mut DevClientSession,
     arguments: &'static [&'static str],
 ) -> TestResult<String> {
@@ -437,15 +467,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 .await?.ok_or("step=walk-to-weak-spawn observed=no-reachable-adjacent-rat")?;
             row.pass("walk-to-weak-spawn", format!("target={:?}", target.entity));
             kill(&mut client, target).await?;
-            let after = progress(&mut client).await?;
+            let mut after = progress(&mut client).await?;
             let delta = after.stats.experience.checked_sub(previous.stats.experience)
                 .ok_or("step=exact-kill-experience observed=experience-regressed")?;
-            // This character starts without Premium, active Prey, or personal XP boosts.
-            let expected = oteryn_gameplay_characters::hunting_experience::hunting_experience(
-                i64::try_from(rat_experience)?, 0, 0, i32::from(after.stats.stamina_minutes),
-                false, previous.stats.level,
-            ).map_err(|_| "step=exact-kill-experience observed=invalid-xp-inputs")?;
-            if !exact_kill_award(delta, Some(u64::try_from(expected)?)) {
+            let expected = expected_rat_award(rat_experience, previous.stats.level, after.stats.stamina_minutes);
+            if !exact_kill_award(delta, Some(expected)) {
                 return Err(format!("step=exact-kill-experience observed={delta} expected={expected}").into());
             }
             row.pass("exact-kill-experience", format!("creature=oteryn:creature.rat delta={delta}"));
@@ -454,9 +480,32 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             }
             if after.stats.level != previous.stats.level {
                 let grown = carry_capacity(&mut client, after.stats.level).await?;
+                let (expected_health, expected_mana, _) = oteryn_gameplay_characters::vitals::maxima(
+                    match vocation {
+                        crate::spell::Vocation::None => "none",
+                        crate::spell::Vocation::Druid => "druid",
+                        crate::spell::Vocation::ElderDruid => "elder_druid",
+                        crate::spell::Vocation::Sorcerer => "sorcerer",
+                        crate::spell::Vocation::MasterSorcerer => "master_sorcerer",
+                        crate::spell::Vocation::Knight => "knight",
+                        crate::spell::Vocation::EliteKnight => "elite_knight",
+                        crate::spell::Vocation::Paladin => "paladin",
+                        crate::spell::Vocation::RoyalPaladin => "royal_paladin",
+                        crate::spell::Vocation::Monk => "monk",
+                        crate::spell::Vocation::ExaltedMonk => "exalted_monk",
+                    }, after.stats.level,
+                    oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+                    oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+                ).ok_or("level-and-maxima: missing authored maxima")?;
+                after.vitals = await_level_publication(
+                    &mut client, deadline.min(tokio::time::Instant::now() + Duration::from_secs(6)),
+                    expected_health, expected_mana,
+                ).await?;
                 if after.stats.level != previous.stats.level + 1
                     || after.vitals.max_health <= previous.vitals.max_health
                     || after.vitals.max_mana < previous.vitals.max_mana
+                    || (vocation == crate::spell::Vocation::Sorcerer
+                        && after.vitals.max_mana == previous.vitals.max_mana)
                     || !carry_capacity_grew(Some(capacity), Some(grown))
                 {
                     return Err(format!("step=level-and-maxima observed=before-{previous:?}/after-{after:?} capacity={capacity}=>{grown} need=level+1-vital-and-capacity-growth").into());
@@ -476,20 +525,21 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     let reached = progression;
 
-    let spells_after = learned(&mut client)?;
-    let newly_learned: Vec<_> = spells_after
-        .iter()
-        .filter(|spell| {
-            spell.learned
-                && !spells_before
-                    .iter()
-                    .any(|before| before.cast_index == spell.cast_index && before.learned)
-        })
-        .map(|spell| spell.cast_index)
-        .collect();
-    if !automatic_unlocks_observed(&expected_unlocks, &newly_learned) {
-        return Err(format!("step=automatic-spell-learning observed={newly_learned:?} expected={expected_unlocks:?} level={unlock_level}").into());
-    }
+    let catalog_deadline = deadline.min(tokio::time::Instant::now() + Duration::from_secs(6));
+    let spells_after = loop {
+        let spells = learned(&mut client)?;
+        let newly_learned: Vec<_> = spells.iter().filter(|spell| {
+            spell.learned && !spells_before.iter().any(|before| before.cast_index == spell.cast_index && before.learned)
+        }).map(|spell| spell.cast_index).collect();
+        if tokio::time::Instant::now() >= catalog_deadline {
+            return Err(format!("step=automatic-spell-learning observed={newly_learned:?} expected={expected_unlocks:?} level={unlock_level}").into());
+        }
+        if automatic_unlocks_observed(&expected_unlocks, &newly_learned) {
+            break spells;
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    };
     row.pass(
         "automatic-spell-learning",
         format!("new-level-spells={expected_unlocks:?}"),
@@ -539,6 +589,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rat_oracle_requires_the_low_level_bonus_and_stamina_penalty() {
+        assert_eq!(expected_rat_award(5, 5, 2520), 9);
+        assert_eq!(expected_rat_award(5, 5, 840), 4);
+        assert_eq!(expected_rat_award(5, 5, 0), 0);
+    }
 
     #[test]
     fn level_and_maxima_requires_observed_carry_capacity_growth() {

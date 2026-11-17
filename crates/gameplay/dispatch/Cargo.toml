@@ -12,6 +12,7 @@ category = "gameplay"
 release-role = "production"
 
 [features]
+qualification-private-channel = []
 # Disposable node-boot builds only; absent from production binaries.
 qualification-clock = ["oteryn-gameplay-world/qualification-clock"]
 test-support = ["dep:ed25519-dalek", "oteryn-gameplay-encounters/test-support", "oteryn-gameplay-entities/test-support"]

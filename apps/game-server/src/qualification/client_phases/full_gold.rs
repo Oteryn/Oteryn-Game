@@ -398,12 +398,14 @@ pub(super) async fn earn(
     let setup_limit = started + Duration::from_secs(SETUP_SECONDS);
     let level = tokio::time::timeout_at(setup_limit, level(client))
         .await
-        .map_err(|_| format!("{row}: gold-earning-budget during level query"))??;
+        .map_err(|_| {
+            client.session_mut().invalidate_after_cancellation();
+            format!("{row}: gold-earning-budget during level query")
+        })??;
     let ranked = candidates(spawns, level)?;
     if ranked.is_empty() && needed > start_gold {
         return Err(format!("{row}: no spawned creature pays coin gold at level {level}").into());
     }
-    let mut unreachable = BTreeSet::new();
     let mut deadline = setup_limit;
     let mut selected = false;
     let mut kills = 0u64;
@@ -421,16 +423,16 @@ pub(super) async fn earn(
             return Ok(observed);
         }
         let mut picked = None;
-        for (index, candidate) in ranked.iter().enumerate() {
-            if unreachable.contains(&index) {
-                continue;
-            }
+        for candidate in &ranked {
             let travel = tokio::time::timeout_at(
                 deadline,
                 approach_spawn_target(client, world, spawns, &candidate.key),
             )
             .await
-            .map_err(|_| format!("{row}: gold-earning-budget during spawn approach"))?;
+            .map_err(|_| {
+            client.session_mut().invalidate_after_cancellation();
+            format!("{row}: gold-earning-budget during spawn approach")
+        })?;
             match travel {
                 Ok(Some(target)) => {
                     picked = Some((candidate, target));
@@ -441,7 +443,6 @@ pub(super) async fn earn(
                         "{row}_GOLD creature={} observed=no-reachable-live-target",
                         candidate.key
                     ));
-                    unreachable.insert(index);
                 }
                 Err(error) => return Err(error),
             }
@@ -468,7 +469,10 @@ pub(super) async fn earn(
             loot_coins(client).await
         })
         .await
-        .map_err(|_| format!("{row}: gold-earning-budget during hunt/loot"))?;
+        .map_err(|_| {
+            client.session_mut().invalidate_after_cancellation();
+            format!("{row}: gold-earning-budget during hunt/loot")
+        })?;
         hunted.map_err(|error| {
             verdict::record_error(verdict::IndexedError::as_error(&error));
             verdict::context(
@@ -617,6 +621,9 @@ pub(super) async fn buy(
         }
     })
     .await;
+    if observed.is_err() {
+        client.session_mut().invalidate_after_cancellation();
+    }
     match observed {
         Ok(Ok(sequence)) if tokio::time::Instant::now() < deadline => {
             verdict::Harness::global().progress("gold-buy");

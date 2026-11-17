@@ -173,6 +173,28 @@ async fn channel_list(client: &mut DevClientSession, step: &str) -> TestResult<C
     .ok_or_else(|| format!("{step}:accepted-but-channel-list-delta-missing").into())
 }
 
+async fn prepare_channel_owner(client: &mut DevClientSession) -> TestResult {
+    full_e2ef18::fixture_request(client, &["--profile", "private-channel"]).await?;
+    Ok(())
+}
+
+async fn durable_channel_rows(
+    database: &sqlx::PgPool,
+    world: &[u8; 16],
+    owner: &[u8; 16],
+    channel: u16,
+) -> TestResult<(i64, i64)> {
+    Ok(sqlx::query_as(
+        "SELECT
+            (SELECT count(*) FROM game_private_chat_channels
+             WHERE world_id = encode($1,'hex')::uuid AND owner_session_id = encode($2,'hex')::uuid),
+            (SELECT count(*) FROM game_private_chat_members
+             WHERE world_id = encode($1,'hex')::uuid AND channel_id = $3)",
+    )
+    .bind(world.as_slice()).bind(owner.as_slice()).bind(i32::from(channel))
+    .fetch_one(database).await?)
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let mut a = connect_character(clients, 0xe1, 0).await?;
     let mut b = connect_character(clients, 0xe2, 1).await?;
@@ -217,6 +239,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .await?;
         row.pass("offline-refusal");
 
+        prepare_channel_owner(&mut a).await?;
         accepted(&mut a, ChatIntent::PrivateChannel(PrivateChannelIntent::Create), "channel-create").await?;
         let channel_id = channel_list(&mut a, "channel-create-list").await?.own_channel
             .ok_or("channel-create:accepted-but-own-channel-absent")?;
@@ -259,6 +282,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         if channel_list(&mut a, "channel-close-list").await?.own_channel.is_some() { return Err("channel-close:own-channel-still-listed".into()); }
         row.pass("channel-close");
 
+        prepare_channel_owner(&mut a).await?;
         accepted(
             &mut a,
             ChatIntent::PrivateChannel(PrivateChannelIntent::Create),
@@ -285,7 +309,28 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         {
             return Err("relog-transient:peer-invitation-missing-before-logout".into());
         }
+        // private-channel-count uses a SELECT over the stored rows, before any
+        // List mutation or fresh admission can sweep the terminal owner's room.
+        let database = sqlx::postgres::PgPoolOptions::new().max_connections(1)
+            .connect(clients.url).await?;
+        let owner = *a.join_snapshot().game_session_id.as_bytes();
+        let before_rows = durable_channel_rows(&database, &clients.world, &owner, transient_id).await?;
+        if before_rows != (1, 2) {
+            return Err(format!("private-channel-count before logout: {before_rows:?}").into());
+        }
         logout(&mut a).await?;
+        let until = tokio::time::Instant::now() + Duration::from_secs(5);
+        loop {
+            let rows = durable_channel_rows(&database, &clients.world, &owner, transient_id).await?;
+            if rows == (0, 0) {
+                break;
+            }
+            if tokio::time::Instant::now() >= until {
+                return Err(format!("private-channel-count after logout and before List: {rows:?}").into());
+            }
+            b.service_liveness(Duration::from_millis(50)).await?;
+            b.take_events();
+        }
         a = connect_character(clients, 0xe3, 0).await?;
         if !transient_channel_observed(
             before_logout,

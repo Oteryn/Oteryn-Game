@@ -5150,9 +5150,8 @@ async fn approach_spawn_target(
     spawns: &oteryn_world_bundle::spawn::Table,
     creature: &str,
 ) -> TestResult<Option<oteryn_dev_client::WorldSpatialEntity>> {
-    let from = actor_tile(client)?;
     let (name, _) = full_gold::creature_profile(creature)?;
-    let authored: BTreeSet<_> = spawns
+    let authored: BTreeMap<_, _> = spawns
         .sources
         .iter()
         .flat_map(|source| source.points.iter().map(move |point| (source.floor, point)))
@@ -5162,10 +5161,15 @@ async fn approach_spawn_target(
                 .get(point.creature as usize)
                 .is_some_and(|entry| entry.key == creature)
         })
-        .map(|(floor, point)| TilePos {
-            x: point.x,
-            y: point.y,
-            floor,
+        .map(|(floor, point)| {
+            (
+                TilePos {
+                    x: point.x,
+                    y: point.y,
+                    floor,
+                },
+                point.respawn_ms,
+            )
         })
         .collect();
     if authored.is_empty() {
@@ -5180,29 +5184,59 @@ async fn approach_spawn_target(
     let near = |at: TilePos, target: TilePos| {
         at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) == 1
     };
-    let Ok(path) = reach_route(client, world, from, |at| {
-        outside(at)
-            && (-1i16..=1).any(|dx| {
-                (-1i16..=1).any(|dy| {
-                    at.x.checked_add_signed(dx)
-                        .zip(at.y.checked_add_signed(dy))
-                        .is_some_and(|(x, y)| {
+    let mut remaining_lanes = authored;
+    let mut last_respawn = None;
+    let mut search = true;
+    let mut deadline = tokio::time::Instant::now();
+    loop {
+        if search {
+            let from = actor_tile(client)?;
+            let path = reach_route(client, world, from, |at| {
+                outside(at)
+                    && (-1i16..=1).any(|dx| {
+                        (-1i16..=1).any(|dy| {
                             (dx != 0 || dy != 0)
-                                && authored.contains(&TilePos {
-                                    x,
-                                    y,
-                                    floor: at.floor,
-                                })
+                                && at
+                                    .x
+                                    .checked_add_signed(dx)
+                                    .zip(at.y.checked_add_signed(dy))
+                                    .is_some_and(|(x, y)| {
+                                        remaining_lanes.contains_key(&TilePos {
+                                            x,
+                                            y,
+                                            floor: at.floor,
+                                        })
+                                    })
                         })
-                })
+                    })
             })
-    })
-    .await?
-    else {
-        return Ok(None);
-    };
-    walk(client, world, &path).await?;
-    for _ in 0..32 {
+            .await?;
+            if let Ok(path) = path {
+                walk(client, world, &path).await?;
+                let here = actor_tile(client)?;
+                let visited: Vec<_> = remaining_lanes
+                    .keys()
+                    .copied()
+                    .filter(|lane| near(here, *lane))
+                    .collect();
+                if visited.is_empty() {
+                    return Err("spawn route did not arrive beside an authored lane".into());
+                }
+                last_respawn = visited
+                    .into_iter()
+                    .filter_map(|lane| remaining_lanes.remove(&lane))
+                    .max();
+                deadline = tokio::time::Instant::now() + Duration::from_millis(500);
+                search = false;
+            } else if let Some(respawn) = last_respawn.take() {
+                remaining_lanes.clear();
+                deadline = tokio::time::Instant::now()
+                    + Duration::from_millis(u64::from(respawn).max(500));
+                search = false;
+            } else {
+                return Ok(None);
+            }
+        }
         let basis = spatial_basis::current(client)?;
         let here = actor_tile(client)?;
         let target = client
@@ -5237,10 +5271,21 @@ async fn approach_spawn_target(
                 continue;
             }
         }
-        client.service_liveness(Duration::from_millis(250)).await?;
+        if tokio::time::Instant::now() >= deadline {
+            if !remaining_lanes.is_empty() {
+                search = true;
+                continue;
+            }
+            if let Some(respawn) = last_respawn.take() {
+                deadline = tokio::time::Instant::now()
+                    + Duration::from_millis(u64::from(respawn).max(500));
+            } else {
+                return Ok(None);
+            }
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
         client.take_events();
     }
-    Ok(None)
 }
 
 pub(crate) fn smoke() -> TestResult {

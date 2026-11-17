@@ -238,45 +238,6 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     })
     .await
     .map_err(debug)?;
-    if before.vocation() != NO_VOCATION {
-        return Err("spell fixture vocation is set".into());
-    }
-    if before != DurableBuildState::default() {
-        return Err("spell fixture build is not initial".into());
-    }
-    if let Some(state) = &progression {
-        if state.level != 1
-            || !policy.thresholds.first().is_some_and(|first| {
-                first.level == 1 && state.total_experience == first.minimum_experience
-            })
-        {
-            return Err("spell fixture progression level or XP is not initial".into());
-        }
-        if state.context != policy.context {
-            return Err("spell fixture progression context mismatch".into());
-        }
-        if state.policy_revision != policy.policy_revision {
-            return Err("spell fixture progression policy revision mismatch".into());
-        }
-        if state.reward_revision != policy.reward_revision {
-            return Err("spell fixture progression reward revision mismatch".into());
-        }
-        // Admission/offline settlement and logout advance revisions even with an
-        // unchanged build. Retained XP/death receipts distinguish earned history
-        // from those checkpoints, including XP that later returned to zero.
-        if state.character_revision.get() != 1
-            && retry_holder(Some(root), deadline, progression_busy, async || {
-                root.has_character_experience_or_death_receipts(authority, character)
-                    .await
-            })
-            .await
-            .map_err(debug)?
-        {
-            return Err(
-                "spell fixture noninitial progression revision has XP or death history".into(),
-            );
-        }
-    }
     if policy.context != context {
         return Err("qualification policy context mismatch".into());
     }
@@ -302,6 +263,90 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     } else {
         floor
     };
+    let resumed = if before_level_up
+        && progression.as_ref().is_some_and(|state| {
+            state.level == level
+                && state.total_experience == experience
+                && state.context == policy.context
+                && state.policy_revision == policy.policy_revision
+                && state.reward_revision == policy.reward_revision
+        }) {
+        retry_holder(Some(root), deadline, progression_busy, async || {
+            root.reconcile_character_experience(authority, xp_occurrence)
+                .await
+        })
+        .await
+        .map_err(debug)?
+        .is_some_and(|receipt| {
+            receipt.character_id == character
+                && receipt.level_before == 1
+                && receipt.experience_before.get() == 0
+                && receipt.level_after == level
+                && receipt.experience_after == experience
+                && receipt.experience_awarded == experience
+        })
+    } else {
+        false
+    };
+    if resumed && before != DurableBuildState::default() {
+        let receipt = retry_holder(Some(root), deadline, progression_busy, async || {
+            root.reconcile_character_build(authority, build_occurrence)
+                .await
+        })
+        .await
+        .map_err(debug)?;
+        if receipt.is_some_and(|receipt| {
+            receipt.character_id == character
+                && receipt.cause == BuildCause::VocationChoice
+                && receipt.before == DurableBuildState::default()
+                && receipt.after == before
+                && before.vocation() == vocation
+        }) {
+            return Ok(());
+        }
+        return Err("qualification build differs from its retained setup receipt".into());
+    }
+    if !resumed {
+        if before.vocation() != NO_VOCATION {
+            return Err("spell fixture vocation is set".into());
+        }
+        if before != DurableBuildState::default() {
+            return Err("spell fixture build is not initial".into());
+        }
+        if let Some(state) = &progression {
+            if state.level != 1
+                || !policy.thresholds.first().is_some_and(|first| {
+                    first.level == 1 && state.total_experience == first.minimum_experience
+                })
+            {
+                return Err("spell fixture progression level or XP is not initial".into());
+            }
+            if state.context != policy.context {
+                return Err("spell fixture progression context mismatch".into());
+            }
+            if state.policy_revision != policy.policy_revision {
+                return Err("spell fixture progression policy revision mismatch".into());
+            }
+            if state.reward_revision != policy.reward_revision {
+                return Err("spell fixture progression reward revision mismatch".into());
+            }
+            // Admission/offline settlement and logout advance revisions even with an
+            // unchanged build. Retained XP/death receipts distinguish earned history
+            // from those checkpoints, including XP that later returned to zero.
+            if state.character_revision.get() != 1
+                && retry_holder(Some(root), deadline, progression_busy, async || {
+                    root.has_character_experience_or_death_receipts(authority, character)
+                        .await
+                })
+                .await
+                .map_err(debug)?
+            {
+                return Err(
+                    "spell fixture noninitial progression revision has XP or death history".into(),
+                );
+            }
+        }
+    }
     let mut fence = CurrentCharacterGameplayFence {
         character_id: character,
         game_session_id: current.current_game_session_id(),
@@ -343,7 +388,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         .await
         .map_err(debug)?;
     }
-    if experience.get() > 0 {
+    if !resumed && experience.get() > 0 {
         retry_holder(Some(root), deadline, progression_busy, async || {
             slot.commit_experience(
                 root,

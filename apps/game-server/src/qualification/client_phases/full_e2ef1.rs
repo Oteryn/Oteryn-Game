@@ -99,15 +99,18 @@ pub(super) mod e2ef1 {
         done: BTreeSet<&'static str>,
         current: Option<&'static str>,
         aborted: Option<verdict::Cause>,
+        action_failure: Option<(String, verdict::Cause)>,
     }
     impl Drop for Verdicts {
         fn drop(&mut self) {
             let current = self.current.unwrap_or(ROWS[0].0);
-            let root = format!("{current}/lifecycle");
+            let (root, action) = self.action_failure.take().map_or_else(
+                || (format!("{current}/lifecycle"), None),
+                |(root, cause)| (root, Some(cause)),
+            );
             // Without a recorded error the journey future was cancelled by its caller's deadline.
-            let cause = self
-                .aborted
-                .take()
+            let cause = action
+                .or(self.aborted.take())
                 .unwrap_or(verdict::Cause::Deadline { phase: "cancelled" });
             let blocked = verdict::Cause::BlockedBy { root: root.clone() };
             for (row, _) in ROWS {
@@ -1698,6 +1701,13 @@ pub(super) mod e2ef1 {
                 _ => unreachable!(),
             };
             if let Err(error) = &result {
+                let action = required
+                    .iter()
+                    .find(|action| !checks.passed.contains(**action))
+                    .copied()
+                    .unwrap_or("action");
+                verdicts.action_failure =
+                    Some((format!("{row}/{action}"), verdict::classify(error.as_ref())));
                 evidence(&format!("E2EF1_GAP row={row} error={error}"));
             }
             // Every position-changing row saves its actual landing via ordinary
@@ -1761,6 +1771,7 @@ pub(super) mod e2ef1 {
                 "E2EF1_ROW row={row} missing={gaps:?} result={result:?} durable={durable}"
             ));
             verdicts.done.insert(row);
+            verdicts.action_failure = None;
             let suffix = if passed {
                 String::new()
             } else {

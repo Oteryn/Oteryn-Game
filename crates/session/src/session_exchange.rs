@@ -9,6 +9,12 @@ impl<S: SessionStream> Session<S> {
         terminal_protocol_error(envelope, &self.selected_capabilities)
     }
 
+    /// Discard this protocol stream after cancelling an in-flight exchange.
+    /// A cancelled future can leave a partial frame or a pending result.
+    pub fn invalidate_after_cancellation(&mut self) {
+        self.unusable = true;
+    }
+
     pub(super) fn ensure_usable(&self) -> Result<(), SessionError> {
         if self.unusable {
             Err(SessionError::SessionUnusable)
