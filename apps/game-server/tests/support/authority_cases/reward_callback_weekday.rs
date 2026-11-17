@@ -254,9 +254,10 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
             &npc_model,
             &[NPC],
         )));
-    owner.states.chat.admit(
+    owner.states.chat.admit_as(
         session,
         "Weekday witness",
+        Some(id(fixture::CHARACTER)),
         crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
     );
     owner.states.chat.set_npc_service(session);
