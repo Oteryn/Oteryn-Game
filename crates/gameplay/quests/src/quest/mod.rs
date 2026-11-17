@@ -724,6 +724,11 @@ impl QuestStateCatalogue {
         self.transitions.get(key)
     }
 
+    /// Immutable declarations used to reconstruct exact source predecessors.
+    pub fn declared_transitions(&self) -> impl Iterator<Item = &QuestTransition> {
+        self.transitions.values()
+    }
+
     /// The optional explicit save restart profile, validated with its dependent
     /// transitions. Its receipt must precede current-save mission progress.
     #[must_use]

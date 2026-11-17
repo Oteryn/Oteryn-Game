@@ -5,6 +5,52 @@ use oteryn_gameplay_quests::quest::npc_rules::random_outcome::SANDRA_LOTTERY;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 #[test]
+fn sandra_lottery_accepts_previous_outfit_definition_pin() -> TestResult {
+    use oteryn_gameplay_quests::quest::{QuestStateCatalogue, loader, npc_rules};
+    let loaded =
+        loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+    let current = loaded.catalogue();
+    let source = npc_rules::NpcRuleCatalog::runtime()?;
+    let sandra = source
+        .programs()
+        .iter()
+        .find(|program| {
+            program.document.program_key.as_deref()
+                == Some("oteryn:quest-npc-program.sandra-lottery")
+        })
+        .ok_or("Sandra programme")?;
+    let digest: String = sandra
+        .digest
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    let marker = format!("oteryn:quest-npc-pin/{digest}");
+    assert!(current.transition(&marker).is_some());
+    let previous = QuestStateCatalogue::new(
+        current.content_revision(),
+        current.declared_tracks().cloned().collect(),
+        current
+            .declared_transitions()
+            .filter(|transition| transition.key != marker)
+            .cloned()
+            .collect(),
+    )?;
+    let quest = "oteryn:quest.outfit_and_addon_quests";
+    let mut hash = previous
+        .definition_hash(quest)
+        .ok_or("previous outfit definition")?;
+    assert_ne!(Some(hash), current.definition_hash(quest));
+    assert!(
+        npc_rules::legacy_defaults(current, quest, &hash)
+            .is_some_and(std::collections::BTreeMap::is_empty),
+        "the exact pre-Sandra definition must preserve its existing defaults"
+    );
+    hash[0] ^= 1;
+    assert!(npc_rules::legacy_defaults(current, quest, &hash).is_none());
+    Ok(())
+}
+
+#[test]
 fn sandra_lottery_missing_input_refuses_without_drawing() {
     let called = std::cell::Cell::new(false);
     assert_eq!(
