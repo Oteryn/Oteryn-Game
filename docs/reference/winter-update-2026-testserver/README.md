@@ -9,5 +9,5 @@ Read in a normal browser from the official test-server forum (test.tibia.com, bo
 | `forum-content.md` | official posts on Banner's Return and I Smell a Rat: quests, hunting grounds, bosses, gear with stats |
 | `wheel-reshape-draws.md` | 300 measured gem reshape draws (slot 1, slot 2, supreme) with costs and rules |
 
-State: posts up to 13.11.2026. CipSoft announced a larger Wheel and gem changeset for Monday 16.11.2026; re-read the forum after it and append here.
+State: posts up to 16.11.2026 15:24 CET. CipSoft announced a larger Wheel and gem changeset for Monday 16.11.2026; it was not posted by 16.11 about 16:15 CET, so re-read thread 559 and append it here.
 Evidence class: official developer posts and own test-server measurements. Not a copy of third-party assets.

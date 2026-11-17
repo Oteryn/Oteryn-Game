@@ -25,6 +25,7 @@ Source: the official test-server forum (board "Winter Update 2026"), threads 558
   - shifting perks to improve Wheel setups;
   - an option to KEEP the old mod when reshaping;
   - "some more changes".
+- 16.11, re-read at about 16:15 CET: the changeset is not posted yet. The FAQ post (#60907) was last edited on 13.11, thread 559 has no staff post after 13.11, and the Fixes and Changes entry for Gem Atelier and Workshop is still empty.
 
 ## Elite and Platinum Bounty Tasks (thread 560, Fluffey)
 - Elite Task:
@@ -98,6 +99,7 @@ Dated index only; the content is in the content threads (`forum-content.md`):
 - I Smell a Rat bosses: 12-13.11 balancing, levers, Greedking adjustments.
 - I Smell a Rat gear: 13.11 Rat Claws adjustments.
 - Daily Reward: 12.11 Bounty Reroll Token display position.
+- 16.11: Banner's Return boss access and balancing; Banner's Return gear holy resistance; I Smell a Rat boss adjustments (all in `forum-content.md`).
 
 ## Gap check against main (2026-11-14, code read, not verified in play)
 Already on main (WU26 package):

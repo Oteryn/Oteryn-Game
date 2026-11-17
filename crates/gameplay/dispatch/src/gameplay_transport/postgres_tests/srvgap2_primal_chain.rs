@@ -24,10 +24,18 @@ use std::time::{Duration, Instant};
 
 #[test]
 fn srvgap2_primal_production_entry_cadence_death_settlement_and_return() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run_async(async |admin| scenario(admin).await)
+    super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
+        // The beast draws follow the content digest and the boss's instance, so
+        // a probe run picks the instance whose source schedule repeats a cell.
+        let tag = scenario(admin.clone(), None).await?;
+        scenario(admin, Some(tag)).await.map(drop)
+    })
 }
 
-async fn scenario(admin: String) -> TestResult {
+/// Instance tags the probe searches, in order; 88 is the historical tag.
+const SEARCH_TAGS: std::ops::RangeInclusive<u8> = 88..=u8::MAX;
+
+async fn scenario(admin: String, run_tag: Option<u8>) -> TestResult<u8> {
     let started = Instant::now();
     super::reset();
     let h = Harness::create_with_admission_seed(admin, "srvgap2_primal_chain", true, false).await?;
@@ -203,7 +211,11 @@ async fn scenario(admin: String) -> TestResult {
         .activity_runtimes
         .register_template(&template)
         .map_err(|_| "register source template")?;
-    let instance = super::activity_runtime::allocate_ready_instance(&h, 88).await?;
+    let instance = super::activity_runtime::allocate_ready_instance(
+        &h,
+        run_tag.unwrap_or(*SEARCH_TAGS.start()),
+    )
+    .await?;
     let origin_session = admitted.game_session_id;
     let (_, reply, barrier) = super::boss_activity::exchange_command(
         &owner,
@@ -253,34 +265,13 @@ async fn scenario(admin: String) -> TestResult {
         oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(native.source_digest());
     let occurrence =
         oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(boss.placement_identity());
-    let draw = |ordinal| -> TestResult<u32> {
-        let value = oteryn_simulation_determinism::deterministic_decision_u64(
-            &root,
-            occurrence,
-            "primal-menace-think",
-            ordinal,
-        )
-        .map_err(debug)?;
-        Ok(((u128::from(value) * u128::from(rules::DRAW_PPM)) >> 64) as u32)
-    };
-    let requested_wave = usize::try_from(rules::wave_count(
-        &rules::BEAST_WAVE,
-        rules::hazard_points(&[]),
-        draw(0)?,
-        draw(1)?,
-    ))?;
     let now = destination.owner_now();
     destination.drain_monster_melee_at(now).await;
     let later =
         |delta| oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now.get() + delta);
     destination.drain_monster_melee_at(later(10_001_000)).await;
     assert_eq!(beasts(&destination).await?, 0, "source three-second warmup");
-    let duplicate_cell = MovementLocalPosition {
-        x: 27708,
-        y: 27459,
-        floor: -15,
-    };
-    let expected_cells = {
+    let (expected_cells, duplicate_cell) = {
         let runtime = destination.runtime.lock().await;
         let snapshot = runtime.companion_snapshot(boss).map_err(debug)?;
         let health = u64::try_from(snapshot.health)?;
@@ -289,52 +280,49 @@ async fn scenario(admin: String) -> TestResult {
             crate::gameplay_transport::arena_match::walkable(&destination, &runtime, at)
                 && runtime.native_summon_cell_free(at)
         };
-        // Replay the source schedule, including its six placement attempts. The
-        // three-second delay means earlier requests have not occupied cells yet.
-        let draw_budget =
-            2 + u64::from(rules::BEAST_WAVE.count_max) * u64::from(rules::SPAWN_ATTEMPTS) * 4;
-        let mut draws = (0..draw_budget)
-            .map(draw)
-            .collect::<TestResult<Vec<_>>>()?
-            .into_iter();
-        let mut next_draw = || draws.next().unwrap_or(rules::DRAW_PPM);
-        let mut schedule = rules::PrimalMenaceThinkOwner::default();
-        let facts = |now_ms| rules::PrimalMenaceThinkFacts {
-            position: boss_position,
-            now_ms,
-            health,
-            max_health,
-            damage_map_levels: &[],
+        let schedule = |occurrence| {
+            source_schedule(
+                &root,
+                occurrence,
+                boss_position,
+                (health, max_health),
+                &tile_free,
+            )
         };
-        schedule
-            .think(&facts(0), &mut next_draw, tile_free, |_| None)
-            .map_err(debug)?;
-        let scheduled_cells: Vec<_> = schedule
-            .think(&facts(10_001), &mut next_draw, tile_free, |_| None)
-            .map_err(debug)?
-            .into_iter()
-            .filter_map(|effect| match effect {
-                rules::PrimalMenaceEffect::ScheduledSpawn {
-                    kind: rules::WaveKind::Beast,
-                    position,
-                    ..
-                } => Some(position),
-                _ => None,
-            })
-            .collect();
+        let Some(tag) = run_tag else {
+            assert_eq!(
+                boss.runtime_scope(),
+                instance,
+                "the probed boss lives in the allocated instance"
+            );
+            for tag in SEARCH_TAGS {
+                let mut candidate = boss;
+                candidate.0.runtime_scope =
+                    RuntimeScopeRefV1::instance(instance.world_id(), id(tag)).map_err(debug)?;
+                let (_, cells) = schedule(
+                    oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(
+                        candidate.placement_identity(),
+                    ),
+                )?;
+                if let Some(cell) = repeated_cell(&cells) {
+                    eprintln!("SRVGAP2_PRIMAL_SEARCH tag={tag} duplicate_cell={cell:?}");
+                    return Ok(tag);
+                }
+            }
+            return Err(format!(
+                "no instance tag in {SEARCH_TAGS:?} schedules one source cell twice"
+            )
+            .into());
+        };
+        let (requested_wave, scheduled_cells) = schedule(occurrence)?;
         assert_eq!(
             scheduled_cells.len(),
             requested_wave,
             "source wave requests"
         );
-        assert_eq!(
-            scheduled_cells
-                .iter()
-                .filter(|at| **at == duplicate_cell)
-                .count(),
-            2,
-            "corrected content schedules the duplicate cell twice"
-        );
+        let duplicate_cell = repeated_cell(&scheduled_cells).ok_or(format!(
+            "the source schedule of instance tag {tag} requests one cell twice"
+        ))?;
         // Crystal spawnMonster calls Game.createMonster without force=true:
         // existing occupants and earlier successful requests prevent admission.
         let mut admitted_cells = std::collections::BTreeSet::new();
@@ -343,7 +331,7 @@ async fn scenario(admin: String) -> TestResult {
                 admitted_cells.insert((at.x, at.y, at.floor));
             }
         }
-        admitted_cells
+        (admitted_cells, duplicate_cell)
     };
     let expected_wave = expected_cells.len();
     destination.drain_monster_melee_at(later(13_001_000)).await;
@@ -549,7 +537,75 @@ async fn scenario(admin: String) -> TestResult {
         "SRVGAP2_PRIMAL_CHAIN POSTGRES_CASE_COMPLETED entry_cadence_death_settlement_return duration={:?}",
         started.elapsed()
     );
-    Ok(())
+    Ok(run_tag.unwrap_or_default())
+}
+
+/// Replays the source wave for one boss occurrence: the requested count and the
+/// cells, including the six placement attempts. The three-second delay means
+/// earlier requests have not occupied cells yet.
+fn source_schedule(
+    root: &oteryn_simulation_determinism::GameplayDecisionRoot,
+    occurrence: oteryn_simulation_determinism::DecisionOccurrenceId,
+    position: MovementLocalPosition,
+    (health, max_health): (u64, u64),
+    tile_free: &impl Fn(MovementLocalPosition) -> bool,
+) -> TestResult<(usize, Vec<MovementLocalPosition>)> {
+    let draw = |ordinal| -> TestResult<u32> {
+        let value = oteryn_simulation_determinism::deterministic_decision_u64(
+            root,
+            occurrence,
+            "primal-menace-think",
+            ordinal,
+        )
+        .map_err(debug)?;
+        Ok(((u128::from(value) * u128::from(rules::DRAW_PPM)) >> 64) as u32)
+    };
+    let requested_wave = usize::try_from(rules::wave_count(
+        &rules::BEAST_WAVE,
+        rules::hazard_points(&[]),
+        draw(0)?,
+        draw(1)?,
+    ))?;
+    let draw_budget =
+        2 + u64::from(rules::BEAST_WAVE.count_max) * u64::from(rules::SPAWN_ATTEMPTS) * 4;
+    let mut draws = (0..draw_budget)
+        .map(draw)
+        .collect::<TestResult<Vec<_>>>()?
+        .into_iter();
+    let mut next_draw = || draws.next().unwrap_or(rules::DRAW_PPM);
+    let mut schedule = rules::PrimalMenaceThinkOwner::default();
+    let facts = |now_ms| rules::PrimalMenaceThinkFacts {
+        position,
+        now_ms,
+        health,
+        max_health,
+        damage_map_levels: &[],
+    };
+    schedule
+        .think(&facts(0), &mut next_draw, tile_free, |_| None)
+        .map_err(debug)?;
+    let cells = schedule
+        .think(&facts(10_001), &mut next_draw, tile_free, |_| None)
+        .map_err(debug)?
+        .into_iter()
+        .filter_map(|effect| match effect {
+            rules::PrimalMenaceEffect::ScheduledSpawn {
+                kind: rules::WaveKind::Beast,
+                position,
+                ..
+            } => Some(position),
+            _ => None,
+        })
+        .collect();
+    Ok((requested_wave, cells))
+}
+
+/// The first cell the schedule requests exactly twice.
+fn repeated_cell(cells: &[MovementLocalPosition]) -> Option<MovementLocalPosition> {
+    cells
+        .iter()
+        .find(|at| cells.iter().filter(|other| other == at).count() == 2)
+        .copied()
 }
 
 async fn beasts(
