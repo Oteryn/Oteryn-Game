@@ -138,3 +138,7 @@ pub(super) fn open_party(owner: &mut HostOwner) {
         play.link.open_party();
     }
 }
+
+#[cfg(test)]
+#[path = "native_tests/pointer_layout.rs"]
+mod pointer_layout;

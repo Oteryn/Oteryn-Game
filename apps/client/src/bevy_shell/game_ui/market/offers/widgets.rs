@@ -193,9 +193,12 @@ pub(in super::super) fn editor(
         ),
     ] {
         label(commands, skin, form, caption);
-        let editor = drafts.field(commands, DraftRole::Offer(kind), &initial, |commands| {
-            field(commands, skin, kind, &initial, name)
-        });
+        let editor = drafts.field(
+            commands,
+            DraftRole::Offer(ware.map(|ware| ware.definition), kind),
+            &initial,
+            |commands| field(commands, skin, kind, &initial, name),
+        );
         commands.entity(form).add_child(editor);
     }
     let summary = commands

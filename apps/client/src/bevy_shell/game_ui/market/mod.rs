@@ -55,7 +55,7 @@ enum DraftRole {
     Search,
     Filter(widgets::FilterKind),
     Depot,
-    Offer(offers::Field),
+    Offer(Option<u32>, offers::Field),
 }
 
 #[derive(Component)]
@@ -178,19 +178,7 @@ fn project(
         return;
     }
     let same_session = state.key.is_some_and(|key| key.generation == generation);
-    let mut drafts = Drafts(
-        previous
-            .iter()
-            .filter(|(_, draft)| {
-                same_session
-                    && (!matches!(draft.role, DraftRole::Offer(_))
-                        || state
-                            .seen
-                            .as_ref()
-                            .is_some_and(|old| old.definition == panel.definition))
-            })
-            .collect(),
-    );
+    let mut drafts = Drafts(previous.iter().filter(|_| same_session).collect());
     if state.seen.as_ref() != Some(&panel) {
         state.offer = None;
     }

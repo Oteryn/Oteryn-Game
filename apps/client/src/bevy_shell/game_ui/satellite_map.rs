@@ -576,3 +576,34 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod range_cost {
+    use super::*;
+    use std::{collections::BTreeMap, hint::black_box, time::Instant};
+
+    #[test]
+    fn visible_lookup_cost_stays_below_a_full_history_scan() {
+        let state = State::at((0, 0, -7));
+        let cells: BTreeMap<_, _> = (0..200_000).map(|y| ((-7, 0, y), 1)).collect();
+        // Calibrate against a traversal of the same tree on this machine.
+        // Best of several samples discounts scheduler pauses in either path.
+        let measure = |f: &mut dyn FnMut()| {
+            (0..5)
+                .map(|_| {
+                    let start = Instant::now();
+                    f();
+                    start.elapsed()
+                })
+                .min()
+                .unwrap_or_default()
+        };
+        let scan = measure(&mut || {
+            black_box(cells.keys().filter(|key| black_box(key.2) < 45).count());
+        });
+        let lookup = measure(&mut || {
+            assert_eq!(state.visible_cells(black_box(&cells)).count(), 45);
+        });
+        assert!(lookup < scan / 4, "viewport {lookup:?}, full scan {scan:?}");
+    }
+}

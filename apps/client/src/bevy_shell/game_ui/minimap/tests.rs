@@ -100,6 +100,7 @@ fn the_minimap_is_a_tibia_viewport_with_a_rose_and_icon_buttons() -> TestResult 
         .ok_or("centre")?
         .1
         .parent();
+    let rose = app.world().get::<ChildOf>(centre).ok_or("rose")?.parent();
     let cells = app.world().get::<Children>(centre).ok_or("grid")?;
     let flow: Vec<_> = cells
         .iter()
@@ -117,6 +118,14 @@ fn the_minimap_is_a_tibia_viewport_with_a_rose_and_icon_buttons() -> TestResult 
             .as_str(),
         "Rose centre"
     );
+    let centre_button = flow[4];
+    use super::super::pointer_layout;
+    app.add_systems(Update, crate::bevy_shell::ui::toolbar::project_toolbar);
+    pointer_layout::install(&mut app, UVec2::new(1280, 720));
+    app.update();
+    app.update();
+    let point = pointer_layout::center(&app, rose)?;
+    pointer_layout::hit(&mut app, point, centre_button)?;
     // No compass text buttons and no camera prose.
     let texts: Vec<String> = app
         .world_mut()
@@ -247,11 +256,35 @@ mod foreground_click {
     #[test]
     fn minimap_click_respects_foreground_modal() -> Result<(), Box<dyn std::error::Error>> {
         let mut host = HostOwner::new(None)?;
-        let (link, _, _) = crate::play::play_channel();
-        host.play = Some(crate::bevy_shell::owner::ActivePlay {
-            view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
-            link,
-        });
+        use oteryn_session::{
+            ActorPosition,
+            world_map::{MapTile, MapViewHeader, WorldMapViewSnapshot},
+        };
+        let (link, mut commands, outbox) = crate::play::play_channel();
+        outbox.bevy_target_walk_selected();
+        let position = ActorPosition {
+            x: 100,
+            y: 100,
+            floor: -7,
+        };
+        let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), -7, &[])?;
+        view.set_live_map(&WorldMapViewSnapshot {
+            header: MapViewHeader {
+                content_generation: [0; 32],
+                bundle_digest: [0; 32],
+                reset_epoch: 1,
+                origin: position,
+                first_visible_floor: -7,
+            },
+            tiles: vec![MapTile {
+                position,
+                items: vec![],
+                more: false,
+                ground_speed: 0,
+            }],
+        })?;
+        host.phase = Phase::Playing;
+        host.play = Some(ActivePlay { view, link });
         let generation = host.generation();
         let mut app = App::new();
         app.insert_non_send(host).init_resource::<InputFocus>();
@@ -259,8 +292,9 @@ mod foreground_click {
             .world_mut()
             .spawn((
                 MiniImage(generation),
+                mouse::DragState::default(),
                 RelativeCursorPosition {
-                    normalized: Some(Vec2::ZERO),
+                    normalized: Some(Vec2::new(0.25, -0.25)),
                     ..default()
                 },
                 Node::default(),
@@ -271,12 +305,15 @@ mod foreground_click {
         app.world_mut()
             .resource_mut::<InputFocus>()
             .set(focused, FocusCause::Navigated);
-        app.world_mut().spawn((
-            super::super::super::GameModal,
-            Node::default(),
-            GlobalZIndex(999),
-        ));
-        app.world_mut().trigger(PointerClick {
+        let modal = app
+            .world_mut()
+            .spawn((
+                super::super::super::GameModal,
+                Node::default(),
+                GlobalZIndex(999),
+            ))
+            .id();
+        let click = || PointerClick {
             entity: image,
             pointer: Pointer::new(
                 PointerId::Mouse,
@@ -292,8 +329,22 @@ mod foreground_click {
             hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
             duration: std::time::Duration::ZERO,
             count: 1,
-        });
+        };
+        app.world_mut().trigger(click());
         assert_eq!(app.world().resource::<InputFocus>().get(), Some(focused));
+        app.world_mut().despawn(modal);
+        app.world_mut().trigger(click());
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        let play = owner.play.as_mut().ok_or("play")?;
+        play.view.tick(&play.link).map_err(|e| format!("{e:?}"))?;
+        assert_eq!(
+            commands.try_recv()?,
+            crate::combat_input::PlayCommand::TargetWalk(ActorPosition {
+                x: 108,
+                y: 94,
+                floor: -7
+            })
+        );
         Ok(())
     }
 }

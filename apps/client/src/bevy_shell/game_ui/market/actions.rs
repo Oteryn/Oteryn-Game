@@ -111,11 +111,15 @@ pub(super) fn perform(owner: &HostOwner, state: &mut State, action: Action, sear
             let Some(ware) = panel.details.items.get(index) else {
                 return false;
             };
-            state.selected = Some(ware.clone());
-            MarketQuery::Book {
+            if !play.link.market_query(MarketQuery::Book {
                 definition: ware.definition,
                 page: 0,
+            }) {
+                return false;
             }
+            state.selected = Some(ware.clone());
+            state.dirty = true;
+            return true;
         }
         Kind::Catalogue(delta) => {
             if delta > 0 && !panel.details.has_next {
