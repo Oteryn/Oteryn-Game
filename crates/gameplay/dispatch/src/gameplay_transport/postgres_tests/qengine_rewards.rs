@@ -1073,6 +1073,12 @@ pub(super) async fn exercise(
         ))
         .await;
     }
+    if name == "qengine-rewards-qd-steal-from-thieves" {
+        return Box::pin(super::qd_steal_from_thieves::exercise(
+            owner, admitted, h, authority,
+        ))
+        .await;
+    }
     if name.starts_with("qengine-rewards-qnpcfx-koshei") {
         return Box::pin(super::qnpcfx_koshei::exercise(
             owner,
