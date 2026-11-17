@@ -355,6 +355,25 @@ pub(super) async fn exercise_burn(
         use_target(owner, admitted, 3, &target).await?,
         UseDisposition::Committed
     );
+    let actor = admitted.runtime_actor.ok_or("burn lever actor")?;
+    let hp = async |owner: &ComposedFreshAdmission<'_, '_, '_>| -> TestResult<u32> {
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        Ok(states
+            .get(&runtime, actor, fence.game_session_id)
+            .ok_or("spell state")?
+            .vitals()
+            .health)
+    };
+    let before = hp(owner).await?;
+    super::questpc8_authored_programmes::step(
+        owner,
+        admitted,
+        4,
+        oteryn_protocol_oteryn::world_spatial::StepDirection::North,
+    )
+    .await?;
+    assert_eq!(hp(owner).await?, before - 20);
     let map = owner.bundle_map().ok_or("map")?;
     let deadline = map.facts.next_movement_decay_time().ok_or("fire decay")?;
     for (time, expected) in [
