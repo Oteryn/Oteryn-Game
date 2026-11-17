@@ -192,6 +192,28 @@ fn lersatio_mirrors_are_registered_with_both_counter_transitions() -> Result<(),
                 (counter.minimum, counter.maximum, counter.set),
                 (minimum, maximum, set)
             );
+            let transition =
+                oteryn_gameplay_quests::quest::world_callbacks::primary_transition(callback)?;
+            let write = transition
+                .effects
+                .iter()
+                .find(|effect| effect.track.ends_with("/mirror_counter"))
+                .ok_or("lowered counter")?;
+            assert!(
+                matches!(write.effect,
+                    oteryn_gameplay_quests::quest::QuestEffectKind::SetWithBinding { value, .. } if value == set
+                ),
+                "mirror counter must retain physical world admission"
+            );
+            let mission = transition
+                .effects
+                .iter()
+                .find(|effect| effect.track.ends_with("/mission08"))
+                .ok_or("mission guard")?;
+            assert!(matches!(
+                mission.effect,
+                oteryn_gameplay_quests::quest::QuestEffectKind::Add(0)
+            ));
             assert_eq!(callback.effects.reset_after_ms, Some(30_000));
             assert_eq!(callback.effects.encounter.is_some(), phase == "second");
         }
