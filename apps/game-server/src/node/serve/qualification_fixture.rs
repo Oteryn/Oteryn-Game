@@ -12,7 +12,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let session = parse_operation_id(session.as_bytes())?;
     matches!(
         profile,
-        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk"
+        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "sweep"
     )
     .then_some((session, profile))
 }
@@ -292,6 +292,12 @@ fn refusal_warning(
         .field("profile", FieldValue::Owned(profile.to_owned()))
 }
 
+/// Source level of the `sweep` profile; the served progression table has 2000 levels.
+const SWEEP_LEVEL: u32 = 1000;
+const FIXTURE_ITEM_IDS: [u32; 3] = [3276, 3003, 3457];
+/// Ruthless axe (6553, attack 50, level 75, knight) joins the common items for `sweep`.
+const SWEEP_ITEM_IDS: [u32; 4] = [3276, 3003, 3457, 6553];
+
 async fn prepare_build(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -349,12 +355,12 @@ async fn prepare_build(
         proof,
         &current,
         qualification_build::QualificationBuildSpec {
-            vocation: if profile == "explorer" {
+            vocation: if matches!(profile, "explorer" | "sweep") {
                 "knight"
             } else {
                 profile
             },
-            level: 100,
+            level: if profile == "sweep" { SWEEP_LEVEL } else { 100 },
             context,
             xp_occurrence: uuid_v7()?,
             build_occurrence: uuid_v7()?,
@@ -363,7 +369,7 @@ async fn prepare_build(
         deadline,
     )
     .await?;
-    prepare_items(root, authority, proof, &current, native, deadline).await
+    prepare_items(root, authority, proof, &current, native, profile, deadline).await
 }
 
 // Fixture claims use the ordinary fenced/audited reward owner, never SQL item
@@ -376,6 +382,7 @@ async fn prepare_items(
         crate::foundation::AuthenticatedTransportRefV1,
     >,
     native: &NativeGameplayState,
+    profile: &str,
     deadline: tokio::time::Instant,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
@@ -418,8 +425,14 @@ async fn prepare_items(
         .item_index()
         .ok_or("qualification Item index missing")?;
     // Axe, rope, shovel. Every profile needs the same map/melee prerequisites;
-    // vocation and level still come from the served progression policy.
-    for (ordinal, id) in [3276, 3003, 3457].into_iter().enumerate() {
+    // vocation and level still come from the served progression policy. The sweep build
+    // also carries the ruthless axe, whose level and knight requirements the content knows.
+    let ids: &[u32] = if profile == "sweep" {
+        &SWEEP_ITEM_IDS
+    } else {
+        &FIXTURE_ITEM_IDS
+    };
+    for (ordinal, id) in ids.iter().copied().enumerate() {
         let key = format!("oteryn:item.tibia.i{id}");
         let definition = TypedDefinitionRef {
             family: "Item".into(),
@@ -544,9 +557,10 @@ mod tests {
                             .join(format!("qualification-{}.sock", uuid_text(&session)));
                         let result = tokio::time::timeout(Duration::from_secs(10), async {
                             let listener = UnixListener::bind(&path)?;
-                            for profile in
-                                ["knight", "druid", "paladin", "sorcerer", "explorer", "monk"]
-                            {
+                            for profile in [
+                                "knight", "druid", "paladin", "sorcerer", "explorer", "monk",
+                                "sweep",
+                            ] {
                                 let script = Path::new(env!("CARGO_MANIFEST_DIR"))
                                     .join("../../tools/qualification/node_boot/provision.py");
                                 let socket = path.clone();
@@ -660,7 +674,7 @@ mod tests {
             crate::content::qualify_native_entry_room_from_gameplay_manifest(world, &manifest)?;
         let native = crate::content::qualified_native_gameplay_test_state(room.compiled())?;
         let index = native.item_index().ok_or("Item index")?;
-        for id in [3276, 3003, 3457] {
+        for id in SWEEP_ITEM_IDS {
             let key = format!("oteryn:item.tibia.i{id}");
             let definition = crate::durability::item_mint::TypedDefinitionRef {
                 family: "Item".into(),
@@ -677,6 +691,25 @@ mod tests {
                 crate::durability::item_transfer::ItemStackClass::Unknown
             );
         }
+        // The sweep weapon's equip requirements are known to the content, so the equip owner
+        // accepts it for a level >= 75 knight (the hatchet 3276 has unknown ones).
+        use oteryn_gameplay_domain::domain::equipment_policy_abi::{
+            EquipmentBaseVocation, EquipmentPolicyLookup,
+        };
+        let key = "oteryn:item.tibia.i6553";
+        let policy = native
+            .equipment_policy(key, index.revision(key).ok_or("Item missing")?)
+            .ok_or("equipment policy")?;
+        let claims = policy
+            .claims()
+            .iter()
+            .find(|(slot, _)| *slot == 5)
+            .ok_or("weapon slot claims")?
+            .1
+            .clone()?;
+        assert_eq!(claims.level, 75);
+        assert_eq!(claims.vocations, vec![EquipmentBaseVocation::Knight]);
+        assert!(SWEEP_LEVEL >= u32::from(claims.level));
         Ok(())
     }
 
@@ -732,7 +765,9 @@ mod tests {
     #[test]
     fn qualification_request_accepts_only_named_profiles_and_v7_sessions() {
         let id = "01890f4c-3b2a-7c01-8d11-9a321b7c0004";
-        for profile in ["explorer", "knight", "paladin", "sorcerer", "druid", "monk"] {
+        for profile in [
+            "explorer", "knight", "paladin", "sorcerer", "druid", "monk", "sweep",
+        ] {
             assert!(request(format!("qualify {id} {profile}\n").as_bytes()).is_some());
         }
         for text in [

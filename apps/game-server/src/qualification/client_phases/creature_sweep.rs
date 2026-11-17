@@ -14,13 +14,18 @@
 //! re-provisioned) when its health stays low or the session became unusable. A creature that cannot be killed within the bound
 //! gets `kill FAIL cause=deadline`; the sweep releases the target and moves on.
 //!
+//! DPS budget: `CALIBRATION_KEY` is killed first and its authored health over the time from the first
+//! damage to the death is the DPS (`creature_sweep calibration ...`). A species whose authored health
+//! exceeds `dps * KILL_SECONDS * 80%` is not spawned: its rows are `SKIPPED` with
+//! `not_attempted:hp_X>budget_Y;dps_Z`. Kill rows carry hp, budget and dps.
+//!
 //! Rows per species: `CS.<key>.spawn|kill|xp|corpse|loot|full`. `spawn` carries the node answer, or
 //! the rejected token with cause=precondition. A FAIL row makes `run` return Err, which `journeys`
 //! propagates with `?`, so the node-boot stage exits non-zero.
 //! XP oracle: the authored `experience` through the server's own
 //! `crates/gameplay/characters/src/hunting_experience.rs:13 hunting_experience` (called from
 //! `crates/gameplay/durability/src/durability/party_kill_xp.rs:369`), with no prey, no boost, full
-//! stamina and no premium for a solo level-100 kill (`animus_mastery_experience` adds nothing without
+//! stamina and no premium for a solo level-1000 kill (`animus_mastery_experience` adds nothing without
 //! mastery, `crates/gameplay/combat/src/combat/death_reward.rs:939`).
 //! Loot oracle: the authored loot table. `crates/gameplay/items/src/loot_plan.rs:370 roll_entries`
 //! draws each entry independently with a 95..105% chance factor (`loot_factor_percent`), so an empty
@@ -37,7 +42,15 @@ use std::collections::BTreeSet;
 const BATCH_VARIABLE: &str = "OTERYN_E2E_CREATURE_BATCH";
 const BATCH_DEFAULT: (usize, usize) = (0, 3);
 const STEPS: [&str; 5] = ["spawn", "kill", "xp", "corpse", "loot"];
-const SWEEP_LEVEL: u32 = 100;
+/// The `sweep` fixture profile's level (`qualification_fixture.rs` `SWEEP_LEVEL`).
+const SWEEP_LEVEL: u32 = 1000;
+/// Ruthless axe: attack 50, level 75, knight, equip requirements known to the content
+/// (`content/items/definitions/spell-native-profiles.json`), minted by the `sweep` profile.
+const SWEEP_WEAPON_ID: u32 = 6553;
+/// Weak, common, melee-only huntable (260 hp, one attack): its kill measures the sweep DPS.
+const CALIBRATION_KEY: &str = "oteryn:creature.cyclops";
+/// A species is attempted only when its authored health fits this share of the DPS budget.
+const BUDGET_PERCENT: f64 = 80.0;
 const CORE_CHARACTER: usize = 0;
 /// A full stamina bar in minutes (`composed_admission/vitals.rs:191`); no hunting time passes first.
 const FULL_STAMINA_MINUTES: i32 = 2520;
@@ -105,6 +118,8 @@ struct Rows<'a> {
     emitted: [bool; 5],
     lap: std::time::Instant,
     counts: Tally,
+    /// Seconds from the first observed damage to the death, set by a kill.
+    kill_seconds: Option<f64>,
 }
 
 impl<'a> Rows<'a> {
@@ -114,6 +129,7 @@ impl<'a> Rows<'a> {
             emitted: [false; 5],
             lap: std::time::Instant::now(),
             counts: Tally::default(),
+            kill_seconds: None,
         }
     }
 
@@ -171,6 +187,7 @@ fn failure(step: &'static str, cause: &'static str, detail: impl std::fmt::Displ
 
 struct Definition {
     name: String,
+    health: u64,
     experience: u64,
     attackable: bool,
     speed: u64,
@@ -194,6 +211,13 @@ struct Species {
     definition: Option<Definition>,
     key: String,
     loot: LootBinding,
+    /// The measured sweep DPS; `None` for the calibration species itself.
+    dps: Option<f64>,
+}
+
+/// Authored health a kill within `KILL_SECONDS` may be expected to fit at `dps`.
+fn budget(dps: f64) -> u64 {
+    (dps * KILL_SECONDS as f64 * BUDGET_PERCENT / 100.0).floor() as u64
 }
 
 fn read_shards(directory: &Path, prefix: &str) -> TestResult<Vec<serde_json::Value>> {
@@ -236,6 +260,7 @@ fn definitions(root: &Path) -> TestResult<BTreeMap<String, (Definition, Option<S
             (
                 Definition {
                     name: name.to_owned(),
+                    health: profile["health"].as_u64().unwrap_or(0),
                     experience: profile["experience"].as_u64().unwrap_or(0),
                     attackable: profile["details"]["flags"]["attackable"]
                         .as_bool()
@@ -390,37 +415,65 @@ pub(super) async fn run(
     let mut tally = Tally::default();
     let mut seconds = Vec::new();
     let mut session: Option<DevClientSession> = None;
+    // Calibration: one weak melee-only species is killed first; its authored health over the time
+    // from the first damage to the death is the DPS every other species is budgeted against.
+    if !keys.iter().any(|key| key.as_str() == CALIBRATION_KEY) {
+        return Err(format!(
+            "creature sweep calibration species {CALIBRATION_KEY} is not huntable"
+        )
+        .into());
+    }
+    let calibration = species_of(CALIBRATION_KEY, &definitions, &tables, None);
+    let mut measured = None;
+    let before = tally.fail;
+    let started = std::time::Instant::now();
+    verdict::indexed(
+        Box::leak(format!("CS.{}.full", calibration.short).into_boxed_str()),
+        Box::pin(sweep_species(
+            clients,
+            world,
+            &items,
+            &calibration,
+            &mut session,
+            &mut tally,
+            &mut measured,
+        )),
+    )
+    .await;
+    seconds.push(started.elapsed().as_secs_f64());
+    let health = calibration
+        .definition
+        .as_ref()
+        .map_or(0, |found| found.health);
+    let dps = match measured {
+        Some(kill) if tally.fail == before && kill > 0.0 && health > 0 => health as f64 / kill,
+        _ => {
+            return Err(format!(
+                "creature sweep calibration on {CALIBRATION_KEY} failed: kill_seconds={measured:?} hp={health} fail_rows={}",
+                tally.fail - before
+            )
+            .into());
+        }
+    };
+    evidence(&format!(
+        "creature_sweep calibration key={CALIBRATION_KEY} hp={health} seconds={:.3} dps={dps:.2} budget_seconds={KILL_SECONDS} budget_percent={BUDGET_PERCENT}",
+        health as f64 / dps
+    ));
     for key in &keys[start..end] {
-        let (definition, table) = &definitions[key.as_str()];
-        let loot = match table {
-            None => LootBinding::None,
-            Some(table) => tables.get(table).map_or_else(
-                || LootBinding::Missing(table.clone()),
-                |entries| {
-                    LootBinding::Table(
-                        entries
-                            .iter()
-                            .map(|entry| LootEntry {
-                                item: entry.item.clone(),
-                                min: entry.min,
-                                max: entry.max,
-                            })
-                            .collect(),
-                    )
-                },
-            ),
-        };
-        let species = Species {
-            short: token(key.strip_prefix("oteryn:creature.").unwrap_or(key)),
-            definition: Some(Definition {
-                name: definition.name.clone(),
-                experience: definition.experience,
-                attackable: definition.attackable,
-                speed: definition.speed,
-            }),
-            key: (*key).clone(),
-            loot,
-        };
+        if key.as_str() == CALIBRATION_KEY {
+            continue;
+        }
+        let species = species_of(key, &definitions, &tables, Some(dps));
+        let hp = species.definition.as_ref().map_or(0, |found| found.health);
+        if hp > budget(dps) {
+            let mut rows = Rows::new(&species.short);
+            let detail = format!("not_attempted:hp_{hp}>budget_{};dps_{dps:.2}", budget(dps));
+            for step in STEPS {
+                rows.emit(step, "SKIPPED", &detail, None);
+            }
+            tally.skipped += rows.counts.skipped;
+            continue;
+        }
         let scenario: &'static str =
             Box::leak(format!("CS.{}.full", species.short).into_boxed_str());
         let started = std::time::Instant::now();
@@ -433,6 +486,7 @@ pub(super) async fn run(
                 &species,
                 &mut session,
                 &mut tally,
+                &mut None,
             )),
         )
         .await;
@@ -465,6 +519,46 @@ pub(super) async fn run(
     Ok(())
 }
 
+fn species_of(
+    key: &str,
+    definitions: &BTreeMap<String, (Definition, Option<String>)>,
+    tables: &BTreeMap<String, Vec<LootEntry>>,
+    dps: Option<f64>,
+) -> Species {
+    let (definition, table) = &definitions[key];
+    let loot = match table {
+        None => LootBinding::None,
+        Some(table) => tables.get(table).map_or_else(
+            || LootBinding::Missing(table.clone()),
+            |entries| {
+                LootBinding::Table(
+                    entries
+                        .iter()
+                        .map(|entry| LootEntry {
+                            item: entry.item.clone(),
+                            min: entry.min,
+                            max: entry.max,
+                        })
+                        .collect(),
+                )
+            },
+        ),
+    };
+    Species {
+        short: token(key.strip_prefix("oteryn:creature.").unwrap_or(key)),
+        definition: Some(Definition {
+            name: definition.name.clone(),
+            health: definition.health,
+            experience: definition.experience,
+            attackable: definition.attackable,
+            speed: definition.speed,
+        }),
+        key: key.to_owned(),
+        loot,
+        dps,
+    }
+}
+
 async fn sweep_species(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
@@ -472,6 +566,7 @@ async fn sweep_species(
     species: &Species,
     session: &mut Option<DevClientSession>,
     tally: &mut Tally,
+    kill_seconds: &mut Option<f64>,
 ) -> TestResult {
     let started = std::time::Instant::now();
     let mut rows = Rows::new(&species.short);
@@ -479,6 +574,7 @@ async fn sweep_species(
         rows.fail(stop.step, stop.cause, &stop.detail);
         rows.block_rest(stop.step);
     }
+    *kill_seconds = rows.kill_seconds;
     let failed = rows.counts.fail > 0;
     // The `.full` verdict line is the indexed Watch's own; this line carries the species counts.
     evidence(&format!(
@@ -769,6 +865,7 @@ async fn hunt(
         EntityDetail::Object { .. } => 100,
     };
     let mut damaged = false;
+    let mut first_damage = None;
     client.take_events();
     let attacked = client
         .session_mut()
@@ -809,6 +906,9 @@ async fn hunt(
             Some(now) => {
                 last_position = now.position;
                 if let EntityDetail::Actor { health_percent, .. } = now.detail {
+                    if health_percent < last_health && first_damage.is_none() {
+                        first_damage = Some(tokio::time::Instant::now());
+                    }
                     damaged |= health_percent < last_health;
                     last_health = health_percent;
                 }
@@ -853,11 +953,17 @@ async fn hunt(
             ),
         ));
     }
+    rows.kill_seconds = first_damage.map(|first| first.elapsed().as_secs_f64());
+    let budget_detail = species.dps.map_or_else(
+        || "budget:calibration;dps:measured-by-this-kill".to_owned(),
+        |dps| format!("budget:{};dps:{dps:.2}", budget(dps)),
+    );
     rows.pass(
         "kill",
         &format!(
-            "seconds:{:.1};damage_observed:{damaged};death_tile:{last_position:?}",
-            combat_started.elapsed().as_secs_f64()
+            "seconds:{:.1};damage_observed:{damaged};hp:{};{budget_detail};death_tile:{last_position:?}",
+            combat_started.elapsed().as_secs_f64(),
+            definition.health
         ),
     );
     let _ = client.session_mut().attack_target(None).await;
@@ -1102,11 +1208,12 @@ async fn open_corpse(
     Ok(got)
 }
 
-/// Provision the level-100 build once (the fenced fixture command), then reuse it. The fixture is
-/// one-shot per character: a refusal on a character that already reads level 100 means "already
-/// provisioned". The default profile is `knight` (`NODE_BOOT_PROFILE` overrides it) and the axe
-/// (item 3276) is wielded through the player's own protocol, as MP01 does, whether the build was
-/// just provisioned or already present: a bare-fisted player cannot kill the larger species.
+/// Provision the level-1000 knight build once (the fenced fixture command), then reuse it. The
+/// fixture is one-shot per character: a refusal on a character that already reads the sweep level
+/// means "already provisioned". The default profile is `sweep` (`NODE_BOOT_PROFILE` overrides it)
+/// and the ruthless axe (item 6553) is wielded through the player's own protocol, as MP01 does,
+/// whether the build was just provisioned or already present: a bare-fisted player cannot kill
+/// the larger species.
 async fn prepare_player(
     clients: &SeamClients<'_>,
     session: &mut Option<DevClientSession>,
@@ -1114,11 +1221,11 @@ async fn prepare_player(
     let client = session.as_mut().ok_or("session absent")?;
     let (_, level) = read_stats(client).await?;
     if level >= SWEEP_LEVEL {
-        return ensure_axe(client).await;
+        return ensure_weapon(client).await;
     }
     let mut client = session.take().ok_or("session absent")?;
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
-    let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "knight".into());
+    let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sweep".into());
     let game_session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
@@ -1155,21 +1262,21 @@ async fn prepare_player(
         )
         .into());
     }
-    let equipped = ensure_axe(&mut fresh).await;
+    let equipped = ensure_weapon(&mut fresh).await;
     *session = Some(fresh);
     equipped?;
     evidence(&format!(
-        "creature_sweep provisioned level={level} fixture_ok={} weapon=axe",
+        "creature_sweep provisioned level={level} fixture_ok={} weapon={SWEEP_WEAPON_ID}",
         status.success()
     ));
     Ok(())
 }
 
-/// Wield the axe (item 3276) unless it is already worn; a refusal is an error with the server's
-/// detail. Same protocol path as MP01 (`mp/mp01_party_pvp.rs`, axe equip).
-async fn ensure_axe(client: &mut DevClientSession) -> TestResult {
+/// Wield the sweep weapon (item 6553) unless it is already worn; a refusal is an error with the
+/// server's detail. Same protocol path as MP01 (`mp/mp01_party_pvp.rs`, axe equip).
+async fn ensure_weapon(client: &mut DevClientSession) -> TestResult {
     let definitions = provisioning::item_index()?;
-    let axe = provisioning::item_reference(&definitions, 3276)?;
+    let axe = provisioning::item_reference(&definitions, SWEEP_WEAPON_ID)?;
     let wielded = client.inventory().is_some_and(|inventory| {
         inventory
             .equipment
@@ -1185,7 +1292,7 @@ async fn ensure_axe(client: &mut DevClientSession) -> TestResult {
     {
         let detail = client.session_mut().last_refusal_detail();
         return Err(format!(
-            "axe equip refused:{equipped:?};refusal_detail={detail:?};axe_ref={axe}"
+            "weapon {SWEEP_WEAPON_ID} equip refused:{equipped:?};refusal_detail={detail:?};weapon_ref={axe}"
         )
         .into());
     }
