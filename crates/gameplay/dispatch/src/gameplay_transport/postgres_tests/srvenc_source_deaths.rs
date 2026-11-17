@@ -386,7 +386,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
             };
             deps.initialize_player(&owner, peer_actor, peer_session)
                 .await;
-            let peer = AdmittedSession {
+            let mut peer = AdmittedSession {
                 game_session_id: peer_session,
                 world_id: admitted.world_id,
                 channel_id: admitted.channel_id,
@@ -396,7 +396,22 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                 continuity: SessionContinuity::FRESH,
                 item_fence: Some(fence),
             };
+            owner.admit_progression_session(&mut peer).await;
+            assert!(
+                owner.progression_binding(peer_session).is_some(),
+                "peer completed progression admission"
+            );
             owner.admit_quest_session(&peer).await;
+            assert!(
+                owner
+                    .states
+                    .quest_sessions
+                    .lock()
+                    .map_err(|_| "quest session lock")?
+                    .get(&peer_session)
+                    .is_some_and(|state| state.copy.is_some()),
+                "peer has an admitted quest snapshot"
+            );
             owner.refresh_quest_session(peer_session, false).await;
             overlord_peers.push((peer_actor, peer_session, *fence.character_id.as_bytes()));
         }
@@ -614,18 +629,10 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                 drop(taken); // Leave the real original queue entry for durable settlement below.
             }
         }
-        let outcome = owner.drain_kill_rewards(session).await;
-        if !overlord_peers.is_empty() {
-            let runtime = owner.runtime.lock().await;
-            eprintln!("[DBG-OVERLORDCR] drain={outcome:?} native_pin={} owner={}",
-                runtime.content_pin().server_artifact_digest() == native.source_digest(),
-                runtime.owner_fence().is_ok());
-            drop(runtime);
-            let flags: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u8_2/elemental_spheres/boss_storage' AND value=1")
-                .fetch_one(&h.pool).await?;
-            eprintln!("[DBG-OVERLORDCR] committed_flags={flags}");
-        }
-        assert_eq!(outcome, DrainOutcome::Drained);
+        assert_eq!(
+            owner.drain_kill_rewards(session).await,
+            DrainOutcome::Drained
+        );
     }
     assert_eq!(
         owner.drain_kill_rewards(session).await,
