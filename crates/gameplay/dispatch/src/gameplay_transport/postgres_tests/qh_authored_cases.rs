@@ -36,7 +36,7 @@ const DIRT: Position = Position {
     floor: -8,
 };
 const BEFORE_DIG: Position = Position {
-    x: 32803,
+    x: 32804,
     y: 31258,
     floor: -8,
 };
@@ -471,7 +471,7 @@ async fn top_of_the_city(
         .selected_capabilities
         .as_slice()
         .to_vec();
-    selected.extend([3, 4, 6, 11, 15, 18, 25]);
+    selected.extend([3, 4, 6, 11, 15, 18]);
     selected.sort_unstable();
     selected.dedup();
     let offered = crate::gameplay_transport::appearance_change::offer::offered(
