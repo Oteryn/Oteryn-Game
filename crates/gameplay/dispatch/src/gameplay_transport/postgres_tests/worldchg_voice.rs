@@ -7,6 +7,10 @@ use crate::foundation::{
 #[path = "world_event/reset_fixture.rs"]
 mod event_fixture;
 
+const RESET_WORLD: &[u8] = include_bytes!(
+    "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+);
+
 #[test]
 fn worldchg_voice_mage_qualification_death_and_empty_restoration() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
@@ -27,7 +31,10 @@ fn scenario(admin: String, gobbles: i64, expected_stage: u8) -> TestResult {
         let character = CharacterId::decode(&id(41)).map_err(debug)?;
         let scope = RuntimeScopeRefV1::channel(world, channel);
         let (controller, pin) =
-            crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(
+                world,
+                Some(RESET_WORLD),
+            );
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -41,7 +48,8 @@ fn scenario(admin: String, gobbles: i64, expected_stage: u8) -> TestResult {
             })
             .ok_or("active voice epoch")?;
         event_fixture::reset_epochs(&h, &authority, pin.qualified_room(), world, channel, epoch)
-            .await?;
+            .await
+            .map_err(|error| format!("activate Voice epoch {epoch}: {error}"))?;
         event_fixture::admit(&h, epoch + 1).await?;
         let now: i64 =
             sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint")
@@ -255,8 +263,10 @@ fn save_scenario(admin: String) -> TestResult {
             Harness::create_with_admission_seed(admin, "worldchg_voice_save", false, false).await?;
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
-        let (_, pin) =
-            crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
+        let (_, pin) = crate::content::native_gameplay::test_support::activated_with_loot_tables(
+            world,
+            Some(RESET_WORLD),
+        );
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -270,7 +280,8 @@ fn save_scenario(admin: String) -> TestResult {
         sqlx::query("CREATE TRIGGER seed_voice_progress AFTER INSERT ON game_world_change_days FOR EACH ROW EXECUTE FUNCTION seed_voice_progress()")
             .execute(&h.pool).await?;
         event_fixture::reset_epochs(&h, &authority, pin.qualified_room(), world, channel, 2)
-            .await?;
+            .await
+            .map_err(|error| format!("activate Voice server saves: {error}"))?;
         let value: serde_json::Value = sqlx::query_scalar(
             "SELECT state FROM game_world_change_counters WHERE change_key='their_masters_voice'",
         )
