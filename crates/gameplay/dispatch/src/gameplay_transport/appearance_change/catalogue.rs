@@ -45,7 +45,9 @@ pub(in crate::gameplay_transport) fn catalogue(
             outfit_key: s.selection.outfit_key.clone(),
             colours: s.selection.colours,
             addons: s.selection.addons,
-            mount_key: s.selection.mount_key.clone().filter(|mount| !is_rental_mount(mount) || unlocks.mount(mount) == UnlockFact::Compatible),
+            // The command's prior selection must reproduce the persisted receipt.
+            // The available mounts and the displayed look already enforce expiry.
+            mount_key: s.selection.mount_key.clone(),
         },
         revision: s.committed_character_revision.get(),
         provenance: s.content_revision.clone(),
