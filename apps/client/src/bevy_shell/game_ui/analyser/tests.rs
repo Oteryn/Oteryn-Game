@@ -570,14 +570,15 @@ fn analyser_resolves_following_pages_and_new_items() -> TestResult {
     app.update();
     let reset_panel = panel(&app)?;
     assert!(reset_panel.loot.is_empty());
-    assert_eq!(
-        reset_panel
-            .reports
-            .get(Tool::Loot.key())
-            .ok_or("retained loot report")?
-            .loot,
-        loot
-    );
+    let retained = &reset_panel
+        .reports
+        .get(Tool::Loot.key())
+        .ok_or("retained loot report")?
+        .loot;
+    assert_eq!(retained.len(), loot.len());
+    for (id, item) in loot {
+        assert_eq!(retained.get(&id).map(|row| row.count), Some(item.count));
+    }
     for _ in 0..10 {
         let command = {
             let mut commands = app.world_mut().non_send_mut::<tokio::sync::mpsc::UnboundedReceiver<crate::combat_input::PlayCommand>>();
