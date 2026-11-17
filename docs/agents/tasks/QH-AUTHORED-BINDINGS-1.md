@@ -50,7 +50,7 @@ placement, not a synthetic chest.
 | Child of Destiny, Asura Palace | covered on main | engenc bindings (`engenc-child-of-destiny.json`, `engenc-asura-palace.json`, main e2152d05); not duplicated. |
 | Mini world changes (WCVAR), seasonal events (SEASONWIN), Last Creep Standing (m23_last_creep) | server lane | not built here. |
 | Rathleton voting, Measuring Tibia, War Against the Hive missions, Insectoid Outfits (War Exp.), Cartography 101 (carried USE with a location gate), The Repenters (four 20 h tasks, corpse deadline, fire bug), Royal Bounacean Advisor (saplings-alive kill, night talk), The Lightbearer (world basin event) | server mechanic missing | sent to the server lane 2026-11-17; not built here. |
-| Top of the City | binding + PG case (batch 2) | `top_of_the_city_quest.json`: Iriana `quest` (0→1), Jimmy `iriana` (1→2), pick 3456 on dirt 8504 at 32803,31259,8 teleports to the tunnel 32803,31259,9 (stage 2..4, read only, reusable), crate 8771 at 32807,31252,8 gives food crate 8772 (2→3), Jimmy `quest` takes 8772 and gives Iriana's Chest 8773 (3→4), Iriana `quest` takes 8773 and gives 10 Heaven Blossom 5921 (4→5, bound to the recipe `complete` stage s6, completes). Premium. Sources TibiaWiki curid 30757 oldid 1059697, curid 31073 oldid 1050120, Jimmy curid 30848 oldid 1114684. Iriana placed at 32849,31300,7 (Canary/Crystal agree); door 5289 at 32858,31374,6 has no action id, so it is a plain door and needs no binding. Food crate and chest got native custody through `authored-npc-item-custody.json`. PG case covers the NPC chain and the cellar crate on a one-floor crop; the dig teleport is cross-floor and is covered by the binding's boot validation only. Approximations: no first-greeting assassin summon, no wrong-bridge resets on the roofs (server lane), and the `yes` confirmations are folded into the keyword step. |
+| Top of the City | binding + PG case (batch 2) | `top_of_the_city_quest.json`: Iriana `quest` (0→1), Jimmy `iriana` (1→2), pick 3456 on dirt 8504 at 32803,31259,8 teleports to the tunnel 32803,31259,9 (stage 2..4, read only, reusable), crate 8771 at 32807,31252,8 gives food crate 8772 (2→3), Jimmy `quest` takes 8772 and gives Iriana's Chest 8773 (3→4), Iriana `quest` takes 8773 and gives 10 Heaven Blossom 5921 (4→5, bound to the recipe `complete` stage s6, completes). Premium. Sources TibiaWiki curid 30757 oldid 1059697, curid 31073 oldid 1050120, Jimmy curid 30848 oldid 1114684 at 32857,31383,6 on the stub the `qh_jimmy_stub` overlay restores. Iriana placed at 32849,31300,7 (Canary/Crystal agree); door 5289 at 32858,31374,6 has no action id, so it is a plain door and needs no binding. Food crate and chest got native custody through `authored-npc-item-custody.json`. PG case covers the NPC chain and the cellar crate on a one-floor crop; the dig teleport is cross-floor and is covered by the binding's boot validation only. Approximations: no first-greeting assassin summon, no wrong-bridge resets on the roofs (server lane), and the `yes` confirmations are folded into the keyword step. |
 
 ## Checks per batch
 
@@ -60,9 +60,12 @@ changed crates, and the dispatch PG case (returns `Ok(())` without
 
 ## OPEN-FACTS (owner browser check)
 
-- Jimmy: TibiaWiki gives 32857,31383,6, which has no native tile in our map. Placed on the nearest
-  walkable floor-6 ground of his room, 32857,31380,6 (content decision, batch 2). Please confirm
-  his in-game cell on Tibia global.
+- Closed (qh-jimmytiles, 2026-11-17): the map gap at Jimmy is closed. TibiaWiki and the Polish
+  TibiaWiki both show Jimmy at 32857,31383,6 (owner browser evidence 2026-11-17), and tibiamaps
+  floor 6 is walkable at x32857..32858 down to y31383. The world overlay
+  `tools/content-schema/world-authoring/qh_jimmy_stub.py` opens the closing wall row 31381 and adds
+  the stub 32856..32859,31382..31384,6 with a new closing row 31385. Jimmy is placed at the wiki
+  cell 32857,31383,6, with no fallback adjustment.
 
 ## Batch 2 evidence
 
