@@ -101,6 +101,58 @@ class ProvisionTests(unittest.TestCase):
         self.assertEqual(uuid.UUID(received[0].decode().strip()).version, 7)
         return str(failure.exception)
 
+    def test_mid_run_unavailable_reconciles_the_same_issued_operation(self):
+        results = [subprocess.CompletedProcess([], 0, "container-id\n", ""),
+                   subprocess.CompletedProcess([], 0, "", "")]
+        received = []
+        with tempfile.TemporaryDirectory() as directory:
+            path = str(Path(directory) / "control.sock")
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:
+                listener.bind(path)
+                listener.listen()
+                listener.settimeout(2)
+                def serve():
+                    for answer in (b"unavailable\n", b"committed\n"):
+                        try:
+                            connection, _ = listener.accept()
+                        except TimeoutError:
+                            return
+                        with connection:
+                            request = bytearray()
+                            while block := connection.recv(128):
+                                request.extend(block)
+                            received.append(bytes(request))
+                            connection.sendall(answer)
+                thread = threading.Thread(target=serve, daemon=True)
+                thread.start()
+                try:
+                    with patch.object(provision.subprocess, "run", side_effect=results) as commands:
+                        name = provision.fresh_character(path, "test-project", {})
+                finally:
+                    thread.join(timeout=5)
+                self.assertFalse(thread.is_alive())
+        self.assertEqual(commands.call_count, 2, "the Platform intent must be issued once")
+        self.assertEqual(len(received), 2)
+        self.assertEqual(received[0], received[1], "retry must reconcile the same operation")
+        operation = uuid.UUID(received[0].decode().strip())
+        self.assertEqual(operation.version, 7)
+        self.assertEqual(name, provision.fresh_character_name(operation))
+
+    def test_persistent_unavailable_stops_at_the_original_deadline(self):
+        now = [0]
+        def expire(_delay):
+            now[0] = 60
+        with patch.object(provision.socket, "socket") as sockets, \
+                patch.object(provision.time, "monotonic", side_effect=lambda: now[0]), \
+                patch.object(provision.time, "sleep", side_effect=expire), \
+                contextlib.redirect_stderr(io.StringIO()):
+            control = sockets.return_value.__enter__.return_value
+            control.recv.side_effect = [b"unavailable\n", b""]
+            with self.assertRaisesRegex(RuntimeError, "deadline exceeded; answer='unavailable'"):
+                provision.commit_character_bootstrap("control.sock", uuid.uuid4())
+            self.assertEqual(sockets.call_count, 1)
+            self.assertEqual(control.sendall.call_count, 1)
+
     def test_node_refusal_includes_the_actual_answer(self):
         self.assertIn("answer='rejected'", self.node_refusal(b"rejected\n"))
 

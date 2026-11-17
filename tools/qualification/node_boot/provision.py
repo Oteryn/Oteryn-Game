@@ -101,20 +101,40 @@ exit($code);'''
     run_capture(["docker", "exec", "--user", "www-data", containers[0],
                     "php", "-r", php, json.dumps(request)],
                    "Platform bootstrap intent", timeout=30)
-    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as control:
-        control.settimeout(60)
-        control.connect(socket_path)
-        control.sendall(f"{operation}\n".encode("ascii"))
-        control.shutdown(socket.SHUT_WR)
-        answer = bytearray()
-        while len(answer) <= 64:
-            chunk = control.recv(65 - len(answer))
-            if not chunk:
-                break
-            answer.extend(chunk)
-        if answer != b"committed\n":
-            raise RuntimeError(f"node refused fresh spell character bootstrap: answer={sanitized_text(answer.decode(errors='replace')) or '<empty or filtered>'!r}")
+    commit_character_bootstrap(socket_path, operation)
     return name
+
+
+def commit_character_bootstrap(socket_path, operation):
+    # D2's unavailable result is ambiguous, not a rejection. As game-ops instructs,
+    # reconcile the SAME operation: a committed receipt wins before any external
+    # reads, and the Platform intent must never be reissued on this path.
+    deadline = time.monotonic() + 60
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise RuntimeError("fresh spell character bootstrap deadline exceeded; answer='unavailable'")
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as control:
+            control.settimeout(remaining)
+            control.connect(socket_path)
+            control.sendall(f"{operation}\n".encode("ascii"))
+            control.shutdown(socket.SHUT_WR)
+            answer = bytearray()
+            while len(answer) <= 64:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError("fresh spell character bootstrap deadline exceeded")
+                control.settimeout(remaining)
+                chunk = control.recv(65 - len(answer))
+                if not chunk:
+                    break
+                answer.extend(chunk)
+        if answer == b"committed\n":
+            return
+        if answer != b"unavailable\n":
+            raise RuntimeError(f"node refused fresh spell character bootstrap: answer={sanitized_text(answer.decode(errors='replace')) or '<empty or filtered>'!r}")
+        print("C17 bootstrap unavailable; reconciling the same operation id", file=sys.stderr)
+        time.sleep(min(0.5, max(0, deadline - time.monotonic())))
 
 
 if __name__ == "__main__":
