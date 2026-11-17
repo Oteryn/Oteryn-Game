@@ -1280,6 +1280,13 @@ pub(super) async fn relocate_roped_item(
     from: TilePos,
     to: TilePos,
 ) -> LoopMoveResult {
+    if !admission
+        .states
+        .player_trades
+        .physical(command.game_session_id, Some(item))
+    {
+        return LoopMoveResult::Refused(LoopMoveRefusal::Rejected);
+    }
     let Some(pickup_cell) = projection.pickup_cell(&item) else {
         return LoopMoveResult::Refused(LoopMoveRefusal::Stale);
     };
@@ -1298,6 +1305,7 @@ pub(super) async fn relocate_roped_item(
     {
         return LoopMoveResult::Refused(LoopMoveRefusal::Blocked);
     }
+    let _ground_change = GroundChange(Some(&admission.states.loop_ground));
     relocate_ground_item(
         admission,
         permit,

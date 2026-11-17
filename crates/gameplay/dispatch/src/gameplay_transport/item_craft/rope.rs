@@ -73,7 +73,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
             resolve_item_lift(
-                self, &mut runtime, &states, actor, command, intent, target, &ground, index,
+                self,
+                &mut runtime,
+                &states,
+                actor,
+                command,
+                intent,
+                target,
+                &ground,
+                index,
             )
         };
         if let Some(lift) = lift {
