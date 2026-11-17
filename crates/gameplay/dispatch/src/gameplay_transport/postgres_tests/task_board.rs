@@ -227,6 +227,19 @@ fn scenario_with_bootstrap(
     elite_case_enabled: bool,
     control_epoch_case: bool,
 ) -> TestResult {
+    scenario_fullout(fault, elite_case_enabled, control_epoch_case, false)
+}
+
+pub(super) fn run_fullout() -> TestResult {
+    scenario_fullout(None, false, false, true)
+}
+
+fn scenario_fullout(
+    fault: Option<RollbackFault>,
+    elite_case_enabled: bool,
+    control_epoch_case: bool,
+    fullout: bool,
+) -> TestResult {
     run(async move |admin| {
         let tag = fault.map_or("task_board_e2e", RollbackFault::tag);
         let harness = Harness::create_with_admission_seed(admin, tag, false, false).await?;
@@ -240,7 +253,7 @@ fn scenario_with_bootstrap(
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
         let session = GameSessionId::decode(&id(50)).map_err(debug)?;
-        let cosmetics = cosmetic_cases::cosmetics_packet()?;
+        let cosmetics = cosmetic_cases::cosmetics_packet_for(fullout)?;
         let (controller, pin) =
             crate::content::native_gameplay::test_support::cosmetics_fixture::activated_with_optional_cosmetics(
                 world,
@@ -1002,6 +1015,13 @@ fn scenario_with_bootstrap(
             return Ok(());
         }
         let cosmetic_fault = fault == Some(RollbackFault::CosmeticGrant);
+        if fullout {
+            cosmetic_cases::fullout_case(&owner, &harness, &mut admitted).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         cosmetic_cases::cosmetics_case(&owner, &harness, &mut admitted, cosmetic_fault).await?;
         if cosmetic_fault {
             drop(owner);

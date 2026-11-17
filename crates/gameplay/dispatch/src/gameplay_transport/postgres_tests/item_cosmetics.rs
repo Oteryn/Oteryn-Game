@@ -96,6 +96,7 @@ fn scenario(
     ot_only: Option<u32>,
 ) -> TestResult {
     let key = match case {
+        Some(positive::Case::FullOutfitVoucher { .. }) => "oteryn:item.tibia.i35695",
         Some(positive::Case::Glider { .. }) => "oteryn:item.tibia.i21897",
         Some(
             positive::Case::Parts
@@ -132,6 +133,7 @@ fn scenario(
             case,
             Some(
                 positive::Case::ProductionOutfit
+                    | positive::Case::FullOutfitVoucher { .. }
                     | positive::Case::ProductionParts
                     | positive::Case::ProductionOtOnly
                     | positive::Case::ProductionMount
@@ -200,11 +202,16 @@ fn scenario(
             let rule = oteryn_gameplay_items::item_cosmetics::rule(key).ok_or("doll rule")?;
             let cosmetics = native.cosmetics().ok_or("complete production cosmetics")?;
             assert!(
-                oteryn_gameplay_items::item_cosmetics::qualify_rule(catalogue, rule, cosmetics).is_ok(),
+                oteryn_gameplay_items::item_cosmetics::qualify_rule(catalogue, rule, cosmetics)
+                    .is_ok(),
                 "the refusal must not come from a missing random outcome"
             );
             assert!(
-                !oteryn_gameplay_items::item_cosmetics::source_policy_allows(rule, Some(cosmetics), key),
+                !oteryn_gameplay_items::item_cosmetics::source_policy_allows(
+                    rule,
+                    Some(cosmetics),
+                    key
+                ),
                 "this case deliberately has no acquisition admission"
             );
         }
@@ -349,6 +356,13 @@ fn scenario(
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
         let mut contents = match case {
+            Some(positive::Case::FullOutfitVoucher { mixed }) => {
+                if mixed {
+                    vec![(key, 1)]
+                } else {
+                    vec![("oteryn:item.tibia.i35595", 1), (key, 1)]
+                }
+            }
             Some(positive::Case::Glider { missing }) => {
                 let mut pieces = vec![
                     (key, 1),
@@ -586,4 +600,14 @@ pub(super) fn nx5_production_case(kind: u8) -> TestResult {
         _ => positive::Case::ProductionMount,
     };
     run_all(false, false, Some(case))
+}
+
+pub(super) fn run_fullout_voucher(mixed: bool) -> TestResult {
+    run_configuration(
+        false,
+        false,
+        Some(positive::Case::FullOutfitVoucher { mixed }),
+        false,
+        None,
+    )
 }

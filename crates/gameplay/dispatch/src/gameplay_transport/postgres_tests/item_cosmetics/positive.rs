@@ -7,6 +7,7 @@ use std::num::NonZeroU32;
 
 #[derive(Clone, Copy, Debug)]
 pub(super) enum Case {
+    FullOutfitVoucher { mixed: bool },
     Parts,
     OmittedGrant,
     Outfit,
@@ -119,6 +120,10 @@ pub(super) async fn execute(
     })
     .map_err(debug)?;
     match case {
+        Case::FullOutfitVoucher { mixed } => {
+            return super::super::fullout_paths::voucher(owner, h, admitted, reference, mixed)
+                .await;
+        }
         Case::Glider { missing } => {
             return super::glider::execute(owner, h, admitted, reference, missing).await;
         }

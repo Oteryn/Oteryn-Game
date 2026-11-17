@@ -34,7 +34,7 @@ fn source_look(packet: &Value, look: u32) -> TestResult<Value> {
 /// Keep the source-bound fallback, then explicitly author one earned outfit and mount.
 /// Both sex choices are synthetic test facts. The source record binds the rendered look
 /// only; it does not claim these authoring decisions for the production catalogue.
-pub(super) fn cosmetics_packet() -> TestResult<Vec<u8>> {
+pub(super) fn cosmetics_packet_for(fullout: bool) -> TestResult<Vec<u8>> {
     let mut packet = cosmetics_test_packet();
     let outfit_look = source_look(&packet, 1907)?;
     let mount_look = source_look(&packet, 1908)?;
@@ -81,6 +81,29 @@ pub(super) fn cosmetics_packet() -> TestResult<Vec<u8>> {
             .clone();
     }
     author["promotions"] = promotions.into();
+    if fullout {
+        let old = OUTFIT;
+        let encoded = serde_json::to_string(&packet)?.replace(old, "oteryn:outfit.feral_trapper");
+        packet = serde_json::from_str(&encoded)?;
+        let mapping = json!({"grant_key":"oteryn:taskboard/shop/offer-2","target":{"kind":"Addon","outfit_key":"oteryn:outfit.feral_trapper","addon":2},"compatible_provenance":[PROVENANCE]});
+        packet["authoring"]["document"]["grant_mappings"]
+            .as_array_mut()
+            .ok_or("mappings")?
+            .push(mapping);
+        packet["authoring"]["document"]["grant_mappings"]
+            .as_array_mut()
+            .ok_or("mappings")?
+            .sort_by(|left, right| left["grant_key"].as_str().cmp(&right["grant_key"].as_str()));
+        let mappings = packet["authoring"]["document"]["grant_mappings"].clone();
+        for promotion in packet["authoring"]["promotions"]
+            .as_array_mut()
+            .ok_or("promotions")?
+        {
+            if promotion["path"] == "/grant_mappings" {
+                promotion["value"] = mappings.clone();
+            }
+        }
+    }
     Ok(serde_json::to_vec(&packet)?)
 }
 
@@ -284,5 +307,39 @@ async fn unavailable_catalogue_case(
     println!(
         "<TASK_BOARD> POSTGRES_CASE_COMPLETED: unavailable_cosmetic_catalogue_refuses_without_charge"
     );
+    Ok(())
+}
+
+pub(super) async fn fullout_case(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    let mut fixture = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *fixture)
+        .await?;
+    sqlx::query("UPDATE game_character_roots SET sex=2 WHERE sex IS NULL")
+        .execute(&mut *fixture)
+        .await?;
+    fixture.commit().await?;
+    fixture_track(h, task_board::POINTS, 1_000_000).await?;
+    for offer in 0..=2 {
+        let command = admitted.continuity.next_command_id;
+        let result = full_board(owner, admitted, 16, offer, "").await?;
+        assert_eq!(result.refusal, 0);
+        assert_eq!(
+            super::super::fullout_paths::achievement_count(h, "feral_trapper").await?,
+            i64::from(offer == 2)
+        );
+        let replay = serve_from(owner, admitted, command, &[full_request(16, offer, "")]).await?;
+        assert_eq!(replay[0].1, CommandStatus::DuplicateReplay);
+        assert_eq!(
+            wire::full::decode_reply(&replay[0].2).map_err(debug)?,
+            result
+        );
+    }
+    assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_account_achievement_grant_requests WHERE achievement_key='oteryn:achievement/feral_trapper'").fetch_one(&h.pool).await?,1);
+    eprintln!("FULLOUT_PATH_COMPLETED task_board");
     Ok(())
 }
