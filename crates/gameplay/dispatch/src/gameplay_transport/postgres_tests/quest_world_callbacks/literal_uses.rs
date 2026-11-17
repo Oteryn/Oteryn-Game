@@ -107,24 +107,6 @@ fn quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes() -> Test
     })
 }
 
-// Crystal 201189f8: data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:27-39.
-#[test]
-fn qstore_real_boat_storage_gate_refuses_then_passes_dispatch_postgres() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
-    drop(admin);
-    super::super::kill_reward_e2e::scenario_thread::run("qstore-real-boat-gate", || {
-        let boat = callback("order-of-the-stag-boat-to-ada")?;
-        assert!(boat.is_read_only());
-        assert_eq!(boat.storage[0].minimum, 3);
-        for stage in [2, 3] {
-            exercise(boat.clone(), 6391, 4, Some(stage))?;
-        }
-        Ok(())
-    })
-}
-
 fn position((x, y, floor): (u16, u16, i8)) -> Position {
     Position { x, y, floor }
 }

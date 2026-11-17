@@ -57,6 +57,12 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
     exercise_case(h, false).await
 }
 async fn exercise_case(h: &fixture::Harness, ram: bool) -> TestResult {
+    exercise_scene(h, ram, false).await
+}
+pub(super) async fn exercise_qstore(h: &fixture::Harness) -> TestResult {
+    exercise_scene(h, false, true).await
+}
+async fn exercise_scene(h: &fixture::Harness, ram: bool, boat: bool) -> TestResult {
     super::engnpc2_live_transport::fresh(h).await?;
     let scope = fixture::fence(1)?.runtime_scope;
     let world = scope.world_id();
@@ -72,7 +78,18 @@ async fn exercise_case(h: &fixture::Harness, ram: bool) -> TestResult {
         crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
             .current_session_at(session)
             .await?;
-    let (source, region, bounds, start) = if ram {
+    let (source, region, bounds, start) = if boat {
+        (
+            include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../content/world/placements/region-z07-x126-y127.b3"
+            ))
+            .as_slice(),
+            (7, 126, 127),
+            (32392, 32512, 32395, 32515),
+            (32394, 32513),
+        )
+    } else if ram {
         (
             include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
@@ -95,28 +112,35 @@ async fn exercise_case(h: &fixture::Harness, ram: bool) -> TestResult {
             (32000, 31165),
         )
     };
-    let scene = world::native_scene(
-        native,
-        vec![world::NativeCrop {
-            bytes: source,
-            region,
-            bounds,
-            start,
-            expected: if ram {
-                vec![world::ExpectedTile {
-                    position: (31926, 31896),
-                    ids: vec![4515, 5485, 53439],
-                    counted_entry: None,
-                }]
-            } else {
-                vec![]
-            },
-        }],
-        &[],
-        &[7252],
-        world,
-        channel,
-    )?;
+    let mut crops = vec![world::NativeCrop {
+        bytes: source,
+        region,
+        bounds,
+        start,
+        expected: if ram {
+            vec![world::ExpectedTile {
+                position: (31926, 31896),
+                ids: vec![4515, 5485, 53439],
+                counted_entry: None,
+            }]
+        } else {
+            vec![]
+        },
+    }];
+    if boat {
+        crops.push(world::NativeCrop {
+            bytes: include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../content/world/placements/region-z07-x132-y125.b3"
+            ))
+            .as_slice(),
+            region: (7, 132, 125),
+            bounds: (33874, 32248, 33876, 32250),
+            start: (33875, 32249),
+            expected: Vec::new(),
+        });
+    }
+    let scene = world::native_scene(native, crops, &[], &[7252], world, channel)?;
     let cells = scene
         .movement_cells(pin.qualified_room().movement_cells())
         .map_err(debug)?;
@@ -245,6 +269,11 @@ async fn exercise_case(h: &fixture::Harness, ram: bool) -> TestResult {
     }
     .build();
     owner.active_generation = Some(generation);
+    if boat {
+        use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
+        let oteryn_gameplay_content::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) = room.movement_cells().index() else { return Err("native boat bundle index".into()); };
+        return qstore_boat(h, &mut owner, index.map(), actor, session).await;
+    }
     if ram {
         use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
         let oteryn_gameplay_content::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) = room.movement_cells().index() else { return Err("native bundle index".into()); };
@@ -453,5 +482,214 @@ async fn exercise_ram(
         callback.selector.native.is_some(),
         "Ram must have its exact native map counterpart"
     );
+    Ok(())
+}
+
+// Crystal 201189f8: data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:27-39.
+async fn qstore_boat(
+    h: &fixture::Harness,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    map: &oteryn_gameplay_world::map::boot::BundleMap,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+) -> TestResult {
+    use crate::durability::quest_state::{
+        QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
+    };
+    use crate::foundation::{CommandId, CommandRef, MovementLocalPosition};
+    use oteryn_gameplay_quests::quest::{
+        QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
+        QuestTransition, world_callbacks,
+    };
+    let callback = world_callbacks::load()?
+        .into_iter()
+        .find(|c| c.key.ends_with("order-of-the-stag-boat-to-ada"))
+        .ok_or("production boat")?;
+    assert!(callback.is_read_only());
+    let storage = callback.storage.first().ok_or("boat storage")?;
+    assert_eq!(storage.minimum, 3);
+    let catalogue = Arc::new(
+        QuestStateCatalogue::new(
+            "content-1",
+            vec![QuestTrack {
+                key: storage.track.clone(),
+                quest: callback.quest.clone(),
+                initial: -1,
+                min: -1,
+                max: 13,
+            }],
+            [2, 3]
+                .into_iter()
+                .map(|stage| QuestTransition {
+                    key: format!("oteryn:quest-transition/qstore/boat-stage-{stage}"),
+                    quest: callback.quest.clone(),
+                    effects: vec![QuestEffect {
+                        track: storage.track.clone(),
+                        from: QuestComparison::Any,
+                        effect: QuestEffectKind::Set(stage),
+                    }],
+                    completes: false,
+                    experience: None,
+                    world_change: None,
+                })
+                .collect(),
+        )
+        .map_err(debug)?,
+    );
+    owner.quest_catalogue = Some(catalogue.clone());
+    let now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(u64::try_from(
+        owner.clock_origin.elapsed().as_micros(),
+    )?);
+    owner.states.chat.admit_as(session, "Traveller", None, now);
+    let position = callback.selector.position.ok_or("boat position")?;
+    let tile_position = oteryn_gameplay_world::map::overlay::TilePos {
+        x: position.x,
+        y: position.y,
+        floor: position.floor,
+    };
+    let tile = map
+        .overlay
+        .base()
+        .tile(position.x, position.y, position.floor)
+        .ok_or("native boat tile")?;
+    let ordinal = tile
+        .ids()
+        .iter()
+        .zip(tile.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .enumerate()
+        .find_map(|(ordinal, (id, _))| {
+            let ordinal = u8::try_from(ordinal).ok()?;
+            map.facts
+                .base_entry(tile_position, ordinal, *id)
+                .filter(|facts| facts.appearance_id == 6391)
+                .map(|_| ordinal)
+        })
+        .ok_or("native boat rope")?;
+    assert!(ordinal > 0);
+    let key =
+        oteryn_world_bundle::bundle::placement_key(position.floor, position.x, position.y, ordinal)
+            .ok_or("boat key")?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let target = oteryn_protocol_oteryn::world_object::WorldObjectTarget {
+        placement,
+        expected_revision: map.facts.object_revision(key),
+    };
+    let origin = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?
+        .position();
+    let destination = callback.teleport.ok_or("boat destination")?;
+    for (stage, allowed) in [(2_u64, false), (3_u64, true)] {
+        let fence = composed_test_owner::load_quests(owner, session).await?;
+        let result = owner
+            .root
+            .commit_character_quest_transition(
+                owner.character,
+                owner.holder,
+                fence,
+                QuestTransitionRequest {
+                    transition_key: format!("oteryn:quest-transition/qstore/boat-stage-{stage}"),
+                    cause: QuestCause::Command(CommandRef::new(
+                        session,
+                        CommandId::new(15000 + stage).map_err(debug)?,
+                    )),
+                },
+                catalogue.clone(),
+            )
+            .await
+            .map_err(debug)?;
+        assert!(matches!(result, QuestTransitionOutcome::Committed(_)));
+        let fence = composed_test_owner::load_quests(owner, session).await?;
+        let before = owner
+            .root
+            .read_character_quest_state(owner.character, fence.character_id)
+            .await
+            .map_err(debug)?;
+        let receipts = h.count("game_character_quest_receipts").await?;
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("owner clock")?;
+        let payload =
+            oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?;
+        let intent = decode_use_intent_target(&[4], &payload).map_err(debug)?;
+        let UseTarget::WorldObject(target) = intent.target else {
+            return Err("literal World USE".into());
+        };
+        let outcome = owner
+            .use_object(
+                actor,
+                UseCommand {
+                    game_session_id: session,
+                    command_id: 16000 + stage,
+                    item_fence: Some(fence.item_fence()),
+                },
+                target,
+            )
+            .await;
+        assert_eq!(
+            outcome.disposition,
+            if allowed {
+                UseDisposition::Committed
+            } else {
+                UseDisposition::Rejected
+            }
+        );
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position(),
+            if allowed {
+                MovementLocalPosition {
+                    x: i32::from(destination.x),
+                    y: i32::from(destination.y),
+                    floor: -i16::from(destination.floor),
+                }
+            } else {
+                origin
+            }
+        );
+        assert_eq!(
+            owner
+                .root
+                .read_character_quest_state(owner.character, fence.character_id)
+                .await
+                .map_err(debug)?,
+            before,
+            "literal USE changed durable quest state"
+        );
+        assert_eq!(h.count("game_character_quest_receipts").await?, receipts);
+        let mut messages = Vec::new();
+        while let Some(line) = owner.states.chat.next(session) {
+            owner.states.chat.delivered(session);
+            messages.push(line);
+        }
+        if let Some(expected) = if allowed {
+            &callback.success_message
+        } else {
+            &callback.failure_message
+        } {
+            assert_eq!(
+                messages
+                    .iter()
+                    .filter(|line| matches!(line,
+                oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text.as_str() == expected.as_str()))
+                    .count(),
+                1
+            );
+        }
+        eprintln!(
+            "QSTORE_REAL_GATE_PHASE stage={stage} allowed={allowed} native_ordinal={ordinal}"
+        );
+    }
     Ok(())
 }
