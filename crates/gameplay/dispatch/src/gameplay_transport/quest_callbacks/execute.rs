@@ -1307,13 +1307,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if native(position).is_some_and(|tile| {
                 !map.facts
                     .quest_callback_blocked(map.overlay.base(), tile, false)
-            }) {
-                let _ = super::super::primal_menace::spawn_creature(
-                    self,
-                    runtime,
+            }) && super::super::arena_match::walkable(self, runtime, position)
+                && runtime.native_summon_cell_free(position)
+                && let Ok(policy) = runtime.companion_policy(&spawn.creature)
+            {
+                let _ = runtime.commit_quest_creature_spawn(&[(
                     &spawn.creature,
+                    policy.maximum_health,
                     position,
-                );
+                )]);
             }
             if let Some(message) = success_message {
                 self.states.chat.push_quest_feedback(session, &message);

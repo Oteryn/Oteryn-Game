@@ -1158,6 +1158,33 @@ mod phase_tests {
     }
 }
 
+#[cfg(feature = "test-support")]
+impl super::super::QuestStateCatalogue {
+    /// Register the same validated fixture with dispatch and the durable writer.
+    pub fn with_fixture_tool_spawn(&self, callback: Callback) -> Result<Self, String> {
+        let document = serde_json::json!({"schema": 1, "callbacks": [callback]});
+        let callback = super::parse(&document.to_string())?
+            .pop()
+            .filter(|callback| callback.effects.tool_spawn.is_some())
+            .ok_or("tool spawn fixture")?;
+        let mut updated = self
+            .with_fixture_transition(super::primary_transition(&callback)?)
+            .map_err(|error| format!("{error:?}"))?;
+        let mut world = super::load_for(self)?;
+        world.push(callback);
+        let source = self.authored_bindings().cloned().unwrap_or_else(|| {
+            super::super::authored_bindings::Bindings {
+                schema: 1,
+                quests: Vec::new(),
+            }
+        });
+        updated.authored_bindings = Some(std::sync::Arc::new(
+            super::super::authored_bindings::RuntimeBindings { source, world },
+        ));
+        Ok(updated)
+    }
+}
+
 #[cfg(test)]
 mod tool_spawn_tests {
     use super::*;
