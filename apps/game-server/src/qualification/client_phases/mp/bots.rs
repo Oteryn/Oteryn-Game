@@ -103,39 +103,74 @@ async fn connect_into<'p, 'a>(
             character: pair.characters[index],
             name: String::new(),
         });
-        let bot = bots.last_mut().ok_or("admitted bot absent")?;
-        connect_bot(bot, 0xa0 + u8::try_from(ordinal)?, "connect-initial").await?;
+        let (admitted, current) = bots.split_at_mut(ordinal);
+        let bot = current.first_mut().ok_or("admitted bot absent")?;
+        with_liveness(
+            admitted,
+            "admissions-pump",
+            connect_bot(bot, 0xa0 + u8::try_from(ordinal)?, "connect-initial"),
+        )
+        .await??;
         let session = bot.client()?.join_snapshot().game_session_id;
-        if bots[..ordinal]
+        if admitted
             .iter()
             .filter_map(|bot| bot.session.as_ref())
             .any(|old| old.join_snapshot().game_session_id == session)
         {
             return Err(format!(
                 "{} error=MP roles reused a GameSession",
-                bots[ordinal].context("connect-initial")
+                bot.context("connect-initial")
             )
             .into());
         }
-        let bot = &mut bots[ordinal];
-        if let Some(profile) = profile {
-            provision_as(bot, profile).await?;
-        }
-        // Same bounded, read-only PgConnection pattern as qualification/death.rs.
-        let result = async {
-            let mut database = sqlx::PgConnection::connect(pair.url).await?;
-            bot.name = sqlx::query_scalar("SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND account_id=$2::text::uuid AND world_id=encode($3,'hex')::uuid")
-                .bind(bot.character.as_slice()).bind(&pair.accounts[index]).bind(pair.world.as_slice())
-                .fetch_one(&mut database).await?;
-            database.close().await?;
+        // Provisioning (two relogs and a root subprocess) and the name read run long; the
+        // admitted bots keep servicing liveness meanwhile.
+        let result = with_liveness(admitted, "admissions-pump", async {
+            if let Some(profile) = profile {
+                provision_as(bot, profile).await?;
+            }
+            // Same bounded, read-only PgConnection pattern as qualification/death.rs.
+            let result = async {
+                let mut database = sqlx::PgConnection::connect(pair.url).await?;
+                let name = sqlx::query_scalar("SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND account_id=$2::text::uuid AND world_id=encode($3,'hex')::uuid")
+                    .bind(bot.character.as_slice()).bind(&pair.accounts[index]).bind(pair.world.as_slice())
+                    .fetch_one(&mut database).await?;
+                database.close().await?;
+                TestResult::Ok(name)
+            }.await;
+            bot.name = bot.contextualize("read-character-name", result)?;
             TestResult::Ok(())
-        }.await;
-        bot.contextualize("read-character-name", result)?;
+        })
+        .await?;
+        result?;
         pump_at(bots, "admissions-pump")
             .await
             .map_err(|error| format!("while_admitting_bot={ordinal} {error}"))?;
     }
     Ok(())
+}
+
+/// Runs one long step of a single bot while every other admitted bot keeps servicing liveness
+/// (the server drops a silent session after about 12s). The step future is polled until it
+/// completes; a service slice runs only between polls, never cancelling a half-read frame.
+async fn with_liveness<T>(
+    others: &mut [Bot<'_, '_>],
+    stage: &str,
+    step: impl std::future::Future<Output = T>,
+) -> TestResult<T> {
+    let mut step = std::pin::pin!(step);
+    let mut slice = tokio::time::interval(Duration::from_millis(250));
+    slice.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+    loop {
+        tokio::select! {
+            biased;
+            result = &mut step => return Ok(result),
+            _ = slice.tick() => {
+                verdict::Harness::global().progress("mp-admissions");
+                pump_at(others, stage).await?;
+            }
+        }
+    }
 }
 
 async fn connect_bot(bot: &mut Bot<'_, '_>, tag: u8, stage: &str) -> TestResult {
@@ -497,8 +532,14 @@ async fn logout_all(bots: &mut [Bot<'_, '_>]) -> TestResult {
 pub(super) async fn relog_all(bots: &mut [Bot<'_, '_>]) -> TestResult {
     logout_all(bots).await?;
     for index in 0..bots.len() {
-        let bot = &mut bots[index];
-        connect_bot(bot, 0xa5, "connect-relog").await?;
+        let (readmitted, current) = bots.split_at_mut(index);
+        let bot = current.first_mut().ok_or("relog bot absent")?;
+        with_liveness(
+            readmitted,
+            "relog-pump",
+            connect_bot(bot, 0xa5, "connect-relog"),
+        )
+        .await??;
         // Service only the already re-admitted sessions; the rest are intentionally closed.
         pump_at(&mut bots[..=index], "relog-pump").await?;
     }
