@@ -43,6 +43,7 @@ import sys
 from pathlib import Path
 
 import container_native
+import koshei_platinum
 import charge_native
 
 HERE = Path(__file__).resolve().parent
@@ -320,6 +321,9 @@ def build_records(claims: list, manifest: dict, items: dict,
                 key = a12(reward["item"])
                 quantity, charge_check = charged_source_reward(qualified_items.get(key),
                     claim["identity"]["key"], position, key, reward["count"], charge_evidence)
+                quantity = koshei_platinum.quantity(claim["identity"]["key"], position,
+                    key, quantity, sorted(bindings.get((claim["identity"]["key"], xyz), []),
+                        key=lambda s: (s["server"], s["unique_id"])))
                 problem = charge_check["reason"] if charge_check else stack_problem(qualified_items.get(key), quantity)
                 if problem and problem != "waiting":
                     source_checks.append(
@@ -514,10 +518,14 @@ def validate(records: list, items: dict, source_checks: list | None = None,
                     ready = False
                     continue
                 raw_count = (originals[original_binding] if source_claims is not None else
+                    100 if pilot_key == koshei_platinum.PILOT else
                     proofs[0]["source_count_argument"] if proofs else reward["count"])
                 qualified_items = container_native.claim_items(pilot_key, items)
                 quantity, charge_check = charged_source_reward(qualified_items.get(item_key), pilot_key,
                     position, item_key, raw_count, charge_evidence)
+                quantity = koshei_platinum.quantity(pilot_key, position, item_key, quantity, ids)
+                if pilot_key == koshei_platinum.PILOT and quantity != reward["count"]:
+                    errors.append(f"{key}: reward quantity disagrees with Koshei platinum normalization")
                 if charge_check:
                     expected_charge_checks.append({"claim": key, "item": item_key,
                         "count": raw_count, **charge_check})

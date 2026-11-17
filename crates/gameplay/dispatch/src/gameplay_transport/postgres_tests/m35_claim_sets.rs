@@ -1253,7 +1253,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                     } else if pos == 0 {
                         ("oteryn:item.tibia.i645", 1)
                     } else {
-                        ("oteryn:item.tibia.i3035", 100)
+                        ("oteryn:item.tibia.i3035", 50)
                     };
                     expected.push((item.to_owned(), count));
                 }
