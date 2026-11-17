@@ -633,14 +633,21 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
         );
     }
     if caption == "Bid" {
+        use std::sync::{Arc, Mutex};
+        app.init_resource::<bevy::text::FontCx>()
+            .init_resource::<bevy::text::LayoutCx>()
+            .init_resource::<bevy::clipboard::Clipboard>()
+            .add_systems(PostUpdate, bevy::text::apply_text_edits);
+        let clipboard = Arc::new(Mutex::new(None));
         for (field, mut text) in app
             .world_mut()
             .query::<(&super::super::houses::Field, &mut EditableText)>()
             .iter_mut(app.world_mut())
         {
             if field.0 == 4 {
-                text.pending_paste =
-                    Some(bevy::clipboard::ClipboardRead::Pending(Default::default()));
+                text.pending_paste = Some(bevy::clipboard::ClipboardRead::Pending(Arc::clone(
+                    &clipboard,
+                )));
             }
             if matches!(field.0, 2 | 4 | 6) {
                 text.editor_mut().set_text("new draft");
@@ -674,6 +681,16 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
                 assert_eq!(text.value(), "new draft");
             }
         }
+        *clipboard.lock().map_err(|_| "clipboard lock")? = Some(Ok("pasted member".into()));
+        app.update();
+        app.update();
+        assert!(
+            app.world_mut()
+                .query::<(&super::super::houses::Field, &EditableText)>()
+                .iter(app.world())
+                .any(|(field, text)| field.0 == 4
+                    && text.value().to_string().contains("pasted member"))
+        );
     }
     let expected_kind = if matches!(caption, "Owned / incoming" | "Review transfer") {
         oteryn_client_runtime::house::house_sale::COMMAND
