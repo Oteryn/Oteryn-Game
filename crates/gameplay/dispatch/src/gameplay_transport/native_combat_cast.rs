@@ -595,6 +595,17 @@ impl PreparedNativeCombatCast {
             &crate::durability::admission_journal::spell_reconnect::SpellReconnectTransition,
         >,
     ) -> Result<(), Error> {
+        eprintln!(
+            "[DBG-charmretire] access={:?} binding={} wheel={} before={} census={:?} creatures={:?} players={} magnitude={:?}",
+            owned.check_current_access(spell, now).is_ok(),
+            self.current_connection_binding(runtime, owned, reconnect).is_ok_and(|b| owned.binding() == &b),
+            owned.wheel_revision() == original_owned.wheel_revision(),
+            states.get(runtime, self.batch.caster, self.batch.command.game_session_id()) == Some(&self.before),
+            runtime.validate_positioned_actor_census(&self.roster).is_ok(),
+            self.creatures.iter().map(|c| runtime.validate_companion_snapshot(c).is_ok()).collect::<Vec<_>>(),
+            self.players.iter().all(|(a, s, b)| states.get(runtime, *a, *s) == Some(b)),
+            self.magnitude.as_ref().map(|m| owned.magnitude().is_some_and(|om| m.validate_current_with_lookup(runtime, &self.before, om, &|actor| self.players.iter().find(|(a, _, _)| *a == actor).map(|(_, _, p)| p)).is_ok())),
+        );
         owned
             .check_current_access(spell, now)
             .map_err(|_| Error::InvalidBatch)?;
@@ -2761,6 +2772,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         if definition.field_class!=crate::durability::spell_items_abi::SpellFieldClass::NotField))).await.is_ok();
                 let drome_items_current=attempt.request.operations.is_empty()
                     || owner.drome_item_changes_allowed(runtime,actor,attempt.prepared.tile_facts.keys().copied());
+                eprintln!("[DBG-charmretire] drome={drome_items_current} pvp={pvp_current} tiles={original_tiles_current} party={original_party_current} carried={carried_target_current} field={field_policy_current} companion={companion_current} direct={direct_current} rune={rune_current} validate={:?}", attempt.prepared.validate_new_write(runtime,states,&owned,&attempt.owned,spell,owner.owner_now().get(),reconnect.as_ref()));
                 (if drome_items_current && pvp_current && original_tiles_current && original_party_current && carried_target_current && field_policy_current && companion_current && direct_current && rune_current {
                     attempt.prepared.validate_new_write(runtime,states,&owned,&attempt.owned,spell,
                         owner.owner_now().get(),reconnect.as_ref())
