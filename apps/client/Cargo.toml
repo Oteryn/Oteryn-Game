@@ -54,7 +54,7 @@ semver = "=1.0.28"
 tokio = { workspace = true, features = ["macros"] }
 fs2 = "=0.4.3"
 url = "=2.5.8"
-zip = { version = "=9.5.0", default-features = false, features = ["deflate"] }
+zip = { version = "=9.5.1", default-features = false, features = ["deflate"] }
 
 [target.'cfg(windows)'.dependencies]
 # The Windows client is the Bevy host: the same pins as the optional `bevy-shell` set above.
