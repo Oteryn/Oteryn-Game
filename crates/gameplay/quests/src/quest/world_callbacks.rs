@@ -949,6 +949,11 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     || callback.trigger != Trigger::Use
                     || !callback.requires_world_admission
                     || !callback.item_on_target.as_ref().is_some_and(|item| item.selected_instance)
+                    || !callback.passages.is_empty()
+                    || callback.teleport.is_some()
+                    || !callback.offerings.is_empty()
+                    || !callback.effects.is_empty()
+                    || callback.native_rule.is_some()
                     || selector.position.is_some()
                     || !selector.position_aliases.is_empty()
                     || selector.ordinal.is_some()

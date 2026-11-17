@@ -5,6 +5,7 @@ pub(crate) mod character_requirements;
 mod completed_quests;
 pub(super) mod completion;
 mod ground_read;
+mod definition_target;
 pub(crate) mod ground_stack;
 #[path = "quest_world_callback_npc_input.rs"]
 mod npc_input;
@@ -467,6 +468,9 @@ pub(super) async fn consume(
         return Ok(false);
     }
     if !context_is_current(tx, permit, fence, context).await? {
+        return Ok(false);
+    }
+    if !definition_target::require(tx, fence, callback, context).await? {
         return Ok(false);
     }
     if !completed_quests::require(tx, fence, &callback.required_completed_quests).await? {

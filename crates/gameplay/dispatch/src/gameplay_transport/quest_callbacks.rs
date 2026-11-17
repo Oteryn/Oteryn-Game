@@ -11,6 +11,7 @@ mod clear_area;
 mod committed_copy;
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
+mod definition_target;
 mod dreamer_carrot;
 mod effects;
 mod encounter;
