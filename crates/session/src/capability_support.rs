@@ -80,6 +80,8 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     property_services::character_info::CAPABILITY_CHARACTER_INFO_V1,
     oteryn_protocol_oteryn::quick_loot::CAPABILITY_QUICK_LOOT_V1,
     oteryn_protocol_oteryn::house::CAPABILITY_GUILDHALL_V1,
+    // 103 declares and accepts guild wars through command 119; it requires nothing.
+    property_services::guild_war::CAPABILITY_GUILD_WAR_V1,
     oteryn_protocol_oteryn::appearance::CAPABILITY_FORGE_CREATURE_V1,
     property_services::mail::CAPABILITY_MAIL_V1 as u32,
     oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1,
@@ -223,6 +225,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     property_services::pvp_expert::CAPABILITY_PVP_EXPERT_V1,
     oteryn_protocol_oteryn::zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1,
     oteryn_protocol_oteryn::house::CAPABILITY_GUILDHALL_V1,
+    property_services::guild_war::CAPABILITY_GUILD_WAR_V1,
     property_services::mail::CAPABILITY_MAIL_V1 as u32,
     oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1,
     property_services::character_info::CAPABILITY_CHARACTER_INFO_V1,
@@ -350,6 +353,17 @@ mod hotkey_equip_tests {
             assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&capability));
         }
         assert!(gated_routes().any(|(id, commands, _)| id == 179 && commands.contains(&348)));
+    }
+}
+
+#[cfg(test)]
+mod guild_war_tests {
+    use super::*;
+
+    #[test]
+    fn guild_war_is_advertised_and_routed_with_its_command_owner() {
+        assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&103));
+        assert!(gated_routes().any(|(id, commands, _)| id == 103 && commands.contains(&119)));
     }
 }
 
