@@ -527,12 +527,24 @@ impl CatalogueRaid {
             }
             CatalogueSchedule::Unknown => return Err(RaidError::InvalidDefinition),
         };
-        let definition = RaidDefinition {
+        // TibiaWiki Stampede Mini World Change/Spoiler oldid=887155,
+        // infobox oldid=845239: the daily owner selects at server save.
+        // Keep donor XML evidence, but do not add XML odds or delays to that day.
+        let mut definition = RaidDefinition {
             policy,
             despawn_after_ms: self.end.despawn_after_ms(),
             announcements,
             waves,
         };
+        if self.key == "raid:porthope.stampede" {
+            definition.policy = RaidPolicy::SourceScheduled;
+            for announcement in &mut definition.announcements {
+                announcement.delay_ms = 0;
+            }
+            for wave in &mut definition.waves {
+                wave.delay_ms = 0;
+            }
+        }
         definition.validate()?;
         Ok(SelectedRaid {
             definition,
@@ -548,6 +560,91 @@ impl CatalogueRaid {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn stampede_is_available_at_save_without_a_second_random_draw() -> Result<(), RaidError> {
+        let catalogue = RaidCatalogue::embedded()?;
+        let raid = catalogue
+            .get(
+                &ProductionKey::new("raid:porthope.stampede")
+                    .map_err(|_| RaidError::InvalidDefinition)?,
+            )
+            .ok_or(RaidError::InvalidDefinition)?;
+        let selected = raid.select([7; 32], [8; 16])?;
+        assert_eq!(selected.definition.policy, RaidPolicy::SourceScheduled);
+        assert_eq!(selected.definition.announcements[0].delay_ms, 0);
+        assert_eq!(selected.definition.waves[0].delay_ms, 0);
+        assert_eq!(selected.definition.waves[0].entries[0].count, 16);
+        let entry = &selected.definition.waves[0].entries[0];
+        let area = selected
+            .areas
+            .get(&entry.area_anchor)
+            .ok_or(RaidError::InvalidDefinition)?;
+        assert_eq!(
+            (area.from.x, area.from.y, area.from.floor),
+            (32825, 32667, 7)
+        );
+        assert_eq!((area.to.x, area.to.y, area.to.floor), (32888, 32675, 7));
+        use super::super::{FiringState, RaidAction, RaidSchedule};
+        let mut world_id = [1; 16];
+        world_id[6] = 0x71;
+        world_id[8] = 0x81;
+        let world = oteryn_protocol_oteryn::WorldId::decode(&world_id)
+            .map_err(|_| RaidError::InvalidState)?;
+        let key = raid.production_key()?;
+        let schedule = RaidSchedule::initial(1, 0)?;
+        for active in [false, true] {
+            let transition = schedule.plan(
+                world,
+                &key,
+                &selected.definition,
+                RaidAction::ResetDayCheck {
+                    now_ms: 0,
+                    selected: schedule.reset_day_selected(active),
+                    firing_id: {
+                        let mut id = [8; 16];
+                        id[6] = 0x78;
+                        id[8] = 0x88;
+                        id
+                    },
+                    bundle_digest: [7; 32],
+                },
+            )?;
+            assert_eq!(transition.after().latest_firing.is_some(), active);
+            if active {
+                let firing = transition
+                    .after()
+                    .latest_firing
+                    .as_ref()
+                    .ok_or(RaidError::InvalidState)?;
+                assert_eq!(firing.fired_at_ms, 0);
+                let mut fired = transition.after().clone();
+                assert!(!fired.reset_day_selected(true));
+                fired
+                    .latest_firing
+                    .as_mut()
+                    .ok_or(RaidError::InvalidState)?
+                    .state = FiringState::Done;
+                assert!(
+                    !fired.reset_day_selected(true),
+                    "no refill after the sixteen are killed"
+                );
+                let next = fired.plan(
+                    world,
+                    &key,
+                    &selected.definition,
+                    RaidAction::Reset {
+                        reset_epoch: 2,
+                        now_ms: 86_400_000,
+                    },
+                )?;
+                assert!(next.after().reset_day_selected(true));
+                assert!(!next.after().reset_day_selected(false));
+            }
+        }
+        Ok(())
+    }
+
     use crate::raid::{RaidRunAction, RaidRunCursor};
 
     #[test]

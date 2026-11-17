@@ -63,6 +63,14 @@ def build_pilgrimage(root=ROOT):
 
 
 def build_stampede(root=ROOT):
+    # TibiaWiki Stampede Mini World Change/Spoiler oldid=887155 and
+    # infobox oldid=845239: a global day, not a personal quest programme.
+    # Five credited kills use the production Bestiary achievement owner.
+    return {'schema': 1, 'quests': []}
+
+
+def build_stampede_trial_fixture(root=ROOT):
+    """Historical approximation, retained only to exercise personal-trial owners."""
     quest = 'oteryn:quest.stampede_mini_world_change'
     path, recipe = chosen(root, quest, ('s1', 'explore', 1, ['Tiquanda stampede grounds']), premium=True)
     if [(s['kind'], s['count'], s['targets']) for s in recipe['stages']] != [
@@ -125,14 +133,15 @@ def build_stampede(root=ROOT):
 
 def content(check=False):
     for output, expected in [(OUTPUT, build_pilgrimage()),
-                             (Path('content/quests/authored-bindings/qmech-m01c-stampede.json'), build_stampede())]:
+                             (Path('content/quests/authored-bindings/qmech-m01c-stampede.json'), build_stampede()),
+                             (Path('tools/content-schema/quest-authoring/samples/stampede-personal-trial-test-fixture.json'), build_stampede_trial_fixture())]:
         path = ROOT / output
         if check:
             if not path.is_file() or json.loads(path.read_bytes()) != expected:
                 raise ValueError('M01C_COLLECTOR_BINDING_DRIFT:' + str(output))
         else:
             path.write_text(json.dumps(expected, ensure_ascii=False, sort_keys=True, separators=(',', ':')) + '\n')
-    print('PASS M01c collectors: Pilgrimage ordered visits and final platinum; Stampede personal trial and achievement')
+    print('PASS M01c collectors: Pilgrimage ordered visits and final platinum; Stampede global-only; historical trial test fixture')
 
 
 if __name__ == '__main__':

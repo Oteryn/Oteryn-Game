@@ -97,7 +97,10 @@ pub(super) async fn reconcile_deadlines(
     world: crate::foundation::WorldId,
     now_ms: i64,
 ) -> Result<(), DurabilityError> {
-    let firings = sqlx::query("SELECT uuid_send(firing_id) FROM game_world_raid_firings WHERE world_id=encode($1,'hex')::uuid AND state=1 AND deadline_ms<=$2 ORDER BY fired_at_ms,firing_id LIMIT 32 FOR UPDATE")
+    // TibiaWiki Stampede Mini World Change/Spoiler oldid=887155: the day
+    // persists until reset. Its zero-delay sequence is not a timeout for a
+    // channel that has yet to claim the wave; reset retires it through LOST.
+    let firings = sqlx::query("SELECT uuid_send(firing_id) FROM game_world_raid_firings WHERE world_id=encode($1,'hex')::uuid AND state=1 AND raid_key<>'raid:porthope.stampede' AND deadline_ms<=$2 ORDER BY fired_at_ms,firing_id LIMIT 32 FOR UPDATE")
         .bind(world.as_bytes().as_slice()).bind(now_ms).fetch_all(&mut **tx).await?;
     for firing in firings {
         let firing: [u8; 16] = firing
