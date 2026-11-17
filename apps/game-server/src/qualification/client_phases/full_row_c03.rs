@@ -19,7 +19,7 @@
 
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef, SessionEvent};
-use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
+use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightModes};
 use oteryn_protocol_oteryn::cyclopedia_character::{CharacterTab, combat};
 use oteryn_protocol_oteryn::item_view as items;
 use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationValueKind};
@@ -226,6 +226,32 @@ struct Fight {
     mana_up: u64,
     seconds: f64,
     flank: Option<EntityRef>,
+    /// Polls where the target entity was in the frame / not in the frame.
+    held: u32,
+    lost: u32,
+    /// Chebyshev distance to the target at the last poll it was in the frame, and the maximum.
+    last_distance: Option<u32>,
+    max_distance: u32,
+}
+
+impl Fight {
+    /// The counters a remaining zero is handed to the server lane with.
+    fn counters(&self, me: EntityRef) -> String {
+        let taken = self.seen.iter().filter(|s| s.1 == me).count();
+        format!(
+            "target-held-polls={};target-lost-polls={};rat-distance-last={:?};rat-distance-max={};monster-hits-on-player={taken};player-hits={}",
+            self.held,
+            self.lost,
+            self.last_distance,
+            self.max_distance,
+            self.own_hits(me).len()
+        )
+    }
+}
+
+fn target_distance(client: &DevClientSession, target: EntityRef) -> Option<u32> {
+    let at = client.world_spatial().actor_position;
+    client.world_entities()?.iter().find(|e| e.entity == target).filter(|e| e.position.floor == at.floor).map(|e| e.position.x.abs_diff(at.x).max(e.position.y.abs_diff(at.y)))
 }
 
 impl Fight {
@@ -234,14 +260,17 @@ impl Fight {
     }
 }
 
-fn collect(event: &SessionEvent, out: &mut Vec<Seen>) {
+/// `DamageDealt` is chosen per observer: it is this player's own damage, so a frame without an
+/// explicit attacker still names this player.
+fn collect(event: &SessionEvent, me: EntityRef, out: &mut Vec<Seen>) {
     let SessionEvent::Presentation(delta) = event else { return };
     for e in &delta.value {
         if let PresentationEventKind::ValueText { kind, target, attacker, primary, .. } = &e.kind
             && matches!(kind, PresentationValueKind::DamageDealt | PresentationValueKind::DamageReceived | PresentationValueKind::DamageOthers)
             && primary.value > 0
         {
-            out.push((e.decision_ordinal, *target, *attacker, primary.value));
+            let attacker = if matches!(kind, PresentationValueKind::DamageDealt) { attacker.or(Some(me)) } else { *attacker };
+            out.push((e.decision_ordinal, *target, attacker, primary.value));
         }
     }
 }
@@ -265,6 +294,12 @@ async fn idle_rate(client: &mut DevClientSession, seconds: u64) -> TestResult<(f
 async fn fight(client: &mut DevClientSession, target: EntityRef, seconds: u64, hits_wanted: usize) -> TestResult<Fight> {
     let me = own(client)?;
     client.take_events();
+    // Chase so the player follows a rat that steps away instead of the swing waiting silently.
+    let modes = FightModes { chase: ChaseMode::Chase, ..FightModes::DEFAULT };
+    let set = client.session_mut().set_fight_modes(&modes).await?;
+    if set.disposition != AttackIntentDisposition::Ok {
+        return Err(format!("chase-mode-reply:{set:?}").into());
+    }
     let reply = client.session_mut().attack_target(Some(&target)).await?;
     if reply.disposition != AttackIntentDisposition::Ok {
         return Err(format!("attack-target-reply:{reply:?}").into());
@@ -274,12 +309,21 @@ async fn fight(client: &mut DevClientSession, target: EntityRef, seconds: u64, h
     let mut last = *client.actor_vitals().ok_or("vitals-absent")?;
     while began.elapsed() < Duration::from_secs(seconds) && log.own_hits(me).len() < hits_wanted {
         client.service_liveness(Duration::from_millis(50)).await?;
+        verdict::Harness::global().progress("c03-fight");
+        match target_distance(client, target) {
+            Some(distance) => {
+                log.held += 1;
+                log.last_distance = Some(distance);
+                log.max_distance = log.max_distance.max(distance);
+            }
+            None => log.lost += 1,
+        }
         let now = *client.actor_vitals().ok_or("vitals-absent")?;
         log.health_up += u64::from(now.health.saturating_sub(last.health));
         log.mana_up += u64::from(now.mana.saturating_sub(last.mana));
         last = now;
         for event in client.take_events() {
-            collect(&event, &mut log.seen);
+            collect(&event, me, &mut log.seen);
         }
         if log.flank.is_none() {
             log.flank = monsters_near(client, 1).into_iter().find(|m| *m != target);
@@ -401,7 +445,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if base_hits.len() >= 6 && base_taken > 0 {
         row.pass("baseline", (&base_hits, base_taken, idle_hp, idle_mp, clean));
     } else {
-        row.fail("baseline", format!("attributed-player-hits={};monster-hits-on-player={base_taken};needed>=6-and>=1", base_hits.len()));
+        row.fail("baseline", format!("attributed-player-hits={};monster-hits-on-player={base_taken};needed>=6-and>=1;{}", base_hits.len(), base.counters(me)));
     }
     let base_max = base_hits.iter().copied().max().unwrap_or(0);
 
@@ -500,7 +544,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let refusal = client.session_mut().attack_target(Some(&me)).await?;
     client.service_liveness(Duration::from_millis(300)).await?;
     let self_damage: Vec<_> = client.take_events().iter().fold(Vec::new(), |mut seen, e| {
-        collect(e, &mut seen);
+        collect(e, me, &mut seen);
         seen
     }).into_iter().filter(|s| s.1 == me && s.2 == Some(me)).collect();
     let inventory = client.inventory().cloned();
