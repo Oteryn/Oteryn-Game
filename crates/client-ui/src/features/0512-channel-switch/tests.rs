@@ -205,3 +205,28 @@ fn c0512_load_fills_the_online_column_and_unknown_channels_stay_unknown() -> Res
     );
     Ok(())
 }
+
+#[test]
+fn c0512_no_recommendation_across_pvp_types() {
+    let mut p = panel();
+    p.rows.truncate(2);
+    assert_eq!(panel_rows(&p, 0)[2].0[4], "Available");
+}
+
+#[test]
+fn c0512_destination_refusal_allows_another_request() -> Result<(), &'static str> {
+    for lock in [SwitchLock::Skull, SwitchLock::Destination] {
+        let mut p = panel();
+        select(&mut p, C, 0);
+        confirm(&mut p).ok_or("first request")?;
+        let status = SwitchStatus {
+            lock,
+            cooldown_left_ms: 0,
+        };
+        apply_request(&mut p, &result(CommandStatus::Rejected, status)?, 1);
+        assert!(p.error.take().is_some());
+        select(&mut p, B, 2);
+        assert_eq!(confirm(&mut p).ok_or("second request")?.payload, B);
+    }
+    Ok(())
+}

@@ -73,21 +73,22 @@ pub(super) fn blocking_text(panel: &ChannelSwitchPanel, now_ms: i64) -> Option<S
     }
 }
 
-/// The recommended Channel: not the current one, not full, the current PvP type first, then the
+/// The recommended Channel: not the current one, not full, the same known PvP type, then the
 /// lowest measured ping, then the lowest load; unknown values sort last.
 #[must_use]
 pub fn recommended(panel: &ChannelSwitchPanel) -> Option<[u8; 16]> {
     let current_pvp = panel
         .current
         .and_then(|current| panel.row(current))
-        .and_then(|row| row.pvp);
+        .and_then(|row| row.pvp)?;
     panel
         .rows
         .iter()
-        .filter(|row| Some(row.channel) != panel.current && !row.full)
+        .filter(|row| {
+            Some(row.channel) != panel.current && !row.full && row.pvp == Some(current_pvp)
+        })
         .min_by_key(|row| {
             (
-                current_pvp.is_none() || row.pvp != current_pvp,
                 row.ping_ms.unwrap_or(u32::MAX),
                 row.online.unwrap_or(u32::MAX),
             )

@@ -117,8 +117,13 @@ pub fn apply_request(
     panel.switching = None;
     match status {
         Some(status) => {
-            panel.status = Some(status);
-            panel.status_at_ms = now_ms;
+            if !matches!(
+                status.lock,
+                SwitchLock::Skull | SwitchLock::Destination | SwitchLock::SameChannel
+            ) {
+                panel.status = Some(status);
+                panel.status_at_ms = now_ms;
+            }
             panel.error = Some(lock_text(status.lock, status.cooldown_left_ms));
         }
         None => panel.error = Some(tr!("The server refused the channel change").to_owned()),
