@@ -1,0 +1,99 @@
+{
+ "schema": 1,
+ "quests": [
+  {
+   "quest": "oteryn:quest.sam_s_old_backpack_quest",
+   "recipe_sha256": "a35f53c6c4842666774e0a3053bf69759581821132aa9a52d25432d71ea36667",
+   "admission": {
+    "minimum_level": 35,
+    "premium": false,
+    "prerequisites": []
+   },
+   "sources": [
+    "https://tibia.fandom.com/wiki/Sam%27s_Old_Backpack_Quest/Spoiler: Sam backpack/yes/yes, Kroox \"Sam sent me\", sealed quest door and chest with the Dwarven Armor at 126.199,124.225,14",
+    "https://tibia.fandom.com/wiki/Sam%27s_Old_Backpack_Quest: level 35, free account, reward Dwarven Armor",
+    "content/quests/definitions/quests-00100-00199.json#/records/96/definition/oteryn_recipe",
+    "tools/content-schema/world-authoring/samples/quest-door-bindings.json: action 40603 reads sams_old_backpack_door"
+   ],
+   "tracks": [
+    {
+     "key": "oteryn:quest-progress/quest/u7_5/sams_old_backpack/sams_old_backpack_npc",
+     "initial": 0,
+     "minimum": -1,
+     "maximum": 3
+    },
+    {
+     "key": "oteryn:quest-progress/quest/u7_5/sams_old_backpack/sams_old_backpack_door",
+     "initial": 0,
+     "minimum": 0,
+     "maximum": 1
+    }
+   ],
+   "stages": [
+    {
+     "key": "s4",
+     "completes": true,
+     "trigger": {
+      "kind": "map_use",
+      "callback": {
+       "key": "oteryn:quest-callback/qd-sams-old-backpack-chest",
+       "quest": "oteryn:quest.sam_s_old_backpack_quest",
+       "trigger": "use",
+       "selector": {
+        "position": {
+         "x": 32455,
+         "y": 31968,
+         "floor": -14
+        },
+        "appearance": 2472,
+        "unique": null,
+        "action": null,
+        "native": {
+         "position": {
+          "x": 32455,
+          "y": 31968,
+          "floor": -14
+         },
+         "appearance": 2472,
+         "ordinal": 1
+        }
+       },
+       "lever": null,
+       "reversible": false,
+       "passages": [],
+       "teleport": null,
+       "storage": [
+        {
+         "track": "oteryn:quest-progress/quest/u7_5/sams_old_backpack/sams_old_backpack_npc",
+         "minimum": 2,
+         "maximum": 2,
+         "set": 3
+        }
+       ],
+       "offerings": [],
+       "item_on_target": null,
+       "world_requirements": [],
+       "return_on_failure": false,
+       "failure_message": "The chest is empty.",
+       "success_message": "You have found a dwarven armor.",
+       "sources": [
+        "https://tibia.fandom.com/wiki/Sam%27s_Old_Backpack_Quest/Spoiler: Sam backpack/yes/yes, Kroox \"Sam sent me\", sealed quest door and chest with the Dwarven Armor at 126.199,124.225,14",
+        "https://tibia.fandom.com/wiki/Sam%27s_Old_Backpack_Quest: level 35, free account, reward Dwarven Armor",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/96/definition:sha256:a6a5fda33f1e0ecf8b75ae1e7cff8ee5fb296e8be1a7c8a367f79cde09b61a9e",
+        "tools/content-schema/world-authoring/samples/quest-door-bindings.json: action 40603 reads sams_old_backpack_door",
+        "content/world/placements/region-z14-x126-y124.b3:32455,31968,14/ordinal1"
+       ],
+       "effects": {
+        "item_reward": {
+         "item": "oteryn:item.tibia.i3397",
+         "count": 1,
+         "contents": []
+        }
+       }
+      }
+     }
+    }
+   ]
+  }
+ ]
+}

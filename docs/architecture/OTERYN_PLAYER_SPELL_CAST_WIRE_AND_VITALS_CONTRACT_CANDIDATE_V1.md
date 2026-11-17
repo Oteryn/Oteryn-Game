@@ -149,7 +149,13 @@ How the proposed result maps from the core's `CastRejection`:
 | `NotLearned`, `VocationCannotUse`, `PremiumRequired` | `NOT_AVAILABLE` |
 | `TargetRequired` | `TARGET_REQUIRED` |
 | Target Resolver or legality failure | `TARGET_ILLEGAL` |
-| `TimeOverflow`, `Formula` | `REJECTED` (server fault, logged; no state change) |
+| `ProtectionZoneRejected`, `WeaponRequired`, `ShieldRequired`, `WheelUnlockRequired`, `NoChainTarget`, `NoPartyMembers`, `SpatialRuleRejected` | `REJECTED` (expected rule refusal, not a server fault: the caster or the situation does not meet a requirement, e.g. an aggressive spell inside a protection zone or a missing weapon; no state change) |
+| `TargetFactsRequired`, `OperationalFactsRequired`, `NativeFactsRequired`, `NativePlan`, `ChainWorldRequired`, `PartyWorldRequired`, `PartyCostOverflow`, `InvalidVariantDraw`, `TimeOverflow`, `Formula` | `REJECTED` (server fault: missing server-side facts or an internal failure, logged; no state change) |
+
+The protection-zone refusal is raised in `crates/gameplay/spell/src/spell/mod.rs` (aggressive spells
+only; `gate_tests.rs` cites Canary `Spell::playerSpellCheck`), falls through to `REJECTED` in
+`cast/gate.rs` `disposition`, and `serve/result.rs` answers `REJECTED` with command status
+`Rejected`; the client treats it as a normal refusal.
 
 Why these choices:
 
