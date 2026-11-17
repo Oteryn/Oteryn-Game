@@ -341,7 +341,7 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
             }
             let mut peer = if mode == 5 {
                 Some(
-                    prepare_peer(
+                    Box::pin(prepare_peer(
                         &h,
                         &owner,
                         &admitted,
@@ -350,7 +350,7 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
                             y: 32145,
                             floor: 3,
                         },
-                    )
+                    ))
                     .await?,
                 )
             } else {
@@ -467,7 +467,7 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
                             floor: -i16::from(source::EXIT.floor),
                         }
                     };
-                    peer = Some(prepare_peer(&h, &owner, &admitted, destination).await?);
+                    peer = Some(Box::pin(prepare_peer(&h, &owner, &admitted, destination)).await?);
                     tick(&owner, began + 1_800_000_000).await;
                     let runtime = owner.runtime.lock().await;
                     for actor in [
@@ -785,8 +785,8 @@ async fn prepare_peer(
         owner
             .states
             .spell_states
-            .lock()
-            .await
+            .try_lock()
+            .map_err(|_| "peer spell states unavailable")?
             .initialize_admitted(
                 &runtime,
                 actor,
