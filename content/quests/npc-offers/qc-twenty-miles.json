@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.mr_brandon",
+      "keywords": [
+        "assist"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "I have taken a few things from down there, and now they are angry at me and haunt me. I dare not go back, but I lost my wedding ring! I will grant you access to places deep under the sea if you bring it back - would you go looking for it at the bottom of the sea?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "assist"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "The loyal men who went down with me - their bones still lie at the bottom of the sea, mourned for by their tormented spirits! Find their bones and offer them on the altars near them. When the tormented spirits are released, I will give you the cursed gold so you may offer it to the hoard, and get the wedding ring. Will you do this?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.yeo",
+      "keywords": [
+        "nacre slab"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "You brought me that mother-of-pearl orb I asked you about?"
+      ]
+    }
+  ]
+}

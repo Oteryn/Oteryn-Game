@@ -289,7 +289,8 @@ fn scenario_case(
         || name.starts_with("qengine-rewards-")
         || name == "questpc7-golden"
         || name == "questpc7-friends"
-        || super::super::qc_npc_programmes::matches(name);
+        || super::super::qc_npc_programmes::matches(name)
+        || super::super::qc_twenty_miles::matches_chain(name);
     let classic_npc = shared_rewards
         || name.starts_with("engoutfit-")
         || qengine_reward
@@ -934,6 +935,7 @@ fn scenario_case(
             || name == "srv7-reliable-ram"
             || name.starts_with("m09-treasure-")
             || super::super::qc_chests::matches(name)
+            || super::super::qc_twenty_miles::matches_world(name)
             || name.starts_with("engoutfit-")
             || name == "engitem-targuna-selected-tool"
             || name == "engitem-native-seal-paint"
@@ -2642,6 +2644,17 @@ fn scenario_case(
         } else if name == "questpc7-friends" {
             super::super::questpc7_friends::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
+        } else if super::super::qc_twenty_miles::matches_chain(name) {
+            super::super::qc_twenty_miles::exercise_chain(&mut owner, &mut admitted, &h).await?;
+        } else if super::super::qc_twenty_miles::matches_world(name) {
+            Box::pin(super::super::qc_twenty_miles::exercise_world(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &callback,
+                trigger,
+            ))
+            .await?;
         } else if super::super::qc_npc_programmes::matches(name) {
             super::super::qc_npc_programmes::exercise(&mut owner, &mut admitted, &h, name).await?;
         } else if name == "questpc7-golden" {
