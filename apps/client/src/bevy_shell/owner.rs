@@ -188,6 +188,7 @@ impl HostOwner {
         true
     }
     fn leave(&mut self, message: &str) {
+        self.arrival = None;
         drop(self.play.take());
         self.change_scope(None);
         self.phase = Phase::Offline;

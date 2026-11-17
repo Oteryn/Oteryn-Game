@@ -461,3 +461,19 @@ fn proficiency_shortcut_requests_catalogue_only_outside_blocked_input() -> TestR
     );
     Ok(())
 }
+
+#[test]
+fn failed_channel_entry_discards_pending_arrival() -> TestResult {
+    let mut host = HostOwner::new(None)?;
+    host.arrival = Some(oteryn_client_ui::channel_switch::ChannelRow {
+        channel: [2; 16],
+        name: "B".into(),
+        pvp: None,
+        ping_ms: None,
+        online: None,
+        full: false,
+    });
+    host.leave("Admission refused");
+    assert!(host.arrival.is_none());
+    Ok(())
+}

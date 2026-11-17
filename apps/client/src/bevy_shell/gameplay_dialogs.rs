@@ -263,12 +263,17 @@ fn activate(
         owner.choose_dialog(reply.id, reply.choice);
     }
 }
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Bevy injects dialog state and retained row entities"
+)]
 fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
     skin: Res<Skin>,
     mut overlays: Query<(Entity, &mut Node), With<Overlay>>,
     mut previous: Local<Option<(u64, Option<SwitchView>)>>,
+    mut rows: Query<(&channel_switch::TableRow, &mut Text, &mut TextColor)>,
     mut panel: Local<Option<Entity>>,
     mut focus: ResMut<InputFocus>,
 ) {
@@ -279,7 +284,13 @@ fn project(
         .and_then(|_| owner.play.as_ref())
         .map(|play| {
             let now_ms = crate::play::feature_0512_channel_switch::view::now_ms();
-            (play.link.channel_switch_panel(), now_ms, now_ms / 1000)
+            let panel = play.link.channel_switch_panel();
+            let left = panel
+                .status
+                .map_or(0, |s| i64::from(s.cooldown_left_ms))
+                .saturating_sub(now_ms.saturating_sub(panel.status_at_ms).max(0))
+                .max(0);
+            (panel, now_ms, (left + 999) / 1000)
         });
     let id = pending.map(|request| {
         (
@@ -298,6 +309,16 @@ fn project(
         Display::None
     };
     if id == *previous {
+        return;
+    }
+    if let (Some((old_id, Some((old_panel, _)))), Some((new_id, Some((new_panel, _))))) =
+        (&*previous, &id)
+        && old_id == new_id
+        && old_panel == new_panel
+        && let Some((_, now_ms, _)) = &switch
+    {
+        channel_switch::refresh_rows(&mut rows, new_panel, *now_ms);
+        *previous = id;
         return;
     }
     *previous = id;
