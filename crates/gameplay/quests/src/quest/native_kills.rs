@@ -9,6 +9,40 @@ pub use registry::{CounterRef, active_for, counter_for, tracks_creature_for};
 mod fugue;
 mod phase_settlements;
 
+const DEEPLING_CRYSTAL: &str = "oteryn:quest-progress/deeplings_world_change/crystal";
+const DEEPLING_BOSSES: [Counter; 3] = [
+    Counter {
+        transition: "oteryn:quest-transition/native-kills/deeplings-jaul",
+        creature: "oteryn:creature.jaul",
+        quest: "oteryn:quest.deeplings_worldchange",
+        track: "oteryn:quest-progress/deeplings_world_change/jaul-chest",
+        gate: DEEPLING_CRYSTAL,
+        maximum: 1,
+        authored_stage: false,
+        world_change: None,
+    },
+    Counter {
+        transition: "oteryn:quest-transition/native-kills/deeplings-obujos",
+        creature: "oteryn:creature.obujos",
+        quest: "oteryn:quest.deeplings_worldchange",
+        track: "oteryn:quest-progress/deeplings_world_change/obujos-chest",
+        gate: DEEPLING_CRYSTAL,
+        maximum: 1,
+        authored_stage: false,
+        world_change: None,
+    },
+    Counter {
+        transition: "oteryn:quest-transition/native-kills/deeplings-tanjis",
+        creature: "oteryn:creature.tanjis",
+        quest: "oteryn:quest.deeplings_worldchange",
+        track: "oteryn:quest-progress/deeplings_world_change/tanjis-chest",
+        gate: DEEPLING_CRYSTAL,
+        maximum: 1,
+        authored_stage: false,
+        world_change: None,
+    },
+];
+
 pub const PREFIX: &str = "oteryn:quest-transition/native-kills/";
 
 #[derive(Debug, Clone, Copy, serde::Deserialize)]
@@ -39,7 +73,9 @@ impl Counter {
     /// The selected First Dragon recipe requires both s4 exploration occurrences.
     #[must_use]
     pub fn gate_value(&self) -> i64 {
-        if self.transition == "oteryn:quest-transition/native-kills/first-dragon-selected" {
+        if self.gate == DEEPLING_CRYSTAL {
+            13
+        } else if self.transition == "oteryn:quest-transition/native-kills/first-dragon-selected" {
             2
         } else {
             1
@@ -238,6 +274,7 @@ pub(crate) fn counters() -> impl Iterator<Item = &'static Counter> {
     COUNTERS
         .iter()
         .chain(qworld::counters().unwrap_or_default())
+        .chain(&DEEPLING_BOSSES)
         .chain(fugue::COUNTERS)
         .chain(
             super::world_change_journals::counters()
@@ -250,6 +287,7 @@ pub(crate) fn counters() -> impl Iterator<Item = &'static Counter> {
 pub(super) fn registered_counters() -> Result<impl Iterator<Item = &'static Counter>, String> {
     Ok(COUNTERS
         .iter()
+        .chain(&DEEPLING_BOSSES)
         .chain(fugue::COUNTERS)
         .chain(phase_settlements::COUNTERS)
         .chain(qworld::counters()?)
@@ -286,6 +324,24 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
             }
         } else {
             tracks.insert(key.into(), expected);
+        }
+    }
+    // Crystal creaturescripts_deepling_boss_kill.lua grants a personal chest flag.
+    for boss in DEEPLING_BOSSES {
+        let expected = super::QuestTrack {
+            key: boss.track.into(),
+            quest: boss.quest.into(),
+            initial: 0,
+            min: 0,
+            max: 1,
+        };
+        if let Some(existing) = tracks.insert(boss.track.into(), expected.clone())
+            && existing != expected
+        {
+            return Err(format!(
+                "Deepling boss chest track conflict: {}",
+                boss.track
+            ));
         }
     }
     let mut tracks: Vec<_> = tracks.into_values().collect();
