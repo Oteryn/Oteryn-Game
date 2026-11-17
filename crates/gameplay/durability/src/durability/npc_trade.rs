@@ -767,6 +767,64 @@ impl DurabilityRoot {
         .await
     }
 
+    /// Si, Ariki! when Yasir's trade window opens (Crystal `201189f8` `yasir.lua:820,826`), under
+    /// the complete current Character item fence of the talk `command` and his committed daily
+    /// placement at `source_position`, in one transaction. A held key writes nothing, so repeated
+    /// opens and a later committed trade grant it once.
+    pub async fn grant_yasir_trade_open(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        command: CommandRef,
+        source_position: (u16, u16, i8),
+    ) -> Result<()> {
+        if !(0..=15).contains(&source_position.2) {
+            return Err(NpcTradeError::InvalidInput);
+        }
+        let (world_id, channel_id) =
+            scope_of(&fence).map_err(|_| NpcTradeError::AuthorityRejected)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| NpcTradeError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    if !character_item_fence_is_current(
+                        &mut tx,
+                        &node,
+                        &fence,
+                        command,
+                        fence.character_id,
+                        *world_id.as_bytes(),
+                        *channel_id.as_bytes(),
+                    )
+                    .await?
+                    {
+                        return Ok(Err(NpcTradeError::AuthorityRejected));
+                    }
+                    if !yasir_permitted(&mut tx, world_id, YASIR, Some(source_position)).await? {
+                        return Ok(Err(NpcTradeError::RequirementNotMet));
+                    }
+                    grant_missing(
+                        &mut tx,
+                        fence.character_id,
+                        &npc_trade_achievement::keys(YASIR),
+                        npc_trade_achievement::OPEN_SOURCE_KIND,
+                        fence.character_id.as_bytes(),
+                    )
+                    .await?;
+                    tx.commit(deadline).await?;
+                    Ok(Ok(()))
+                })
+            })
+            .await?
+    }
+
     /// Commit one sell-all (NPC-TRADE-SELLALL-1, see the module documentation) of a count-1 SELL
     /// offer: `request.quantity` is 1 and `unit_price` the price per unit. The replay, refusal
     /// and conflict rules of `commit_npc_trade` apply unchanged.

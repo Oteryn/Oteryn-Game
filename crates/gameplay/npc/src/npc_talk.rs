@@ -144,7 +144,7 @@ const SHARED_WORLD_NPC_SOURCE: &str = "cdc852e9469d0afe12f4f15294f4f22659454359b
 const YASIR: &str = "oteryn:npc.yasir";
 // Retained Crystal 9f5a72c: npc/yasir.lua d189aab0.. L812-833 and
 // npc_system/npc_handler.lua 8479e2aa.. L79-81 (unoverridden default greet).
-// The ariki handler opens the shop silently; durable successful trade already owns Si, Ariki!.
+// The ariki handler opens the shop silently; the dispatch open grants Si, Ariki!.
 const YASIR_GREET: &str = "Greetings, |PLAYERNAME|.";
 const YASIR_FAREWELL: &str = "Si, jema ze harun. <waves>";
 const YASIR_JOB: &str = "Tje hari ku ne finjala. {Ariki}?";
@@ -581,7 +581,7 @@ impl NpcTalkBook {
             } else if reference.key == "oteryn:npc.yasir" {
                 // TIBIAWIKI_STRUCTURED: npc-br/2026-09-28 snapshot, Yasir
                 // revid433385, npc_lines. Only his literal trade dialogue is
-                // admitted here; P11 grants Si, Ariki! on a committed trade.
+                // admitted here; dispatch grants Si, Ariki! when the window opens.
                 let keywords = ["ariki", "trade"]
                     .into_iter()
                     .map(|word| crate::content::ProjectV2DialogueKeyword {
