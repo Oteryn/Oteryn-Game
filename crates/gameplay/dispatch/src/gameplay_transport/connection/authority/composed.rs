@@ -594,11 +594,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     }
 
     fn server_messages_joined(&self, admitted: AdmittedSession) -> bool {
-        !(raid_notices::selected(admitted)
-            || admitted
-                .continuity
-                .selected_capabilities
-                .contains(oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1))
+        !raid_notices::selected(admitted)
             || self.states.server_messages.join(
                 admitted.game_session_id,
                 admitted.continuity.connection_generation,
