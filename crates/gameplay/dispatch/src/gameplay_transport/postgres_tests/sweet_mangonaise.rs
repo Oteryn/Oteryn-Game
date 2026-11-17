@@ -1,25 +1,34 @@
-use super::fixture::{Harness, debug, id, run};
+use super::fixture::{Harness, debug, id};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::ChannelContentPin;
-use crate::gameplay_transport::connection::{AdmittedSession, FirstEntryOutcome, SessionContinuity};
-use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget, encode_item_use_intent};
+use crate::gameplay_transport::connection::{
+    AdmittedSession, FirstEntryOutcome, SessionContinuity,
+};
+use oteryn_protocol_oteryn::world_object::{
+    UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
+};
 
 #[test]
 fn sweet_mangonaise_wire_use_copies_equipped_time_ring() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     std::thread::Builder::new()
         .stack_size(128 << 20)
-        .spawn(move || scenario(&admin).map_err(|error| error.to_string()))?
+        .spawn(move || scenario(admin).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Sweet Mangonaise PostgreSQL scenario panicked")??;
     Ok(())
 }
 
-fn scenario(admin: &str) -> TestResult {
-    run(async |configured| {
-        assert!(configured == admin);
+fn scenario(admin: String) -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async move {
         let h = Harness::create_with_admission_seed(admin, "sweet_mangonaise", true, false).await?;
         eprintln!("POSTGRES_STARTED SWEET-MANGONAISE");
+        super::reset();
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -63,7 +72,9 @@ fn scenario(admin: &str) -> TestResult {
         let elixir = "oteryn:item.tibia.i11588";
         let ring = "oteryn:item.tibia.i3090";
         super::item_look::seed_main_backpack(&h, &[(elixir, 1), (ring, 1)]).await?;
+        let mut tx = h.pool.begin().await?;
         sqlx::raw_sql("
+            SET LOCAL session_replication_role = replica;
             INSERT INTO game_character_equipment_state(character_id,revision)
             SELECT character_id,1 FROM game_item_container_slots;
             WITH worn AS (
@@ -74,7 +85,8 @@ fn scenario(admin: &str) -> TestResult {
             )
             INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id)
             SELECT character_id,8,item_instance_id,world_id,placed_transaction_id FROM worn;
-        ").execute(&h.pool).await?;
+        ").execute(&mut *tx).await?;
+        tx.commit().await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(active.identity().server_artifact_digest().as_slice()).bind(active.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
@@ -119,21 +131,38 @@ fn scenario(admin: &str) -> TestResult {
             use_with: None,
             use_with_map_item: None,
             use_with_position: None,
-        }).map_err(debug)?;
+        })
+        .map_err(debug)?;
         let (_, disposition, _) = super::rust_lottery::exchange(
-            &owner, admitted, 1, &payload, index.definition_ref("Item", elixir, "definition-r1"), None,
-        ).await?;
+            &owner,
+            admitted,
+            1,
+            &payload,
+            index.definition_ref("Item", elixir, "definition-r1"),
+            None,
+        )
+        .await?;
         assert_eq!(disposition, UseDisposition::Committed);
 
-        let backpack = h.root.read_character_backpack(&authority, fence.character_id).await?
+        let backpack = h
+            .root
+            .read_character_backpack(&authority, fence.character_id)
+            .await?
             .ok_or("backpack")?;
         assert_eq!(backpack.entries.len(), 10);
-        assert!(backpack.entries.iter().all(|entry|
-            entry.item.definition.production_key == ring && entry.item.quantity == 1));
+        assert!(
+            backpack
+                .entries
+                .iter()
+                .all(|entry| entry.item.definition.production_key == ring
+                    && entry.item.quantity == 1)
+        );
         let equipped: String = sqlx::query_scalar(
             "SELECT i.definition_production_key FROM game_character_equipment_slots s
              JOIN game_item_instances i USING(item_instance_id) WHERE s.slot=8",
-        ).fetch_one(&h.pool).await?;
+        )
+        .fetch_one(&h.pool)
+        .await?;
         assert_eq!(equipped, ring);
         Ok(())
     })
