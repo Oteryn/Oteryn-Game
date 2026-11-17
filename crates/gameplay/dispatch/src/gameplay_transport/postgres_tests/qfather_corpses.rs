@@ -48,9 +48,15 @@ pub(super) async fn exercise(
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&h.pool)
             .await?;
-    let killer =
-        crate::world_party_runtime_postgres_cases::committed_fresh_player(h, 60, 62, 70, now)
-            .await?;
+    let owners = crate::world_party_runtime_postgres_cases::FreshPlayerOwners {
+        root: h.root.clone(),
+        node: h.node.clone(),
+        recovery: &h.recovery,
+    };
+    let killer = crate::world_party_runtime_postgres_cases::committed_fresh_player_owned(
+        &owners, 60, 62, 70, now,
+    )
+    .await?;
     let killer_session = killer.current_game_session_id();
     let killer_character = *killer.current_character_lease().character_id().as_bytes();
     let killer_actor = {
