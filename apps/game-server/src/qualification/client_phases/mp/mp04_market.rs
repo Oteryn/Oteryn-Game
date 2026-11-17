@@ -74,6 +74,13 @@ struct State {
     open: Vec<(usize, [u8; 16])>,
 }
 
+/// One native item in A's backpack: its definition reference, units and stacks.
+struct Stack {
+    definition: u32,
+    units: u32,
+    handles: Vec<(ItemHandle, u32)>,
+}
+
 struct Before {
     banks: [u64; 2],
     inbox: u32,
@@ -347,6 +354,20 @@ fn holds_handle(client: &DevClientSession, handle: ItemHandle) -> bool {
     })
 }
 
+fn units_of(
+    inventory: &oteryn_protocol_oteryn::item_view::CharacterInventory,
+    definition: u32,
+) -> u32 {
+    inventory
+        .main_backpack
+        .iter()
+        .chain(&inventory.entries)
+        .chain(inventory.equipment.iter().map(|entry| &entry.item))
+        .filter(|entry| entry.item_definition_ref.get() == definition)
+        .map(|entry| entry.count.get())
+        .sum()
+}
+
 /// Walk to a free tile beside an authored locker and open box 1 there; the town comes from the
 /// server's reply.
 async fn reach_locker(
@@ -442,7 +463,7 @@ async fn stock(bots: &mut [Bot<'_, '_>], state: &mut State) -> TestResult<String
         .inventory()
         .map(|inventory| inventory.entries.clone())
         .unwrap_or_default();
-    let mut carried: BTreeMap<u32, (u32, u32, Vec<(ItemHandle, u32)>)> = BTreeMap::new();
+    let mut carried: BTreeMap<u32, Stack> = BTreeMap::new();
     for entry in entries {
         let Some((key, _)) = definitions.definition_at(entry.item_definition_ref) else {
             continue;
@@ -456,21 +477,22 @@ async fn stock(bots: &mut [Bot<'_, '_>], state: &mut State) -> TestResult<String
         if client_id == AXE {
             continue;
         }
-        let slot =
-            carried
-                .entry(client_id)
-                .or_insert((entry.item_definition_ref.get(), 0, Vec::new()));
-        slot.1 += entry.count.get();
-        slot.2.push((entry.handle, entry.count.get()));
+        let slot = carried.entry(client_id).or_insert(Stack {
+            definition: entry.item_definition_ref.get(),
+            units: 0,
+            handles: Vec::new(),
+        });
+        slot.units += entry.count.get();
+        slot.handles.push((entry.handle, entry.count.get()));
     }
     let summary = carried
         .iter()
-        .map(|(id, (_, units, _))| format!("{id}x{units}"))
+        .map(|(id, stack)| format!("{id}x{}", stack.units))
         .collect::<Vec<_>>();
     let mut candidates = carried
         .iter()
-        .filter(|(_, (_, units, _))| *units >= 2)
-        .map(|(id, (definition, units, _))| (*id, *definition, *units))
+        .filter(|(_, stack)| stack.units >= 2)
+        .map(|(id, stack)| (*id, stack.definition, stack.units))
         .collect::<Vec<_>>();
     candidates.sort_by_key(|&(id, _, units)| (std::cmp::Reverse(units), id));
     let mut marketable = Vec::new();
@@ -521,7 +543,7 @@ async fn stock(bots: &mut [Bot<'_, '_>], state: &mut State) -> TestResult<String
         let (before, _) = holdings(&mut bots[A], client_id).await?;
         let handles = carried
             .get(&client_id)
-            .map(|slot| slot.2.clone())
+            .map(|stack| stack.handles.clone())
             .unwrap_or_default();
         let mut moved = 0_u32;
         for (handle, count) in handles {
@@ -918,13 +940,19 @@ async fn excess_items(
     let bank0 = bank(&mut bots[A]).await?;
     let held0 = holdings(&mut bots[A], ware.client_id).await?;
     let offers0 = own_offers(&mut bots[A]).await?;
-    let amount = held0.0 + 1;
+    let carried = bots[A]
+        .client()?
+        .inventory()
+        .map_or(0, |inventory| units_of(inventory, ware.definition));
+    // More than A owns anywhere: depot, Inbox and backpack together.
+    let amount = held0.0 + held0.1 + carried + 1;
     let reply = create(bots, A, request(6, ware.definition, ZERO, amount, 1), state).await?;
     if reply.code != 3 {
         return Err(format!(
-            "A sell {amount} of {} with depot {} expected refusal code 3, replied action={} code={} {}",
+            "A sell {amount} of {} owning depot {} Inbox {} carried {carried} expected refusal code 3, replied action={} code={} {}",
             ware.client_id,
             held0.0,
+            held0.1,
             reply.action,
             reply.code,
             explain(reply.code)
@@ -943,8 +971,9 @@ async fn excess_items(
         .into());
     }
     Ok(format!(
-        "code=3 amount={amount} depot={} A_bank={bank0} offers={} unchanged",
+        "code=3 amount={amount} owned=depot{}+Inbox{}+carried{carried} A_bank={bank0} offers={} unchanged",
         held0.0,
+        held0.1,
         offers0.len()
     ))
 }
