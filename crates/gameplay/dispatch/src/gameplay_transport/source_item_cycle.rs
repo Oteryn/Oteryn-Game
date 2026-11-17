@@ -121,8 +121,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if let Some(map) = self.bundle_map() {
                     let now = self.owner_now().get();
                     map.facts.expire_movement_items(now);
-                    let mut states = self.states.spell_states.lock().await;
-                    super::actor_spell::advance_observer_eye(&runtime, &mut states, map, now);
+                    self.advance_observer_eye(&mut runtime, map, now).await;
                 }
                 if let Ok(mut gate) = self.states.world_gate.lock() {
                     gate.begin_turn();
