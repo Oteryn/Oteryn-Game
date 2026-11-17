@@ -12,48 +12,168 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         target: Option<ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
-        if !matches!(intent.use_with_map_item, Some(MapUseTarget::Item(_))) { return Ok(None); }
-        let Some(fence) = command.item_fence else { return Ok(None); };
-        let command_ref = CommandRef::new(command.game_session_id, CommandId::new(command.command_id).map_err(|_| ())?);
-        if let Some(matches) = self.root.reconcile_quest_carried_use(self.character, fence.character_id, command_ref, encode_item_use_intent(intent).map_err(|_| ())?).await.map_err(|_| ())? {
-            if matches { self.refresh_quest_session(command.game_session_id, false).await; }
-            return Ok(Some(UseOutcome { disposition: if matches { UseDisposition::Committed } else { UseDisposition::Rejected }, ..UseOutcome::rejected() }));
+        if !matches!(intent.use_with_map_item, Some(MapUseTarget::Item(_))) {
+            return Ok(None);
         }
-        let (Some(ItemKey::Instance(source)), Some(ItemKey::Instance(target))) = (source, target) else { return Ok(None); };
-        let inventory = self.root.read_item_use_inventory(self.character, self.holder, fence).await.map_err(|_| ())?;
-        let Some(item) = inventory.backpack.iter().flat_map(|bag| &bag.entries)
-            .chain(inventory.nested.iter().map(|(_, entry)| entry)).find(|entry| entry.item.item_instance_id == source) else { return Ok(None); };
-        let mut candidates = self.callback_content().iter().filter(|callback| callback.selector.target_definition.is_some()
-            && callback.item_on_target.as_ref().is_some_and(|tool| tool.item == item.item.definition.production_key));
-        let Some(callback) = candidates.next() else { return Ok(None); };
-        if candidates.next().is_some() { return Ok(Some(UseOutcome::rejected())); }
-        let Some(catalogue) = self.quest_catalogue.as_ref() else { return Ok(Some(UseOutcome::rejected())); };
-        let Some(permit) = self.spell_lane_permit().await else { return Ok(Some(UseOutcome::rejected())); };
-        let Some(current) = self.current_quest_fence(command.game_session_id).await.map_err(|_| ())? else { return Ok(Some(UseOutcome::rejected())); };
-        if current.item_fence() != fence { return Ok(Some(UseOutcome::rejected())); }
+        let Some(fence) = command.item_fence else {
+            return Ok(None);
+        };
+        let command_ref = CommandRef::new(
+            command.game_session_id,
+            CommandId::new(command.command_id).map_err(|_| ())?,
+        );
+        if let Some(matches) = self
+            .root
+            .reconcile_quest_carried_use(
+                self.character,
+                fence.character_id,
+                command_ref,
+                encode_item_use_intent(intent).map_err(|_| ())?,
+            )
+            .await
+            .map_err(|_| ())?
+        {
+            if matches {
+                self.refresh_quest_session(command.game_session_id, false)
+                    .await;
+            }
+            return Ok(Some(UseOutcome {
+                disposition: if matches {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::Rejected
+                },
+                ..UseOutcome::rejected()
+            }));
+        }
+        let (Some(ItemKey::Instance(source)), Some(ItemKey::Instance(target))) = (source, target)
+        else {
+            return Ok(None);
+        };
+        let inventory = self
+            .root
+            .read_item_use_inventory(self.character, self.holder, fence)
+            .await
+            .map_err(|_| ())?;
+        let Some(item) = inventory
+            .backpack
+            .iter()
+            .flat_map(|bag| &bag.entries)
+            .chain(inventory.nested.iter().map(|(_, entry)| entry))
+            .find(|entry| entry.item.item_instance_id == source)
+        else {
+            return Ok(None);
+        };
+        let mut candidates = self.callback_content().iter().filter(|callback| {
+            callback.selector.target_definition.is_some()
+                && callback
+                    .item_on_target
+                    .as_ref()
+                    .is_some_and(|tool| tool.item == item.item.definition.production_key)
+        });
+        let Some(callback) = candidates.next() else {
+            return Ok(None);
+        };
+        if candidates.next().is_some() {
+            return Ok(Some(UseOutcome::rejected()));
+        }
+        let Some(catalogue) = self.quest_catalogue.as_ref() else {
+            return Ok(Some(UseOutcome::rejected()));
+        };
+        let Some(permit) = self.spell_lane_permit().await else {
+            return Ok(Some(UseOutcome::rejected()));
+        };
+        let Some(current) = self
+            .current_quest_fence(command.game_session_id)
+            .await
+            .map_err(|_| ())?
+        else {
+            return Ok(Some(UseOutcome::rejected()));
+        };
+        if current.item_fence() != fence {
+            return Ok(Some(UseOutcome::rejected()));
+        }
         let mut revision = self.revision_sequencer.acquire(current.character_id).await;
         let runtime = self.runtime.lock().await;
         let at = runtime.read_actor_position(actor).map_err(|_| ())?;
-        if runtime.owner_fence().is_err() || !runtime.player_control_facts(actor, command.game_session_id).is_ok_and(|facts| facts.control_loss.is_none())
-            || self.states.spell_states.lock().await.is_dead(actor) { return Ok(Some(UseOutcome::rejected())); }
-        let Some(map) = self.bundle_map() else { return Ok(Some(UseOutcome::rejected())); };
+        if runtime.owner_fence().is_err()
+            || !runtime
+                .player_control_facts(actor, command.game_session_id)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+            || self.states.spell_states.lock().await.is_dead(actor)
+        {
+            return Ok(Some(UseOutcome::rejected()));
+        }
+        let Some(map) = self.bundle_map() else {
+            return Ok(Some(UseOutcome::rejected()));
+        };
         let context = QuestWorldContext {
             map_revision: crate::map::overlay::map_revision(map.overlay.base()),
-            content_revision: format!("sha256:{}", hex(&runtime.content_pin().server_artifact_digest())),
+            content_revision: format!(
+                "sha256:{}",
+                hex(&runtime.content_pin().server_artifact_digest())
+            ),
             placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
-            reset_epoch: self.reset_epoch, actor_placement: actor.placement_identity(), movement_revision: at.revision(), party: Vec::new(),
-        }.with_selected_ground_tool(source, encode_item_use_intent(intent).map_err(|_| ())?, target,
-            [at.position().x, at.position().y, i32::from(at.position().floor)]).ok_or(())?;
-        let result = revision.commit_world_callback_with_items_selected(self.root, self.character, self.holder, current,
-            QuestTransitionRequest { transition_key: callback.key.clone(), cause: QuestCause::Use(command_ref) },
-            std::sync::Arc::clone(catalogue), &permit, context, self.active_generation.and_then(|generation| generation.native_gameplay()), None, &self.premium_coordinator).await.map_err(|_| ())?;
+            reset_epoch: self.reset_epoch,
+            actor_placement: actor.placement_identity(),
+            movement_revision: at.revision(),
+            party: Vec::new(),
+        }
+        .with_selected_ground_tool(
+            source,
+            encode_item_use_intent(intent).map_err(|_| ())?,
+            target,
+            [
+                at.position().x,
+                at.position().y,
+                i32::from(at.position().floor),
+            ],
+        )
+        .ok_or(())?;
+        let result = revision
+            .commit_world_callback_with_items_selected(
+                self.root,
+                self.character,
+                self.holder,
+                current,
+                QuestTransitionRequest {
+                    transition_key: callback.key.clone(),
+                    cause: QuestCause::Use(command_ref),
+                },
+                std::sync::Arc::clone(catalogue),
+                &permit,
+                context,
+                self.active_generation
+                    .and_then(|generation| generation.native_gameplay()),
+                None,
+                &self.premium_coordinator,
+            )
+            .await
+            .map_err(|_| ())?;
         drop(runtime);
         drop(revision);
-        let committed = matches!(result, QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_));
-        if matches!(result, QuestTransitionOutcome::Committed(_)) && let Some(message) = &callback.success_message {
-            self.states.chat.push_quest_feedback(command.game_session_id, message);
+        let committed = matches!(
+            result,
+            QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)
+        );
+        if matches!(result, QuestTransitionOutcome::Committed(_))
+            && let Some(message) = &callback.success_message
+        {
+            self.states
+                .chat
+                .push_quest_feedback(command.game_session_id, message);
         }
-        if committed { self.refresh_quest_session(command.game_session_id, false).await; }
-        Ok(Some(UseOutcome { disposition: if committed { UseDisposition::Committed } else { UseDisposition::Rejected }, ..UseOutcome::rejected() }))
+        if committed {
+            self.refresh_quest_session(command.game_session_id, false)
+                .await;
+        }
+        Ok(Some(UseOutcome {
+            disposition: if committed {
+                UseDisposition::Committed
+            } else {
+                UseDisposition::Rejected
+            },
+            ..UseOutcome::rejected()
+        }))
     }
 }

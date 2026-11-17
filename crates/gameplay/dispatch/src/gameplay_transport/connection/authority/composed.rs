@@ -1195,7 +1195,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 .use_carried_item_disguise(actor, command, &intent, source)
                 .await;
         }
-        if let Some(outcome) = self.use_ground_definition_callback(actor, command, &intent, source, target).await? {
+        if let Some(outcome) = self
+            .use_ground_definition_callback(actor, command, &intent, source, target)
+            .await?
+        {
             return Ok(Some(outcome));
         }
         let corpse = match target {
