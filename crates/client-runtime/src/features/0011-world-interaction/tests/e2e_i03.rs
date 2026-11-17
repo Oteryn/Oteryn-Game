@@ -234,6 +234,15 @@ async fn admit_peer_with_carried(
             (SPOT.x, SPOT.y, 7),
         ),
     );
+    if carried.is_some() {
+        let mut ground_item = vec![8, 4];
+        bytes(&mut ground_item, 2, &identity(10));
+        bytes(&mut ground_item, 4, &position((SPOT.x, SPOT.y, 7)));
+        scalar(&mut ground_item, 8, 1);
+        scalar(&mut ground_item, 9, 1);
+        scalar(&mut ground_item, 10, 5);
+        bytes(&mut entities, 4, &ground_item);
+    }
     let overlay: &[u8] = &[];
     let mut body = Vec::new();
     for (domain, revision, snapshot_type, payload) in
