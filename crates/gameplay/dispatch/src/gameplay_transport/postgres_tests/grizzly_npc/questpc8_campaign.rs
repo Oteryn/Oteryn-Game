@@ -146,7 +146,15 @@ pub(super) async fn exercise(
         value(owner, authority, quest::QUEST_STORAGE_BASE + 32).await?,
         1
     );
-    hunt(owner, admitted, "oteryn:creature.hydra", 650, command).await?;
+    hunt_with_decay(
+        owner,
+        admitted,
+        "oteryn:creature.hydra",
+        650,
+        command,
+        Some(h),
+    )
+    .await?;
     assert_eq!(
         value(owner, authority, quest::KILL_COUNTER_BASE + 32).await?,
         650
@@ -317,6 +325,17 @@ pub(in super::super) async fn hunt(
     count: u32,
     command: u64,
 ) -> TestResult {
+    hunt_with_decay(owner, admitted, creature, count, command, None).await
+}
+
+async fn hunt_with_decay(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    creature: &str,
+    count: u32,
+    command: u64,
+    decay_fixture: Option<&Harness>,
+) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("hunter")?;
     for index in 0..count {
         let target = {
@@ -353,9 +372,37 @@ pub(in super::super) async fn hunt(
             u16::try_from(index + 1)?,
         )
         .await?;
-        let mut runtime = owner.runtime.lock().await;
-        assert!(!runtime.corpse_projection_pinned(target));
-        runtime.remove_encounter_actor(target).map_err(debug)?;
+        let corpse = {
+            let mut runtime = owner.runtime.lock().await;
+            assert!(!runtime.corpse_projection_pinned(target));
+            let corpse = runtime
+                .visible_corpses()
+                .into_iter()
+                .find(|corpse| corpse.identity == target.corpse_identity())
+                .map(|corpse| corpse.item.item_instance_id);
+            runtime.remove_encounter_actor(target).map_err(debug)?;
+            corpse
+        };
+        if let Some(h) = decay_fixture {
+            let corpse = corpse.ok_or("hunted native corpse")?;
+            // COMBAT01 admits 64 live corpses per scope. This accelerated hunt
+            // must also drive their normal D135 retirement. Age only the fixture
+            // clock anchor, as corpse_decay.rs does; keep all writer guards live.
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query("UPDATE game_item_mint_receipts SET materialized_at=floor(extract(epoch FROM clock_timestamp())*1000)::bigint-61000 WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(corpse.as_slice()).execute(&mut *tx).await?;
+            tx.commit().await?;
+            owner.drain_corpse_deadlines().await;
+            let live: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1")
+                .bind(corpse.as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(
+                live, 0,
+                "the real decay owner must retire the hunted corpse"
+            );
+        }
     }
     Ok(())
 }

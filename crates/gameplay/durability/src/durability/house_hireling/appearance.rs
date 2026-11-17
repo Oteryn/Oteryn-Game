@@ -1,34 +1,53 @@
-use super::super::character_authority::{ReconciledCharacterAuthority,assert_recovery_fence};
-use super::super::db::{begin_semantic_transaction,commit_semantic_transaction,lock_admission_relations};
+use super::super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
+use super::super::db::{
+    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+};
 use super::super::item_transfer::CurrentCharacterItemFence;
 use super::super::runtime_scope_assignment::NodeIncarnationProof;
-use super::super::{DurabilityError,DurabilityRoot};
-use super::{fence,model,receipts};
-use oteryn_protocol_oteryn::hireling::management::{Refusal,Reply,Request};
+use super::super::{DurabilityError, DurabilityRoot};
+use super::{fence, model, receipts};
+use oteryn_protocol_oteryn::hireling::management::{Refusal, Reply, Request};
 
 impl DurabilityRoot {
     /// Character inventory or owned named House. The exact list answer is recorded for replay.
     pub async fn query_hirelings(
-        &self,authority:&ReconciledCharacterAuthority<'_,'_>,node:&NodeIncarnationProof,
-        current:CurrentCharacterItemFence,origin_channel:[u8;16],command:u64,
-    )->Result<Reply,DurabilityError>{
-        self.query_hirelings_scope(authority,node,current,origin_channel,command,false).await
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        current: CurrentCharacterItemFence,
+        origin_channel: [u8; 16],
+        command: u64,
+    ) -> Result<Reply, DurabilityError> {
+        self.query_hirelings_scope(authority, node, current, origin_channel, command, false)
+            .await
     }
 
     /// Command220 answers its original House snapshot even if a later command returns a lamp.
     pub async fn query_legacy_hireling(
-        &self,authority:&ReconciledCharacterAuthority<'_,'_>,node:&NodeIncarnationProof,
-        current:CurrentCharacterItemFence,origin_channel:[u8;16],command:u64,
-    )->Result<Reply,DurabilityError>{
-        self.query_hirelings_scope(authority,node,current,origin_channel,command,true).await
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        current: CurrentCharacterItemFence,
+        origin_channel: [u8; 16],
+        command: u64,
+    ) -> Result<Reply, DurabilityError> {
+        self.query_hirelings_scope(authority, node, current, origin_channel, command, true)
+            .await
     }
 
     async fn query_hirelings_scope(
-        &self,authority:&ReconciledCharacterAuthority<'_,'_>,node:&NodeIncarnationProof,
-        current:CurrentCharacterItemFence,origin_channel:[u8;16],command:u64,house_only:bool,
-    )->Result<Reply,DurabilityError>{
-        let recovery=authority.record_for(self).map_err(|_|DurabilityError::InvalidStoredState)?;
-        let node=node.clone();
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        current: CurrentCharacterItemFence,
+        origin_channel: [u8; 16],
+        command: u64,
+        house_only: bool,
+    ) -> Result<Reply, DurabilityError> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let node = node.clone();
         self.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move{
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;lock_admission_relations(&mut tx).await?;
@@ -60,13 +79,29 @@ impl DurabilityRoot {
     }
 
     pub async fn set_hireling_outfit(
-        &self,authority:&ReconciledCharacterAuthority<'_,'_>,node:&NodeIncarnationProof,
-        current:CurrentCharacterItemFence,origin_channel:[u8;16],command:u64,request:Request,
-    )->Result<Reply,DurabilityError>{
-        let Request::Outfit{hireling,look_type,colors}=request else{return Err(DurabilityError::InvalidStoredState)};
-        if Request::decode(&request.encode())!=Some(request){return Err(DurabilityError::InvalidStoredState)}
-        let recovery=authority.record_for(self).map_err(|_|DurabilityError::InvalidStoredState)?;
-        let node=node.clone();
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        current: CurrentCharacterItemFence,
+        origin_channel: [u8; 16],
+        command: u64,
+        request: Request,
+    ) -> Result<Reply, DurabilityError> {
+        let Request::Outfit {
+            hireling,
+            look_type,
+            colors,
+        } = request
+        else {
+            return Err(DurabilityError::InvalidStoredState);
+        };
+        if Request::decode(&request.encode()) != Some(request) {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let node = node.clone();
         self.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move{
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;lock_admission_relations(&mut tx).await?;

@@ -23,6 +23,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             operator_event("event=control_loss_reconcile_pending stage=gourmet_checkpoint");
             return false;
         }
+        if !self
+            .recover_pending_soul_war_source_use(actor, session)
+            .await
+        {
+            operator_event("event=control_loss_reconcile_pending stage=soul_war_source_use");
+            return false;
+        }
         let access = self.refresh_spell_access(actor, session).await;
         if matches!(
             self.reconcile_pending_native_for_control_loss(actor, session, &access)

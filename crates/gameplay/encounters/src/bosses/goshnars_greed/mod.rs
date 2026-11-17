@@ -1,5 +1,9 @@
 //! Crystal Goshnar's Greed room: soul chain and Greedbeast/Soul Sphere immunity cycle.
-//! See packet W01a-2-greed-souls.
+//! See packet W01a-2-greed-souls. Donor closure counters are global per MonsterType.
+//! BOSS_RAID0 §6 / D26 explicitly selects independent activity Instances per party;
+//! this owner therefore retains source-type sharing inside that isolated activity,
+//! not cross-party global Lua state. This is the accepted Instance ownership
+//! difference, not a claim that Crystal has per-room closure variables.
 
 use crate::bosses::rotten_blood::RoomPosition;
 use std::collections::BTreeMap;
@@ -89,6 +93,10 @@ impl GreedMinion {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum GreedEffect {
+    /// Resume the same synchronous Lua callback after actual createMonster feedback.
+    FinishBossThink {
+        interval_ms: u64,
+    },
     TeleportMagic {
         position: RoomPosition,
     },
@@ -120,7 +128,9 @@ pub enum GreedEffect {
     BossSpeed {
         speed: u16,
     },
-    RemoveSoulSphere,
+    RemoveSoulSphere {
+        instance: Option<u64>,
+    },
     SphereMove {
         instance: u64,
         position: RoomPosition,
@@ -131,13 +141,51 @@ pub enum GreedEffect {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum GreedRefusal {
     InvalidDamageDraw,
+    InvalidPlacementDraw,
+}
+
+/// Crystal 201189f src/map/map.cpp:257-280: extended placement shuffles
+/// the first four offsets separately from the remaining eight, after trying
+/// the exact centre. Map/PZ/teleport/sight and occupancy remain owner checks.
+pub fn extended_spawn_offsets(
+    mut draw_below: impl FnMut(u32) -> u32,
+) -> Result<[(i32, i32); 12], GreedRefusal> {
+    let mut offsets = [
+        (0, -2),
+        (-1, -1),
+        (0, -1),
+        (1, -1),
+        (-2, 0),
+        (-1, 0),
+        (1, 0),
+        (2, 0),
+        (-1, 1),
+        (0, 1),
+        (1, 1),
+        (0, 2),
+    ];
+    let (first, remaining) = offsets.split_at_mut(4);
+    for group in [first, remaining] {
+        for index in (1..group.len()).rev() {
+            let bound = (index + 1) as u32;
+            let selected = draw_below(bound);
+            if selected >= bound {
+                return Err(GreedRefusal::InvalidPlacementDraw);
+            }
+            group.swap(index, selected as usize);
+        }
+    }
+    Ok(offsets)
 }
 
 #[derive(Clone, Debug, Default)]
 pub struct GoshnarsGreedRoom {
     scheduled: Vec<(u64, GreedEffect)>,
-    minion_ms: BTreeMap<u64, u64>,
-    sphere: BTreeMap<u64, (u64, bool)>,
+    // Crystal 201189f weak_soul.lua:92-104 (and the other soul types): the
+    // counter belongs to the MonsterType's Lua closure, not an actor incarnation.
+    minion_ms: BTreeMap<GreedMinion, u64>,
+    sphere_clock: (u64, bool),
+    latest_sphere: Option<u64>,
     greedbeast_kills: u32,
     sphere_kills: u32,
     sphere_present: bool,
@@ -145,17 +193,38 @@ pub struct GoshnarsGreedRoom {
 }
 
 impl GoshnarsGreedRoom {
+    /// Every successful source spawn resets that type's shared closure counter.
+    pub fn minion_spawned(&mut self, minion: GreedMinion) {
+        self.minion_ms.insert(minion, 0);
+    }
+
     /// Lever `onUseExtra`: schedules the room's three opening greed spawns.
     pub fn lever_pulled(&mut self, now_ms: u64) {
-        self.schedule_greed_spawn(GreedMinion::Greedbeast, now_ms);
-        self.schedule_greed_spawn(GreedMinion::Soulsnatcher, now_ms);
-        self.schedule_greed_spawn(GreedMinion::WeakSoul, now_ms);
+        self.lever_pulled_with_elapsed(now_ms, 0);
+    }
+
+    /// Recovered handoff preserves the original use delays, including when the
+    /// current process clock is younger than the durable handoff receipt.
+    pub fn lever_pulled_with_elapsed(&mut self, now_ms: u64, elapsed_ms: u64) {
+        let start = self.scheduled.len();
+        for minion in [
+            GreedMinion::Greedbeast,
+            GreedMinion::Soulsnatcher,
+            GreedMinion::WeakSoul,
+        ] {
+            // Delay data is independent of this process's monotonic epoch.
+            self.schedule_greed_spawn(minion, 0);
+        }
+        for (delay, _) in &mut self.scheduled[start..] {
+            *delay = now_ms.saturating_add(delay.saturating_sub(elapsed_ms));
+        }
     }
 
     /// Goshnar's Greed spawn callback: resets room counters and makes the boss immune.
     pub fn boss_spawned(&mut self) -> Vec<GreedEffect> {
         self.minion_ms.clear();
-        self.sphere.clear();
+        self.sphere_clock = (0, false);
+        self.latest_sphere = None;
         self.greedbeast_kills = 0;
         self.sphere_kills = 0;
         self.sphere_present = false;
@@ -174,19 +243,23 @@ impl GoshnarsGreedRoom {
         mut draw: impl FnMut() -> u32,
     ) -> Result<Vec<GreedEffect>, GreedRefusal> {
         if minion == GreedMinion::Greedbeast {
-            self.minion_ms.remove(&instance);
             // Greedbeast has no think callback in the Crystal donor.
             return Ok(vec![]);
         }
 
         let mut next = self.clone();
-        let elapsed = next.minion_ms.get(&instance).copied().unwrap_or(0) + interval_ms;
-        if elapsed < TRANSFORM_MS {
-            next.minion_ms.insert(instance, elapsed);
+        let elapsed = next
+            .minion_ms
+            .get(&minion)
+            .copied()
+            .unwrap_or(0)
+            .saturating_add(interval_ms);
+        if elapsed != TRANSFORM_MS {
+            next.minion_ms.insert(minion, elapsed);
             *self = next;
             return Ok(vec![]);
         }
-        next.minion_ms.remove(&instance);
+        next.minion_ms.insert(minion, 0);
 
         let effects = match minion {
             GreedMinion::WeakSoul => vec![
@@ -236,8 +309,7 @@ impl GoshnarsGreedRoom {
         Ok(effects)
     }
 
-    pub fn minion_died(&mut self, instance: u64, minion: GreedMinion, now_ms: u64) {
-        self.minion_ms.remove(&instance);
+    pub fn minion_died(&mut self, _instance: u64, minion: GreedMinion, now_ms: u64) {
         if minion == GreedMinion::Greedbeast {
             self.greedbeast_kills += 1;
         }
@@ -251,7 +323,7 @@ impl GoshnarsGreedRoom {
         position: RoomPosition,
         west_tile_has_boss: bool,
     ) -> Vec<GreedEffect> {
-        let state = self.sphere.entry(instance).or_insert((0, false));
+        let state = &mut self.sphere_clock;
         if state.1 {
             return vec![];
         }
@@ -273,9 +345,23 @@ impl GoshnarsGreedRoom {
         }]
     }
 
-    pub fn sphere_died(&mut self, instance: u64) {
+    pub fn sphere_died(&mut self, _instance: u64) {
         self.sphere_kills += 1;
-        self.sphere.remove(&instance);
+    }
+
+    /// A real successful Soul Sphere spawn resets this type's shared closure
+    /// and replaces only the boss callback's latest createdSphere reference.
+    pub fn sphere_spawned(&mut self, instance: u64) {
+        self.sphere_clock = (0, false);
+        self.latest_sphere = Some(instance);
+        self.sphere_present = true;
+    }
+
+    /// Crystal goshnars_greed.lua:165 gates timeout on successful creation.
+    /// Immunity itself survives a failed createMonster attempt.
+    pub fn sphere_spawn_failed(&mut self) {
+        self.sphere_present = false;
+        self.latest_sphere = None;
     }
 
     pub fn boss_think(&mut self, interval_ms: u64) -> Vec<GreedEffect> {
@@ -286,8 +372,9 @@ impl GoshnarsGreedRoom {
         }
         if self.greedbeast_kills >= GREEDBEAST_KILLS_FOR_SPHERE {
             self.greedbeast_kills = 0;
-            self.immune_cycle = Some(0);
-            self.sphere_present = true;
+            // Lua creates a new sphere without resetting immuneTimeCount.
+            // Only release_boss ends the existing type-shared immunity cycle.
+            self.immune_cycle.get_or_insert(0);
             effects.extend([
                 GreedEffect::BossImmune { immune: true },
                 GreedEffect::BossTeleport {
@@ -299,8 +386,17 @@ impl GoshnarsGreedRoom {
                     position: SPHERE_SPAWN,
                     forced: true,
                 },
+                GreedEffect::FinishBossThink { interval_ms },
             ]);
+            return effects;
         }
+        effects.extend(self.finish_boss_think(interval_ms));
+        effects
+    }
+
+    /// Source tests createdSoulSphere only after createMonster actually returned.
+    pub fn finish_boss_think(&mut self, interval_ms: u64) -> Vec<GreedEffect> {
+        let mut effects = Vec::new();
         if let Some(elapsed) = self.immune_cycle {
             let elapsed = elapsed + interval_ms;
             self.immune_cycle = Some(elapsed);
@@ -309,6 +405,22 @@ impl GoshnarsGreedRoom {
             }
         }
         effects
+    }
+
+    /// Earliest actual scheduled warning or spawn; no synthetic polling deadline.
+    pub fn next_due_ms(&self) -> Option<u64> {
+        self.scheduled.iter().map(|(due, _)| *due).min()
+    }
+
+    /// Removes one actual addEvent callback by original deadline/insertion order.
+    /// The consumer retains this DATA before awaiting any current physical read.
+    pub fn take_next_due_through(&mut self, through_ms: u64) -> Option<(u64, GreedEffect)> {
+        let (index, &(due, _)) = self
+            .scheduled
+            .iter()
+            .enumerate()
+            .min_by_key(|(_, (due, _))| *due)?;
+        (due <= through_ms).then(|| self.scheduled.remove(index))
     }
 
     /// Releases due greed-spawn effects in due-time and insertion order.
@@ -342,7 +454,9 @@ impl GoshnarsGreedRoom {
     fn release_boss(&mut self) -> Vec<GreedEffect> {
         let mut effects = Vec::with_capacity(4);
         if self.sphere_present {
-            effects.push(GreedEffect::RemoveSoulSphere);
+            effects.push(GreedEffect::RemoveSoulSphere {
+                instance: self.latest_sphere.take(),
+            });
         }
         effects.extend([
             GreedEffect::BossImmune { immune: false },

@@ -34,6 +34,18 @@ fn actual_owner_due_applies_ai_lifetime_at_callback_and_never_replays() {
     let other_session = GameSessionId::decode(&id(93)).unwrap();
     let admission = runtime.reserve_fresh_session(other_session).unwrap();
     let other_caster = runtime.commit_fresh_session(admission).unwrap();
+    for player in [caster, other_caster] {
+        runtime
+            .initialize_pinned_test_position(
+                player,
+                MovementLocalPosition {
+                    x: 0,
+                    y: 0,
+                    floor: 7,
+                },
+            )
+            .unwrap();
+    }
     let target = runtime
         .admit_test_creature(MovementLocalPosition {
             x: 1,

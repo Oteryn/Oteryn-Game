@@ -64,8 +64,13 @@ def extend(root, callbacks, offers, inputs, pin, load_module):
 
 def outputs(root, inputs, pin, load_module, lane):
     import json
+    from questpc7_feaster_programme import PHASE_ROUTE_KEYS
     encoded=lambda value:(json.dumps(value,ensure_ascii=False,indent=2)+'\n').encode()
     worlds,objectives,bindings=lane
+    phase_routes = [row for row in worlds if row['key'] in PHASE_ROUTE_KEYS]
+    if len(phase_routes) != 2 or {row['key'] for row in phase_routes} != PHASE_ROUTE_KEYS:
+        raise ValueError('QUESTPC7_FEASTER_PHASE_OWNERSHIP_DRIFT')
+    main_worlds = [row for row in worlds if row['key'] not in PHASE_ROUTE_KEYS]
     knowledge=load_module('questpc7_knowledge','tools/content-schema/quest-authoring/questpc7_knowledge.py')
     props=load_module('questpc7_props','tools/content-schema/quest-authoring/questpc7_props.py')
     planned_props=props.outputs(root)
@@ -74,7 +79,8 @@ def outputs(root, inputs, pin, load_module, lane):
     from questpc7_index_witness import rebind
     rebind(root,worlds,planned_props)
     return {
-        'content/quests/questpc7-world-callbacks.json':encoded({'schema':1,'callbacks':worlds}),
+        'content/quests/questpc7-world-callbacks.json':encoded({'schema':1,'callbacks':main_worlds}),
+        'content/quests/world-callbacks/feaster-phase-routes.json':encoded({'schema':1,'callbacks':phase_routes}),
         'content/quests/questpc7-death-objectives.json':encoded({'schema':1,'objectives':objectives}),
         'content/quests/native-world-callback-bindings.json':encoded({'schema':1,'bindings':bindings}),
         'content/quests/imbuement-knowledge.json':encoded(knowledge.build(root,inputs,pin)),

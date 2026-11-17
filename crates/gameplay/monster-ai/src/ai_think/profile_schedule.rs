@@ -121,6 +121,7 @@ pub enum ScheduleError {
 }
 
 struct PreparedThink {
+    target: Option<AttackTarget>,
     sequence: u64,
     native: bool,
     movement_retry: bool,
@@ -253,6 +254,18 @@ impl ProfileScheduleState {
         })
     }
 
+    /// Retain the recipient of the selected schedule, including movement-only retries.
+    pub(super) fn native_melee_target(
+        &self,
+        sequence: u64,
+        entry_index: usize,
+    ) -> Option<ExactActorRef> {
+        if !self.native_melee_selected(sequence, entry_index) {
+            return None;
+        }
+        self.last.as_ref()?.target.map(|target| target.actor)
+    }
+
     fn prepare_checked(
         &mut self,
         input: ProfileScheduleInput<'_>,
@@ -311,6 +324,7 @@ impl ProfileScheduleState {
             self.last_extra_melee_us = plan.last_extra_melee_us_after;
         }
         self.last = Some(PreparedThink {
+            target,
             sequence: occurrence.sequence,
             native,
             movement_retry,

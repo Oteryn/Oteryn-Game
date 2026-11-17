@@ -651,7 +651,7 @@ fn appearance_ids_come_from_the_definition_key() {
 // --- Move source and object revision -----------------------------------------------------------
 
 #[test]
-fn only_a_pickupable_unbound_base_entry_carries_a_handle() {
+fn movable_leaves_and_unbound_captured_containers_carry_handles() {
     let open = tp(21, 20, -7);
     let house = tp(22, 20, -7);
     let mut fixture = Fixture::new(vec![
@@ -679,8 +679,8 @@ fn only_a_pickupable_unbound_base_entry_carries_a_handle() {
     };
     let handle = fixture.items.table().handle(&coin).expect("coin handle");
     assert_eq!(tile.items[1].origin, MapOrigin::Handle(handle));
-    // The door, the bound chest, the furniture and the bag holding contents keep their ordinals.
-    for (index, ordinal) in [(2, 2), (3, 3), (4, 4), (5, 5)] {
+    // Bound objects and fixed empty scenery keep their ordinal targets.
+    for (index, ordinal) in [(2, 2), (3, 3), (4, 4)] {
         assert_eq!(
             tile.items[index].origin,
             MapOrigin::BaseOrdinal {
@@ -689,6 +689,17 @@ fn only_a_pickupable_unbound_base_entry_carries_a_handle() {
             }
         );
     }
+    let source = ItemKey::MapBase {
+        bundle_digest: fixture.digest(),
+        placement_key: key(open, 5),
+        reset_epoch: 1,
+    };
+    let handle = fixture
+        .items
+        .table()
+        .handle(&source)
+        .expect("captured container handle");
+    assert_eq!(tile.items[5].origin, MapOrigin::Handle(handle));
     // Contents are never on the map.
     assert_eq!(tile.items.len(), 6);
     // A house tile's coin is not movable.
@@ -1094,6 +1105,7 @@ fn entry(id: u32) -> ComposedEntry {
             ordinal: 0,
             placement_key: 0,
             movable: false,
+            openable_source: false,
         },
         facts: facts_of(id),
     }
@@ -1455,18 +1467,22 @@ fn seeded_walks_send_the_bytes_recorded_before_the_viewport_optimisation() {
 // all 324 recorded updates with the v5/runtime-3 fixture proved that only the 32-byte
 // bundle_digest in each of the 283 payload-carrying updates changed; all other bytes,
 // update counts and payload lengths are identical.
+// QREADY1 adds captured-container source handles to these same seeded updates;
+// the retained-identity digest below independently guards their exact wire bytes.
 const GOLDEN: (usize, usize, &str) = (
     324,
-    5_431_963,
-    "212408a7b0779ef39613a505339751452e860ead8f1d1252d277c6584515e4db",
+    6_074_547,
+    "a7853b7f889b06e035b50f64e8e2c16b4acc1fe59b6329931cca20da6e332b56",
 );
 
 // v7 changes only bundle identity in these layerless fixtures. The recorder separately
 // reconstitutes v6 identity and must reproduce this retained wire digest byte for byte.
+// QREADY1 captured-container handles extend the seeded wire in both identity
+// views; the bound-container and read-only source-handle assertions above guard it.
 const LEGACY_GOLDEN: (usize, usize, &str) = (
     324,
-    5_431_963,
-    "de9296f14dff732c590cdf36a8bcd6ae670db88662794e9605354f36b8dcb8d4",
+    6_074_547,
+    "4b99dc8ea6262753cf917c8066f367d90b3de42ef5d6f85ba0b03e51f090469f",
 );
 
 // --- MAP01-VIEWPORT-US -------------------------------------------------------------------------

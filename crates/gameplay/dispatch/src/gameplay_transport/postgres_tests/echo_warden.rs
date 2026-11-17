@@ -97,7 +97,7 @@ async fn scenario(h: &Harness) -> TestResult {
         .qualified_room()
         .bundle_view(
             cells,
-            bundle.frame_binding_digest(world),
+            pin.frame_binding().digest(),
             bundle.map_revision_digest(),
             crate::content::NativeEntryStart {
                 x: POSITION.x,
@@ -188,6 +188,7 @@ async fn scenario(h: &Harness) -> TestResult {
         imported_charms: &charms, room: &room,
     }.build();
     owner.active_generation = Some(active);
+    owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&room));
     owner.clock_origin = std::time::Instant::now()
         .checked_sub(Duration::from_secs(400))
         .ok_or("clock")?;

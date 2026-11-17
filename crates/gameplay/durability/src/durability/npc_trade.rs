@@ -352,14 +352,36 @@ fn validate(request: &NpcTradeRequest, sell_all: bool) -> Result<Option<(u64, u3
     validate_sell_bound(request,sell_all,rules::NPC_TRADE_SELL_GOLD_UNITS_MAX)
 }
 
-fn validate_sell_bound(request:&NpcTradeRequest,sell_all:bool,sell_max:u64)->Result<Option<(u64,u32)>> {
-    if request.fluid_subtype.is_some() && (request.fluid_subtype.is_some_and(|s| s > 20)
-        || request.offer_count != 1 || request.item.stack != super::item_transfer::ItemStackClass::NonStackable
-        || !matches!(request.item.definition.production_key.as_str(), "oteryn:item.tibia.i2874" | "oteryn:item.tibia.i2875" | "oteryn:item.tibia.i2877" | "oteryn:item.tibia.i2880" | "oteryn:item.tibia.i2901" | "oteryn:item.tibia.i5552" | "oteryn:item.tibia.i9232")) {
+fn validate_sell_bound(
+    request: &NpcTradeRequest,
+    sell_all: bool,
+    sell_max: u64,
+) -> Result<Option<(u64, u32)>> {
+    if request.fluid_subtype.is_some()
+        && (request.fluid_subtype.is_some_and(|s| s > 20)
+            || request.offer_count != 1
+            || request.item.stack != super::item_transfer::ItemStackClass::NonStackable
+            || !matches!(
+                request.item.definition.production_key.as_str(),
+                "oteryn:item.tibia.i2874"
+                    | "oteryn:item.tibia.i2875"
+                    | "oteryn:item.tibia.i2877"
+                    | "oteryn:item.tibia.i2880"
+                    | "oteryn:item.tibia.i2901"
+                    | "oteryn:item.tibia.i5552"
+                    | "oteryn:item.tibia.i9232"
+            ))
+    {
         return Err(NpcTradeError::InvalidInput);
     }
-    if request.full_charges.is_some() && (request.full_charges == Some(0) || request.fluid_subtype.is_some()
-        || request.offer_count != 1 || request.item.stack != super::item_transfer::ItemStackClass::NonStackable) { return Err(NpcTradeError::InvalidInput); }
+    if request.full_charges.is_some()
+        && (request.full_charges == Some(0)
+            || request.fluid_subtype.is_some()
+            || request.offer_count != 1
+            || request.item.stack != super::item_transfer::ItemStackClass::NonStackable)
+    {
+        return Err(NpcTradeError::InvalidInput);
+    }
     let cause = &request.cause;
     let priced = if sell_all {
         if cause.side != NpcTradeSide::Sell
@@ -465,7 +487,10 @@ fn request_binding(
         digest.update(b"oteryn:npc-fluid:v1");
         digest.update([subtype]);
     }
-    if let Some(charges)=request.full_charges {digest.update(b"oteryn:npc-charges:v1");digest.update(charges.to_be_bytes());}
+    if let Some(charges) = request.full_charges {
+        digest.update(b"oteryn:npc-charges:v1");
+        digest.update(charges.to_be_bytes());
+    }
     digest.finalize().to_vec()
 }
 
@@ -1329,7 +1354,9 @@ async fn apply_trade(
         .bind(i64::from(line.quantity_after))
         .execute(&mut **tx)
         .await?;
-        if line.kind == NpcTradeLineKind::ItemMint && let Some(subtype) = request.fluid_subtype.filter(|s| *s != 0) {
+        if line.kind == NpcTradeLineKind::ItemMint
+            && let Some(subtype) = request.fluid_subtype.filter(|s| *s != 0)
+        {
             sqlx::query("INSERT INTO game_item_fluid_states(item_instance_id,world_id,fluid_subtype,last_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid)")
                 .bind(line.item_instance_id.as_slice()).bind(world_id.as_bytes().as_slice()).bind(i16::from(subtype)).bind(request.transaction_id.as_slice()).execute(&mut **tx).await?;
         }

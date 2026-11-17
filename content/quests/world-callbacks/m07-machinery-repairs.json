@@ -1,0 +1,1337 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/m07/machinery-repair-outpost-01",
+      "quest": "oteryn:quest.machinery_of_war_quest",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32797,
+          "y": 31731,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 6280,
+        "native": {
+          "position": {
+            "x": 32797,
+            "y": 31731,
+            "floor": -7
+          },
+          "ordinal": 2,
+          "appearance": 6280
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 32797,
+            "y": 31731,
+            "floor": -7
+          },
+          "appearance": 6280,
+          "replacement": 1271,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32798,
+            "y": 31732,
+            "floor": -7
+          },
+          "appearance": 6283,
+          "replacement": 1277,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32793,
+            "y": 31735,
+            "floor": -7
+          },
+          "appearance": 6283,
+          "replacement": 1277,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32798,
+            "y": 31735,
+            "floor": -7
+          },
+          "appearance": 6283,
+          "replacement": 1277,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32793,
+            "y": 31736,
+            "floor": -7
+          },
+          "appearance": 6281,
+          "replacement": 1277,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32798,
+            "y": 31736,
+            "floor": -7
+          },
+          "appearance": 6281,
+          "replacement": 1277,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32797,
+            "y": 31737,
+            "floor": -7
+          },
+          "appearance": 6280,
+          "replacement": 1271,
+          "replacement_passable": false
+        }
+      ],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32797,
+            "y": 31731,
+            "floor": -7
+          },
+          "appearance": 6280
+        },
+        {
+          "position": {
+            "x": 32798,
+            "y": 31732,
+            "floor": -7
+          },
+          "appearance": 6283
+        },
+        {
+          "position": {
+            "x": 32793,
+            "y": 31735,
+            "floor": -7
+          },
+          "appearance": 6283
+        },
+        {
+          "position": {
+            "x": 32798,
+            "y": 31735,
+            "floor": -7
+          },
+          "appearance": 6283
+        },
+        {
+          "position": {
+            "x": 32793,
+            "y": 31736,
+            "floor": -7
+          },
+          "appearance": 6281
+        },
+        {
+          "position": {
+            "x": 32798,
+            "y": 31736,
+            "floor": -7
+          },
+          "appearance": 6281
+        },
+        {
+          "position": {
+            "x": 32797,
+            "y": 31737,
+            "floor": -7
+          },
+          "appearance": 6280
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/repair_outpost_01",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/sites_repaired",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/kits_spent",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 37
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 7,
+            "minimum": 7
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i7785",
+        "count": 7,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "requires_world_admission": true,
+      "minimum_level": 50,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "The exact repair budget restores this site. Its repaired walls are solid.",
+      "effects": {
+        "transform": 1271
+      },
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data/items/items.xml:3351-3353,17243-17245,21014-21017",
+        "docs/reference/content-prep/questpc4-M07-machinery-repairs.md",
+        "OTERYN_CHOSEN_REPAIR_TRIAL:four seven-segment outposts and two eight-segment walls; exact44 consumable kit budget; plain brick visual mapping; no original action-id or completion claim",
+        "content/world/placements/region-z07-x128-y123.b3:sha256=865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m07/machinery-repair-outpost-02",
+      "quest": "oteryn:quest.machinery_of_war_quest",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32775,
+          "y": 31774,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 6280,
+        "native": {
+          "position": {
+            "x": 32775,
+            "y": 31774,
+            "floor": -7
+          },
+          "ordinal": 3,
+          "appearance": 6280
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 32775,
+            "y": 31774,
+            "floor": -7
+          },
+          "appearance": 6280,
+          "replacement": 1271,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32776,
+            "y": 31775,
+            "floor": -7
+          },
+          "appearance": 6283,
+          "replacement": 1277,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32771,
+            "y": 31778,
+            "floor": -7
+          },
+          "appearance": 6283,
+          "replacement": 1277,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32776,
+            "y": 31778,
+            "floor": -7
+          },
+          "appearance": 6283,
+          "replacement": 1277,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32771,
+            "y": 31779,
+            "floor": -7
+          },
+          "appearance": 6281,
+          "replacement": 1277,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32776,
+            "y": 31779,
+            "floor": -7
+          },
+          "appearance": 6281,
+          "replacement": 1277,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32775,
+            "y": 31780,
+            "floor": -7
+          },
+          "appearance": 6280,
+          "replacement": 1271,
+          "replacement_passable": false
+        }
+      ],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32775,
+            "y": 31774,
+            "floor": -7
+          },
+          "appearance": 6280
+        },
+        {
+          "position": {
+            "x": 32776,
+            "y": 31775,
+            "floor": -7
+          },
+          "appearance": 6283
+        },
+        {
+          "position": {
+            "x": 32771,
+            "y": 31778,
+            "floor": -7
+          },
+          "appearance": 6283
+        },
+        {
+          "position": {
+            "x": 32776,
+            "y": 31778,
+            "floor": -7
+          },
+          "appearance": 6283
+        },
+        {
+          "position": {
+            "x": 32771,
+            "y": 31779,
+            "floor": -7
+          },
+          "appearance": 6281
+        },
+        {
+          "position": {
+            "x": 32776,
+            "y": 31779,
+            "floor": -7
+          },
+          "appearance": 6281
+        },
+        {
+          "position": {
+            "x": 32775,
+            "y": 31780,
+            "floor": -7
+          },
+          "appearance": 6280
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/repair_outpost_02",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/sites_repaired",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/kits_spent",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 37
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 7,
+            "minimum": 7
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i7785",
+        "count": 7,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "requires_world_admission": true,
+      "minimum_level": 50,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "The exact repair budget restores this site. Its repaired walls are solid.",
+      "effects": {
+        "transform": 1271
+      },
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data/items/items.xml:3351-3353,17243-17245,21014-21017",
+        "docs/reference/content-prep/questpc4-M07-machinery-repairs.md",
+        "OTERYN_CHOSEN_REPAIR_TRIAL:four seven-segment outposts and two eight-segment walls; exact44 consumable kit budget; plain brick visual mapping; no original action-id or completion claim",
+        "content/world/placements/region-z07-x128-y124.b3:sha256=bdcf1412c9d0ea16670cd16ed415740da23293bc12f30cfc16cbe1bd04194f66"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m07/machinery-repair-outpost-03",
+      "quest": "oteryn:quest.machinery_of_war_quest",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32795,
+          "y": 31812,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 6280,
+        "native": {
+          "position": {
+            "x": 32795,
+            "y": 31812,
+            "floor": -7
+          },
+          "ordinal": 3,
+          "appearance": 6280
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 32795,
+            "y": 31812,
+            "floor": -7
+          },
+          "appearance": 6280,
+          "replacement": 1271,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32796,
+            "y": 31813,
+            "floor": -7
+          },
+          "appearance": 6283,
+          "replacement": 1277,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32791,
+            "y": 31816,
+            "floor": -7
+          },
+          "appearance": 6283,
+          "replacement": 1277,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32796,
+            "y": 31816,
+            "floor": -7
+          },
+          "appearance": 6283,
+          "replacement": 1277,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32791,
+            "y": 31817,
+            "floor": -7
+          },
+          "appearance": 6281,
+          "replacement": 1277,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32792,
+            "y": 31818,
+            "floor": -7
+          },
+          "appearance": 6280,
+          "replacement": 1271,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32795,
+            "y": 31818,
+            "floor": -7
+          },
+          "appearance": 6280,
+          "replacement": 1271,
+          "replacement_passable": false
+        }
+      ],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32795,
+            "y": 31812,
+            "floor": -7
+          },
+          "appearance": 6280
+        },
+        {
+          "position": {
+            "x": 32796,
+            "y": 31813,
+            "floor": -7
+          },
+          "appearance": 6283
+        },
+        {
+          "position": {
+            "x": 32791,
+            "y": 31816,
+            "floor": -7
+          },
+          "appearance": 6283
+        },
+        {
+          "position": {
+            "x": 32796,
+            "y": 31816,
+            "floor": -7
+          },
+          "appearance": 6283
+        },
+        {
+          "position": {
+            "x": 32791,
+            "y": 31817,
+            "floor": -7
+          },
+          "appearance": 6281
+        },
+        {
+          "position": {
+            "x": 32792,
+            "y": 31818,
+            "floor": -7
+          },
+          "appearance": 6280
+        },
+        {
+          "position": {
+            "x": 32795,
+            "y": 31818,
+            "floor": -7
+          },
+          "appearance": 6280
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/repair_outpost_03",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/sites_repaired",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/kits_spent",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 37
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 7,
+            "minimum": 7
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i7785",
+        "count": 7,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "requires_world_admission": true,
+      "minimum_level": 50,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "The exact repair budget restores this site. Its repaired walls are solid.",
+      "effects": {
+        "transform": 1271
+      },
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data/items/items.xml:3351-3353,17243-17245,21014-21017",
+        "docs/reference/content-prep/questpc4-M07-machinery-repairs.md",
+        "OTERYN_CHOSEN_REPAIR_TRIAL:four seven-segment outposts and two eight-segment walls; exact44 consumable kit budget; plain brick visual mapping; no original action-id or completion claim",
+        "content/world/placements/region-z07-x128-y124.b3:sha256=bdcf1412c9d0ea16670cd16ed415740da23293bc12f30cfc16cbe1bd04194f66"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m07/machinery-repair-outpost-04",
+      "quest": "oteryn:quest.machinery_of_war_quest",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32853,
+          "y": 31816,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 6280,
+        "native": {
+          "position": {
+            "x": 32853,
+            "y": 31816,
+            "floor": -7
+          },
+          "ordinal": 3,
+          "appearance": 6280
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 32853,
+            "y": 31816,
+            "floor": -7
+          },
+          "appearance": 6280,
+          "replacement": 1271,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32857,
+            "y": 31817,
+            "floor": -7
+          },
+          "appearance": 6283,
+          "replacement": 1277,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32852,
+            "y": 31820,
+            "floor": -7
+          },
+          "appearance": 6283,
+          "replacement": 1277,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32857,
+            "y": 31820,
+            "floor": -7
+          },
+          "appearance": 6283,
+          "replacement": 1277,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32857,
+            "y": 31821,
+            "floor": -7
+          },
+          "appearance": 6281,
+          "replacement": 1277,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32853,
+            "y": 31822,
+            "floor": -7
+          },
+          "appearance": 6282,
+          "replacement": 1271,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32856,
+            "y": 31822,
+            "floor": -7
+          },
+          "appearance": 6280,
+          "replacement": 1271,
+          "replacement_passable": false
+        }
+      ],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32853,
+            "y": 31816,
+            "floor": -7
+          },
+          "appearance": 6280
+        },
+        {
+          "position": {
+            "x": 32857,
+            "y": 31817,
+            "floor": -7
+          },
+          "appearance": 6283
+        },
+        {
+          "position": {
+            "x": 32852,
+            "y": 31820,
+            "floor": -7
+          },
+          "appearance": 6283
+        },
+        {
+          "position": {
+            "x": 32857,
+            "y": 31820,
+            "floor": -7
+          },
+          "appearance": 6283
+        },
+        {
+          "position": {
+            "x": 32857,
+            "y": 31821,
+            "floor": -7
+          },
+          "appearance": 6281
+        },
+        {
+          "position": {
+            "x": 32853,
+            "y": 31822,
+            "floor": -7
+          },
+          "appearance": 6282
+        },
+        {
+          "position": {
+            "x": 32856,
+            "y": 31822,
+            "floor": -7
+          },
+          "appearance": 6280
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/repair_outpost_04",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/sites_repaired",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/kits_spent",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 37
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 7,
+            "minimum": 7
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i7785",
+        "count": 7,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "requires_world_admission": true,
+      "minimum_level": 50,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "The exact repair budget restores this site. Its repaired walls are solid.",
+      "effects": {
+        "transform": 1271
+      },
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data/items/items.xml:3351-3353,17243-17245,21014-21017",
+        "docs/reference/content-prep/questpc4-M07-machinery-repairs.md",
+        "OTERYN_CHOSEN_REPAIR_TRIAL:four seven-segment outposts and two eight-segment walls; exact44 consumable kit budget; plain brick visual mapping; no original action-id or completion claim",
+        "content/world/placements/region-z07-x128-y124.b3:sha256=bdcf1412c9d0ea16670cd16ed415740da23293bc12f30cfc16cbe1bd04194f66"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m07/machinery-repair-wall-01",
+      "quest": "oteryn:quest.machinery_of_war_quest",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32798,
+          "y": 31769,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 6282,
+        "native": {
+          "position": {
+            "x": 32798,
+            "y": 31769,
+            "floor": -7
+          },
+          "ordinal": 1,
+          "appearance": 6282
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 32798,
+            "y": 31769,
+            "floor": -7
+          },
+          "appearance": 6282,
+          "replacement": 1271,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32799,
+            "y": 31769,
+            "floor": -7
+          },
+          "appearance": 6282,
+          "replacement": 1271,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32800,
+            "y": 31769,
+            "floor": -7
+          },
+          "appearance": 6282,
+          "replacement": 1271,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32801,
+            "y": 31772,
+            "floor": -7
+          },
+          "appearance": 6283,
+          "replacement": 1277,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32803,
+            "y": 31774,
+            "floor": -7
+          },
+          "appearance": 6282,
+          "replacement": 1271,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32804,
+            "y": 31774,
+            "floor": -7
+          },
+          "appearance": 6282,
+          "replacement": 1271,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32805,
+            "y": 31777,
+            "floor": -7
+          },
+          "appearance": 6283,
+          "replacement": 1277,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32805,
+            "y": 31778,
+            "floor": -7
+          },
+          "appearance": 6283,
+          "replacement": 1277,
+          "replacement_passable": false
+        }
+      ],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32798,
+            "y": 31769,
+            "floor": -7
+          },
+          "appearance": 6282
+        },
+        {
+          "position": {
+            "x": 32799,
+            "y": 31769,
+            "floor": -7
+          },
+          "appearance": 6282
+        },
+        {
+          "position": {
+            "x": 32800,
+            "y": 31769,
+            "floor": -7
+          },
+          "appearance": 6282
+        },
+        {
+          "position": {
+            "x": 32801,
+            "y": 31772,
+            "floor": -7
+          },
+          "appearance": 6283
+        },
+        {
+          "position": {
+            "x": 32803,
+            "y": 31774,
+            "floor": -7
+          },
+          "appearance": 6282
+        },
+        {
+          "position": {
+            "x": 32804,
+            "y": 31774,
+            "floor": -7
+          },
+          "appearance": 6282
+        },
+        {
+          "position": {
+            "x": 32805,
+            "y": 31777,
+            "floor": -7
+          },
+          "appearance": 6283
+        },
+        {
+          "position": {
+            "x": 32805,
+            "y": 31778,
+            "floor": -7
+          },
+          "appearance": 6283
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/repair_wall_01",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/sites_repaired",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/kits_spent",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 36
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 8,
+            "minimum": 8
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i7785",
+        "count": 8,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "requires_world_admission": true,
+      "minimum_level": 50,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "The exact repair budget restores this site. Its repaired walls are solid.",
+      "effects": {
+        "transform": 1271
+      },
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data/items/items.xml:3351-3353,17243-17245,21014-21017",
+        "docs/reference/content-prep/questpc4-M07-machinery-repairs.md",
+        "OTERYN_CHOSEN_REPAIR_TRIAL:four seven-segment outposts and two eight-segment walls; exact44 consumable kit budget; plain brick visual mapping; no original action-id or completion claim",
+        "content/world/placements/region-z07-x128-y124.b3:sha256=bdcf1412c9d0ea16670cd16ed415740da23293bc12f30cfc16cbe1bd04194f66"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m07/machinery-repair-wall-02",
+      "quest": "oteryn:quest.machinery_of_war_quest",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32808,
+          "y": 31789,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 6282,
+        "native": {
+          "position": {
+            "x": 32808,
+            "y": 31789,
+            "floor": -7
+          },
+          "ordinal": 1,
+          "appearance": 6282
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 32808,
+            "y": 31789,
+            "floor": -7
+          },
+          "appearance": 6282,
+          "replacement": 1271,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32810,
+            "y": 31789,
+            "floor": -7
+          },
+          "appearance": 6282,
+          "replacement": 1271,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32811,
+            "y": 31793,
+            "floor": -7
+          },
+          "appearance": 6283,
+          "replacement": 1277,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32812,
+            "y": 31794,
+            "floor": -7
+          },
+          "appearance": 6282,
+          "replacement": 1271,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32813,
+            "y": 31794,
+            "floor": -7
+          },
+          "appearance": 6282,
+          "replacement": 1271,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32814,
+            "y": 31794,
+            "floor": -7
+          },
+          "appearance": 6282,
+          "replacement": 1271,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32815,
+            "y": 31797,
+            "floor": -7
+          },
+          "appearance": 6283,
+          "replacement": 1277,
+          "replacement_passable": false
+        },
+        {
+          "position": {
+            "x": 32815,
+            "y": 31798,
+            "floor": -7
+          },
+          "appearance": 6283,
+          "replacement": 1277,
+          "replacement_passable": false
+        }
+      ],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32808,
+            "y": 31789,
+            "floor": -7
+          },
+          "appearance": 6282
+        },
+        {
+          "position": {
+            "x": 32810,
+            "y": 31789,
+            "floor": -7
+          },
+          "appearance": 6282
+        },
+        {
+          "position": {
+            "x": 32811,
+            "y": 31793,
+            "floor": -7
+          },
+          "appearance": 6283
+        },
+        {
+          "position": {
+            "x": 32812,
+            "y": 31794,
+            "floor": -7
+          },
+          "appearance": 6282
+        },
+        {
+          "position": {
+            "x": 32813,
+            "y": 31794,
+            "floor": -7
+          },
+          "appearance": 6282
+        },
+        {
+          "position": {
+            "x": 32814,
+            "y": 31794,
+            "floor": -7
+          },
+          "appearance": 6282
+        },
+        {
+          "position": {
+            "x": 32815,
+            "y": 31797,
+            "floor": -7
+          },
+          "appearance": 6283
+        },
+        {
+          "position": {
+            "x": 32815,
+            "y": 31798,
+            "floor": -7
+          },
+          "appearance": 6283
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/repair_wall_02",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/sites_repaired",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/kits_spent",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 36
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 8,
+            "minimum": 8
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i7785",
+        "count": 8,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "requires_world_admission": true,
+      "minimum_level": 50,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "The exact repair budget restores this site. Its repaired walls are solid.",
+      "effects": {
+        "transform": 1271
+      },
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data/items/items.xml:3351-3353,17243-17245,21014-21017",
+        "docs/reference/content-prep/questpc4-M07-machinery-repairs.md",
+        "OTERYN_CHOSEN_REPAIR_TRIAL:four seven-segment outposts and two eight-segment walls; exact44 consumable kit budget; plain brick visual mapping; no original action-id or completion claim",
+        "content/world/placements/region-z07-x128-y124.b3:sha256=bdcf1412c9d0ea16670cd16ed415740da23293bc12f30cfc16cbe1bd04194f66"
+      ]
+    }
+  ]
+}

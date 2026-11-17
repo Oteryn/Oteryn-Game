@@ -29,6 +29,7 @@ const _: () = assert!(
 
 #[derive(Debug, Clone)]
 pub struct Scene {
+    drome_hazards: Vec<drome_hazards::GroundWarning>,
     minimap: bool,
     #[cfg(feature = "bevy-shell")]
     minimap_quads: std::ops::Range<usize>,
@@ -59,6 +60,7 @@ pub struct Scene {
     own_identity: Option<[u8; 16]>,
     own_draws: Option<Vec<Draw>>,
     actor_draws: Vec<(TileCoord, Vec<Draw>)>,
+    object_draws: Vec<(oteryn_session::ActorPosition, u32, Vec<Draw>)>,
     names: Vec<(TileCoord, Vec<u16>)>,
     #[cfg(feature = "bevy-shell")]
     name_entities: Vec<oteryn_session::EntityRef>,
@@ -115,6 +117,7 @@ impl Scene {
             }])
             .collect();
         let mut scene = Self {
+            drome_hazards: Vec::new(),
             minimap: false,
             #[cfg(feature = "bevy-shell")]
             minimap_quads: 0..0,
@@ -143,6 +146,7 @@ impl Scene {
             own_identity: None,
             own_draws: None,
             actor_draws: Vec::new(),
+            object_draws: Vec::new(),
             names: Vec::new(),
             #[cfg(feature = "bevy-shell")]
             name_entities: Vec::new(),
@@ -259,6 +263,7 @@ impl Scene {
         #[cfg(not(feature = "bevy-shell"))]
         let _ = floor_quads;
         let atlas = self.atlas();
+        self.draw_drome_hazards(&mut sprites, atlas)?;
         for (tile, cells) in &self.names {
             let [x, y] = self.view.tile_to_screen(*tile);
             let scale = f32::from(self.label_scale) / 100.0;
@@ -359,3 +364,10 @@ mod visual_scene;
 
 #[path = "features/0019-world-light/scene.rs"]
 pub(crate) mod floor_lighting;
+
+#[path = "features/0170-arena/scene.rs"]
+mod drome_hazards;
+pub(crate) use drome_hazards::GroundWarning;
+
+#[path = "features/0451-personal-map-marks/scene.rs"]
+mod personal_map_marks;

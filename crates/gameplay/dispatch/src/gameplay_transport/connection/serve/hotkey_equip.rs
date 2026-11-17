@@ -69,6 +69,15 @@ where
     }
     loop {
         if let Some((frame, _, _)) = session.held.front() {
+            match command_session_matches(frame, session.admitted, session.require_session_binding)
+            {
+                Ok(false) => {
+                    session.held.pop_front();
+                    continue;
+                }
+                Ok(true) => {}
+                Err(error) => return Err(close(stream, session.admitted, error).await),
+            }
             let replaced = tokio::time::Instant::now() < due
                 && is_replacement(authority, session, command.command_id, frame).await;
             if !replaced {
@@ -84,6 +93,11 @@ where
             tokio::time::sleep_until(due).await;
             return Ok(false);
         };
+        match command_session_matches(&frame, session.admitted, session.require_session_binding) {
+            Ok(false) => continue,
+            Ok(true) => {}
+            Err(error) => return Err(close(stream, session.admitted, error).await),
+        }
         if let Ok(envelope) = decode_wire_envelope(&frame)
             && envelope.connection_generation() == session.generation
             && envelope.message_type() == MessageType::LivenessAck
@@ -123,6 +137,12 @@ async fn is_replacement<A: FreshAdmissionAuthority>(
     current: u64,
     frame: &[u8],
 ) -> bool {
+    if !matches!(
+        command_session_matches(frame, session.admitted, session.require_session_binding),
+        Ok(true)
+    ) {
+        return false;
+    }
     let Ok(envelope) = decode_wire_envelope(frame) else {
         return false;
     };

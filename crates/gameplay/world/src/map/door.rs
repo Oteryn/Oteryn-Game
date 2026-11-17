@@ -13,6 +13,10 @@
 //! Level and quest doors retain their own predicates; house doors and unqualified open
 //! counterparts stay outside this book.
 
+#[path = "door/key_use_observation.rs"]
+mod key_use_observation;
+pub use key_use_observation::KeyDoorOpening;
+
 pub use super::door_registry::open_of;
 use super::overlay::TilePos;
 use super::view::EntryFacts;
@@ -873,3 +877,7 @@ mod tests {
         assert_eq!(open_key("oteryn:item.tibia.i1628", 1629, 1630), None);
     }
 }
+
+#[cfg(test)]
+#[path = "door/key_use_observation_tests.rs"]
+mod key_use_observation_tests;

@@ -127,6 +127,9 @@ pub use runtime_actor_carrier::NATIVE_SUMMON_MEMOS_PER_CHANNEL_MAX;
 pub use runtime_actor_carrier::NATIVE_SUMMON_RETIREMENT_LINKS_PER_CALL_MAX;
 #[allow(unused_imports)]
 pub use runtime_actor_carrier::NativeEncounterSpawnSpec;
+pub use runtime_actor_carrier::NativeNullHealthSample;
+pub use runtime_actor_carrier::NativeRetainedCallbackCaster;
+pub use runtime_actor_carrier::NativeRetainedCallbackTeleport;
 #[allow(unused_imports)]
 pub use runtime_actor_carrier::NativeSummonAdmissionSpec;
 #[allow(unused_imports)]
@@ -141,6 +144,7 @@ pub use runtime_actor_carrier::OwnerDamageCommand;
 pub use runtime_actor_carrier::OwnerDamageResult;
 #[allow(unused_imports)]
 pub use runtime_actor_carrier::PlayerActorReservation;
+pub use runtime_actor_carrier::PreparedNativeCreatureEventBirth;
 #[allow(unused_imports)]
 pub use runtime_actor_carrier::RationalSpeedRange;
 #[allow(unused_imports)]
@@ -158,6 +162,7 @@ pub use runtime_actor_carrier::TickFacts;
 pub use runtime_actor_carrier::TickKind;
 #[allow(unused_imports)]
 pub use runtime_actor_carrier::VisibleRuntimeCorpse;
+pub use runtime_actor_carrier::npc_actor::ConditionalNpcActor;
 pub use runtime_actor_carrier::npc_actor::HirelingProjection;
 pub use runtime_actor_carrier::npc_actor::HouseHirelingEntity;
 pub use runtime_actor_carrier::npc_actor::NpcPlacement;
@@ -191,6 +196,7 @@ pub use runtime_actor_carrier::runtime_actor_periodic::CreaturePeriodicReceipt;
 pub use runtime_actor_carrier::runtime_actor_periodic::PreparedCreaturePeriodicTurn;
 pub use runtime_actor_carrier::runtime_actor_source_reservation::SourceActorReservation;
 pub use runtime_actor_carrier::runtime_actor_source_reservation::SourceActorReservationProof;
+pub use runtime_actor_carrier::runtime_actor_source_reservation::SourceGlobalReservationProof;
 pub use runtime_actor_carrier::runtime_actor_source_reservation::source_reservation_seal;
 pub use runtime_actor_carrier::runtime_actor_source_step::source_step_seal;
 pub use runtime_actor_carrier::runtime_actor_source_step::{
@@ -209,6 +215,9 @@ pub use runtime_actor_carrier::runtime_actor_spell_types;
 pub use runtime_actor_carrier::runtime_actor_spell_types::DeferredCommitAuthority;
 pub use runtime_actor_carrier::source_scene::{
     MAX_SOURCE_SCENE_ACTORS, SceneActorKind, SceneActorSnapshot,
+};
+pub use runtime_actor_carrier::{
+    NativeHealthChangeObservation, NativeHealthGuardName, NativeHealthNameRead,
 };
 pub use runtime_actor_carrier::{
     NativeRaidSpawnSpec, RaidCreatureStatus, RaidSpawnIdentity, RaidSpawnOutcome, RaidSpawnReceipt,

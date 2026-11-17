@@ -1,48 +1,144 @@
 name: Node boot physical qualification
 
+# One hosted machine per shard. tools/qualification/node_boot/matrix.py plans the
+# shards from the harness sources: `reference` is the single-machine run, `pr` the
+# seven-machine split, `full` every journey group, every row, spells and the
+# game_platform lane, `custom` the groups and rows given below.
 on:
   workflow_dispatch:
+    inputs:
+      set:
+        description: Shard set
+        type: choice
+        options: [reference, pr, full, custom]
+        default: reference
+      groups:
+        description: "custom: journey groups, shards separated by ';' (e.g. core;f4,f5,f6)"
+        type: string
+        default: ''
+      rows:
+        description: "custom: row journeys as start:end or all"
+        type: string
+        default: ''
+      batch:
+        description: Rows per machine for full and custom
+        type: string
+        default: '10'
+      basic:
+        description: "custom: run the basic seam on its own machine"
+        type: boolean
+        default: false
+      spells:
+        description: "custom: run the spell scenarios"
+        type: boolean
+        default: false
+      game_platform:
+        description: "custom: run the portal-rs game_platform lane"
+        type: boolean
+        default: false
+  schedule:
+    - cron: '23 1 * * *'
 
 permissions:
   contents: read
 
 concurrency:
-  group: node-boot-qualification-${{ github.ref }}
+  group: node-boot-qualification-${{ github.ref }}-${{ inputs.set || 'full' }}${{ inputs.set == 'custom' && format('-{0}', github.run_id) || '' }}
   cancel-in-progress: true
 
 jobs:
-  node-boot:
-    name: Node boot / shipped binaries against the real Platform
+  plan:
+    name: Node boot / plan shards
     runs-on: ubuntu-24.04
-    # W20a's natural day and W20b's light decay run serially for almost two hours.
-    # Include build, the basic seam, World setup and the remaining journeys.
-    timeout-minutes: 240
+    timeout-minutes: 10
+    outputs:
+      shards: ${{ steps.plan.outputs.shards }}
     steps:
       - name: Check out exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-          fetch-depth: 0
           persist-credentials: false
 
       - name: Verify exact candidate
         env:
-          EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          EXPECTED_SHA: ${{ github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Test the shard planner
+        run: python3 tools/qualification/node_boot/test_matrix.py
+
+      - name: Plan shards
+        id: plan
+        env:
+          SET: ${{ inputs.set || 'full' }}
+          SHARD_GROUPS: ${{ inputs.groups }}
+          ROWS: ${{ inputs.rows }}
+          BATCH: ${{ inputs.batch || '10' }}
+          BASIC: ${{ inputs.basic }}
+          SPELLS: ${{ inputs.spells }}
+          GAME_PLATFORM: ${{ inputs.game_platform }}
+        run: |
+          set -euo pipefail
+          python3 tools/qualification/node_boot/matrix.py plan --set "$SET" --groups "$SHARD_GROUPS" --rows "$ROWS" \
+            --batch "$BATCH" --basic "$BASIC" --spells "$SPELLS" --game-platform "$GAME_PLATFORM" > "$RUNNER_TEMP/shards.json"
+          printf 'shards=%s\n' "$(cat "$RUNNER_TEMP/shards.json")" >> "$GITHUB_OUTPUT"
+          python3 -c 'import json,sys; [print(s["name"], s["entry"], s["env"]) for s in json.load(open(sys.argv[1]))]' \
+            "$RUNNER_TEMP/shards.json" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  node-boot:
+    name: Node boot / ${{ matrix.shard.name }}
+    needs: plan
+    runs-on: ubuntu-24.04
+    # W20a's natural day and W20b's light decay run serially for almost two hours.
+    # Include build, the basic seam, World setup and the remaining journeys.
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.plan.outputs.shards) }}
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Verify exact candidate
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Check out exact public Platform producer
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Oteryn/Oteryn-Platform
-          ref: 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
+          ref: ${{ matrix.shard.platform_ref }}
           path: _platform
           persist-credentials: false
 
       - name: Verify exact Platform revision
-        run: test "$(git -C _platform rev-parse HEAD)" = 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
+        env:
+          EXPECTED_PLATFORM: ${{ matrix.shard.platform_ref }}
+        run: test "$(git -C _platform rev-parse HEAD)" = "$EXPECTED_PLATFORM"
 
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.100.0 --profile minimal
+
+      # Protected-main artifacts make the game-server build incremental. A cache hit
+      # never substitutes for running the qualification.
+      - name: Restore trimmed Cargo cache from protected main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-
+
+      - name: Normalize source mtimes for the restored Cargo cache
+        run: python3 tools/repository/normalize_cargo_mtimes.py
 
       - name: Validate harness
         run: |
@@ -51,37 +147,84 @@ jobs:
           python3 tools/qualification/node_boot/test_diagnostics.py
           echo 'NODE_BOOT_EVIDENCE static_validation=PASS shell=parsed'
 
-      - name: Run node boot qualification
+      # Shard knobs enter the environment only after the harness self-tests ran clean.
+      - name: Select shard
+        env:
+          SHARD_JSON: ${{ toJSON(matrix.shard) }}
+        run: |
+          set -euo pipefail
+          python3 tools/qualification/node_boot/matrix.py export-env "$SHARD_JSON" > "$RUNNER_TEMP/shard.env"
+          cat "$RUNNER_TEMP/shard.env" | tee -a "$GITHUB_ENV"
+
+      - name: Run node boot shard
         env:
           PLATFORM_SOURCE: ${{ github.workspace }}/_platform
         run: |
-          set -euo pipefail
+          # A failing shard still writes result.json, so no errexit here.
+          set +e
+          set -uo pipefail
           logs="$RUNNER_TEMP/node-boot-failure-logs"
-          mkdir -p "$logs"
+          mkdir -p "$logs" "$RUNNER_TEMP/node-boot-shard"
           evidence="$logs/qualification-client.log"
-          NODE_BOOT_FAILURE_LOG_DIR="$logs" bash tools/qualification/node_boot/run.sh | tee "$evidence"
-          grep -Fxq 'NODE_BOOT_RESULT=NODE_BOOT_PASS' "$evidence"
-          grep -E '^(NODE_BOOT_EVIDENCE |SEAM_EVIDENCE |NODE_BOOT_RESULT=)' "$evidence" >> "$GITHUB_STEP_SUMMARY" || true
+          started=$SECONDS
+          if [[ "$SHARD_ENTRY" == game_platform ]]; then
+            bash tools/qualification/game_platform/run.sh | tee "$evidence"
+            code=${PIPESTATUS[0]}
+          else
+            NODE_BOOT_FAILURE_LOG_DIR="$logs" bash tools/qualification/node_boot/run.sh | tee "$evidence"
+            code=${PIPESTATUS[0]}
+          fi
+          grep -E '^(NODE_BOOT_EVIDENCE |SEAM_EVIDENCE |NODE_BOOT_RESULT=|GAME_PLATFORM_RESULT=)' "$evidence" >> "$GITHUB_STEP_SUMMARY" || true
+          python3 tools/qualification/node_boot/matrix.py extract "$evidence" "$RUNNER_TEMP/node-boot-shard/result.json" \
+            --shard "$SHARD_NAME" --entry "$SHARD_ENTRY" --exit-code "$code" --seconds "$((SECONDS - started))"
 
-      - name: Redact failed node boot logs
-        if: failure()
+      - name: Redact shard logs
+        if: always()
         run: |
           set -euo pipefail
           source="$RUNNER_TEMP/node-boot-failure-logs"
-          artifact="$RUNNER_TEMP/node-boot-failure-artifact"
+          artifact="$RUNNER_TEMP/node-boot-shard"
           mkdir -p "$source" "$artifact"
           for log in node.log qualification-client.log; do
             if [[ ! -f "$source/$log" ]]; then
-              printf 'Log unavailable; failure occurred before %s was created.\n' "$log" > "$source/$log"
+              printf 'Log unavailable; %s was not created by this shard.\n' "$log" > "$source/$log"
             fi
-            python3 tools/redact_ci_log.py "$source/$log" "$artifact/$log"
+            python3 tools/qualification/node_boot/matrix.py redact "$source/$log" "$artifact/$log"
           done
 
-      - name: Upload failed node boot logs
-        if: failure()
+      - name: Upload redacted shard evidence
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: node-boot-failure-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/node-boot-failure-artifact
+          name: node-boot-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard.name }}
+          path: ${{ runner.temp }}/node-boot-shard
           if-no-files-found: error
           retention-days: 7
+
+  summary:
+    name: Node boot / shard summary
+    needs: [plan, node-boot]
+    if: always() && needs.plan.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download shard evidence
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: node-boot-${{ github.run_id }}-${{ github.run_attempt }}-*
+          path: ${{ runner.temp }}/shards
+
+      - name: Summarise shards
+        env:
+          SHARDS: ${{ needs.plan.outputs.shards }}
+          PREFIX: node-boot-${{ github.run_id }}-${{ github.run_attempt }}-
+        run: |
+          set -euo pipefail
+          printf '%s' "$SHARDS" > "$RUNNER_TEMP/shards.json"
+          python3 tools/qualification/node_boot/matrix.py summarize "$RUNNER_TEMP/shards.json" "$RUNNER_TEMP/shards" \
+            --prefix "$PREFIX" | tee -a "$GITHUB_STEP_SUMMARY"

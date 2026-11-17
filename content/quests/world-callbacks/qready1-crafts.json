@@ -1,0 +1,240 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/qready1-cursed-grind",
+      "quest": "oteryn:quest.the_cursed_crystal",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32012,
+          "y": 32908,
+          "floor": -7
+        },
+        "appearance": 21573,
+        "unique": null,
+        "action": null,
+        "native": {
+          "position": {
+            "x": 32012,
+            "y": 32908,
+            "floor": -7
+          },
+          "ordinal": 3,
+          "appearance": 21573
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qready1-craft/grind",
+          "minimum": 0,
+          "maximum": 1000000,
+          "set": 1,
+          "preserve": false,
+          "at_least": false,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i16122",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false
+      },
+      "return_on_failure": false,
+      "failure_message": "You need a green crystal splinter to use the grinder.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i21507",
+          "count": 1,
+          "contents": []
+        },
+        "item_reward_cycle": "oteryn:quest-progress/qready1-craft/grind"
+      },
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/lib/register_actions.lua:1156-1182",
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/actions/tools/grinder.lua:1-10"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/qready1-cradle-brew",
+      "quest": "oteryn:quest.cradle_of_monsters",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33786,
+          "y": 32570,
+          "floor": -12
+        },
+        "appearance": 8997,
+        "unique": null,
+        "action": null,
+        "native": {
+          "position": {
+            "x": 33786,
+            "y": 32570,
+            "floor": -12
+          },
+          "ordinal": 2,
+          "appearance": 8997
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qready1-craft/qready1-cradle-brew",
+          "minimum": 0,
+          "maximum": 1000000,
+          "set": 1,
+          "preserve": false,
+          "at_least": false,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i40601",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false,
+        "ingredients": [
+          {
+            "item": "oteryn:item.tibia.i40598",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i40016",
+            "count": 1
+          }
+        ]
+      },
+      "return_on_failure": false,
+      "failure_message": "You need all of the recipe's ingredients.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i40603",
+          "count": 1,
+          "contents": []
+        },
+        "item_reward_cycle": "oteryn:quest-progress/qready1-craft/qready1-cradle-brew"
+      },
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/items/items.xml:item-8997",
+        "OTERYN_CHOSEN_WORKBENCH:all-declared-materials;one-atomic-use;one-output",
+        "https://www.tibiawiki.com.br/wiki/Cradle_of_Monsters_Quest#Heal_with_Anti-Mutagen"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/qready1-scatter-blend",
+      "quest": "oteryn:quest.the_scatterbrained_sorcerer_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32293,
+          "y": 32293,
+          "floor": -8
+        },
+        "appearance": 9108,
+        "unique": null,
+        "action": null,
+        "native": {
+          "position": {
+            "x": 32293,
+            "y": 32293,
+            "floor": -8
+          },
+          "ordinal": 2,
+          "appearance": 9108
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qready1-craft/qready1-scatter-blend",
+          "minimum": 0,
+          "maximum": 1000000,
+          "set": 1,
+          "preserve": false,
+          "at_least": false,
+          "increment": true
+        }
+      ],
+      "offerings": [
+        {
+          "position": {
+            "x": 32293,
+            "y": 32293,
+            "floor": -8
+          },
+          "item": "oteryn:item.tibia.i3603",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32293,
+            "y": 32293,
+            "floor": -8
+          },
+          "item": "oteryn:item.tibia.i3492",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32293,
+            "y": 32293,
+            "floor": -8
+          },
+          "item": "oteryn:item.tibia.i3723",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32293,
+            "y": 32293,
+            "floor": -8
+          },
+          "item": "oteryn:item.tibia.i3606",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32293,
+            "y": 32293,
+            "floor": -8
+          },
+          "item": "oteryn:item.tibia.i3738",
+          "count": 1
+        }
+      ],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "You need all of the recipe's ingredients.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i9109",
+          "count": 1,
+          "contents": []
+        },
+        "item_reward_cycle": "oteryn:quest-progress/qready1-craft/qready1-scatter-blend"
+      },
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/items/items.xml:item-9108",
+        "OTERYN_CHOSEN_WORKBENCH:all-declared-materials;one-atomic-use;one-output",
+        "https://www.tibiawiki.com.br/wiki/The_Scatterbrained_Sorcerer_Quest#Feed"
+      ]
+    }
+  ]
+}

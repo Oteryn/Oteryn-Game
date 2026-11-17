@@ -29,15 +29,9 @@ def main():
     if {row['sha256'] for row in proof['sources']} != {source.XML_SHA, source.CLIENT_SHA}:
         raise SystemExit('QENGINE_EQUIPMENT_SOURCE_PINS')
     test = root / 'crates/gameplay/dispatch/src/gameplay_transport/equipment_effects_owner_tests/ability_tests.rs'
-    before = test.read_text()
-    after, count = re.subn(r'assert_eq!\(added_keys\.len\(\), [0-9]+\);',
-                         f'assert_eq!(added_keys.len(), {len(expected)});', before)
-    if count != 1:
-        raise SystemExit('QENGINE_EQUIPMENT_AUDIT_ANCHOR')
-    after, count = re.subn(r'(?:QENGINE2 (?:captures 53 shared Items plus seven portable QUESTPC4 Items|adds exactly the [0-9]+ independently captured physical quest Items)|Source-pinned physical quest Items retain existing mechanic owners)\.',
-                         f'QENGINE2 adds exactly the {len(expected)} independently captured physical quest Items.', after)
-    if count != 1:
-        raise SystemExit('QENGINE_EQUIPMENT_AUDIT_COMMENT')
+    original = test.read_text()
+    from qengine_reward_equipment_pin import refresh
+    after = refresh(original, proof)
     # The merged branch also states the exact delta from its frozen main base.
     # Keep that independently named base and every attribute assertion intact.
     base = re.findall(r'const QENGINE2_BASE_PROFILES: usize = ([0-9]+);', after)
@@ -48,9 +42,9 @@ def main():
                              f'assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + {len(expected) - 53});', after)
         if count != 1:
             raise SystemExit('QENGINE_EQUIPMENT_DELTA_ANCHOR')
-    if args.check and after != before:
+    if args.check and after != original:
         raise SystemExit('QENGINE_EQUIPMENT_COUNT_STALE: run tools/content-migration/qengine_equipment_audit.py content')
-    if not args.check and after != before:
+    if not args.check and after != original:
         test.write_text(after)
     print(f'QENGINE_EQUIPMENT_SOURCE_COUNT_GREEN expected={len(expected)} check={args.check}')
 

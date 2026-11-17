@@ -73,13 +73,54 @@ def document():
         if encounter:
             for player in encounter['players']:
                 player['from'] = player.pop('from_')
+    # All anniversary counterparts share one immutable authored owner.
+    import qm03_world_admission
+    for entrance in qm03_world_admission.callbacks(ROOT):
+        if entrance['quest'] == 'oteryn:quest.the_pits_of_inferno_quest':
+            entrance['storage'][0]['minimum'] = 0
+            entrance['track_initials'] = {entrance['storage'][0]['track']: 0}
+            rows.append(entrance)
+    import questpc_explore_bindings
+    # Asura's explicit authored binding owns the same native entry and tracks.
+    # Verify equivalent behaviour before leaving registration to that owner.
+    import engenc_asura_entry
+    for row in questpc_explore_bindings.callbacks(ROOT):
+        if row['key'] == engenc_asura_entry.ENTRY:
+            asura = json.loads((ROOT / engenc_asura_entry.OUTPUT).read_bytes())['quests'][0]['stages'][0]['trigger']['callback']
+            if ({key: value for key, value in row.items() if key != 'sources'}
+                    != {key: value for key, value in asura.items() if key != 'sources'}):
+                raise ValueError('Asura entry owners disagree')
+        else:
+            rows.append(row)
+    import qmech_m03_entry_bindings
+    # Machine counterparts belong to the authored owner; retain the separate
+    # source-position Pits entrance and its live Character requirements here.
+    rows.extend(row for row in qmech_m03_entry_bindings.callbacks(ROOT)
+                if row['quest'] != 'oteryn:quest.25_years_of_tibia_quest')
     return dict(schema=1, callbacks=sorted(rows, key=lambda row: row['key']))
+
+
+
+def registered_callbacks():
+    """Return both real registration owners for integration validation."""
+    import qm03_world_admission
+    authored = qm03_world_admission.machine_document(ROOT)
+    return document()['callbacks'] + [stage['trigger']['callback']
+        for quest in authored['quests'] for stage in quest['stages']]
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
+    import qm03_world_admission
+    machine = ROOT / 'content/quests/authored-bindings/m03-25-years-time-machine.json'
+    machine_text = json.dumps(qm03_world_admission.machine_document(ROOT), ensure_ascii=False, indent=2) + '\n'
+    if args.check:
+        if machine.read_text() != machine_text:
+            raise ValueError('stale authored time-machine counterparts')
+    else:
+        machine.write_text(machine_text)
     text = json.dumps(document(), ensure_ascii=False, indent=2) + '\n'
     if args.check:
         if OUTPUT.read_text() != text:

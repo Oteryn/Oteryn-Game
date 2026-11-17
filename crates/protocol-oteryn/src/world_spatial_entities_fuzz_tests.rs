@@ -105,6 +105,8 @@ fn fuzz_entity_snapshot_and_delta_decoders() {
     for item_handles in [false, true] {
         for light in [false, true] {
             let fields = EntityFields {
+                native_icons: false,
+                native_objects: false,
                 display_names: false,
                 item_handles,
                 light,

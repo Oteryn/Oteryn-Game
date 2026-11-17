@@ -15,8 +15,15 @@ use crate::content::{
 use oteryn_world_bundle::bundle;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
+
+#[path = "native_reward_claims.rs"]
+mod native_authored;
+#[path = "native_container_fluids.rs"]
+mod native_container_fluids;
+const CONTAINER_NATIVE_SOURCE_SHA256: &str =
+    "b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757";
 
 /// The `unique` attribute of a top-level entry and the appearance id of its palette key.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -38,8 +45,10 @@ pub trait RewardClaimBase {
 pub trait RewardClaimTile {
     fn depths(&self) -> &[u8];
     fn unique(&self, ordinal: u8) -> Option<UniqueEntry>;
-    /// Palette appearance of a top-level entry, including entries without a source UID.
-    fn appearance(&self, ordinal: u8) -> Option<u16>;
+    /// Palette appearance of an exact top-level native entry, including entries without a UID.
+    fn appearance(&self, ordinal: u8) -> Option<u16> {
+        self.unique(ordinal)?.appearance
+    }
 }
 
 mod native_aliases;
@@ -47,7 +56,7 @@ mod native_aliases;
 /// The RewardClaim shards, embedded as the quest document is: the plain shards, then the authored
 /// variant shards. Keys and the exact W15b native container projection are served;
 /// other source dispositions remain closed.
-pub const REWARD_CLAIM_SHARDS: [&str; 5] = [
+pub const REWARD_CLAIM_SHARDS: [&str; 6] = [
     include_str!(
         "../../../../../content/interactions/reward_claims/reward-claims-00000-00099.json"
     ),
@@ -63,6 +72,7 @@ pub const REWARD_CLAIM_SHARDS: [&str; 5] = [
     include_str!(
         "../../../../../content/interactions/reward_claims/reward-claim-variants-00100-00104.json"
     ),
+    include_str!("../../../../../content/interactions/reward_claims/engclaim-native.json"),
 ];
 
 /// Why a placement is not bound (§1.4). Each is exactly one reason.
@@ -119,15 +129,18 @@ pub struct BoundPlacement {
     pub root_text: Option<String>,
     pub root_fluid_subtype: Option<u8>,
     pub root_charges_remaining: Option<u32>,
+    /// Optional typed quest reward owner for native inventory exchanges/allocations.
+    pub reward_callback: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RewardContainerItem {
+    /// Initial fluid in one freshly minted variable-fluid vessel.
+    pub fluid_subtype: Option<u8>,
     pub item: TypedDefinitionRef,
     pub count: u32,
     pub key_number: Option<u16>,
     pub text: Option<String>,
-    pub fluid_subtype: Option<u8>,
     pub charges_remaining: Option<u32>,
 }
 
@@ -136,6 +149,7 @@ pub struct RewardContainerItem {
 pub struct ServedClaim {
     pub key: ProductionKey,
     pub revision: DefinitionRevisionRef,
+    pub authority_digest: [u8; 32],
     pub placements: Vec<BoundPlacement>,
 }
 
@@ -219,6 +233,7 @@ fn bind_reward_claims_with_aliases(
 ) -> Result<BindingReport, ClaimsError> {
     let mut report = BindingReport::default();
     let mut matched_aliases = std::collections::BTreeSet::new();
+    let mut native_keys = BTreeSet::new();
     for shard in shards {
         let shard: Value =
             serde_json::from_str(shard).map_err(|_| ClaimsError("not a JSON document"))?;
@@ -248,11 +263,58 @@ fn bind_reward_claims_with_aliases(
                 }
                 matched_aliases.insert(index);
             }
+            if definition.get("definition_profile").and_then(Value::as_str)
+                == Some("native_authored_v1")
+            {
+                native_keys.insert(key.to_owned());
+            }
             match candidate(definition, admitted)? {
                 Err(left_out) => report.left_out.push((key.to_owned(), left_out)),
-                Ok(candidate) => bind_candidate(base, key, &candidate, &mut report, aliases)?,
+                Ok(candidate) => {
+                    let terms = serde_json::json!({"identity": definition.get("identity"), "claim": definition.get("claim"), "placements": definition.get("placements")});
+                    let digest = Sha256::digest(
+                        serde_json::to_vec(&terms).map_err(|_| ClaimsError("authority terms"))?,
+                    )
+                    .into();
+                    bind_candidate(base, key, &candidate, digest, &mut report, aliases)?;
+                }
             }
         }
+    }
+    // A native placement cannot acquire a second value authority under another
+    // claim key (or an existing source claim). Refuse every affected whole claim.
+    if !native_keys.is_empty() {
+        let mut entries = BTreeMap::<u64, Vec<(usize, usize)>>::new();
+        for (claim_index, claim) in report.served.iter().enumerate() {
+            for (placement_index, placement) in claim.placements.iter().enumerate() {
+                entries
+                    .entry(placement.bundle_placement_key)
+                    .or_default()
+                    .push((claim_index, placement_index));
+            }
+        }
+        let mut refused = BTreeSet::new();
+        for bindings in entries.values().filter(|bindings| bindings.len() > 1) {
+            if bindings
+                .iter()
+                .any(|(index, _)| native_keys.contains(report.served[*index].key.as_str()))
+            {
+                for &(index, placement) in bindings {
+                    refused.insert(index);
+                    report.unbound.push(UnboundPlacement {
+                        claim: report.served[index].key.as_str().to_owned(),
+                        index: placement,
+                        reason: UnboundReason::AmbiguousEntry,
+                    });
+                }
+            }
+        }
+        report.served = report
+            .served
+            .into_iter()
+            .enumerate()
+            .filter_map(|(index, claim)| (!refused.contains(&index)).then_some(claim))
+            .collect();
     }
     if matched_aliases.len() != aliases.len() {
         return Err(ClaimsError("native alias names an unknown source claim"));
@@ -270,8 +332,11 @@ struct CandidatePlacement {
     cell: Option<BoundCell>,
     crystal_unique_id: Option<u64>,
     native_ordinal: Option<u8>,
+    extra_items: Vec<RewardClaimItem>,
+    reward_callback: Option<String>,
     item: TypedDefinitionRef,
     count: u32,
+    additional_items: Vec<RewardClaimItem>,
     quest_transition: Option<String>,
     key_number: Option<u16>,
     achievement: Option<String>,
@@ -326,6 +391,9 @@ fn candidate(
         == Some("canary:quest/dawnport_quest")
     {
         return Ok(Err(LeftOut::OwnerExcluded));
+    }
+    if definition.get("definition_profile").and_then(Value::as_str) == Some("native_authored_v1") {
+        return native_authored::candidate(definition, admitted);
     }
     let key_variant = definition.contains_key("definition_profile");
     let medusa = crystal_medusa_reconciliation(definition);
@@ -398,6 +466,10 @@ fn candidate(
     }
     if parsed.iter().any(|placement| {
         !admitted(&placement.item)
+            || placement
+                .additional_items
+                .iter()
+                .any(|item| !admitted(&item.item))
             || placement
                 .contents
                 .iter()
@@ -531,8 +603,7 @@ fn native_container_placements(definition: &serde_json::Map<String, Value>) -> O
         ],
     ) || projection.get("schema")?.as_str()? != "OTERYN_NATIVE_CONTAINER_REWARD/v1"
         || projection.get("revision")?.as_str()? != "201189f871d23597b82caf88fd611454a2ddefb8"
-        || projection.get("source_sha256")?.as_str()?
-            != "b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757"
+        || projection.get("source_sha256")?.as_str()? != CONTAINER_NATIVE_SOURCE_SHA256
         || (projection.get("source_difference").is_some() && !medusa && !reconciled)
     {
         return None;
@@ -724,7 +795,7 @@ fn candidate_container_placement(
         return Ok(None);
     }
     result.achievement = achievement;
-    for (row, source) in rows.iter().zip(source_rows) {
+    for (ordinal, (row, source)) in rows.iter().zip(source_rows).enumerate() {
         if !only(
             row,
             &[
@@ -794,16 +865,27 @@ fn candidate_container_placement(
                 Some(body.to_owned())
             }
         };
+        // Exact source-selected state is checked by native_state before this
+        // decoder is entered. Literal water additionally retains the raw donor
+        // constructor proof; the selected milk/wine choices keep their own witness.
+        let fluid_subtype = row
+            .get("fluid_subtype")
+            .and_then(Value::as_u64)
+            .map(|n| u8::try_from(n).map_err(|_| bad.clone()))
+            .transpose()?;
+        if fluid_subtype.is_some() && (child.count != 1 || number.is_some() || text.is_some())
+            || (fluid_subtype == Some(1)
+                && native_container_fluids::source_subtype(row, result.crystal_unique_id, ordinal)
+                    != Some(Some(1)))
+        {
+            return Ok(None);
+        }
         result.contents.push(RewardContainerItem {
+            fluid_subtype,
             item: child.item,
             count: child.count,
             key_number: number,
             text,
-            fluid_subtype: row
-                .get("fluid_subtype")
-                .and_then(Value::as_u64)
-                .map(|n| u8::try_from(n).map_err(|_| bad.clone()))
-                .transpose()?,
             charges_remaining: row
                 .get("charges_remaining")
                 .and_then(Value::as_u64)
@@ -904,8 +986,34 @@ fn authored_text_matches(
         && written.get("text_ref") == Some(&expected_ref)
 }
 
-/// `None` for a placement with a field or shape the server artifact does not encode. A key
-/// variant's placement must carry a key binding of one item; no other placement may.
+/// Decode one plain reward leaf without discarding its source identity or quantity.
+fn candidate_reward_item(entry: &Value) -> Result<Option<RewardClaimItem>, ClaimsError> {
+    let bad = ClaimsError("reward item is not in the shard shape");
+    if !only(entry, &["count", "item"]) {
+        return Ok(None);
+    }
+    let count = entry
+        .get("count")
+        .and_then(Value::as_u64)
+        .and_then(|count| u32::try_from(count).ok())
+        .filter(|count| *count > 0)
+        .ok_or(bad.clone())?;
+    let item = entry.get("item").ok_or(bad.clone())?;
+    let text = |field: &str| item.get(field).and_then(Value::as_str).ok_or(bad.clone());
+    if text("family")? != "Item" {
+        return Ok(None);
+    }
+    Ok(Some(RewardClaimItem {
+        count,
+        item: TypedDefinitionRef::new(
+            DefinitionFamily::Item,
+            ProductionKey::new(text("key")?)?,
+            DefinitionRevisionRef::new(text("revision")?)?,
+        ),
+    }))
+}
+
+/// A key variant remains a single key; plain rewards admit a bounded item vector.
 fn candidate_placement(
     placement: &Value,
     key_variant: bool,
@@ -961,32 +1069,27 @@ fn candidate_placement(
         .get("items")
         .and_then(Value::as_array)
         .ok_or(bad.clone())?;
-    let [entry] = items.as_slice() else {
+    let Some((entry, rest)) = items.split_first() else {
         return Ok(None);
     };
-    if !only(entry, &["count", "item"]) {
+    if items.len() > 20 || (key_variant && !rest.is_empty()) {
         return Ok(None);
     }
-    let count = entry
-        .get("count")
-        .and_then(Value::as_u64)
-        .and_then(|count| u32::try_from(count).ok())
-        .filter(|count| *count > 0)
-        .ok_or(bad.clone())?;
-    // A key is one non-stackable item.
+    let Some(first) = candidate_reward_item(entry)? else {
+        return Ok(None);
+    };
+    let item = first.item;
+    let count = first.count;
     if key_number.is_some() && count != 1 {
         return Ok(None);
     }
-    let item = entry.get("item").ok_or(bad.clone())?;
-    let text = |field: &str| item.get(field).and_then(Value::as_str).ok_or(bad.clone());
-    if text("family")? != "Item" {
-        return Ok(None);
+    let mut additional_items = Vec::with_capacity(rest.len());
+    for entry in rest {
+        let Some(item) = candidate_reward_item(entry)? else {
+            return Ok(None);
+        };
+        additional_items.push(item);
     }
-    let item = TypedDefinitionRef::new(
-        DefinitionFamily::Item,
-        ProductionKey::new(text("key")?)?,
-        DefinitionRevisionRef::new(text("revision")?)?,
-    );
     let crystal_unique_id = if native_ordinal.is_some() {
         None
     } else {
@@ -1020,8 +1123,11 @@ fn candidate_placement(
         cell: native_cell(position),
         crystal_unique_id,
         native_ordinal,
+        extra_items: Vec::new(),
+        reward_callback: None,
         item,
         count,
+        additional_items,
         quest_transition,
         key_number,
         achievement: None,
@@ -1048,6 +1154,7 @@ fn bind_candidate(
     base: &impl RewardClaimBase,
     key: &str,
     candidate: &Candidate,
+    authority_digest: [u8; 32],
     report: &mut BindingReport,
     aliases: &[native_aliases::NativePlacementAlias],
 ) -> Result<(), ClaimsError> {
@@ -1071,10 +1178,13 @@ fn bind_candidate(
             Ok((cell, bundle_placement_key)) => bound.push(BoundPlacement {
                 placement: RewardClaimPlacement {
                     placement: PlacementKey::new(&format!("oteryn:placement/{local}/{index}"))?,
-                    items: vec![RewardClaimItem {
+                    items: std::iter::once(RewardClaimItem {
                         item: placement.item.clone(),
                         count: placement.count,
-                    }],
+                    })
+                    .chain(placement.extra_items.iter().cloned())
+                    .chain(placement.additional_items.iter().cloned())
+                    .collect(),
                     achievement: placement.achievement.clone(),
                     quest_transition: placement.quest_transition.clone(),
                     key_number: placement.key_number,
@@ -1085,6 +1195,7 @@ fn bind_candidate(
                 root_text: placement.root_text.clone(),
                 root_fluid_subtype: placement.root_fluid_subtype,
                 root_charges_remaining: placement.root_charges_remaining,
+                reward_callback: placement.reward_callback.clone(),
             }),
             Err(reason) => unbound.push(UnboundPlacement {
                 claim: key.to_owned(),
@@ -1103,6 +1214,7 @@ fn bind_candidate(
         report.served.push(ServedClaim {
             key: ProductionKey::new(key)?,
             revision: DefinitionRevisionRef::new(&candidate.revision)?,
+            authority_digest,
             placements: bound,
         });
     }
@@ -1338,6 +1450,51 @@ mod container_tests {
     }
 
     #[test]
+    fn multiple_top_level_rewards_retain_every_source_item() {
+        let source = authored("kv.bear_chest1").expect("source fixture");
+        let mut placement = source["placements"][0].clone();
+        // Exercise the plain, top-level reward shape rather than a container.
+        placement["reward"]
+            .as_object_mut()
+            .expect("reward")
+            .remove("container");
+        let parsed = candidate_placement(&placement, false)
+            .expect("valid reward shape")
+            .expect("both top-level items must be encoded");
+        assert_eq!(parsed.item.key().as_str(), "oteryn:item.tibia.i3447");
+        assert_eq!(parsed.count, 12);
+        assert_eq!(parsed.additional_items.len(), 1);
+        assert_eq!(
+            parsed.additional_items[0].item.key().as_str(),
+            "oteryn:item.tibia.i3031"
+        );
+        assert_eq!(parsed.additional_items[0].count, 40);
+        placement["reward"]["items"][1]["count"] = serde_json::json!(0);
+        assert!(candidate_placement(&placement, false).is_err());
+    }
+
+    #[test]
+    fn top_level_reward_vectors_are_nonempty_and_bounded() {
+        let source = authored("kv.bear_chest1").expect("source fixture");
+        let mut placement = source["placements"][0].clone();
+        placement["reward"]
+            .as_object_mut()
+            .expect("reward")
+            .remove("container");
+        let item = placement["reward"]["items"][0].clone();
+        for count in [0, 1, 20, 21] {
+            placement["reward"]["items"] = Value::Array(vec![item.clone(); count]);
+            assert_eq!(
+                candidate_placement(&placement, false)
+                    .expect("valid shape")
+                    .is_some(),
+                (1..=20).contains(&count),
+                "{count} reward items"
+            );
+        }
+    }
+
+    #[test]
     fn itemhold_q_charge_choices_reach_the_native_reader() {
         let ornament = authored("kv.ornamentedshield").expect("Ornamented Shield source");
         let ornament = candidate(ornament.as_object().expect("definition"), &|_| true)
@@ -1360,6 +1517,43 @@ mod container_tests {
         );
         assert_eq!(power.placements[0].count, 1);
         assert_eq!(power.placements[0].root_charges_remaining, None);
+    }
+
+    #[test]
+    fn source_selected_fluid_projections_require_the_exact_subtype() -> Result<(), String> {
+        for (key, child_index, count, subtype) in [
+            ("quest.u7_9.dreamers_challenge.chests_wine", 1, 4, 2),
+            ("kv.goblintemple2", 2, 1, 9),
+        ] {
+            let source = authored(key).ok_or("source-selected fluid claim")?;
+            let parsed = candidate(source.as_object().ok_or("definition")?, &|_| true)
+                .map_err(|e| format!("{e:?}"))?
+                .map_err(|e| format!("{e:?}"))?;
+            assert_eq!(parsed.placements.len(), count);
+            for placement in &parsed.placements {
+                assert_eq!(placement.contents.len(), 3);
+                assert_eq!(placement.contents[child_index].fluid_subtype, Some(subtype));
+            }
+            for subtype in [None, Some(0), Some(1), Some(15)] {
+                let mut changed = source.clone();
+                let child =
+                    &mut changed["native_contents"]["placements"][0]["contents"][child_index];
+                if let Some(subtype) = subtype {
+                    child["fluid_subtype"] = serde_json::json!(subtype);
+                } else {
+                    child
+                        .as_object_mut()
+                        .ok_or("child")?
+                        .remove("fluid_subtype");
+                }
+                assert!(
+                    candidate(changed.as_object().ok_or("definition")?, &|_| true)
+                        .map_err(|e| format!("{e:?}"))?
+                        .is_err()
+                );
+            }
+        }
+        Ok(())
     }
 
     #[test]

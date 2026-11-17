@@ -17,7 +17,10 @@ def apply_native(root, generated, encode):
     document = json.loads(primal)
     if document["source_revision"] != "201189f871d23597b82caf88fd611454a2ddefb8" or document["map_git_blob"] != "e61658ec0ab7b70ec35025ae969426d6fc57ae75":
         raise ValueError("unqualified encounter source map")
-    bundled = encode({"schema": "OTERYN_NATIVE_SOURCE_REGION_BUNDLE/v1", "channel": channel.decode(), "primal": primal.decode()})
+    endgame = (root / "tools/content-schema/native-gameplay/crystal-endgame-regions.json").read_bytes()
+    if json.loads(endgame)["map_git_blob"] != document["map_git_blob"]:
+        raise ValueError("endgame source map mismatch")
+    bundled = encode({"schema": "OTERYN_NATIVE_SOURCE_REGION_BUNDLE/v1", "channel": channel.decode(), "primal": primal.decode(), "endgame": endgame.decode()})
     generated[PROVIDER] = bundled
     manifest = json.loads(generated[MANIFEST])
     manifest["source_world"]["sha256"] = hashlib.sha256(bundled).hexdigest()

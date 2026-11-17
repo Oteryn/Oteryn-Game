@@ -6,6 +6,9 @@
 //! PR2784 owner answers select persistent distinct boss flags, a 68-hour final
 //! cooldown and cleanse cooldown, and the first base Decaying Defender outfit.
 
+pub mod area_icons;
+pub mod flames;
+
 use serde::{Deserialize, Serialize};
 
 mod altar_transition;
@@ -27,28 +30,70 @@ pub const BLOODY_TEARS_ITEM: u32 = 32_594;
 pub const ACCESS_PRICE: u64 = 5_000_000;
 pub const CLEANSE_COOLDOWN_SECONDS: u64 = 68 * 60 * 60;
 
+/// Crystal201189f monster/quests/rotten_blood_quest/rottenEssences.lua:1-28.
+/// Source Player storage facts share the established Quest track owner.
+#[derive(Debug, Clone, Copy)]
+pub struct EssenceSource {
+    pub item: &'static str,
+    pub track: &'static str,
+    pub transition: &'static str,
+}
+pub const ESSENCES: [EssenceSource; 4] = [
+    EssenceSource {
+        item: "oteryn:item.tibia.i43501",
+        track: "oteryn:quest-progress/storage/52280",
+        transition: "oteryn:quest-transition/rotten-blood/essence-murcion",
+    },
+    EssenceSource {
+        item: "oteryn:item.tibia.i43502",
+        track: "oteryn:quest-progress/storage/52282",
+        transition: "oteryn:quest-transition/rotten-blood/essence-chagorz",
+    },
+    EssenceSource {
+        item: "oteryn:item.tibia.i43503",
+        track: "oteryn:quest-progress/storage/52281",
+        transition: "oteryn:quest-transition/rotten-blood/essence-ichgahal",
+    },
+    EssenceSource {
+        item: "oteryn:item.tibia.i43504",
+        track: "oteryn:quest-progress/storage/52283",
+        transition: "oteryn:quest-transition/rotten-blood/essence-vemiath",
+    },
+];
+pub fn essence(item: &str) -> Option<&'static EssenceSource> {
+    ESSENCES.iter().find(|source| source.item == item)
+}
+
 /// Fixed source callback, registered through the existing literal USE owner.
 /// Crystal registers item 43891 globally, so the selected native map placement
 /// (not client item identity) is the selector. The stateful item rule is applied
 /// by the existing quest callback consumption owner under the Character lock.
 pub(crate) fn altar_callback() -> super::world_callbacks::Callback {
     use super::world_callbacks::{Callback, ItemOnTarget, Selector, Storage, Trigger};
-    Callback { effects: Default::default(), facing: None, world_requirements: Vec::new(),
-use_range:1,disguise:None,completes:false,premium_required:false,present:vec![],required_travel:vec![],
+    Callback {
+        use_range: 1,
+        disguise: None,
+        remote_teleport: None,
         state_operations: Vec::new(),
+        completes: false,
+        premium_required: false,
+        present: Vec::new(),
+        required_travel: Vec::new(),
+        item_reward: None,
+        reward_bundle: false,
+        achievements: Vec::new(),
+        activation: None,
+        requirements: None, track_initials: Default::default(), required_completed_quests: Vec::new(), admission: None, requires_premium: false,
 world_change: None,
         actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
         key: SACRIFICE.into(), quest: QUEST.into(), trigger: Trigger::Use,
         selector: Selector { position_aliases: Vec::new(),ordinal:None, native: None, position: None, unique: None, action: None,
             appearance: Some(SACRIFICIAL_PLATE_APPEARANCE) },
-        lever: None, reversible: false, passages: Vec::new(), teleport: None, remote_teleport: None,
-        item_reward: None,
-        reward_bundle: false,
-        achievements: vec![],
-        activation: None, requirements: None,
-        storage: vec![Storage { at_least: false, increment: false, track: ACCESS_TRACK.into(), minimum: 0, maximum: 3, set: 1, set_if: None, add: None, preserve: false, read_only: false }],
-        minimum_level: None, experience: None, monk_reward: None, offerings: Vec::new(),
-        item_on_target: Some(ItemOnTarget { item: "oteryn:item.tibia.i32594".into(), count: 1,
+        lever: None, reversible: false, passages: Vec::new(), teleport: None, facing: None, effects: Default::default(),
+        state_ops: Vec::new(), world_requirements: Vec::new(),
+        storage: vec![Storage {add: None, read_only: false, set_if: None,  track: ACCESS_TRACK.into(), minimum: 0, maximum: 3, set: 1, preserve: false, increment: false, at_least: false }],
+        minimum_level: None, character_requirements: None, experience: None, monk_reward: None, offerings: Vec::new(),
+        item_on_target: Some(ItemOnTarget {on_step: false, ingredients: Vec::new(), target_remove: false, selected_instance: false, item: "oteryn:item.tibia.i32594".into(), count: 1,
             alternatives: Vec::new(), replacement: None, target_replacement: None, reusable: false }),
         return_on_failure: false, failure_teleport: None,
         failure_message: Some("You need a bloody tear for the sacrifice.".into()),
@@ -160,6 +205,47 @@ pub(super) fn extend(
         });
     }
     transitions.push(altar_transition());
+    for source in ESSENCES {
+        if transitions
+            .iter()
+            .any(|transition| transition.key == source.transition)
+        {
+            return Err("duplicate source Rotten essence transition".into());
+        }
+        if let Some(track) = tracks.iter_mut().find(|track| track.key == source.track) {
+            if track.quest != QUEST
+                || !(-1..=0).contains(&track.initial)
+                || !(-1..=0).contains(&track.min)
+                || track.max != 1
+            {
+                return Err("conflicting source Rotten essence track".into());
+            }
+            // Generic world callbacks use -1 for absent storage. The existing
+            // essence owner normalizes that same inactive state to0.
+            track.initial = 0;
+            track.min = 0;
+        } else {
+            tracks.push(QuestTrack {
+                key: source.track.into(),
+                quest: QUEST.into(),
+                initial: 0,
+                min: 0,
+                max: 1,
+            });
+        }
+        transitions.push(QuestTransition {
+            world_change: None,
+            key: source.transition.into(),
+            quest: QUEST.into(),
+            effects: vec![effect(
+                source.track,
+                QuestComparison::Eq(0),
+                QuestEffectKind::Set(1),
+            )],
+            completes: false,
+            experience: None,
+        });
+    }
     super::QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
         .map_err(|error| format!("{error:?}"))
 }

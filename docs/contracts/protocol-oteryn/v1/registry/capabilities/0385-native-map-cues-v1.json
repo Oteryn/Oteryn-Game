@@ -1,0 +1,14 @@
+{
+  "id": 385,
+  "name": "NATIVE_MAP_CUES_V1",
+  "owner_decision": "SRX-3 native callback presentation: explicit current scope coordinate basis",
+  "owner": "current qualified native Bundle and Session scope epoch",
+  "requires": [
+    23,
+    30
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Offered only with current native Bundle/content/frame/map qualification, including a published World using the legacy basis. Domain19 snapshot2 selects the native coordinate basis for the current epoch; support alone does not select it. Requires23+30; local chat independently requires7."
+}

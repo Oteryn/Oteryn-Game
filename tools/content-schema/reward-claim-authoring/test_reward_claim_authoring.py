@@ -389,17 +389,99 @@ def test_a_placement_carries_only_the_transition_the_lowering_constructed() -> N
     assert any("quest_transition" in e for e in rca.validate(bound, items(), None, [claim], []))
 
 
-def test_the_committed_content_binds_exactly_the_two_chest_transitions() -> None:
+def test_the_committed_content_binds_exact_source_chest_transitions() -> None:
     records = [r["definition"] for p in json.loads((rca.ROOT / rca.INDEX_PATH).read_text())["shards"]
                for r in json.loads((rca.ROOT / p).read_text())["records"]]
     bound = {r["identity"]["key"]: {p["quest_transition"] for p in r["placements"]}
              for r in records if any("quest_transition" in p for p in r["placements"])}
-    assert bound == {
+    expected_claim_sets = {
+        "oteryn:reward-claim.kv." + marker: {"oteryn:quest-transition/kv/" + marker + "/chest"}
+        for marker in ("fanfare", "adoreduh", "barbarianaxe1", "battleaxe", "bloodherb", "captain_iglues",
+                       "bear_chest1", "bear_chest2", "bear_chest3",
+                       "behemothquest1", "behemothquest2", "behemothquest3", "behemothquest4",
+                       "alawars_vault1", "alawars_vault2",
+                       "blackknight1", "blackknight2", "circleroom1", "circleroom2",
+                       "crystalwand1", "crystalwand2", "demonaring1", "demonaring2",
+                       "doublehero1", "doublehero2", "draconia1", "draconia2",
+                       "edrongoblin1", "edrongoblin2", "fireaxe1", "fireaxe2",
+                       "ghoulroom1", "ghoulroom2", "goblintemple", "goblintemple2",
+                       "griffinshield1", "griffinshield2", "griffinshield3",
+                       "katanacorpse1", "katanacorpse2", "longsword1", "longsword2", "longsword3",
+                       "madmageroom1", "madmageroom2", "madmageroom3",
+                       "minohell1", "minohell2", "minohell3")
+    }
+    expected_claim_sets.update({
+        "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards." + marker:
+            {"oteryn:quest-transition/quest/u7_1/dragon_tower/rewards/" + marker + "/chest"}
+        for marker in ("backpack1", "backpack2")
+    })
+    expected_claim_sets.update({
+        "oteryn:reward-claim.quest.u7_9.dreamers_challenge." + marker:
+            {"oteryn:quest-transition/quest/u7_9/dreamers_challenge/" + marker + "/chest"}
+        for marker in ("bplong_sword", "chest_book", "chests3_small_diamond", "chests_wine")
+    })
+    expected_claim_sets.update({
+        "oteryn:reward-claim." + marker.replace("/", "."):
+            {"oteryn:quest-transition/" + marker + "/chest"}
+        for marker in ("quest/u6_1/emperors_cookies/rewards/cookies", "quest/key/id3802",
+                       "quest/u8_1/koshei_the_deathless/koshei_the_deathless_legs",
+                       "quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum")
+    })
+    # M35 routes these exact groups through native mint receipts, not the
+    # legacy chest-transition owner (test_engclaim_m35.py verifies that split).
+    mint_groups = {
+        'circle_room_quest': ('circleroom1', 'circleroom2'),
+        'crystal_wand_quest': ('crystalwand1', 'crystalwand2'),
+        'demona_ring_quest': ('demonaring1', 'demonaring2'),
+        'double_hero_quest': ('doublehero1', 'doublehero2'),
+        'griffin_shield_quest': ('griffinshield1', 'griffinshield2', 'griffinshield3'),
+    }
+    rules = json.loads((rca.ROOT / 'content/quests/claim-sets.json').read_text())
+    by_key = {record['identity']['key']: record for record in records}
+    for slug, markers in mint_groups.items():
+        assert rules['oteryn:quest.' + slug] == {
+            'groups': [['kv/' + marker] for marker in markers], 'mint_only': True}
+        for marker in markers:
+            key = 'oteryn:reward-claim.kv.' + marker
+            assert all('quest_transition' not in placement
+                       for placement in by_key[key]['placements'])
+            del expected_claim_sets[key]
+    assert bound == expected_claim_sets | {
         "oteryn:reward-claim.quest.u7_8.the_shattered_isles.dragahs_spellbook":
             {"oteryn:quest-transition/quest/u7_8/the_shattered_isles/dragahs_spellbook/chest"},
         "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firewalker_boots":
             {"oteryn:quest-transition/quest/u8_4/the_hidden_city_of_beregar/firewalker_boots/chest"},
     }
+
+
+def test_dreamer_wine_alternatives_share_one_required_group() -> None:
+    rules = json.loads((rca.ROOT / "content/quests/claim-sets.json").read_text())
+    prefix = "quest/u7_9/dreamers_challenge/"
+    assert rules["oteryn:quest.dreamer_s_challenge_quest"]["groups"] == [
+        [prefix + "bplong_sword"], [prefix + "chest_book"],
+        [prefix + "chests3_small_diamond"], [prefix + "chests_wine"],
+    ]
+    records = [r["definition"] for p in json.loads((rca.ROOT / rca.INDEX_PATH).read_text())["shards"]
+               for r in json.loads((rca.ROOT / p).read_text())["records"]]
+    wine = next(r for r in records if r["identity"]["key"] ==
+                "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine")
+    assert len(wine["placements"]) == 4
+    assert {ref["unique_id"] for p in wine["placements"]
+            for ref in p["source_binding"]["legacy_unique_ids"]
+            if ref["server"] == "crystalserver"} == {6197, 6198, 6199, 6200}
+    assert {p["quest_transition"] for p in wine["placements"]} == {
+        "oteryn:quest-transition/" + prefix + "chests_wine/chest"}
+
+
+def test_m35_final_loot_sets_exclude_access_keys_and_components() -> None:
+    rules = json.loads((rca.ROOT / "content/quests/claim-sets.json").read_text())
+    assert rules["oteryn:quest.emperor_s_cookies_quest"]["groups"] == [
+        ["quest/u6_1/emperors_cookies/rewards/cookies"], ["quest/key/id3802"],
+    ]
+    assert rules["oteryn:quest.koshei_the_deathless_quest"]["groups"] == [
+        ["quest/u8_1/koshei_the_deathless/koshei_the_deathless_legs"],
+        ["quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum"],
+    ]
 
 
 def test_committed_content_is_valid() -> None:

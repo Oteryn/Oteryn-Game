@@ -11,6 +11,8 @@ from collections import Counter, defaultdict
 import json
 from pathlib import Path
 
+from native_talk_binding_evidence import verify_talk_binding, registered_talk_bindings
+
 DEFINITIONS = "content/quests/definitions/index.json"
 CANDIDATE = "content/quests/missions/quest-state-completion-candidate.json"
 PLAN = "content/quests/missions/completion-binding-plan.json"
@@ -26,6 +28,60 @@ def read(root: Path, path: str):
 def check(condition: bool, message: str):
     if not condition:
         raise ValueError(message)
+
+
+def verify_stage_runtime(root, definition, stage):
+    """TALK stage activation requires the exact document consumed at server boot."""
+    reference = stage.get("native_dispatch_binding")
+    if stage["event_identity_associations"]["kind"] != "talk":
+        check(not stage.get("runtime_enabled"), "Unsupported runtime stage kind")
+        return
+    if reference is None:
+        check(not stage.get("runtime_enabled"), "Runtime TALK stage has no native binding")
+        return
+    check(stage.get("runtime_enabled") is True, "Registered TALK binding is not marked enabled")
+    callbacks = verify_talk_binding(root, definition, stage["stage_key"], reference)
+    document = read(root, reference["document"])
+    quest = next(q for q in document["quests"] if q["quest"] == definition["identity"]["key"])
+    verify_talk_state_bounds(quest, callbacks)
+
+
+
+def verify_talk_state_bounds(quest, callbacks):
+    """Mirror authored_bindings/state_operations.rs without granting write authority."""
+    native_i64 = lambda value: type(value) is int and -(2 ** 63) <= value < 2 ** 63
+    tracks = {track['key']: track for track in quest['tracks']}
+    for track in tracks.values():
+        check(all(native_i64(track.get(field)) for field in ['minimum', 'initial', 'maximum'])
+              and -(2 ** 63) <= track['minimum'] <= track['initial'] <= track['maximum'] < 2 ** 63,
+              'Native TALK track has invalid signed bounds')
+    for callback in callbacks:
+        check(all(all(native_i64(state[field]) for field in ['minimum', 'maximum', 'set'])
+                  and not state.get('increment') and not state.get('at_least')
+                  for state in callback['storage']), 'Native TALK has unsupported storage mutation')
+        for operation in callback.get('state_ops', []):
+            track = tracks[operation['track']]
+            condition, effect = operation['from'], operation['effect']
+            bounds = None
+            if condition['kind'] == 'between':
+                bounds = (condition['minimum'], condition['maximum'])
+                check(all(native_i64(value) for value in bounds)
+                      and track['minimum'] <= bounds[0] <= bounds[1] <= track['maximum'],
+                      'Native TALK condition is outside its owned track')
+            elif condition['kind'] == 'elapsed_at_least':
+                check(type(condition['seconds']) is int and track['minimum'] >= 0
+                      and condition['seconds'] <= 366 * 24 * 60 * 60,
+                      'Native TALK elapsed condition is outside engine bounds')
+            if effect['kind'] == 'add':
+                delta = effect['value']
+                check(native_i64(delta) and ((bounds is None and delta == 0)
+                      or (bounds is not None and all(track['minimum'] <= value + delta <= track['maximum']
+                                                    for value in bounds))),
+                      'Native TALK mutation can overflow its owned track')
+            else:
+                check(effect['kind'] == 'set_now' and track['minimum'] == 0
+                      and track['maximum'] == 2 ** 63 - 1,
+                      'Native TALK timestamp needs the engine timestamp bounds')
 
 
 def counter(value: Counter):
@@ -80,6 +136,9 @@ def collect(root: Path):
     reward_holds = Counter()
     source_lane_totals = Counter()
     records = []
+    registered = registered_talk_bindings(root)
+    plan_stage_keys = {(row["quest"], stage["stage_key"]) for row in plan["records"] for stage in row["stages"]}
+    check(set(registered) <= plan_stage_keys, "Registered NPC binding has no stage plan")
 
     for key, definition in sorted(definitions.items()):
         quest = typed.get(key)
@@ -122,7 +181,9 @@ def collect(root: Path):
                 kind = intent["kind"]
                 per_kinds[kind] += 1
                 kinds[kind] += 1
-                check(not stage.get("runtime_enabled"), f"Unexpected runtime enabled {key}")
+                if kind == "talk" and (key, stage["stage_key"]) in registered:
+                    check(stage.get("native_dispatch_binding") == registered[(key, stage["stage_key"])], "Registered TALK binding is absent from activation metadata")
+                verify_stage_runtime(root, definition, stage)
                 if stage.get("native_dispatch_binding") is None:
                     transitions_without_binding += 1
                 else:

@@ -1,8 +1,7 @@
 use super::*;
 #[test]
 fn quest_replacement_resets_cached_list_and_revision_before_new_base_delta() -> Result<(), String> {
-    let log = QuestLog {
-        view: Some(QuestLogView::List(vec![QuestListEntry {
+    let log = QuestLog { map_marks: Vec::new(), view: Some(QuestLogView::List(vec![QuestListEntry {
             quest_index: 1,
             completed: false,
         }])),
@@ -77,8 +76,7 @@ fn quest_replacement_resets_cached_list_and_revision_before_new_base_delta() -> 
         command_id: 2,
         status: oteryn_client_runtime::CommandStatus::Accepted,
         server_sequence: 5,
-        payload: encode_quest_log(&QuestLog {
-            view: Some(QuestLogView::List(vec![
+        payload: encode_quest_log(&QuestLog { map_marks: Vec::new(), view: Some(QuestLogView::List(vec![
                 QuestListEntry {
                     quest_index: 1,
                     completed: false,

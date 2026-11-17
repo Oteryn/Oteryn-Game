@@ -383,6 +383,20 @@ jobs:
           python tools/repository/test_validate_pr_gate_pg_sim.py
           python tools/repository/test_job_result_key.py
 
+      # Every repository tool test runs here; test_repository_tests_run.py keeps it that way.
+      - name: Run every repository tool test
+        if: steps.jr_hit.outputs.hit != 'true'
+        run: |
+          set -euo pipefail
+          for test in tools/repository/test_*.py; do
+            case "$test" in
+              tools/repository/test_validate_pr_gate_pg_sim.py|tools/repository/test_job_result_key.py) continue ;;
+            esac
+            echo "::group::$test"
+            python "$test"
+            echo "::endgroup::"
+          done
+
       - name: Record job-result marker
         if: success() && steps.jr_key.outputs.key != '' && steps.jr_hit.outputs.hit != 'true'
         env:
@@ -669,8 +683,8 @@ jobs:
           echo "mode=$mode" >> "$GITHUB_OUTPUT"
           echo "Molehill routing: variable '${MODE:-unset}', heartbeat alive=$alive -> $mode"
 
-  # One job id, four parallel matrix legs: strict Clippy on one leg, and the unit tests of
-  # the same changed crates hash-partitioned over three nextest shards. `needs.rust_fast.result`
+  # One job id, six parallel matrix legs: strict Clippy on one leg, and the unit tests of
+  # the same changed crates hash-partitioned over five nextest shards. `needs.rust_fast.result`
   # is success only when every leg succeeds, so validate and game-gate keep their semantics.
   rust_fast:
     name: Merge gate / Rust changed-crate Clippy and unit tests (${{ matrix.leg }})
@@ -678,7 +692,7 @@ jobs:
     if: needs.lanes.outputs.rust == 'true'
     # OTERYN_SELF_HOSTED_RUST=on runs the Clippy leg on Molehill (warm workspace target); auto
     # does so only while the Molehill heartbeat is fresh (resolved in runner_route), so an
-    # offline PC falls back to hosted. The three test shards always run hosted from the
+    # offline PC falls back to hosted. The five test shards always run hosted from the
     # rust.yml cache, so one PR no longer builds the same test binaries three times on the PC.
     # Forks and dependabot stay hosted because PR code would run on the owner's machine.
     runs-on: ${{ (needs.runner_route.outputs.rust_runner_mode == 'on' && matrix.kind == 'clippy' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && fromJSON('["self-hosted","linux","x64","oteryn-molehill"]') || 'ubuntu-24.04' }}
@@ -693,18 +707,26 @@ jobs:
             slug: clippy
             kind: clippy
             shard: ''
-          - leg: tests 1/3
-            slug: tests-1-3
+          - leg: tests 1/5
+            slug: tests-1-5
             kind: tests
-            shard: '1/3'
-          - leg: tests 2/3
-            slug: tests-2-3
+            shard: '1/5'
+          - leg: tests 2/5
+            slug: tests-2-5
             kind: tests
-            shard: '2/3'
-          - leg: tests 3/3
-            slug: tests-3-3
+            shard: '2/5'
+          - leg: tests 3/5
+            slug: tests-3-5
             kind: tests
-            shard: '3/3'
+            shard: '3/5'
+          - leg: tests 4/5
+            slug: tests-4-5
+            kind: tests
+            shard: '4/5'
+          - leg: tests 5/5
+            slug: tests-5-5
+            kind: tests
+            shard: '5/5'
     steps:
       - name: Check out exact head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -925,7 +947,7 @@ jobs:
       # The lib and bin unit tests of the selected crates without a passed result, as in the
       # former per-crate loop. Cargo builds only the selected packages and their dependencies;
       # the ledger filter selects binaries still needing a result. Hash partitioning splits each crate's
-      # tests disjointly and exhaustively across the three shards. `--no-tests=pass` only covers
+      # tests disjointly and exhaustively across the five shards. `--no-tests=pass` only covers
       # a shard whose slice is empty; it never skips or filters a test. Exit code 100 means
       # test failures with every binary run, so the JUnit report then names the passed crates.
       - name: Unit-test changed crates (nextest shard ${{ matrix.shard }})

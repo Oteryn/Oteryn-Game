@@ -15,6 +15,7 @@ pub enum StateCondition {
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum StateMutation {
     Add { value: i64 },
+    AddAtLeast { value: i64, minimum: i64 },
     SetNow,
 }
 
@@ -46,10 +47,12 @@ impl<'de> Deserialize<'de> for StateMutation {
         #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
         enum Wire {
             Add { value: i64 },
+            AddAtLeast { value: i64, minimum: i64 },
             SetNow {},
         }
         Ok(match Wire::deserialize(deserializer)? {
             Wire::Add { value } => Self::Add { value },
+            Wire::AddAtLeast { value, minimum } => Self::AddAtLeast { value, minimum },
             Wire::SetNow {} => Self::SetNow,
         })
     }
@@ -116,6 +119,10 @@ impl StateOperation {
             },
             effect: match self.effect {
                 StateMutation::Add { value } => QuestEffectKind::Add(value),
+                StateMutation::AddAtLeast { value, minimum } => QuestEffectKind::AddAtLeast {
+                    delta: value,
+                    minimum,
+                },
                 StateMutation::SetNow => QuestEffectKind::SetNow,
             },
         }

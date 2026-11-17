@@ -15,12 +15,69 @@ import tarfile
 import xml.etree.ElementTree as ET
 import questl2_ready
 import taming_cosmetics
+import wizard_cosmetics
+import engoutfit_m36
+import qmech_m39
 from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parents[3]
 PIN = '9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d'
 PROVENANCE = 'crystal-9f5a72c-quest-rewards-v1'
 DECISION = 'owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06'
+
+# These independently registered documents retain their existing greeting owner.
+# Zalamon's chosen opening is explicitly authored; M10 and M13 retain source text.
+REWARD_GREETING_OWNERS = {
+    'oteryn:npc.zalamon': 'content/dialogues/quests/chosen-reward-greetings.json',
+    'oteryn:npc.henricus': 'content/dialogues/quests/qnpcfx-m10-greetings.json',
+    'oteryn:npc.rafzan': 'content/dialogues/quests/m13-goblin-greetings.json',
+}
+
+
+def reward_greetings(callbacks, inputs, *, root=None):
+    root = ROOT if root is None else root
+    owners = {}
+    for path in sorted(set(REWARD_GREETING_OWNERS.values())):
+        try:
+            document = json.loads((root / path).read_bytes())
+        except (OSError, ValueError) as error:
+            raise ValueError('reward greeting owner document: ' + path) from error
+        if not isinstance(document, dict) or document.get('schema') != 1 or not isinstance(document.get('npcs'), list):
+            raise ValueError('reward greeting owner schema: ' + path)
+        for row in document['npcs']:
+            if not isinstance(row, dict) or not isinstance(row.get('npc'), str):
+                raise ValueError('reward greeting owner row: ' + path)
+            npc = row['npc']
+            if npc not in REWARD_GREETING_OWNERS:
+                continue
+            if REWARD_GREETING_OWNERS[npc] != path or npc in owners:
+                raise ValueError('reward greeting owner conflict: ' + npc)
+            if any(not isinstance(row.get(field), str) or not row[field] for field in ('greet', 'farewell', 'walkaway')):
+                raise ValueError('reward greeting owner payload: ' + npc)
+            owners[npc] = path
+    if set(owners) != set(REWARD_GREETING_OWNERS):
+        raise ValueError('reward greeting owner missing: ' + ', '.join(sorted(set(REWARD_GREETING_OWNERS) - set(owners))))
+
+    greetings = []
+    npcs = {c['npc'] for c in callbacks} | {'oteryn:npc.' + npc for npc in ('alesar', 'yaman', 'haroun', 'nah_bob')}
+    for npc in sorted(npcs - owners.keys()):
+        path='data-global/npc/'+npc.removeprefix('oteryn:npc.')+'.lua'
+        messages={}
+        citations=[]
+        for field,constant in [('greet','GREET'),('farewell','FAREWELL'),('walkaway','WALKAWAY')]:
+            matches=list(re.finditer(r'npcHandler:setMessage\(MESSAGE_'+constant+r',\s*"([^"\n]*)"\)',inputs.get(path,inputs['data/npclib/npc_system/npc_handler.lua']).decode()))
+            origin=path
+            # Conditional NPC messages belong to their functional selectors.
+            # Use the source handler's neutral default when no unique static message exists.
+            if len(matches)!=1:
+                origin='data/npclib/npc_system/npc_handler.lua'
+                matches=list(re.finditer(r'\[MESSAGE_'+constant+r'\]\s*=\s*"([^"\n]*)"',inputs[origin].decode()))
+            if len(matches)!=1: raise ValueError('ambiguous NPC greeting '+npc+field)
+            messages[field]=matches[0].group(1)
+            line=inputs[origin][:matches[0].start()].count(b'\n')+1
+            citations.append(f'crystal:{PIN}:{origin}:{line}:sha256:{sha(inputs[origin])}')
+        greetings.append({'npc':npc,**messages,'sources':citations})
+    return greetings
 
 
 def encoded(value):
@@ -33,7 +90,7 @@ def sha(value):
 
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/XML/mounts.xml', 'data-crystal/scripts/special/addon_doll.lua', 'data-global/scripts/actions/mounts/mounts.lua', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
-        'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
+        'morgan', 'navigator', 'rock_steady', *wizard_cosmetics.DONOR_NPCS, *qmech_m39.NPCS, 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
         'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander', 'flickering_soul', 'bloodshade_rotten', 'cledwyn', *questl2_ready.NPCS)]
     paths += ['data/scripts/actions/items/usable_outfit_items.lua', 'data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
               'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
@@ -47,7 +104,8 @@ def donor_inputs():
         'jorge', 'the_forgemaster', 'henricus', 'yana', 'ivalisse', 'a_strange_chalice')]
     paths += ['data/XML/imbuements.xml',
               'data-global/scripts/quests/25_years_of _tibia_quest/lord_retro_death.lua']
-    paths = list(dict.fromkeys(paths))
+    paths += qmech_m39.source_paths()
+    paths = sorted(set(paths))
     result = {}
     with tarfile.open(ROOT / 'tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz') as corpus:
         manifest = json.load(corpus.extractfile('corpus-manifest.json'))
@@ -99,6 +157,7 @@ def build():
         looks.update({r['source_id']: r['source_record_sha256'] for r in json.loads(raw)['records']})
         for record in json.loads(raw)['records']:
             addon_patterns[record['source_id']]=min(next((f.get('value',1) for f in group['sprite_info_fields'] if f['field']==2),1) for group in record['frame_groups'])-1
+    ram_look_hash = looks[1934]
     outfits, mappings = [], []
     for name, sexes in sorted(groups.items()):
         if set(sexes) != {'0', '1'}:
@@ -158,10 +217,10 @@ def build():
         'target': {'kind': 'Outfit', 'outfit_key': 'oteryn:outfit.decaying_defender'},
         'compatible_provenance': ['owner-pr2784-decaying-defender-base-v1']})
     for row in outfits:
-        if row['key'] in ('oteryn:outfit.hunter','oteryn:outfit.mage','oteryn:outfit.summoner'):
-            for sex in ('female','male'):
-                for addon in range(row['addon_count']+1):
-                    mappings.append({'grant_key':row['key']+f'/quest-grant/{sex}/{addon}',
+        # Source NPCs may grant either sex independently; each mapping is authored.
+        for sex in ('female','male'):
+            for addon in range(row['addon_count']+1):
+                mappings.append({'grant_key':row['key']+f'/quest-grant/{sex}/{addon}',
                         'target':{'kind':'Outfit','outfit_key':row['key']} if addon==0 else {'kind':'Addon','outfit_key':row['key'],'addon':addon},
                         'sex':sex,'compatible_provenance':[PROVENANCE]})
     mount_source = {'reference': 'crystal:data/XML/mounts.xml', 'revision': PIN,
@@ -201,6 +260,25 @@ def build():
     # Retain main's existing mount identities and source promotions.
     nx5_mounts = {row['key']: row for row in nx5_doc['mounts']}
     doc['mounts'] = [nx5_mounts.get(row['key'], row) for row in mounts]
+    # Reliable Ram uses the named look, not a mutable donor mount ordinal.
+    # Crystal 201189f actions_reliable_ram.lua still says 250, but its mounts.xml
+    # assigns Reliable Ram/look1934 to 252 (250 is Jaracal/look1962). The retained
+    # 9f5a72c corpus agrees on the semantic Ram identity/look and source speed.
+    ram = next(row for row in ET.fromstring(inputs['data/XML/mounts.xml'])
+               if row.get('name') == 'Reliable Ram')
+    if ram.get('clientid') != '1934' or ram.get('speed') != '10' or ram.get('premium') != 'no':
+        raise ValueError('Reliable Ram source identity drift')
+    ram_source = {'reference': 'crystal:data/XML/mounts.xml', 'revision': PIN,
+                  'sha256': sha(inputs['data/XML/mounts.xml'])}
+    ram_key = 'oteryn:content.mount.reliable_ram'
+    admitted_ram = [row for row in doc['mounts'] if row['key'] == ram_key]
+    if (len(admitted_ram) != 1
+            or admitted_ram[0]['look'] != {'id': 1934, 'source_record_sha256': ram_look_hash}
+            or admitted_ram[0]['speed_bonus'] != 10 or admitted_ram[0]['premium'] is not False):
+        raise ValueError('Reliable Ram native catalogue identity drift')
+    mappings.append({'grant_key':ram_key+'/quest-grant',
+                     'target':{'kind':'Mount','mount_key':ram_key},
+                     'compatible_provenance':[PROVENANCE]})
     grant_keys = {row['grant_key'] for row in mappings}
     for row in nx5_doc['grant_mappings']:
         if row['grant_key'] not in grant_keys:
@@ -227,7 +305,7 @@ def build():
         if nx5_path is not None:
             author['promotions'].append({**nx5_promotions[nx5_path], 'path': path})
             continue
-        citation=palette_source if path == '/palette' else mount_source if path.startswith('/mounts/') else source
+        citation=palette_source if path == '/palette' else doc['mounts'][int(parts[2])]['source'] if path.startswith('/mounts/') else source
         source_kind='OWNER_DECISION' if path.startswith('/fallbacks/') or path=='/grant_mappings' else 'STRUCTURED_REFERENCE_DATA'
         if path=='/item_acquisitions':
             citation=acquisition_source
@@ -431,6 +509,8 @@ def build():
         guard=[storage(royal,before,after,0 if bit==0 else before)]
         add('l4-royal-costume-'+name,'royal_costume_outfits_quest','percybald',['yes'],guard,
             take=[(22516,silver),(22721,gold)],outfit=('royal_costume',bit),topic=topic,next_topic=15)
+        if name == 'crown':
+            callbacks[-1]['completes'] = True
         offers.append({'npc':'oteryn:npc.percybald','keywords':[word],'topic':15,'next_topic':topic,
             'storage':guard,'reply':[f'The donation is {silver} silver tokens and {gold} gold tokens.']})
     for words,before,after in [(['outfit','addon','royal'],0,14),(['yes'],14,15)]:
@@ -562,6 +642,7 @@ def build():
         take=[(3374,1),(5902,50),(5890,100)],outfit=('citizen',2),topic=2)
     offers.append({'npc':'oteryn:npc.norma','keywords':['addon','outfit','hat'],'topic':0,'next_topic':2,
         'storage':states,'reply':['Have you brought a legion helmet, 50 honeycombs and 100 chicken feathers?']})
+    wizard_cosmetics.append(add, storage, offers, prefix)
     beggar=prefix+'u7_8/beggar_outfits/'
     beggar_stage=beggar+'beggar_outfit'
     beggar_timer=beggar+'beggar_outfit_timer'
@@ -953,6 +1034,15 @@ def build():
                 forbids_addons=[{'outfit':'oteryn:outfit.'+family,'addons':bit}])
             if bit==2:callbacks[-1]['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':1}]
             callbacks[-1]['sources'].append(provenance)
+    engoutfit_m36.append(add, storage, callbacks, offers, declarations,
+        f'crystal:{PIN}:data-global/npc/rock_steady.lua:56-98:sha256:{sha(inputs["data-global/npc/rock_steady.lua"])}')
+    qmech_m39.append(add, callbacks, offers, declarations, inputs, PIN)
+    m39_keys = ('l2-cael-tome-', 'l2-zalamon-tome', 'l2-alliance-finish', 'l2-bone-', 'bone-pit-lost-sample')
+    m39_callbacks = [callback for callback in callbacks if callback['key'].split('/')[-1].startswith(m39_keys)]
+    callbacks = [callback for callback in callbacks if callback not in m39_callbacks]
+    m39_tracks = [track for track in declarations if track['key'].endswith('/corruption_hole')]
+    declarations = [track for track in declarations if track not in m39_tracks]
+    validate_callbacks({'schema':1,'tracks':m39_tracks,'callbacks':m39_callbacks})
     # L13: original native parent bases remain with their existing reward owners.
     for family,npc,items,bits,achievement in [
             ('revenant','flickering_soul',[34075,34076],[2,1],'unleash_the_beast'),
@@ -988,12 +1078,17 @@ def build():
     # Keep every registered document within the runtime's 256-record bound.
     l13_callbacks = [c for c in callbacks if c['key'].split('/')[-1].startswith('l13-')]
     callbacks = [c for c in callbacks if c not in l13_callbacks]
+    programme_callbacks = [c for c in callbacks if c['key'].split('/')[-1].startswith('questpc7-')]
+    callbacks = [c for c in callbacks if c not in programme_callbacks]
     l13_callbacks.sort(key=lambda c:c['key'])
+    programme_callbacks.sort(key=lambda c:c['key'])
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
-    validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
+    item_disguises = load_module('quest_item_disguises', 'tools/content-schema/quest-authoring/quest_item_disguises.py').build(ROOT)
+    validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks,'item_disguises':item_disguises})
     validate_callbacks({'schema':1,'callbacks':fibula_callbacks})
     validate_callbacks({'schema':1,'callbacks':l13_callbacks})
+    validate_callbacks({'schema':1,'callbacks':programme_callbacks})
     native_cosmetics = cosmetics.provisioning_input(
         ROOT / cosmetics.AUTHORING, appearance / 'manifest.json', ROOT / cosmetics.OUTPUT,
         authoring_bytes=encoded(author))
@@ -1004,12 +1099,15 @@ def build():
             'content/cosmetics/outfits/authoring.json': encoded(author),
             'content/cosmetics/outfits/native-cosmetics.json': native_cosmetics,
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
-            'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks}),
+            'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks,'item_disguises':item_disguises}),
             'content/quests/npc-callbacks/fibula.json': encoded({'schema':1,'callbacks':fibula_callbacks}),
             'content/quests/npc-callbacks/l13-outfits.json': encoded({'schema':1,'callbacks':l13_callbacks}),
+            'content/quests/npc-callbacks/questpc7-programmes.json': encoded({'schema':1,'callbacks':programme_callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
     generated['content/quests/npc-callbacks/l2-ready-stories.json'] = encoded({
         'schema':1,'tracks':[],'callbacks':ready_callbacks})
+    generated[qmech_m39.SHARD] = encoded({'schema':1,'tracks':m39_tracks,'callbacks':sorted(m39_callbacks,key=lambda callback:callback['key'])})
+    generated[qmech_m39.WORLD_SHARD] = encoded(qmech_m39.worlds(inputs))
     # Preserve the source's complete contiguous 1..10001 supply-package table.
     random_path='data-global/scripts/actions/valuables/random_items.lua'
     parser=load_module('qengine_literal_item_tables','tools/content-migration/event_item_actions.py')
@@ -1027,24 +1125,7 @@ def build():
         'bags':[{'constant':'QENGINE_GNOMISH_SUPPLY','bag':'oteryn:item.tibia.i15698','playable':True,
             'selection':'weighted','picks':1,'roll_max':10001,'donor':f'crystal:{PIN}:{random_path}:49-80:sha256:{sha(inputs[random_path])}',
             'rewards':rewards}]})
-    greetings=[]
-    for npc in sorted({c['npc'] for c in callbacks + ready_callbacks + l13_callbacks} | {'oteryn:npc.'+npc for npc in ('alesar','yaman','haroun','nah_bob')}):
-        path='data-global/npc/'+npc.removeprefix('oteryn:npc.')+'.lua'
-        messages={}
-        citations=[]
-        for field,constant in [('greet','GREET'),('farewell','FAREWELL'),('walkaway','WALKAWAY')]:
-            matches=list(re.finditer(r'npcHandler:setMessage\(MESSAGE_'+constant+r',\s*"([^"\n]*)"\)',inputs.get(path,inputs['data/npclib/npc_system/npc_handler.lua']).decode()))
-            origin=path
-            # Conditional NPC messages belong to their functional selectors.
-            # Use the source handler's neutral default when no unique static message exists.
-            if len(matches)!=1:
-                origin='data/npclib/npc_system/npc_handler.lua'
-                matches=list(re.finditer(r'\[MESSAGE_'+constant+r'\]\s*=\s*"([^"\n]*)"',inputs[origin].decode()))
-            if len(matches)!=1: raise ValueError('ambiguous NPC greeting '+npc+field)
-            messages[field]=matches[0].group(1)
-            line=inputs[origin][:matches[0].start()].count(b'\n')+1
-            citations.append(f'crystal:{PIN}:{origin}:{line}:sha256:{sha(inputs[origin])}')
-        greetings.append({'npc':npc,**messages,'sources':citations})
+    greetings = reward_greetings(callbacks + m39_callbacks + ready_callbacks + l13_callbacks + programme_callbacks, inputs)
     generated['content/dialogues/quests/shared-reward-greetings.json']=encoded({'schema':1,'npcs':greetings})
     generated['content/quests/shared-quest-shops.json']=encoded({'schema':1,'shops':questl2_ready.djinn.shops(inputs,PIN)})
     generated['content/quests/questl2-djinn-world.json']=encoded(questl2_ready.djinn.world_callbacks(inputs,PIN))
@@ -1108,13 +1189,26 @@ def validate_callbacks(document):
         declared.add(track['key'])
     keys=set()
     for callback in document['callbacks']:
+        inventory=callback.get('inventory',[])
+        if (len({rule['item'] for rule in inventory})!=len(inventory)
+            or any(rule['minimum']>rule['maximum'] for rule in inventory)):
+            raise ValueError('invalid inventory range '+callback['key'])
+        reward=callback.get('give')
+        if reward and reward.get('text') is not None and len(reward['text'].encode('utf-8'))>7996:
+            raise ValueError('literal reward text exceeds UTF-8 byte bound')
         if callback['quest'] in callback.get('requires_completed_quests',[]):
             raise ValueError('self-dependent reward completion '+callback['key'])
         storage=callback['storage']
-        if callback.get('carried_item') is not None and (
-                callback['take']!=[{'item':callback['carried_item'],'count':1}]
-                or callback.get('give') is not None or callback.get('fee') is not None
-                or callback.get('requires_actor_conditions')):
+        source, target = callback.get('carried_item'), callback.get('carried_target')
+        if target is not None:
+            if (source is None or source == target or not callback.get('give')
+                    or callback.get('peer_requires') or callback.get('creature_target')
+                    or any({'item': item, 'count': 1} not in callback['take'] for item in (source, target))):
+                raise ValueError('invalid carried quest recipe '+callback['key'])
+        if source is not None and (
+                (target is None and (callback['take']!=[{'item':source,'count':1}]
+                    or callback.get('give') is not None))
+                or callback.get('fee') is not None or callback.get('requires_actor_conditions')):
             raise ValueError('invalid carried quest tool '+callback['key'])
         targets=([callback['outfit']] if callback.get('outfit') is not None else callback.get('outfits',[]))
         value_guard=any(t['outfit']==g['outfit'] and t['addons'] & g['addons']
@@ -1122,6 +1216,8 @@ def validate_callbacks(document):
             for t in targets for g in callback.get('forbids_addons',[]))
         value_guard = value_guard or any(t['addons']==0 and t.get('sex') is None and t['outfit'] in callback.get('forbids_outfits',[]) for t in targets)
         value_guard = value_guard or (bool(callback['take']) and callback.get('give') is not None)
+        value_guard = value_guard or (callback.get('repeatable', False)
+            and bool(callback['take']) and 1 <= callback.get('experience', 0) <= 100000000)
         if callback.get('outfits') and callback.get('outfit') is not None:
             raise ValueError('mixed legacy and target-set grants '+callback['key'])
         participants=callback.get('participants',[])
@@ -1154,8 +1250,12 @@ def validate_callbacks(document):
             or any(r['minimum']>r['maximum'] for r in requires)
             or any(s['minimum']>s['maximum'] for s in storage)
             or (not value_guard and not callback.get('repeatable',False) and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
-            or (callback.get('repeatable',False) and (not callback.get('fee') or not callback.get('give')
-                or callback.get('outfit') or callback.get('achievement') or callback.get('completes',False)
+            or (callback.get('repeatable',False) and (
+                not ((callback.get('fee') and callback.get('give'))
+                     or (bool(callback['take']) and (callback.get('give')
+                         or 1 <= callback.get('experience', 0) <= 100000000)))
+                or callback.get('outfit') or callback.get('outfits')
+                or callback.get('achievement') or callback.get('completes',False)
                 or any(not s.get('preserve',False) for s in storage)))
             or ((callback.get('give') or {}).get('key_number') is not None
                 and (callback['give']['count']!=1 or callback['give'].get('contents')))

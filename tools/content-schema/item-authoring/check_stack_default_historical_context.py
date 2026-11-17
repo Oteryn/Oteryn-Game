@@ -3,12 +3,14 @@
 import argparse
 import hashlib
 import json
+import sys
+import tarfile
 import tempfile
 from collections import defaultdict
 from contextlib import contextmanager
+from functools import lru_cache
 from pathlib import Path
 
-import historical_world_owner_context as world_context
 import lower_wiki_stack_default_packet as base
 import lower_wiki_stack_historical_packet as historical
 from engine_items import load_appearance_objects
@@ -19,6 +21,66 @@ CONTEXT = (
 )
 CONTEXT_SHA = "e2bf1480e600159d306f5bf5e759456d4d322ad972036ed156538a934fc4503b"
 PARENT = "6a68dbcb64538f9369aeb633d116061f7096ba30"
+FROZEN_INPUT_PARENT = "7cc6dfe8f57e879b2f49a6420b15279b3d2c94d8"
+FROZEN_INPUT_ARCHIVE = (
+    "tools/content-schema/item-authoring/historical-default-inputs-v1.tar.gz"
+)
+FROZEN_INPUT_ARCHIVE_SHA256 = (
+    "a9ca2e5b9e4c23ce2bd39c17659468ce318e8255b651142236f2a5ece3dbb2bf"
+)
+
+
+@lru_cache(maxsize=1)
+def frozen_archive():
+    source = ROOT / FROZEN_INPUT_ARCHIVE
+    if base.sha(source.read_bytes()) != FROZEN_INPUT_ARCHIVE_SHA256:
+        raise ValueError("historical input archive digest drift")
+    with tarfile.open(source, "r:gz") as stream:
+        members = stream.getmembers()
+        if (
+            any(
+                not member.isfile()
+                or member.name.startswith("/")
+                or ".." in Path(member.name).parts
+                for member in members
+            )
+            or sum(member.size for member in members) > 128_000_000
+        ):
+            raise ValueError("historical input archive membership drift")
+        result = {member.name: stream.extractfile(member).read() for member in members}
+    if len(result) != len(members):
+        raise ValueError("duplicate historical input archive member")
+    return result
+
+
+def frozen_input(root, path, expected):
+    raw = (root / path).read_bytes()
+    if base.sha(raw) != expected:
+        raw = frozen_archive().get(path, b"")
+    if base.sha(raw) != expected:
+        raise ValueError("historical input byte reproduction drift: " + path)
+    return raw
+
+
+def overlay_input(root, relative, raw):
+    """Detach only the frozen input from a view; never modify its live symlink target."""
+    path = root
+    for name in Path(relative).parts[:-1]:
+        path /= name
+        if path.is_symlink():
+            source = path.resolve()
+            path.unlink()
+            path.mkdir()
+            for child in source.iterdir():
+                (path / child.name).symlink_to(
+                    child, target_is_directory=child.is_dir()
+                )
+        else:
+            path.mkdir(exist_ok=True)
+    target = root / relative
+    if target.is_symlink():
+        target.unlink()
+    target.write_bytes(raw)
 
 
 def canonical(value):
@@ -92,7 +154,32 @@ def qualification_context(root=ROOT):
             (path / "content" / name).symlink_to(
                 (root / "content" / name).resolve(), target_is_directory=True
             )
-        world_context.link_world(root, path / "content/world")
+        packet_path = str(base.OUTPUT.relative_to(base.ROOT))
+        frozen = json.loads(
+            base.checked(root, packet_path, context["immutable_artifacts"][packet_path])
+        )
+        for relative, expected in frozen["sources"]["map_owner_inputs"].items():
+            overlay_input(path, relative, frozen_input(root, relative, expected))
+        overlay_input(
+            path,
+            base.COMPILER,
+            frozen_input(root, base.COMPILER, frozen["compiler"]["sha256"]),
+        )
+        overlay_input(
+            path,
+            base.BINDINGS,
+            frozen_input(root, base.BINDINGS, frozen["sources"]["bindings_sha256"]),
+        )
+        # This full-file pin precedes the reviewed ten-key-only relocation.
+        overlay_input(
+            path,
+            base.WIKI,
+            frozen_input(
+                root,
+                base.WIKI,
+                "24e3e57fddc6c14f00aa5c4976e91117d31bc2102bd3835b3d7891d9e41fbeae",
+            ),
+        )
         shard = "content/items/historical-qualification-definitions.json"
         (path / shard).write_bytes(
             canonical(
@@ -132,18 +219,33 @@ def current_inputs(root, context_root=ROOT):
     packet = json.loads(
         base.checked(root, packet_path, context["immutable_artifacts"][packet_path])
     )
+    # Identity admission re-keyed ten records without changing observations.
+    # Recover and hash the exact frozen dictionary, rather than accepting a
+    # new snapshot digest as equivalent evidence.
+    frozen_records = dict(snapshot["records"])
+    for iid in (40016, 40598, 40601, 40603, 42851, 42853, 43589, 43590, 43625, 43860):
+        key = f"oteryn:item.tibia.i{iid}"
+        if key in frozen_records:
+            if str(iid) in frozen_records:
+                raise ValueError("duplicate historical snapshot identity")
+            frozen_records[str(iid)] = frozen_records.pop(key)
+    sys.path.insert(0, str(context_root / "tools/content-schema/native-gameplay"))
+    from build_spell_item_identities import historical_binding_bytes
+
+    frozen_bindings = historical_binding_bytes(
+        (root / base.BINDINGS).read_bytes(), packet["sources"]["bindings_sha256"]
+    )
     if (
         base.sha(
             json.dumps(
-                snapshot["records"],
+                frozen_records,
                 sort_keys=True,
                 ensure_ascii=False,
                 separators=(",", ":"),
             ).encode()
         )
         != packet["sources"]["snapshot_sha256"]
-        or base.sha((root / base.BINDINGS).read_bytes())
-        != packet["sources"]["bindings_sha256"]
+        or base.sha(frozen_bindings) != packet["sources"]["bindings_sha256"]
     ):
         raise ValueError("current unchanged source input bytes drift")
     wiki, pages = {}, defaultdict(set)

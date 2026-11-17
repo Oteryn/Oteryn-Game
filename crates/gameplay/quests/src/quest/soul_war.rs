@@ -278,3 +278,6 @@ pub const FINAL_REWARD_ITEM_IDS: [u32; 18] = [
 #[cfg(test)]
 #[path = "soul_war_tests.rs"]
 mod tests;
+
+#[path = "soul_war/source_items.rs"]
+pub mod source_items;

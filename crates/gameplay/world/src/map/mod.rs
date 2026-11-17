@@ -118,6 +118,9 @@ struct PaletteGround {
 /// The Tibia appearance id a palette key names (`oteryn:{item|terrain}.tibia.i<N>` and
 /// `donor:crystalserver@<rev>:item/<N>`); `None` for any other key or an id above `u16`.
 pub fn palette_appearance(key: &str) -> Option<u16> {
+    if let Some(surface) = crate::content::qualified_static_surface(key) {
+        return Some(surface.source_id);
+    }
     let digits = if let Some(rest) = key.strip_prefix("oteryn:") {
         rest.strip_prefix("item.tibia.i")
             .or_else(|| rest.strip_prefix("terrain.tibia.i"))?
@@ -282,6 +285,13 @@ impl WorldBase {
     /// Crystal data/libs/functions/boss_lever.lua:54-81 defines a private bounded
     /// room. Copy only existing source cells, preserving the bundle identity.
     pub(super) fn activity_region(&self, bounds: [i32; 6]) -> Option<Self> {
+        self.activity_region_with_exit(bounds, None)
+    }
+    pub(super) fn activity_region_with_exit(
+        &self,
+        bounds: [i32; 6],
+        exit: Option<crate::content::LogicalCell>,
+    ) -> Option<Self> {
         let [x0, y0, x1, y1, z0, z1] = bounds;
         let count = (i64::from(x1) - i64::from(x0) + 1)
             .checked_mul(i64::from(y1) - i64::from(y0) + 1)?
@@ -315,6 +325,24 @@ impl WorldBase {
                     }
                 }
             }
+        }
+        if let Some(exit) = exit {
+            let x = u16::try_from(exit.x).ok()?;
+            let y = u16::try_from(exit.y).ok()?;
+            if !(0..=15).contains(&exit.z) {
+                return None;
+            }
+            let floor = i8::try_from(-exit.z).ok()?;
+            let index = self.tile_index(x, y, floor)?;
+            if !activity_contains(bounds, crate::map::overlay::TilePos { x, y, floor })
+                && count >= 4096
+            {
+                return None;
+            }
+            let key = sector_key(floor, x / SECTOR_SIZE, y / SECTOR_SIZE)?;
+            let local = usize::from(y % SECTOR_SIZE) * usize::from(SECTOR_SIZE)
+                + usize::from(x % SECTOR_SIZE);
+            selected.entry(key).or_default().insert(local, index);
         }
         let mut keys = Vec::new();
         let mut sectors = Vec::new();
@@ -520,6 +548,19 @@ impl WorldBase {
                     })
             })
     }
+}
+
+pub(super) fn activity_footprint_contains(
+    bounds: [i32; 6],
+    exit: Option<crate::content::LogicalCell>,
+    pos: crate::map::overlay::TilePos,
+) -> bool {
+    activity_contains(bounds, pos)
+        || exit.is_some_and(|cell| {
+            i32::from(pos.x) == cell.x
+                && i32::from(pos.y) == cell.y
+                && -i32::from(pos.floor) == cell.z
+        })
 }
 
 pub(super) fn activity_contains(

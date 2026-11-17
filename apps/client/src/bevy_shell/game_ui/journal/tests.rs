@@ -29,6 +29,7 @@ fn quest_state() -> QuestState {
                 }],
             })),
             tracked: vec![],
+            map_marks: vec![],
         },
         list: vec![QuestListEntry {
             quest_index: 73,

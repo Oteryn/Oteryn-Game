@@ -145,7 +145,7 @@ impl DurabilityRoot {
         if !matches!(request.kind, ItemUseKind::DromeCube { .. }) {
             return Err(ItemUseError::InvalidInput.into());
         }
-        self.commit_use_inner(authority, node, fence, request, Some(content))
+        self.commit_use_inner(authority, node, fence, request, Some(content), None)
             .await
     }
 }

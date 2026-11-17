@@ -28,6 +28,7 @@ oteryn-gameplay-durability = { version = "=0.1.0", path = "../durability" }
 oteryn-gameplay-entities = { version = "=0.1.0", path = "../entities" }
 oteryn-gameplay-foundation = { version = "=0.1.0", path = "../foundation" }
 oteryn-gameplay-node-files = { version = "=0.1.0", path = "../node-files" }
+oteryn-gameplay-quests = { version = "=0.1.0", path = "../quests" }
 oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../protocol-oteryn" }
 oteryn-simulation-determinism = { version = "=0.1.0", path = "../../simulation-determinism" }
 oteryn-world-bundle = { version = "=0.1.0", path = "../../world-bundle" }
