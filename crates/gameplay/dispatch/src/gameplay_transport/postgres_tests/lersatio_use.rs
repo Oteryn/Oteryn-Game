@@ -365,5 +365,31 @@ pub(super) async fn exercise(
         current + 1,
         "the mirror timer created by real USE cannot overwrite a newer source revision"
     );
+    let at = TilePos {
+        x: MIRROR.x,
+        y: MIRROR.y,
+        floor: MIRROR.floor,
+    };
+    let base = map
+        .overlay
+        .base()
+        .tile(at.x, at.y, at.floor)
+        .ok_or("mirror tile")?;
+    let id = base
+        .ids()
+        .iter()
+        .zip(base.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .nth(1)
+        .map(|(id, _)| *id)
+        .ok_or("mirror native entry")?;
+    assert_eq!(
+        map.facts
+            .base_entry(at, 1, id)
+            .ok_or("current mirror facts")?
+            .appearance_id,
+        8721,
+        "the stale timer must preserve the newer broken appearance too"
+    );
     Ok(())
 }
