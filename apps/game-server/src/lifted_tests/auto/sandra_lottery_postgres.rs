@@ -135,7 +135,7 @@ fn run(admin: String, tag: &'static str, case: Case) -> f::TestResult {
 async fn exercise(h: &f::Harness, case: Case) -> f::TestResult {
     use crate::durability::quest_state::npc_program::sandra_lottery::draw_for_request;
     let fence = f::fence(1)?;
-    let (controller, _) =
+    let (controller, pin) =
         oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables(
             fence.runtime_scope.world_id(),
             None,
@@ -189,7 +189,7 @@ async fn exercise(h: &f::Harness, case: Case) -> f::TestResult {
         .bind(f::id(f::WORLD).as_slice()).bind(f::id(f::CHANNEL).as_slice())
         .bind(identity.server_artifact_digest().as_slice())
         .bind(identity.client_artifact_digest().as_slice())
-        .bind(identity.frame_binding_digest().as_slice()).execute(&h.pool).await?;
+        .bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
     let seal = h.recovery.seal_current().map_err(f::debug)?;
     let authority = h
         .root
