@@ -36,18 +36,26 @@ pub(super) async fn clock(h: &Harness) -> TestResult<i64> {
 pub(super) async fn admit_second_node(
     h: &Harness,
 ) -> TestResult<(NodeIncarnationProof, Dependencies)> {
-    admit_second_node_inner(h, false).await
+    admit_second_node_inner(h, false, None).await
 }
 
 pub(super) async fn admit_existing_second_node(
     h: &Harness,
 ) -> TestResult<(NodeIncarnationProof, Dependencies)> {
-    admit_second_node_inner(h, true).await
+    admit_second_node_inner(h, true, None).await
+}
+
+pub(super) async fn admit_second_node_with_pin(
+    h: &Harness,
+    pin: ChannelContentPin,
+) -> TestResult<(NodeIncarnationProof, Dependencies)> {
+    admit_second_node_inner(h, false, Some(pin)).await
 }
 
 async fn admit_second_node_inner(
     h: &Harness,
     existing_character: bool,
+    pin: Option<ChannelContentPin>,
 ) -> TestResult<(NodeIncarnationProof, Dependencies)> {
     let node = super::fixture::registered_node(&h.root, 2).await?;
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
@@ -161,8 +169,8 @@ async fn admit_second_node_inner(
         receipt.assignment.ownership_generation,
         receipt.assignment.source_revision,
         &receipt.assignment.decision_identity,
-        2,
-        ChannelContentPin::test(world),
+        if pin.is_some() { 4 } else { 2 },
+        pin.unwrap_or_else(|| ChannelContentPin::test(world)),
     )
     .map_err(debug)?;
     let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
