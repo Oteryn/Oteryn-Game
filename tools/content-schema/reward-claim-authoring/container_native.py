@@ -12,6 +12,7 @@ import re
 from native_container_fluids import project_fluid_child
 from pathlib import Path
 
+import global_corrections
 import poison_daggers
 
 SOURCE = Path(__file__).with_name('container_native_source.json')
@@ -335,6 +336,7 @@ def derive(definition, items, stack_problem):
             # Existing chest source authoring deliberately strips outer LF:
             # quest-authoring/ots_chests.py:278-279. Keep its accepted hash.
             body = text['text'].strip('\n')
+            body = global_corrections.source_text(ids[0], body)
             if (not 1 <= len(body.encode()) <= 7996 or len(body) > 4000 or '\0' in body
                     or item_id(written.get('item', {})) != text['item_id']
                     or written.get('text_ref') != {'length': len(body), 'placeholders': [],

@@ -22,6 +22,8 @@ enum Case {
     ChoiceDoor,
     ChoiceCaptured,
     Text,
+    DreamersBook,
+    HolyTible,
     RootText,
     CrystalKey,
     FullCharge,
@@ -34,9 +36,9 @@ enum Case {
 }
 
 fn execute(case: Case, marker: &'static str) -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
@@ -82,6 +84,16 @@ fn annihilator_captured_startup_chests_share_the_real_claim() -> TestResult {
 fn quest_container_chests_authored_book_text_survives_replay() -> TestResult {
     execute(Case::Text, "W15B_TEXT_CONTAINER")
 }
+#[test]
+fn quest_container_chests_global_dreamers_book_is_frozen_and_replayed() -> TestResult {
+    execute(Case::DreamersBook, "RCAUTH_GLOBAL_DREAMERS_BOOK")
+}
+
+#[test]
+fn quest_container_chests_global_holy_tible_is_frozen_and_replayed() -> TestResult {
+    execute(Case::HolyTible, "RCAUTH_GLOBAL_HOLY_TIBLE")
+}
+
 #[test]
 fn quest_container_chests_leaf_text_is_frozen_and_replayed() -> TestResult {
     execute(Case::RootText, "W15B_LEAF_TEXT")
@@ -198,6 +210,20 @@ fn scenario_case(
             (33313, 31576, -15),
             6031,
             "oteryn:item.tibia.i3420",
+            vec![],
+        ),
+        Case::DreamersBook => (
+            "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chest_book",
+            (32850, 32285, -14),
+            6196,
+            "oteryn:item.tibia.i2821",
+            vec![],
+        ),
+        Case::HolyTible => (
+            "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.chest_tible",
+            (32828, 32340, -7),
+            6202,
+            "oteryn:item.tibia.i2836",
             vec![],
         ),
         Case::RootText => (
@@ -356,10 +382,12 @@ fn scenario_case(
         };
         let mut authored_shard = None;
         let report = if matches!(case, Case::PlainContainer) {
-            let item = |id| serde_json::json!({
-                "family": "Item", "key": format!("oteryn:item.tibia.i{id}"),
-                "revision": "definition-r1"
-            });
+            let item = |id| {
+                serde_json::json!({
+                    "family": "Item", "key": format!("oteryn:item.tibia.i{id}"),
+                    "revision": "definition-r1"
+                })
+            };
             let shard = serde_json::json!({"records":[{"definition":{
                 "identity":{"key":claim,"revision":"reward-claim-r1"},
                 "readiness":"ready",
@@ -379,7 +407,9 @@ fn scenario_case(
                 }]
             }}]}).to_string();
             let report = crate::content::world_reward_claims::bind_reward_claims(
-                world.base().as_ref(), &[&shard], &|_| true,
+                world.base().as_ref(),
+                &[&shard],
+                &|_| true,
             )?;
             authored_shard = Some(shard);
             report
@@ -1011,7 +1041,22 @@ fn scenario_case(
                         "the existing timed owner interprets absent state as full definition values"
                     );
                 }
-                if matches!(case, Case::RootText) {
+                let global_text = match case {
+                    Case::RootText => Some((
+                        "82c070d062d19713a8dcb51b748174e179a9570800e07a316e209d641708119f",
+                        1484,
+                    )),
+                    Case::DreamersBook => Some((
+                        "feb0cc940641e7a9e502fe1bfe7437958b826ee3938270d5f6217c010e751658",
+                        65,
+                    )),
+                    Case::HolyTible => Some((
+                        "c80460595bd34757c3d5065a1af387e1a5af38b8d8c54813d153add07bad182b",
+                        171,
+                    )),
+                    _ => None,
+                };
+                if let Some((digest, bytes)) = global_text {
                     let text: (String,i64,i64,bool,bool,bool) = sqlx::query_as("SELECT \
                         encode(sha256(convert_to(t.text,'UTF8')),'hex'),octet_length(t.text)::bigint, \
                         t.text_revision::bigint,t.writer_character_id IS NULL, \
@@ -1025,16 +1070,8 @@ fn scenario_case(
                         .bind(root.item_instance_id.as_slice()).fetch_one(&harness.pool).await?;
                     assert_eq!(
                         text,
-                        (
-                            "9ea894f92d1b6e4cf60555cd08f5e552b8c5ce59c11c13eb6d35f7ff07abb036"
-                                .into(),
-                            1505,
-                            1,
-                            true,
-                            true,
-                            true
-                        ),
-                        "existing source LF normalization is part of the exact frozen body"
+                        (digest.into(), bytes, 1, true, true, true),
+                        "the exact TibiaWiki Global body is frozen and replayed"
                     );
                     let writes: i64 =
                         sqlx::query_scalar("SELECT count(*) FROM game_item_text_write_receipts")
