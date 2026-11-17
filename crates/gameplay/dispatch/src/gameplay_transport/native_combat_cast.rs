@@ -597,7 +597,7 @@ impl PreparedNativeCombatCast {
     ) -> Result<(), Error> {
         eprintln!(
             "[DBG-charmretire] access={:?} binding={} wheel={} before={} census={:?} creatures={:?} players={} magnitude={:?}",
-            owned.check_current_access(spell, now).is_ok(),
+            (owned.check_current_access(spell, now), spell.premium, spell.learning_required, owned.access_debug(now)),
             self.current_connection_binding(runtime, owned, reconnect).is_ok_and(|b| owned.binding() == &b),
             owned.wheel_revision() == original_owned.wheel_revision(),
             states.get(runtime, self.batch.caster, self.batch.command.game_session_id()) == Some(&self.before),

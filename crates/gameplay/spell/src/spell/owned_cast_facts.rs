@@ -140,6 +140,18 @@ impl OwnedCastFacts {
         &self.build
     }
     /// An original pending roll cannot grant a now-expired account/learning benefit.
+    /// [DBG-charmretire]
+    pub fn access_debug(&self, now: u64) -> String {
+        let f = |p: Option<(&CastFactsBinding, u64, u64)>| {
+            p.map(|(b, rev, until)| format!("bind_eq={} rev={rev} until={until} now={now}", b == &self.binding))
+        };
+        format!(
+            "premium={:?} learned={:?} binding={:?}",
+            f(self.access.premium.as_ref().map(|p| (&p.binding, p.authority_revision, p.valid_until_micros))),
+            f(self.access.learned.as_ref().map(|p| (&p.binding, p.authority_revision, p.valid_until_micros))),
+            self.binding
+        )
+    }
     pub fn check_current_access(
         &self,
         spell: &SpellDefinition,
