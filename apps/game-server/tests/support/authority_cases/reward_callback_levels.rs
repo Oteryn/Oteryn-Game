@@ -14,6 +14,57 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 type TestResult<T = ()> = fixture::TestResult<T>;
 
+const PREMIUM_T0: i64 = 1_790_812_800_000_000;
+struct PremiumClock;
+impl crate::gameplay_transport::spell_premium_coordinator::clock_registration::Registered
+    for PremiumClock
+{
+}
+impl crate::gameplay_transport::spell_premium_coordinator::RegisteredPremiumClock for PremiumClock {
+    fn read_current_window(&self) -> Option<production_server::premium::TrustedNow> {
+        production_server::premium::TrustedNow::new(PREMIUM_T0 + 60_000_000, 0)
+    }
+}
+
+async fn premium(
+    h: &fixture::Harness,
+) -> TestResult<crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator> {
+    use crate::durability::premium_fence::{EntitlementState, PremiumEvidence};
+    use crate::gameplay_transport::spell_premium_coordinator::{
+        PremiumActivation, SpellPremiumCoordinator,
+    };
+    let consumer = Arc::new(production_server::premium::PremiumConsumer::default());
+    consumer.prove_for_test(PremiumEvidence {
+        account_id: id(40),
+        producer_revision: "1".repeat(40),
+        producer_profile: production_server::premium::PRODUCER_PROFILE.into(),
+        product_id: production_server::premium::PRODUCT_ID.into(),
+        product_version: production_server::premium::PRODUCT_VERSION,
+        entitlement_id: Some("01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70".into()),
+        state: EntitlementState::Active,
+        lifecycle_revision: 1,
+        authority_revision: 7,
+        effective_from_us: PREMIUM_T0 - 60_000_000,
+        effective_until_us: PREMIUM_T0 + 3_600_000_000,
+        authority_issued_at_us: PREMIUM_T0,
+        authority_valid_until_us: PREMIUM_T0 + 3_600_000_000,
+        refresh_after_us: PREMIUM_T0 + 1_800_000_000,
+    });
+    h.root
+        .latch_premium_activation("reward-level-test", PREMIUM_T0, PREMIUM_T0 + 60_000_000)
+        .await
+        .map_err(debug)?;
+    Ok(SpellPremiumCoordinator::new(
+        consumer,
+        Some(Arc::new(PremiumClock)),
+        Some(PremiumActivation {
+            activation_id: "reward-level-test".into(),
+            switch_over_us: PREMIUM_T0,
+        }),
+        Some(h.root.clone()),
+    ))
+}
+
 #[test]
 fn reward_callback_maximum_level_refuses_above_bound() -> TestResult {
     run(false, 25)
@@ -41,7 +92,7 @@ fn run(spirit: bool, level: i64) -> TestResult {
                 .block_on(async {
                     let h = fixture::Harness::create_with_admission_seed(
                         admin,
-                        "reward_levels",
+                        &format!("reward_levels_{spirit}_{level}"),
                         true,
                         false,
                     )
@@ -167,6 +218,7 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
         .open_character_authority(&seal)
         .await
         .map_err(debug)?;
+    let premium = premium(h).await?;
     let mut owner: ComposedFreshAdmission<'_, '_, '_> = ComposedTestOwner {
         root: &h.root,
         character: &authority,
@@ -184,6 +236,7 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
     }
     .build();
     owner.active_generation = Some(generation);
+    owner.premium_coordinator = Some(&premium);
     owner.quest_catalogue = Some(Arc::new(
         oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
             .map_err(debug)?
