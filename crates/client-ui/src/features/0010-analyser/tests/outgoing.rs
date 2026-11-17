@@ -46,6 +46,13 @@ fn outgoing_views_show_own_rates_types_and_charts_without_mixing_metrics()
             .any(|line| line == "DPS: 120.00 | HPS: 60.00"),
         "{steady}"
     );
+    let damage = super::view::outgoing_text(&panel, 20, Tool::Damage);
+    assert!(damage.lines().any(|line| line == "DPS: 120.00"), "{damage}");
+    let healing = super::view::outgoing_text(&panel, 20, Tool::Healing);
+    assert!(
+        healing.lines().any(|line| line == "HPS: 60.00"),
+        "{healing}"
+    );
     reset(&mut panel);
     assert!(
         super::view::outgoing_text(&panel, 0, Tool::Healing)

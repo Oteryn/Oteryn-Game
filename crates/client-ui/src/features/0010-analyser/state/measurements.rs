@@ -111,18 +111,14 @@ impl Recent {
     pub(crate) fn rate(&self, seconds: u64, window: u64) -> String {
         let mut first = seconds;
         let mut total = 0u128;
-        let mut current_bucket = false;
         for (at, value) in &self.0 {
-            first = first.min(*at);
             if *at <= seconds && seconds - at < window {
-                current_bucket |= *at == seconds;
+                first = first.min(*at);
                 total += u128::from(*value);
             }
         }
-        // Include the current second when it already contributed a bucket.
-        let duration = (seconds - first)
-            .saturating_add(u64::from(current_bucket))
-            .clamp(1, window);
+        // Count each second from the oldest in-window bucket through now.
+        let duration = seconds - first + 1;
         let hundredths = total * 100 / u128::from(duration);
         format!("{}.{:02}", hundredths / 100, hundredths % 100)
     }
