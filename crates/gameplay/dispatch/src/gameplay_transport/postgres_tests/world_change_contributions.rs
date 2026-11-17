@@ -119,13 +119,12 @@ fn junkar_scenario() -> TestResult {
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) =
             crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
-        let mut deps = Dependencies::new()?;
-        reset_fixture::set_runtime(
-            &mut deps,
-            world,
-            ChannelId::decode(&id(43)).map_err(debug)?,
-            &pin,
-            1,
+        let room = pin.qualified_room().clone();
+        let (content_pin, ..) = pin.into_channel_parts();
+        let deps = Dependencies::with_content(
+            content_pin.clone(),
+            room,
+            crate::spell::cast::v1_spell_book().map_err(debug)?,
         )?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -142,7 +141,6 @@ fn junkar_scenario() -> TestResult {
             .await
             .initialize_first_entry_position(actor)
             .map_err(debug)?;
-        let (content_pin, ..) = pin.into_channel_parts();
         super::boss_activity::issue_content_and_reset(&h, &content_pin).await?;
         super::worldchg_trader::day(&h, world, 1).await?;
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
