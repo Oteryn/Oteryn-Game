@@ -2195,6 +2195,21 @@ mod tests {
                     "source scopes must bind the active definition"
                 );
                 legacy
+            } else if key == "oteryn:quest.the_spirit_will_get_you_quest" {
+                // Preserve the published baseline, and separately prove that the
+                // new formula changes the active quest's admission/value pin.
+                let mut callback = load()?
+                    .into_iter()
+                    .find(|callback| callback.key == "oteryn:quest-reward/l6-spirit-confession")
+                    .ok_or("Spirit reward")?;
+                assert_eq!(callback.experience_per_level, Some(50));
+                callback.experience_per_level = None;
+                let catalogue = lowered.catalogue();
+                let mut transitions = catalogue.transitions.clone();
+                transitions.insert(callback.key.clone(), primary_transition(&callback)?);
+                let legacy = super::super::definition_hash(key, &catalogue.tracks, &transitions);
+                assert_ne!(hash, legacy, "scaled XP must bind the active definition");
+                legacy
             } else {
                 hash
             };
