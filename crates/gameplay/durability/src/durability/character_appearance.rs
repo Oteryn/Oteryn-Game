@@ -152,6 +152,7 @@ pub struct AppearanceValidationContext<C> {
 
 mod character_sex;
 mod current_appearance;
+mod horse_rental;
 mod earned_unlocks;
 mod grant_lock;
 pub(crate) use grant_lock::{item_action_sex, lock_account_grants};
@@ -160,6 +161,7 @@ pub(crate) use marriage::grant_marriage_outfits;
 pub mod npc_outfits;
 pub(crate) mod quest_grants;
 pub use current_appearance::CurrentCharacterAppearance;
+pub use horse_rental::{RentalMountUnlocks, is_rental_mount};
 pub(crate) use quest_grants::{QuestOutfitGrant, grant_content_outfit, grant_quest_outfit};
 
 impl DurabilityRoot {
@@ -231,7 +233,10 @@ impl DurabilityRoot {
                 .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
             if pending { return Ok(Err(CharacterProgressionError::RespawnPending.into())); }
             let facts = earned_unlocks::read(&mut tx, fence.character_id, &content.earned_grant_keys()).await.map_err(read_storage_error)?;
-            let unlocks = crate::domain::appearance::EarnedCosmetics { content: &content, facts: &facts }.with_sex(sex);
+            let unlocks = RentalMountUnlocks {
+                earned: crate::domain::appearance::EarnedCosmetics { content: &content, facts: &facts }.with_sex(sex),
+                rental: horse_rental::current_mount(&mut tx, fence.character_id).await?,
+            };
             if let Err(rejection) = validate_selection(&request.after, sex, &content, &unlocks) {
                 return Ok(Err(AppearanceWriteError::Rejected(rejection)));
             }

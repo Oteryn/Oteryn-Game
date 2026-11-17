@@ -15,6 +15,7 @@ pub struct CurrentCharacterAppearance {
     pub sex: Sex,
     pub selected: Option<DurableAppearanceSelection>,
     pub earned: Vec<(String, String)>,
+    pub rental_mount: Option<&'static str>,
 }
 
 impl DurabilityRoot {
@@ -123,8 +124,9 @@ impl DurabilityRoot {
                         Err(error) => return Ok(Err(error)),
                     };
                     let earned = earned_unlocks::read(&mut tx, fence.character_id, &grant_keys).await.map_err(read_storage_error)?;
+                    let rental_mount = horse_rental::current_mount(&mut tx, fence.character_id).await?;
                     commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok(CurrentCharacterAppearance { sex, selected, earned }))
+                    Ok(Ok(CurrentCharacterAppearance { sex, selected, earned, rental_mount }))
                 })
             })
             .await?
