@@ -601,9 +601,10 @@ async fn request_spawn(session: String, key: String) -> Result<String, String> {
             "status={};stderr_tail={}",
             output.status,
             stderr
+                .replace('\n', " | ")
                 .chars()
                 .rev()
-                .take(200)
+                .take(400)
                 .collect::<String>()
                 .chars()
                 .rev()
