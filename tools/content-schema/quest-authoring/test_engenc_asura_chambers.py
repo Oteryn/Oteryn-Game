@@ -11,12 +11,12 @@ import world_region_codec as codec
 
 
 class AsuraChambers(unittest.TestCase):
-    def test_authored_rosters_have_two_distinct_native_tiles_and_exact_doors(self):
+    def test_authored_rosters_have_distinct_native_tiles_and_exact_doors(self):
         document = json.loads(
             (Path(__file__).parent / "samples/engenc/asura-chambers.json").read_text()
         )
         self.assertEqual(document["basis"], "authored per owner rule")
-        self.assertEqual([c["stage"] for c in document["chambers"]], ["s2", "s3", "s4"])
+        self.assertEqual([c["stage"] for c in document["chambers"]], ["s2", "s3", "s4", "s5"])
         palette = json.loads(
             (ROOT / "content/world/placements/index.json").read_text()
         )["palette"]
@@ -37,7 +37,9 @@ class AsuraChambers(unittest.TestCase):
 
         for chamber in document["chambers"]:
             with self.subTest(stage=chamber["stage"]):
-                self.assertEqual(len({tuple(p) for p in chamber["defenders"]}), 2)
+                # Chambers hold two defenders; s5 holds only The Flaming Orchid.
+                expected = 1 if chamber["stage"] == "s5" else 2
+                self.assertEqual(len({tuple(p) for p in chamber["defenders"]}), expected)
                 lo, hi = chamber["room_min"], chamber["room_max"]
                 for position in chamber["defenders"] + [chamber["landing"]]:
                     self.assertTrue(
@@ -48,7 +50,7 @@ class AsuraChambers(unittest.TestCase):
                 self.assertTrue(tile(chamber.get("staging", chamber["entry"]))[5])
                 door = tile(chamber["door"])[5]
                 self.assertEqual(
-                    palette[door[1][0]]["source_item_id"], chamber["door_appearance"]
+                    palette[door[-1][0]]["source_item_id"], chamber["door_appearance"]
                 )
                 self.assertEqual(chamber["door"][2], lo[2])
 

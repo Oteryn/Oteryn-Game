@@ -278,4 +278,109 @@ mod tests {
         assert!(!cache.encounter_door_allowed("source-room", hash, participant, session, 2));
         Ok(())
     }
+
+    /// Asura and the other native rooms credit a defender only when the most-damage
+    /// principal is an exact participant of the run that owns it (TibiaWiki
+    /// Asura_Palace_Quest/Spoiler: each kill is done individually).
+    #[test]
+    fn asuraelf_encounter_kill_credits_only_an_admitted_participant() -> Result<(), String> {
+        fn checked(error: impl std::fmt::Debug) -> String {
+            format!("{error:?}")
+        }
+        let id = |seed| {
+            [
+                seed, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, seed,
+            ]
+        };
+        let entry = crate::gameplay_transport::kill_reward::tests::pending(2, 50, 3, 0);
+        let principal = entry.facts.principal;
+        let world = WorldId::decode(&id(60)).map_err(checked)?;
+        let runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            ChannelId::decode(&id(61)).map_err(checked)?,
+            crate::foundation::NodeId::decode(&id(62)).map_err(checked)?,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            3,
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(world),
+        )
+        .map_err(checked)?;
+        let hash = [4; 32];
+        let participant = |actor, session, lease_generation| Participant {
+            actor,
+            session,
+            character: *principal.character.as_bytes(),
+            lease_generation,
+            admission_revision: 10,
+        };
+        let snapshot = |p: &Participant| TaskSnapshot {
+            actor: p.actor,
+            session: p.session,
+            character: p.character,
+            lease_generation: p.lease_generation,
+            observed_revision: 10,
+            active_tasks: Vec::new(),
+            native_counters: vec![NativeCounterCapture {
+                transition: "oteryn:quest-transition/native-kills/engenc-asura-s5".into(),
+                creature: entry.creature.clone(),
+                definition_hash: Some(hash),
+                death_area: None,
+                encounter_source: Some("source-room".into()),
+            }],
+            source_objectives: Vec::new(),
+            active_goals: Vec::new(),
+            objective_keys: Vec::new(),
+        };
+        let run = |p: Participant| -> Result<EncounterRun, String> {
+            Ok(EncounterRun {
+                source: "source-room".into(),
+                definition_hash: hash,
+                roster: EncounterDefenders::new(&[p.actor], &[entry.target]).map_err(checked)?,
+                participants: vec![p],
+            })
+        };
+        let admitted = participant(
+            principal.actor,
+            principal.session,
+            principal.lease_generation,
+        );
+        let snapshots = [snapshot(&admitted)];
+        let credited = capture(&runtime, &entry, &snapshots, &[run(admitted)?], true);
+        assert_eq!(credited.len(), 1);
+        assert_eq!(credited[0].session, principal.session);
+        let admitted = participant(
+            principal.actor,
+            principal.session,
+            principal.lease_generation,
+        );
+        assert!(capture(&runtime, &entry, &snapshots, &[run(admitted)?], false).is_empty());
+
+        // The most-damage principal is not in the run that owns the defender: nobody,
+        // including the run's own participant, is credited.
+        let mut other = principal.actor;
+        other.0.actor_local_id.0 += 1;
+        let session = GameSessionId::decode(&id(3)).map_err(checked)?;
+        let outsider = participant(other, session, principal.lease_generation);
+        let snapshots = [
+            snapshot(&participant(
+                principal.actor,
+                principal.session,
+                principal.lease_generation,
+            )),
+            snapshot(&outsider),
+        ];
+        assert!(capture(&runtime, &entry, &snapshots, &[run(outsider)?], true).is_empty());
+
+        // A stale lease of the same character is not the admitted participant either.
+        let stale = participant(
+            principal.actor,
+            principal.session,
+            principal.lease_generation + 1,
+        );
+        let snapshots = [snapshot(&stale)];
+        assert!(capture(&runtime, &entry, &snapshots, &[run(stale)?], true).is_empty());
+        Ok(())
+    }
 }

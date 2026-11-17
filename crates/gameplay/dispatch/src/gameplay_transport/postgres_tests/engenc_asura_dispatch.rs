@@ -39,18 +39,26 @@ pub(super) fn start(name: &str) -> TestResult<Position> {
 pub(super) fn catalogue(name: &str) -> TestResult<QuestStateCatalogue> {
     let mut b = bindings()?;
     // Isolate each real caller at its authored predecessor, with no fabricated receipts.
-    let predecessor = match stage(name)? {
-        "s2" => "oteryn:quest-progress/authored/asura_palace_quest/s1",
-        "s3" => "oteryn:quest-progress/engenc/asura/s2/opened",
-        "s4" => "oteryn:quest-progress/engenc/asura/s3/opened",
+    // s5 is reached after s4 and leaves the room through the s3 door, so its run clears s3
+    // through the real caller first.
+    let predecessors: &[&str] = match stage(name)? {
+        "s2" => &["oteryn:quest-progress/authored/asura_palace_quest/s1"],
+        "s3" => &["oteryn:quest-progress/engenc/asura/s2/opened"],
+        "s4" => &["oteryn:quest-progress/engenc/asura/s3/opened"],
+        "s5" => &[
+            "oteryn:quest-progress/engenc/asura/s2/opened",
+            "oteryn:quest-progress/engenc/asura/s4/opened",
+        ],
         _ => return Err("Asura stage".into()),
     };
-    b.quests[0]
-        .tracks
-        .iter_mut()
-        .find(|t| t.key == predecessor)
-        .ok_or("predecessor")?
-        .initial = 1;
+    for predecessor in predecessors {
+        b.quests[0]
+            .tracks
+            .iter_mut()
+            .find(|t| t.key == *predecessor)
+            .ok_or("predecessor")?
+            .initial = 1;
+    }
     Ok(b.attach(&QuestStateCatalogue::empty("content-1").ok_or("catalogue")?)?)
 }
 pub(super) fn world(
@@ -61,6 +69,7 @@ pub(super) fn world(
     let cb = callback(name)?;
     let at = cb.selector.position.ok_or("entry position")?;
     let staging = start(name)?;
+    let mut expected = Vec::new();
     let (bytes, region, bounds, ids) = match stage(name)? {
         "s2" => (
             include_bytes!("../../../../../../content/world/placements/region-z03-x128-y127.b3")
@@ -83,6 +92,23 @@ pub(super) fn world(
             (32942, 32675, 32950, 32683),
             vec![923],
         ),
+        "s5" => {
+            // The sealed Flaming Orchid door on the palace top floor (donor actions_doors.lua).
+            expected.push(ExpectedTile {
+                position: (32962, 32674),
+                ids: vec![923, 1676],
+                counted_entry: None,
+            });
+            (
+                include_bytes!(
+                    "../../../../../../content/world/placements/region-z02-x128-y127.b3"
+                )
+                .as_slice(),
+                (2, 128, 127),
+                (32952, 32673, 32962, 32683),
+                vec![923],
+            )
+        }
         _ => return Err("Asura stage".into()),
     };
     let mut crops = vec![NativeCrop {
@@ -90,11 +116,17 @@ pub(super) fn world(
         region,
         bounds,
         start: (staging.x, staging.y),
-        expected: vec![ExpectedTile {
-            position: (at.x, at.y),
-            ids,
-            counted_entry: None,
-        }],
+        expected: {
+            expected.insert(
+                0,
+                ExpectedTile {
+                    position: (at.x, at.y),
+                    ids,
+                    counted_entry: None,
+                },
+            );
+            expected
+        },
     }];
     if stage(name)? == "s2" {
         crops.push(NativeCrop {
@@ -111,7 +143,7 @@ pub(super) fn world(
             }],
         });
     }
-    let world = native_scene_with_appearances(native, crops, &[], &[1675, 5737])?;
+    let world = native_scene_with_appearances(native, crops, &[], &[1675, 1677, 5737])?;
     for defender in &cb.effects.encounter.as_ref().ok_or("encounter")?.monsters {
         assert!(
             world.enterable(crate::map::overlay::TilePos {
@@ -132,8 +164,6 @@ pub(super) async fn exercise(
     h: &Harness,
     name: &str,
 ) -> TestResult {
-    let cb = callback(name)?;
-    let encounter = cb.effects.encounter.as_ref().ok_or("encounter")?;
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
@@ -167,6 +197,46 @@ pub(super) async fn exercise(
         .await
         .install_companion_policies(native.policies().clone())
         .map_err(debug)?;
+    if stage(name)? == "s5" {
+        let s3 = "engenc-asura-native-s3";
+        Box::pin(chamber(owner, admitted, h, s3, &fence)).await?;
+        // Leave the fire chamber through its opened door to the shared entry tile.
+        let first = admitted.continuity.next_command_id;
+        for command in first..first + 2 {
+            super::quest_world_callbacks::wire(
+                owner,
+                admitted,
+                command,
+                1,
+                oteryn_protocol_oteryn::world_spatial::encode_step_intent(
+                    oteryn_protocol_oteryn::world_spatial::StepDirection::East,
+                ),
+            )
+            .await?;
+        }
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(admitted.runtime_actor.ok_or("actor")?)
+                .map_err(debug)?
+                .position(),
+            super::quest_world_callbacks::local(start(name)?)
+        );
+    }
+    Box::pin(chamber(owner, admitted, h, name, &fence)).await
+}
+
+async fn chamber(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    name: &str,
+    fence: &crate::durability::character_progression::CurrentCharacterGameplayFence,
+) -> TestResult {
+    let cb = callback(name)?;
+    let encounter = cb.effects.encounter.as_ref().ok_or("encounter")?;
     let selector = cb.selector.native.as_ref().ok_or("native selector")?;
     let key = oteryn_world_bundle::bundle::placement_key(
         selector.position.floor,
@@ -221,7 +291,7 @@ pub(super) async fn exercise(
             super::quest_world_callbacks::local(encounter.players[0].to)
         );
         let creatures = runtime.visible_entities().creatures;
-        assert_eq!(creatures.len(), 2);
+        assert_eq!(creatures.len(), encounter.monsters.len());
         for creature in &creatures {
             let snapshot = runtime.companion_snapshot(creature.actor).map_err(debug)?;
             assert_eq!(
@@ -293,7 +363,7 @@ pub(super) async fn exercise(
     assert_eq!(
         oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
         oteryn_protocol_oteryn::world_object::UseDisposition::Rejected,
-        "the admitted participant must defeat both defenders before opening the door"
+        "the admitted participant must defeat every defender before opening the door"
     );
     assert_eq!(
         owner.bundle_map().ok_or("map")?.facts.object_revision(key),
@@ -314,7 +384,7 @@ pub(super) async fn exercise(
             .visible_entities()
             .creatures
             .len(),
-        2
+        encounter.monsters.len()
     );
     eprintln!("M30_ASURA_DISPATCH_EARLY_DOOR_REFUSED {}", stage(name)?);
     next_command += 1;
@@ -426,7 +496,7 @@ pub(super) async fn exercise(
         next_command += 1;
         assert_eq!(
             oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
-            if index == 0 {
+            if index + 1 < encounter.monsters.len() {
                 oteryn_protocol_oteryn::world_object::UseDisposition::Rejected
             } else {
                 oteryn_protocol_oteryn::world_object::UseDisposition::Committed
@@ -508,11 +578,17 @@ async fn walk(
                     .monsters
                     .iter()
                     .any(|m| (m.position.x, m.position.y) == next)
-                || !scene.enterable(crate::map::overlay::TilePos {
-                    x: next.0,
-                    y: next.1,
-                    floor: origin.floor,
-                })
+                || {
+                    // A door this run already opened is passable on the live Channel map.
+                    let pos = crate::map::overlay::TilePos {
+                        x: next.0,
+                        y: next.1,
+                        floor: origin.floor,
+                    };
+                    let live = owner.bundle_map().ok_or("map")?;
+                    live.facts
+                        .quest_callback_blocked(live.overlay.base(), pos, !scene.enterable(pos))
+                }
             {
                 continue;
             }
@@ -571,6 +647,17 @@ fn engenc_postgres_native_destroyer_chamber_admission() -> TestResult {
             x: 32959,
             y: 32675,
             floor: -3,
+        },
+    )
+}
+#[test]
+fn engenc_postgres_native_flaming_orchid_room_admission_and_sealed_door() -> TestResult {
+    run(
+        "engenc-asura-native-s5",
+        Position {
+            x: 32960,
+            y: 32679,
+            floor: -2,
         },
     )
 }

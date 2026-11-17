@@ -4494,4 +4494,4 @@ fn apply_talisman_loot_bonus(
 }
 #[cfg(test)]
 #[path = "kill_reward_tests.rs"]
-mod tests;
+pub(super) mod tests;

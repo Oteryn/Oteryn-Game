@@ -110,7 +110,13 @@ fn final_fourteen_stamina_hours_remove_every_planned_monster_drop() {
 
 /// One projected death on its own Channel (`channel` keys it), principal `session_seed` at
 /// lease generation `lease`.
-fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKillSettlement {
+/// One projected ordinary kill; the encounter capture tests reuse it.
+pub(in crate::gameplay_transport) fn pending(
+    channel: u8,
+    session_seed: u8,
+    lease: u64,
+    drops: usize,
+) -> PendingKillSettlement {
     let mut fixture = CombatDeathFixture::new(
         WorldId::decode(&id(1)).expect("world"),
         ChannelId::decode(&id(channel)).expect("channel"),

@@ -48,7 +48,7 @@ fn engenc_asura_entry_is_native_premium_once_and_does_not_complete() -> Result<(
 }
 
 #[test]
-fn engenc_asura_three_chambers_require_both_owned_defenders_before_each_door() -> Result<(), String>
+fn engenc_asura_chambers_and_orchid_require_owned_defenders_before_each_door() -> Result<(), String>
 {
     let bytes = std::fs::read(
         std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -64,7 +64,17 @@ fn engenc_asura_three_chambers_require_both_owned_defenders_before_each_door() -
         "oteryn:quest-progress/authored/asura_palace_quest/s1".into(),
         1,
     )]);
-    for stage in ["s2", "s3", "s4"] {
+    let orchid = catalogue
+        .transition("oteryn:quest-callback/engenc/asura/s5/entry")
+        .ok_or("orchid entry")?;
+    assert!(catalogue.evaluate(orchid, &state, 0).is_err());
+    // The Flaming Orchid room (s5) holds one boss; the chambers hold two defenders each.
+    for (stage, kills) in [("s2", 2), ("s3", 2), ("s4", 2), ("s5", 1)] {
+        if stage == "s5" {
+            assert!(catalogue.evaluate(orchid, &state, 0).is_ok());
+        } else {
+            assert!(catalogue.evaluate(orchid, &state, 0).is_err());
+        }
         let entry = format!("oteryn:quest-callback/engenc/asura/{stage}/entry");
         let door = format!("oteryn:quest-callback/engenc/asura/{stage}/door");
         let entry = catalogue.transition(&entry).ok_or("entry")?;
@@ -78,7 +88,7 @@ fn engenc_asura_three_chambers_require_both_owned_defenders_before_each_door() -
         else {
             return Err("kill".into());
         };
-        assert_eq!(counter.maximum, 2);
+        assert_eq!(counter.maximum, kills);
         let kill = catalogue
             .transition(&counter.key)
             .ok_or("kill transition")?;
@@ -91,7 +101,7 @@ fn engenc_asura_three_chambers_require_both_owned_defenders_before_each_door() -
             state.insert(change.track, change.after);
         }
         assert!(catalogue.evaluate(door, &state, 0).is_err());
-        for expected in 1..=2 {
+        for expected in 1..=kills {
             let changes = catalogue
                 .evaluate(kill, &state, 0)
                 .map_err(|e| format!("{e:?}"))?;
@@ -101,7 +111,7 @@ fn engenc_asura_three_chambers_require_both_owned_defenders_before_each_door() -
             for change in changes {
                 state.insert(change.track, change.after);
             }
-            if expected == 1 {
+            if expected < kills {
                 assert!(catalogue.evaluate(door, &state, 0).is_err());
             }
         }

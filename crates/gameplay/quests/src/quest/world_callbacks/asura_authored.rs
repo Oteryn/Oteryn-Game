@@ -56,7 +56,7 @@ mod tests {
             callback.selector.position.as_mut().ok_or("position")?.x += 1;
             assert!(!admitted(&callback));
         }
-        assert_eq!(count, 6);
+        assert_eq!(count, 8);
         Ok(())
     }
 }

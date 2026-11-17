@@ -76,10 +76,12 @@ def attach_chambers(document, root):
     quest["sources"].append(INPUT)
     for number, chamber in enumerate(rows, 2):
         stage = chamber["stage"]
+        # Chambers hold two defenders; the s5 boss room holds only The Flaming Orchid.
+        kills = len(chamber["defenders"])
         count, entered, opened = (
             f"{BASE}/{stage}/{name}" for name in ["count", "entered", "opened"]
         )
-        for key, maximum in [(count, 2), (entered, 1), (opened, 1)]:
+        for key, maximum in [(count, kills), (entered, 1), (opened, 1)]:
             track(key, maximum)
         source = f"oteryn:quest-callback/engenc/asura/{stage}/entry"
         previous = (
@@ -121,7 +123,7 @@ def attach_chambers(document, root):
             chamber["door"],
             [
                 gate(entered, 1),
-                gate(count, 2),
+                gate(count, kills),
                 {"track": opened, "minimum": 0, "maximum": 0, "set": 1},
             ],
         )
@@ -150,7 +152,7 @@ def attach_chambers(document, root):
                             "track": count,
                             "gate": entered,
                             "gate_value": 1,
-                            "maximum": 2,
+                            "maximum": kills,
                             "encounter_source": source,
                         },
                     },
