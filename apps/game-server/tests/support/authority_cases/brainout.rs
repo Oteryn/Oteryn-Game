@@ -1,4 +1,5 @@
 //! Smaller dedicated-PG mount of the same brain mission assertions and real USE transport.
+use super::engnpc2_paint_transport::world;
 use crate::bestiary_postgres_harness as fixture;
 use crate::foundation::{
     ChannelContentPin, ChannelRuntimeV1, CharacterId, CharacterLease, GameSessionId, NodeId,
@@ -317,9 +318,6 @@ mod quest_world_callbacks {
         result
     }
 }
-
-#[path = "engnpc2_paint_transport/world.rs"]
-mod world;
 
 fn scenario(name: &str, _trigger: Position, lever: bool) -> TestResult {
     assert!(!lever);
