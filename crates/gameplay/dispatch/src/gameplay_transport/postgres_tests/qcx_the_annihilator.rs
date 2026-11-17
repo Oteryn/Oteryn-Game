@@ -63,6 +63,10 @@ fn avar_tar_accepts_demon_outfit_and_advances_to_the_choice() -> TestResult {
             Ok(())
         })
     });
-    eprintln!("QCX39_POSTGRES_CASE duration={:?} success={}", started.elapsed(), result.is_ok());
+    eprintln!(
+        "QCX39_POSTGRES_CASE duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
     result
 }
