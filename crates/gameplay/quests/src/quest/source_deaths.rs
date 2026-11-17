@@ -146,7 +146,7 @@ const DOCUMENTS: &[&[u8]] = &[
     ),
 ];
 fn documents() -> Result<Vec<Document>, String> {
-    DOCUMENTS
+    let mut documents: Vec<Document> = DOCUMENTS
         .iter()
         .map(|bytes| {
             let doc: Document = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
@@ -155,7 +155,28 @@ fn documents() -> Result<Vec<Document>, String> {
             }
             Ok(doc)
         })
-        .collect()
+        .collect::<Result<_, String>>()?;
+    // Crystal 9f5a72c and 201189f8, elemental_spheres/creaturescripts_overlord_kill.lua:2-5,24-26.
+    // Every damaging player shares BossStorage (storages.lua:1084, numeric key 41652).
+    let track = "oteryn:quest-progress/quest/u8_2/elemental_spheres/boss_storage";
+    documents.push(Document {
+        schema: 1,
+        runtime_enabled: true,
+        quest: "oteryn:quest.elemental_spheres_quest".into(),
+        tracks: vec![Track { key: track.into(), initial: -1, min: -1, max: 1 }],
+        rules: ["earth", "energy", "fire", "ice"].into_iter().map(|element| Rule {
+            creature: format!("oteryn:creature.{element}_overlord"),
+            transition: format!("oteryn:quest-transition/elemental-spheres/{element}-overlord-death"),
+            effects: vec![Effect { track: track.into(), default: -1,
+                from: Comparison { kind: "lt".into(), value: 1 }, set: Some(1), add: None }],
+            room: None,
+            top_damage_only: false,
+            define_transition: true,
+            epoch_tracks: None,
+            quest: String::new(),
+        }).collect(),
+    });
+    Ok(documents)
 }
 pub fn rules() -> Result<&'static [Rule], &'static str> {
     static RULES: OnceLock<Result<Vec<Rule>, String>> = OnceLock::new();
