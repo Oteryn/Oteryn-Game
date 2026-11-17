@@ -68,7 +68,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         );
         match self
             .root
-            .court_warlock_admission(self.character, self.holder, party.clone(), admission, false)
+            .court_warlock_admission(
+                self.character,
+                self.holder,
+                party.clone(),
+                admission,
+                self.reset_epoch,
+                false,
+            )
             .await
         {
             Ok(true) => {}
@@ -87,7 +94,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if disposition != UseDisposition::Committed
             && let Err(error) = self
                 .root
-                .court_warlock_admission(self.character, self.holder, party, admission, true)
+                .court_warlock_admission(
+                    self.character,
+                    self.holder,
+                    party,
+                    admission,
+                    self.reset_epoch,
+                    true,
+                )
                 .await
         {
             super::super::operator_event(&format!("cwarlock_refund_deferred reason={error:?}"));

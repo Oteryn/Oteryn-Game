@@ -177,10 +177,29 @@ impl CourtWarlock {
             // The actual spawn owner validates every cell and policy. Retain the
             // partial index on a capacity refusal so retries never duplicate spawns.
             while self.pending < wave.count {
-                let seed = self
-                    .start
-                    .wrapping_add((self.next * 31 + self.pending * 17) as u64);
-                let creature = wave.creatures[(seed as usize) % wave.creatures.len()];
+                use oteryn_simulation_determinism::{
+                    DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+                };
+                let mut occurrence = [0; 16];
+                occurrence[..8].copy_from_slice(&self.start.to_be_bytes());
+                let ordinal = u64::try_from(self.next * 32 + self.pending)
+                    .map_err(|_| CarrierError::PlanConflict)?;
+                occurrence[8..].copy_from_slice(&ordinal.to_be_bytes());
+                let seed = deterministic_decision_u64(
+                    &GameplayDecisionRoot::from_bytes(
+                        runtime.content_pin().server_artifact_digest(),
+                    ),
+                    DecisionOccurrenceId::from_bytes(occurrence),
+                    "court-warlock-wave",
+                    0,
+                )
+                .map_err(|_| CarrierError::PlanConflict)?;
+                let index = usize::try_from(
+                    seed % u64::try_from(wave.creatures.len())
+                        .map_err(|_| CarrierError::PlanConflict)?,
+                )
+                .map_err(|_| CarrierError::PlanConflict)?;
+                let creature = wave.creatures[index];
                 let at = if self.next + 1 < schedule.len() {
                     // Source force=true deliberately creates the Raubritters on
                     // the first staging player's position, even when occupied.

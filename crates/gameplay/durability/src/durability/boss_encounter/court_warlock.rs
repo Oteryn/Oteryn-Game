@@ -20,6 +20,7 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         mut party: Vec<CurrentCharacterItemFence>,
         admission: [u8; 16],
+        reset_epoch: u64,
         release: bool,
     ) -> Result<bool, DurabilityError> {
         if !(1..=5).contains(&party.len()) || !cooldown_storage::reward_uuid(&admission) {
@@ -74,7 +75,7 @@ impl DurabilityRoot {
                     if replay != 0 && replay != keys.len() { return Ok(false); }
                     if replay == 0 {
                         let change = cooldown_storage::set_boss_cooldowns_data(&mut tx, &keys, &BossCooldownAdmissionData {
-                            admission, now, reset_epoch:0, cooldown_s:72_000, boosted:false,
+                            admission, now, reset_epoch, cooldown_s:72_000, boosted:false,
                         }).await.map_err(|_| DurabilityError::InvalidStoredState)?;
                         if change == BossCooldownChange::OnCooldown { return Ok(false); }
                     }
