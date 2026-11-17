@@ -123,7 +123,7 @@ pub(super) fn apply(
     values: &[String],
     draft: &mut Option<Vec<BarAction>>,
 ) -> String {
-    if slot >= ROW_SLOTS * 3 {
+    if slot >= oteryn_client_runtime::spell::ACTION_BAR_SLOTS {
         return REFUSED.into();
     }
     let saved = match action {

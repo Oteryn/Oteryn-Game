@@ -603,3 +603,73 @@ fn empty_slot_multiaction_takes_objects_from_the_visible_object_picker() -> Test
     );
     Ok(())
 }
+
+/// Row 9 (slots 400-449) is as editable as row 1: the secondary click opens the editor and the
+/// saved text reaches the local owner.
+#[test]
+fn ninth_row_slot_accepts_an_assignment_through_the_editor() -> TestResult {
+    use super::super::ActionControl;
+    let (mut app, mut commands) = super::super::tests::fixture()?;
+    let control_of = |app: &mut App, wanted: ActionControl| {
+        app.world_mut()
+            .query::<(Entity, &ActionControl)>()
+            .iter(app.world())
+            .find_map(|(entity, control)| {
+                let same = match (*control, wanted) {
+                    (ActionControl::Slot(a), ActionControl::Slot(b))
+                    | (ActionControl::Toggle(a), ActionControl::Toggle(b))
+                    | (ActionControl::Lock(a), ActionControl::Lock(b)) => a == b,
+                    _ => false,
+                };
+                same.then_some(entity)
+            })
+            .ok_or("action control")
+    };
+    let toggle = control_of(&mut app, ActionControl::Toggle(8))?;
+    app.world_mut().trigger(Activate { entity: toggle });
+    let lock = control_of(&mut app, ActionControl::Lock(8))?;
+    app.world_mut().trigger(Activate { entity: lock });
+    app.update();
+    let slot = 8 * super::super::ROW_SLOTS;
+    let entity = control_of(&mut app, ActionControl::Slot(slot))?;
+    app.world_mut()
+        .trigger(bevy::picking::events::PointerClick {
+            entity,
+            pointer: bevy::picking::events::Pointer::new(
+                bevy::picking::pointer::PointerId::Mouse,
+                bevy::picking::pointer::Location {
+                    target: bevy::camera::NormalizedRenderTarget::None {
+                        width: 100,
+                        height: 100,
+                    },
+                    position: Vec2::ZERO,
+                },
+            ),
+            button: bevy::picking::pointer::PointerButton::Secondary,
+            hit: bevy::picking::backend::HitData::new(Entity::PLACEHOLDER, 0., None, None),
+            duration: std::time::Duration::ZERO,
+            count: 1,
+        });
+    app.update();
+    assert!(app.world().resource::<EditorState>().active());
+    set(&mut app, 2, "Ninth row greeting");
+    let save = control(&mut app, |edit| matches!(edit, Edit::Text))?;
+    app.world_mut().trigger(Activate { entity: save });
+    app.update();
+    assert_eq!(
+        app.world().resource::<EditorState>().message,
+        "Saved action assignment"
+    );
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .spell_slot_labels()[slot]
+            .contains("Ninth row greeting")
+    );
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
