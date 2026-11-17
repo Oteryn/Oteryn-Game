@@ -23,7 +23,7 @@ pub(super) async fn open(
 ) -> TestResult {
     let selected = SelectedCapabilities::select(
         crate::gameplay_transport::capabilities::ITEM_VIEW_OFFERED_CAPABILITIES,
-        &[4, 6, 7, 14, 15],
+        &[4, 6, 7, 12, 14, 15],
     )
     .ok_or("corpse capabilities")?;
     assert!(selected.contains(4) && selected.contains(14) && selected.contains(15));

@@ -61,6 +61,8 @@ struct Progress {
     movement: Option<Option<u64>>,
     heals_known: bool,
     fields_known: bool,
+    field_actors: Option<Vec<ExactActorRef>>,
+    field_cursor: usize,
     proposals: Vec<RetainedProposal>,
     actors: Vec<ExactActorRef>,
     rejected: bool,
@@ -222,6 +224,43 @@ impl PendingProfilePass {
     }
     pub(super) fn finish_heals(&self) {
         self.progress().heals_known = true;
+    }
+    /// Read at most one bounded slice of the original live cohort per holder pass.
+    pub(super) fn field_batch(&self, runtime: &ChannelRuntimeV1) -> Result<Vec<ExactActorRef>, ()> {
+        if !self.batch.current_for(runtime) {
+            return Err(());
+        }
+        let mut progress = self.progress();
+        if progress.fields_known {
+            return Err(());
+        }
+        let start = progress.field_cursor;
+        let actors = progress.field_actors.get_or_insert_with(|| {
+            runtime
+                .visible_entities()
+                .creatures
+                .into_iter()
+                .map(|visible| visible.actor)
+                .collect()
+        });
+        let end = start.saturating_add(64).min(actors.len());
+        actors.get(start..end).map(|batch| batch.to_vec()).ok_or(())
+    }
+    pub(super) fn finish_field_batch(&self, batch: &[ExactActorRef]) -> Result<(), ()> {
+        let mut progress = self.progress();
+        let start = progress.field_cursor;
+        let end = start.checked_add(batch.len()).ok_or(())?;
+        let actors = progress.field_actors.as_ref().ok_or(())?;
+        if batch.len() > 64 || actors.get(start..end) != Some(batch) {
+            return Err(());
+        }
+        let complete = end == actors.len();
+        progress.field_cursor = end;
+        drop(progress);
+        if complete {
+            self.finish_fields();
+        }
+        Ok(())
     }
     pub(super) fn fields_known(&self) -> bool {
         self.progress().fields_known
