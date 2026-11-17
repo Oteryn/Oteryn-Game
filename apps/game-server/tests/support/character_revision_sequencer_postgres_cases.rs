@@ -49,11 +49,13 @@ use crate::foundation::admission_authority_publication::{
 };
 use crate::foundation::{ConnectionGeneration, RuntimeScopeRefV1, ScopeOwnershipGeneration};
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
+use sha2::{Digest, Sha256};
 use sqlx::postgres::PgConnection;
 use sqlx::{Connection, Executor};
 use std::collections::BTreeMap;
 use std::future::Future;
 use std::task::Poll;
+use std::time::{Duration, Instant};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -131,40 +133,40 @@ impl Database {
             .as_nanos();
         let name = format!("crs_{name}_{suffix}");
         let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
-        admin
-            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-                "CREATE DATABASE {name}{}",
-                template
-                    .map(|name| format!(" TEMPLATE {name}"))
-                    .unwrap_or_default()
-            ))))
-            .await?;
-        if template.is_some() {
-            // CREATE DATABASE copies schema ACLs, but not the database's own
-            // ACL. Preserve migration 0006's cross-database isolation boundary.
-            admin
-                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-                    "REVOKE CONNECT ON DATABASE {name} FROM PUBLIC"
-                ))))
-                .await?;
-        }
-        admin.close().await?;
-        let prefix = admin_url
-            .strip_suffix("/postgres")
-            .ok_or("invalid admin URL")?;
-        let url = format!("{prefix}/{name}");
-        let mut connection = sqlx::PgConnection::connect(&url).await?;
         let version: String = sqlx::query_scalar("SHOW server_version_num")
-            .fetch_one(&mut connection)
+            .fetch_one(&mut admin)
             .await?;
         assert_eq!(
             version,
             oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
             "canonical target is PostgreSQL 18.6"
         );
+        let template = match template {
+            Some(template) => template.to_owned(),
+            // No tokio timer here: several suites run with paused tokio time, where a timer
+            // would fire while this waits on the database. The job timeout bounds it.
+            None => Self::migrated_template(&mut admin, &admin_url).await?,
+        };
+        Self::clone_database(&mut admin, &name, &template).await?;
+        // Clones share the template's random decision roots; tests must not depend on them differing between databases.
+        // CREATE DATABASE copies schema ACLs, but not the database's own
+        // ACL. Preserve migration 0006's cross-database isolation boundary.
+        admin
+            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                "REVOKE CONNECT ON DATABASE {name} FROM PUBLIC"
+            ))))
+            .await?;
+        admin.close().await?;
+        let prefix = admin_url
+            .strip_suffix("/postgres")
+            .ok_or("invalid admin URL")?;
+        let url = format!("{prefix}/{name}");
+        let mut connection = sqlx::PgConnection::connect(&url).await?;
+        // The clone already has every migration; retain checksum/ledger validation.
         oteryn_gameplay_durability::GAME_MIGRATOR
             .run(&mut connection)
             .await?;
+        Self::refresh_migration_seeds(&mut connection).await?;
         let public_connect: bool = sqlx::query_scalar(
             "SELECT EXISTS(SELECT 1 FROM pg_database d, \
              LATERAL aclexplode(COALESCE(d.datacl,acldefault('d',d.datdba))) a \
@@ -182,6 +184,124 @@ impl Database {
             name,
             url,
         })
+    }
+
+    async fn refresh_migration_seeds(connection: &mut PgConnection) -> TestResult {
+        // Migration 2833 seeds this at migration time; give each clone a fresh resync start.
+        sqlx::query(
+            "UPDATE game_character_service_feed \
+             SET resync_started_at_ms = floor(extract(epoch FROM transaction_timestamp())*1000)::bigint \
+             WHERE singleton AND phase = 1",
+        )
+        .execute(connection)
+        .await?;
+        Ok(())
+    }
+
+    async fn migrated_template(admin: &mut PgConnection, admin_url: &str) -> TestResult<String> {
+        let mut hash = Sha256::new();
+        for migration in oteryn_gameplay_durability::GAME_MIGRATOR.iter() {
+            hash.update(migration.version.to_be_bytes());
+            hash.update(migration.checksum.as_ref());
+        }
+        let digest = hash.finalize();
+        let template = format!(
+            "oteryn_tpl_{:016x}",
+            u64::from_be_bytes(digest[..8].try_into()?)
+        );
+        // nextest uses separate processes. This session lock serializes publication
+        // across all of them; closing the admin connection also releases it on error.
+        sqlx::query("SELECT pg_advisory_lock(hashtextextended($1, 0))")
+            .bind(&template)
+            .execute(&mut *admin)
+            .await?;
+        let is_template: Option<bool> =
+            sqlx::query_scalar("SELECT datistemplate FROM pg_database WHERE datname = $1")
+                .bind(&template)
+                .fetch_optional(&mut *admin)
+                .await?;
+        if is_template.is_none() {
+            let building = format!("{template}_building");
+            // Recover an interrupted build without ever publishing a partial schema.
+            admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "DROP DATABASE IF EXISTS {building} WITH (FORCE)"
+                ))))
+                .await?;
+            admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "CREATE DATABASE {building}"
+                ))))
+                .await?;
+            let prefix = admin_url
+                .strip_suffix("/postgres")
+                .ok_or("invalid admin URL")?;
+            let mut connection = PgConnection::connect(&format!("{prefix}/{building}")).await?;
+            oteryn_gameplay_durability::GAME_MIGRATOR
+                .run(&mut connection)
+                .await?;
+            connection.close().await?;
+            // Keep future connections (including autovacuum) off the clone source.
+            admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "ALTER DATABASE {building} ALLOW_CONNECTIONS false"
+                ))))
+                .await?;
+            admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "ALTER DATABASE {building} RENAME TO {template}"
+                ))))
+                .await?;
+        }
+        // Also finishes publication if the creating process died just after rename.
+        // Templates live for the cluster's lifetime; CI clusters are throwaway.
+        if is_template != Some(true) {
+            admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "ALTER DATABASE {template} IS_TEMPLATE true"
+                ))))
+                .await?;
+        }
+        sqlx::query("SELECT pg_advisory_unlock(hashtextextended($1, 0))")
+            .bind(&template)
+            .execute(&mut *admin)
+            .await?;
+        eprintln!(
+            "PGTPL {} {template}",
+            if is_template.is_some() {
+                "reused"
+            } else {
+                "created"
+            }
+        );
+        Ok(template)
+    }
+
+    async fn clone_database(admin: &mut PgConnection, name: &str, template: &str) -> TestResult {
+        let deadline = Instant::now() + Duration::from_secs(15);
+        loop {
+            match admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "CREATE DATABASE {name} TEMPLATE {template}"
+                ))))
+                .await
+            {
+                Ok(_) => return Ok(()),
+                Err(error)
+                    if error
+                        .as_database_error()
+                        .and_then(|error| error.code())
+                        .as_deref()
+                        == Some("55006")
+                        && Instant::now() < deadline =>
+                {
+                    // A just-closed source connection may still be exiting on the server.
+                    // A real sleep: tokio time may be paused in the calling test.
+                    std::thread::sleep(Duration::from_millis(50));
+                }
+                Err(error) => return Err(error.into()),
+            }
+        }
     }
 
     async fn cleanup(self) -> TestResult {

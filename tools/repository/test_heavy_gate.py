@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import sys
 import tempfile
 import textwrap
 import unittest
@@ -136,42 +137,110 @@ class HeavyGateTests(unittest.TestCase):
                 actual = subprocess.check_output(["node", "-e", script, json.dumps(context)], text=True)
                 self.assertEqual(json.loads(actual), expected)
 
-    def test_node_boot_matches_protected_main_steps_and_build_guard(self):
-        node_boot = indented_yaml_mapping_block(self.text, "node_boot", 2)
+    def test_node_boot_shards_match_protected_main_and_the_qualification_workflow(self):
         build = indented_yaml_mapping_block(self.text, "build", 2)
-        protected = indented_yaml_mapping_block(
-            (ROOT / ".github/workflows/merge-group-gate.yml").read_text(), "node_boot", 2)
-        self.assertIsNotNone(node_boot)
-        self.assertEqual(node_boot.split("    if: >-\n", 1)[1].split("    runs-on:", 1)[0],
-                         build.split("    if: >-\n", 1)[1].split("    runs-on:", 1)[0])
-        self.assertNotIn("    needs:", node_boot)
-        for fragment in ("    runs-on: ubuntu-24.04\n", "    timeout-minutes: 240\n",
-                         "    permissions:\n      contents: read\n",
-                         "    name: PR heavy / Node boot against the real Platform\n"):
-            self.assertIn(fragment, node_boot)
-        expected_steps = protected.split("    steps:\n", 1)[1].replace(
-            "exact merge-group candidate", "exact PR head").replace(
-            "exact merge-group SHA", "exact PR head SHA").replace(
-            "github.event.merge_group.head_sha || github.sha", "github.event.pull_request.head.sha").replace(
-            "${{ github.sha }}", "${{ github.event.pull_request.head.sha }}")
-        # Protected-main may add failure-only diagnostics after the qualification
-        # without making those artifacts part of the pull-request heavy lane. Keep
-        # the complete qualification step in the parity comparison.
-        actual_steps = node_boot.split("    steps:\n", 1)[1].split("\n  #", 1)[0]
-        protected_core = expected_steps.split("      - name: Redact failed node boot logs\n", 1)[0]
-        self.assertEqual(actual_steps.rstrip(), protected_core.rstrip())
+        heavy_if = build.split("    if: >-\n", 1)[1].split("    runs-on:", 1)[0]
+        qualification = (ROOT / ".github/workflows/node-boot-qualification.yml").read_text()
+        reference_steps = indented_yaml_mapping_block(qualification, "node-boot", 2).split("    steps:\n", 1)[1]
+        for filename, label, ref, needs in (
+            ("pr-postgres-harness.yml", "PR heavy", "github.event.pull_request.head.sha", ""),
+            ("merge-group-gate.yml", "Merge Queue", "github.event.merge_group.head_sha || github.sha", "candidate"),
+        ):
+            with self.subTest(workflow=filename):
+                text = (ROOT / ".github/workflows" / filename).read_text()
+                plan = indented_yaml_mapping_block(text, "node_boot_plan", 2)
+                shard = indented_yaml_mapping_block(text, "node_boot_shard", 2)
+                aggregate = indented_yaml_mapping_block(text, "node_boot", 2)
+                for job in (plan, shard, aggregate):
+                    self.assertIsNotNone(job)
+                    self.assertIn("    runs-on: ubuntu-24.04\n", job)
+                    self.assertIn("    permissions:\n      contents: read\n", job)
+                    self.assertEqual(len(re.findall(r"^    if: ", job, re.MULTILINE)), 1)
+                self.assertIn(f"    name: {label} / Node boot / plan shards\n", plan)
+                self.assertIn(f"    name: {label} / Node boot / ${{{{ matrix.shard.name }}}}\n", shard)
+                self.assertIn(f"    name: {label} / Node boot against the real Platform\n", aggregate)
+                self.assertIn("matrix.py plan --set pr >", plan)
+                self.assertIn("    timeout-minutes: 240\n", shard)
+                self.assertIn("      fail-fast: false\n", shard)
+                self.assertIn("        shard: ${{ fromJSON(needs.node_boot_plan.outputs.shards) }}\n", shard)
+                if needs:
+                    self.assertIn(f"    needs: {needs}\n", plan)
+                    self.assertIn(f"    needs: [{needs}, node_boot_plan]\n", shard)
+                    self.assertIn(f"    needs: [{needs}, node_boot_plan, node_boot_shard]\n", aggregate)
+                    guard = "needs.candidate.outputs.server_qualification != 'false'"
+                    for job in (plan, shard):
+                        self.assertIn(f"    if: {guard}\n", job)
+                    self.assertIn(f"    if: always() && {guard}\n", aggregate)
+                else:
+                    self.assertNotIn("    needs:", plan)
+                    self.assertIn("    needs: node_boot_plan\n", shard)
+                    self.assertIn("    needs: [node_boot_plan, node_boot_shard]\n", aggregate)
+                    for job in (plan, shard):
+                        self.assertEqual(job.split("    if: >-\n", 1)[1].split("    runs-on:", 1)[0], heavy_if)
+                    self.assertEqual(aggregate.split("    if: >-\n", 1)[1].split("    runs-on:", 1)[0],
+                                     "      always()\n      && " + heavy_if.lstrip())
+                # Shard steps are the qualification workflow's, pinned to this gate's candidate.
+                expected = reference_steps.replace(
+                    "        with:\n          persist-credentials: false\n",
+                    f"        with:\n          ref: ${{{{ {ref} }}}}\n          persist-credentials: false\n", 1,
+                ).replace("${{ github.sha }}", f"${{{{ {ref} }}}}")
+                # The extracted block runs on to the next job's leading comment.
+                actual = shard.split("    steps:\n", 1)[1].split("\n  #", 1)[0]
+                self.assertEqual(actual.rstrip(), expected.rstrip())
+                for job in (plan, aggregate):
+                    self.assertIn(f"          ref: ${{{{ {ref} }}}}\n", job)
+                    self.assertIn(f"          EXPECTED_SHA: ${{{{ {ref} }}}}\n", job)
+                self.assertNotIn("github.sha }}", actual.replace(ref, ""))
         self.assertIn("          NODE_BOOT_RESULT: ${{ needs.node_boot.result }}\n", self.job)
+
+    def run_aggregate(self, filename, *, plan="success", shards="success", status="PASS", scenarios=True):
+        sys.path.insert(0, str(ROOT / "tools/qualification/node_boot"))
+        import matrix
+        aggregate = indented_yaml_mapping_block((ROOT / ".github/workflows" / filename).read_text(), "node_boot", 2)
+        script = textwrap.dedent(aggregate.split("        run: |\n")[-1])
+        self.assertNotIn("${{", script)
+        planned = matrix.plan("pr")
+        with tempfile.TemporaryDirectory() as temp:
+            temp = Path(temp)
+            prefix = "node-boot-1-1-"
+            for item in planned:
+                folder = temp / "shards" / f"{prefix}{item['name']}"
+                folder.mkdir(parents=True)
+                rows = [{"id": f"{item['name']}-s", "status": status, "seconds": 1.0}] if item["world"] and scenarios else []
+                folder.joinpath("result.json").write_text(json.dumps({
+                    "shard": item["name"], "entry": item["entry"], "exit_code": 0, "seconds": 60,
+                    "result": "NODE_BOOT_PASS", "incomplete": False, "scenarios": rows}))
+            env = dict(os.environ, RUNNER_TEMP=str(temp), GITHUB_STEP_SUMMARY=str(temp / "summary"),
+                       PLAN_RESULT=plan, SHARD_RESULT=shards, SHARDS=json.dumps(planned), PREFIX=prefix)
+            return subprocess.run(["bash", "-c", script], cwd=ROOT, env=env, capture_output=True, text=True)
+
+    def test_node_boot_aggregate_fails_closed(self):
+        for filename in ("pr-postgres-harness.yml", "merge-group-gate.yml"):
+            with self.subTest(workflow=filename):
+                self.assertEqual(self.run_aggregate(filename).returncode, 0)
+                for plan, shards in (("skipped", "skipped"), ("failure", "skipped"), ("success", "failure"),
+                                     ("success", "cancelled"), ("success", "skipped"), ("", "")):
+                    self.assertNotEqual(self.run_aggregate(filename, plan=plan, shards=shards).returncode, 0,
+                                        (plan, shards))
+                # A World shard that ran nothing fails; FAIL and MISSING rows are reported only, as in
+                # the single-machine run (per-shard NODE_BOOT_PASS stays the verdict).
+                self.assertNotEqual(self.run_aggregate(filename, scenarios=False).returncode, 0)
+                for status in ("FAIL", "MISSING-SERVER"):
+                    result = self.run_aggregate(filename, status=status)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertIn(status, result.stdout)
 
     def test_node_boot_job_outlives_serial_natural_clock_and_light_observations(self):
         source = (ROOT / "apps/game-server/src/qualification/client_phases/full_e2ef7.rs").read_text()
         observation_seconds = 0
         for journey in ("clock_journey", "light_journey"):
-            deadline = re.search(r"qualification_deadline\(([0-9_]+)\),\s*" + journey + r"\(", source)
+            # The deadline wraps the journey call, directly or through a watch with a message.
+            deadline = re.search(r"qualification_deadline\(([0-9_]+)\),[^;]*?\b" + journey + r"\(", source)
             self.assertIsNotNone(deadline, journey)
             observation_seconds += int(deadline[1].replace("_", ""))
         budgets = []
-        for filename, job_name in (("pr-postgres-harness.yml", "node_boot"),
-                                   ("merge-group-gate.yml", "node_boot"),
+        for filename, job_name in (("pr-postgres-harness.yml", "node_boot_shard"),
+                                   ("merge-group-gate.yml", "node_boot_shard"),
                                    ("node-boot-qualification.yml", "node-boot")):
             with self.subTest(workflow=filename):
                 job = indented_yaml_mapping_block((ROOT / ".github/workflows" / filename).read_text(), job_name, 2)

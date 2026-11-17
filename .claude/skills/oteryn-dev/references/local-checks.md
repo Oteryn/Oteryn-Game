@@ -36,6 +36,10 @@ run all of it, and fix every failure of one run in one push.
    Lint with the ruff version pinned in that tool's `requirements*.txt`,
    not whatever ruff is installed.
 9. `git diff --check` and a read of the full diff.
+10. `python3 tools/repository/reliability_checklist.py` (diff against
+    `origin/main`): it lists the checks this diff calls for because the same
+    change went red more than once before. Run each one it lists, or report it
+    as not run with the reason.
 
 ## Jobs that only run after the merge
 

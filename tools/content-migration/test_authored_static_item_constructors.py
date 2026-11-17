@@ -30,6 +30,8 @@ class StaticConstructors(unittest.TestCase):
         profiles, admissions = producer.prepare(ROOT, intent)
         self.assertEqual(len(profiles), 4)
         self.assertEqual(len(admissions['records']), 4)
+        # Each constructor declares its own weight; the declarations carry the Global client weight.
+        declared = {row['item']: row['weight'] for row in intent['constructors']}
         for row in profiles:
             key = row['production_definition']['production_key']
             canonical = producer.definitions(ROOT)[key]
@@ -38,7 +40,7 @@ class StaticConstructors(unittest.TestCase):
             for group, value in canonical['semantics'].items():
                 if group not in ('physical', 'stack', 'container'):
                     self.assertEqual(row['semantics'][group], value)
-            self.assertEqual(row['semantics']['physical']['value']['weight']['value'], 1000)
+            self.assertEqual(row['semantics']['physical']['value']['weight']['value'], declared[key])
             self.assertTrue(producer.matches_admission(row, admissions))
             changed = copy.deepcopy(row)
             changed['admission']['stack_class'] = 'StackCapable'

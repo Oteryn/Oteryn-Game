@@ -14,6 +14,7 @@ import json
 import sys
 from pathlib import Path
 
+from import_cyclopedia_global import apply_profile_weights, load_weights
 from native_profile_composition import encode_native_profile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -40,6 +41,8 @@ SOURCE_SHA256 = {
 # Literal primary XML weights. Regular guardian/marksman/spiritualist gems use 20
 # (legacy reference shards use 50); greater fragment uses 500 (legacy 10).
 # Keep every entry explicit: profession-specific source values are not inferred.
+# These are the donor's captured weights; the committed overlay carries the Global
+# client weight, applied in capture() and checked by validate() (ITEMGLOB).
 WEIGHTS = {
     44602: 20, 44603: 20, 44604: 120,
     44605: 20, 44606: 20, 44607: 120,
@@ -96,7 +99,7 @@ def read_sources(crystal: Path) -> dict[str, bytes]:
     return captured
 
 
-def validate(overlay: dict) -> list[dict]:
+def validate(overlay: dict, root: Path = ROOT) -> list[dict]:
     if (overlay.get('schema') != SCHEMA or overlay.get('producer') != PRODUCER
             or overlay.get('weight_unit') != 'CENTI_OUNCE'):
         raise ValueError('WHEEL_GEM_PROFILE_SCHEMA')
@@ -113,10 +116,11 @@ def validate(overlay: dict) -> list[dict]:
     keys = [record.get('production_definition', {}).get('production_key') for record in records]
     if len(records) != len(IDS) or set(keys) != KEYS:
         raise ValueError('WHEEL_GEM_PROFILE_SET')
+    client = load_weights(root)
     for record, key in zip(records, keys, strict=True):
         item = int(key.rsplit('i', 1)[1])
         definition = {'family': 'Item', 'production_key': key, 'revision_ref': 'definition-r1'}
-        physical = KNOWN({'weight': KNOWN(WEIGHTS[item]),
+        physical = KNOWN({'weight': KNOWN(client[item]),
                           'movable': KNOWN(True), 'pickupable': KNOWN(True)})
         semantics = record.get('semantics', {})
         if (record['production_definition'] != definition
@@ -165,6 +169,8 @@ def capture(crystal: Path) -> dict:
         records.append(record)
     bound = bind_profiles({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': records},
                           bindings, set(IDS))
+    # The donor weight stays in the capture; the Global client weight wins (ITEMGLOB).
+    apply_profile_weights(bound['records'], ROOT)
     overlay = {
         'schema': SCHEMA,
         'producer': PRODUCER,
@@ -180,7 +186,7 @@ def capture(crystal: Path) -> dict:
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
-    records = validate(json.loads((root / PATH).read_bytes()))
+    records = validate(json.loads((root / PATH).read_bytes()), root)
     document = json.loads(generated[profile_path])
     present = {record['production_definition']['production_key']
                for record in document['records']}

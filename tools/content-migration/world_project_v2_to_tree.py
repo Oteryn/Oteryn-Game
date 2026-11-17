@@ -308,6 +308,12 @@ def main() -> int:
     apply_encounter_loot_admissions(item_records, ROOT)
     from itemhold_q import apply_admissions as apply_quest_item_holds
     apply_quest_item_holds(item_records, ROOT)
+    # Captured Global client weights win over the legacy package (ITEMGLOB).
+    from import_cyclopedia_global import apply_admissions as apply_client_weights
+    apply_client_weights(item_records, ROOT)
+    # Global healing potion facts win over the legacy package (HEALPAR).
+    from healing_global_overrides import apply_definitions as apply_global_potions
+    apply_global_potions(item_records)
     item_shards: list[str] = []
     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
         rows = []
@@ -802,6 +808,14 @@ def main() -> int:
         ROOT, 'ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb',
         packet_path=condition_potion_profiles.PATH,
         keys={f'oteryn:item.tibia.i{i}' for i in condition_potion_profiles.IDS})
+    # Weight imports may change a shared shard without changing the qualified rod.
+    import gathering_item_profiles
+    gathering_item_profiles.refresh_qualified_proof(ROOT)
+    # These recipe captures select unchanged records from the same shared shards.
+    from refresh_item_overlay_inputs import refresh
+    for name in ('quest-batch3-item-profiles.json', 'qnpcfx-item-profiles.json'):
+        relative = 'tools/content-schema/native-gameplay/' + name
+        (ROOT / relative).write_bytes(refresh(relative, root=ROOT))
     refresh_bestiary_inventory(ROOT)
     # Model against the source shards just written, then register the same fresh
     # native provider with its generated Prey rules and value table.

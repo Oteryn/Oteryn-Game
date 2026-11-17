@@ -1,0 +1,662 @@
+TEST 19:18:35 builder harm=0 heal=261 (log 19:18:37)
+TEST 19:18:42 builder harm=1 heal=253 (log 19:18:44)
+TEST 19:18:50 builder harm=2 heal=212 (log 19:18:51)
+TEST 19:18:57 builder harm=3 heal=229 (log 19:18:58)
+TEST 19:19:04 builder harm=4 heal=204 (log 19:19:06)
+TEST 19:19:11 spender harm=5 heal=671 (log 19:19:13)
+TEST 19:19:19 builder harm=0 heal=261 (log 19:19:21)
+TEST 19:19:26 spender harm=1 heal=204 (log 19:19:28)
+TEST 19:19:34 builder harm=0 heal=286 (log 19:19:36)
+TEST 19:19:41 builder harm=1 heal=253 (log 19:19:43)
+TEST 19:19:48 spender harm=2 heal=360 (log 19:19:50)
+TEST 19:19:56 builder harm=0 heal=237 (log 19:19:58)
+TEST 19:20:04 builder harm=1 heal=270 (log 19:20:06)
+TEST 19:20:11 builder harm=2 heal=229 (log 19:20:13)
+TEST 19:20:19 spender harm=3 heal=515 (log 19:20:21)
+END TEST
+ML54-sustain 19:21:03 builder harm=0 heal=212 (log 19:21:04)
+ML54-sustain 19:21:10 builder harm=1 heal=270 (log 19:21:12)
+ML54-sustain 19:21:17 builder harm=2 heal=278 (log 19:21:19)
+ML54-sustain 19:21:25 builder harm=3 heal=245 (log 19:21:26)
+ML54-sustain 19:21:32 builder harm=4 heal=286 (log 19:21:33)
+ML54-sustain 19:21:39 spender harm=5 heal=712 (log 19:21:41)
+ML54-sustain 19:21:47 builder harm=0 heal=261 (log 19:21:48)
+ML54-sustain 19:22:02 builder harm=1 heal=237 (log 19:22:03)
+ML54-sustain 19:21:54 spender harm=1 heal=NONE
+ML54-sustain 19:22:09 spender harm=2 heal=NONE
+ML54-sustain 19:22:43 spender harm=2 heal=NONE
+ML54-sustain 19:23:16 spender harm=2 heal=NONE
+ML54-sustain 19:24:10 builder harm=2 heal=237 (log 19:24:12)
+ML54-sustain 19:23:49 builder harm=2 heal=NONE
+ML54-sustain 19:23:56 builder harm=2 heal=NONE
+ML54-sustain 19:24:03 builder harm=2 heal=NONE
+ML54-sustain 19:24:18 spender harm=3 heal=NONE
+ML54-sustain 19:24:50 builder harm=3 heal=NONE
+ML54-sustain 19:24:58 builder harm=3 heal=NONE
+ML54-sustain 19:25:05 builder harm=3 heal=NONE
+ML54-sustain 19:25:12 builder harm=3 heal=NONE
+ML54-sustain 19:25:20 builder harm=3 heal=NONE
+ML54-sustain 19:25:27 builder harm=3 heal=NONE
+ML54-sustain 19:25:35 builder harm=3 heal=NONE
+ML54-sustain 19:25:42 spender harm=3 heal=NONE
+ML54-sustain 19:26:15 spender harm=3 heal=NONE
+ML54-sustain 19:26:55 builder harm=3 heal=203 (log 19:26:57)
+ML54-sustain 19:26:48 builder harm=3 heal=NONE
+ML54-sustain 19:27:03 builder harm=4 heal=NONE
+ML54-sustain 19:27:10 builder harm=4 heal=NONE
+ML54-sustain 19:27:17 builder harm=4 heal=NONE
+ML54-sustain 19:27:24 builder harm=4 heal=NONE
+ML54-sustain 19:27:32 builder harm=4 heal=NONE
+ML54-sustain 19:27:39 spender harm=4 heal=NONE
+ML54-sustain 19:28:12 spender harm=4 heal=NONE
+ML54-sustain 19:28:45 spender harm=4 heal=NONE
+ML54-sustain 19:29:18 spender harm=4 heal=NONE
+ML54-sustain 19:29:51 spender harm=4 heal=NONE
+ML54-sustain 19:30:24 spender harm=4 heal=NONE
+ML54-sustain 19:30:56 builder harm=4 heal=NONE
+ML54-sustain 19:31:04 spender harm=5 heal=NONE
+ML54-sustain 19:31:37 spender harm=5 heal=NONE
+ML54-sustain 19:32:10 spender harm=5 heal=NONE
+END ML54-sustain
+VIRTUE OFF (Sustain toggled)
+ML54-none 19:32:56 spender harm=5 heal=NONE
+ML54-none 19:33:29 spender harm=5 heal=NONE
+ML54-none 19:34:02 spender harm=5 heal=NONE
+WARN still PZ, retry
+ML54-none 19:34:36 spender harm=5 heal=NONE
+ML54-none 19:35:08 builder harm=0 heal=NONE
+ML54-none 19:35:16 builder harm=0 heal=NONE
+ML54-none 19:35:23 builder harm=0 heal=NONE
+ML54-none 19:35:31 builder harm=0 heal=NONE
+ML54-none 19:35:38 builder harm=0 heal=NONE
+ML54-none 19:35:45 builder harm=0 heal=NONE
+ML54-none 19:35:53 builder harm=0 heal=NONE
+ML54-none 19:36:00 spender harm=0 heal=NONE
+ML54-none 19:36:34 spender harm=0 heal=NONE
+ML54-none 19:37:06 builder harm=0 heal=NONE
+ML54-none 19:37:13 builder harm=0 heal=NONE
+ML54-none 19:37:21 builder harm=1 heal=NONE
+ML54-none 19:37:28 builder harm=1 heal=NONE
+ML54-none 19:37:35 builder harm=1 heal=NONE
+ML54-none 19:37:43 builder harm=1 heal=NONE
+ML54-none 19:37:50 builder harm=1 heal=NONE
+ML54-none 19:37:58 spender harm=1 heal=NONE
+ML54-none 19:38:31 spender harm=1 heal=NONE
+WARN still PZ, retry
+ML54-none 19:39:04 builder harm=1 heal=NONE
+ML54-none 19:39:11 builder harm=1 heal=NONE
+ML54-none 19:39:18 builder harm=1 heal=NONE
+ML54-none 19:39:25 builder harm=1 heal=NONE
+ML54-none 19:39:32 builder harm=1 heal=NONE
+ML54-none 19:39:39 builder harm=1 heal=NONE
+ML54-none 19:39:46 builder harm=1 heal=NONE
+ML54-none 19:39:54 spender harm=1 heal=NONE
+WARN still PZ, retry
+ML54-none 19:40:28 builder harm=1 heal=NONE
+ML54-none 19:40:36 builder harm=2 heal=NONE
+ML54-none 19:40:43 builder harm=2 heal=NONE
+ML54-none 19:40:50 builder harm=2 heal=NONE
+ML54-none 19:40:58 builder harm=2 heal=NONE
+ML54-none 19:41:06 builder harm=2 heal=NONE
+ML54-none 19:41:13 builder harm=2 heal=NONE
+ML54-none 19:41:20 spender harm=2 heal=NONE
+ML54-none 19:41:53 builder harm=2 heal=NONE
+ML54-none 19:42:00 builder harm=2 heal=NONE
+ML54-none 19:42:07 builder harm=2 heal=NONE
+ML54-none 19:42:15 builder harm=2 heal=NONE
+ML54-none 19:42:22 builder harm=2 heal=NONE
+ML54-none 19:42:29 builder harm=2 heal=NONE
+ML54-none 19:42:37 builder harm=2 heal=NONE
+ML54-none 19:42:45 spender harm=2 heal=NONE
+WARN still PZ, retry
+ML54-none 19:43:20 spender harm=2 heal=NONE
+ML54-none 19:43:29 builder harm=2 heal=NONE
+ML54-none 19:43:37 builder harm=2 heal=NONE
+ML54-none 19:43:45 builder harm=2 heal=NONE
+ML54-none 19:43:52 builder harm=2 heal=NONE
+ML54-none 19:43:59 builder harm=2 heal=NONE
+ML54-none 19:44:06 builder harm=2 heal=NONE
+ML54-none 19:44:13 builder harm=2 heal=NONE
+ML54-none 19:44:21 spender harm=2 heal=NONE
+ML54-none 19:44:28 spender harm=2 heal=NONE
+ML54-none 19:44:36 spender harm=2 heal=NONE
+ML54-none 19:44:44 builder harm=2 heal=NONE
+ML54-none 19:44:51 builder harm=2 heal=NONE
+ML54-none 19:44:58 builder harm=2 heal=NONE
+ML54-none 19:45:05 builder harm=2 heal=NONE
+ML54-none 19:45:13 builder harm=2 heal=NONE
+ML54-none 19:45:19 builder harm=2 heal=NONE
+ML54-none 19:45:27 builder harm=2 heal=NONE
+ML54-none 19:45:34 spender harm=2 heal=NONE
+ML54-none 19:45:41 builder harm=2 heal=NONE
+ML54-none 19:45:48 builder harm=2 heal=NONE
+ML54-none 19:45:56 builder harm=2 heal=NONE
+ML54-none 19:46:03 builder harm=2 heal=NONE
+ML54-none 19:46:10 builder harm=2 heal=NONE
+ML54-none 19:46:17 builder harm=2 heal=NONE
+ML54-none 19:46:24 builder harm=2 heal=NONE
+ML54-none 19:46:31 spender harm=2 heal=NONE
+WARN still PZ, retry
+STOP still PZ after walking out
+END ML54-none
+STOP still PZ after walking out
+END ML54-none
+ML54-none 19:52:56 builder harm=2 heal=165 (log 19:52:57)
+ML54-none 19:53:03 builder harm=3 heal=131 (log 19:53:04)
+ML54-none 19:53:10 builder harm=4 heal=150 (log 19:53:11)
+ML54-none 19:53:17 spender harm=5 heal=444 (log 19:53:18)
+ML54-none 19:53:25 builder harm=0 heal=146 (log 19:53:26)
+ML54-none 19:53:32 spender harm=1 heal=146 (log 19:53:33)
+ML54-none 19:53:39 builder harm=0 heal=155 (log 19:53:41)
+ML54-none 19:53:47 builder harm=1 heal=131 (log 19:53:48)
+ML54-none 19:53:54 spender harm=2 heal=237 (log 19:53:56)
+ML54-none 19:54:02 builder harm=0 heal=126 (log 19:54:04)
+ML54-none 19:54:09 builder harm=1 heal=175 (log 19:54:11)
+ML54-none 19:54:16 builder harm=2 heal=165 (log 19:54:18)
+ML54-none 19:54:23 spender harm=3 heal=295 (log 19:54:25)
+ML54-none 19:54:31 builder harm=0 heal=126 (log 19:54:33)
+ML54-none 19:54:38 builder harm=1 heal=146 (log 19:54:40)
+ML54-none 19:54:46 builder harm=2 heal=165 (log 19:54:48)
+ML54-none 19:54:53 builder harm=3 heal=126 (log 19:54:55)
+ML54-none 19:55:01 spender harm=4 heal=363 (log 19:55:03)
+ML54-none 19:55:09 spender harm=0 heal=NONE
+STOP not back in PZ
+END ML54-none
+ML54-none 19:57:59 builder harm=0 heal=165 (log 19:58:01)
+ML54-none 19:58:06 builder harm=1 heal=160 (log 19:58:08)
+ML54-none 19:58:13 builder harm=2 heal=141 (log 19:58:15)
+ML54-none 19:58:21 builder harm=3 heal=175 (log 19:58:22)
+ML54-none 19:58:28 builder harm=4 heal=160 (log 19:58:29)
+ML54-none 19:58:35 spender harm=5 heal=435 (log 19:58:37)
+ML54-none 19:58:43 builder harm=0 heal=165 (log 19:58:44)
+ML54-none 19:58:50 spender harm=1 heal=131 (log 19:58:51)
+ML54-none 19:58:57 builder harm=0 heal=131 (log 19:58:59)
+ML54-none 19:59:05 builder harm=1 heal=126 (log 19:59:07)
+ML54-none 19:59:12 spender harm=2 heal=232 (log 19:59:14)
+ML54-none 19:59:20 builder harm=0 heal=136 (log 19:59:22)
+ML54-none 19:59:28 builder harm=1 heal=155 (log 19:59:29)
+ML54-none 19:59:35 builder harm=2 heal=126 (log 19:59:36)
+ML54-none 19:59:42 spender harm=3 heal=305 (log 19:59:44)
+ML54-none 19:59:50 builder harm=0 heal=146 (log 19:59:52)
+ML54-none 19:59:57 builder harm=1 heal=160 (log 19:59:59)
+ML54-none 20:00:04 builder harm=2 heal=141 (log 20:00:06)
+ML54-none 20:00:12 builder harm=3 heal=141 (log 20:00:14)
+ML54-none 20:00:19 spender harm=4 heal=343 (log 20:00:21)
+ML54-none 20:00:27 spender harm=0 heal=NONE
+ML54-none 20:01:41 builder harm=0 heal=170 (log 20:01:42)
+ML54-none 20:01:48 spender harm=1 heal=165 (log 20:01:49)
+ML54-none 20:01:55 builder harm=0 heal=160 (log 20:01:57)
+ML54-none 20:02:02 builder harm=1 heal=175 (log 20:02:04)
+ML54-none 20:02:09 spender harm=2 heal=194 (log 20:02:11)
+ML54-none 20:02:17 builder harm=0 heal=136 (log 20:02:19)
+ML54-none 20:02:25 builder harm=1 heal=175 (log 20:02:26)
+ML54-none 20:02:32 builder harm=2 heal=155 (log 20:02:34)
+ML54-none 20:02:39 spender harm=3 heal=305 (log 20:02:41)
+ML54-none 20:02:47 builder harm=0 heal=175 (log 20:02:48)
+ML54-none 20:02:54 builder harm=1 heal=165 (log 20:02:55)
+ML54-none 20:03:01 builder harm=2 heal=165 (log 20:03:03)
+ML54-none 20:03:09 builder harm=3 heal=175 (log 20:03:10)
+ML54-none 20:03:16 spender harm=4 heal=338 (log 20:03:18)
+ML54-none 20:03:31 builder harm=0 heal=146 (log 20:03:33)
+ML54-none 20:03:39 builder harm=1 heal=126 (log 20:03:40)
+ML54-none 20:03:46 builder harm=2 heal=126 (log 20:03:48)
+ML54-none 20:03:53 builder harm=3 heal=126 (log 20:03:55)
+ML54-none 20:04:00 builder harm=4 heal=160 (log 20:04:02)
+ML54-none 20:04:08 spender harm=5 heal=396 (log 20:04:09)
+ML54-none 20:03:23 spender harm=0 heal=NONE
+ML54-none 20:05:25 builder harm=0 heal=170 (log 20:05:26)
+ML54-none 20:05:32 builder harm=1 heal=170 (log 20:05:34)
+ML54-none 20:05:39 spender harm=2 heal=203 (log 20:05:41)
+ML54-none 20:05:47 builder harm=0 heal=165 (log 20:05:48)
+ML54-none 20:05:54 builder harm=1 heal=131 (log 20:05:55)
+ML54-none 20:06:01 builder harm=2 heal=155 (log 20:06:02)
+ML54-none 20:06:08 spender harm=3 heal=290 (log 20:06:10)
+ML54-none 20:06:16 builder harm=0 heal=160 (log 20:06:17)
+ML54-none 20:06:23 builder harm=1 heal=141 (log 20:06:25)
+ML54-none 20:06:30 builder harm=2 heal=146 (log 20:06:32)
+ML54-none 20:06:37 builder harm=3 heal=170 (log 20:06:39)
+ML54-none 20:06:45 spender harm=4 heal=338 (log 20:06:46)
+ML54-none 20:07:00 builder harm=0 heal=165 (log 20:07:01)
+ML54-none 20:07:07 builder harm=1 heal=160 (log 20:07:08)
+ML54-none 20:07:14 builder harm=2 heal=150 (log 20:07:16)
+ML54-none 20:07:22 builder harm=3 heal=141 (log 20:07:23)
+ML54-none 20:07:29 builder harm=4 heal=155 (log 20:07:31)
+ML54-none 20:07:37 spender harm=5 heal=435 (log 20:07:38)
+ML54-none 20:07:45 builder harm=0 heal=160 (log 20:07:46)
+ML54-none 20:07:52 spender harm=1 heal=136 (log 20:07:54)
+ML54-none 20:06:52 spender harm=0 heal=NONE
+ML54-none 20:09:06 builder harm=0 heal=170 (log 20:09:08)
+ML54-none 20:09:13 builder harm=1 heal=160 (log 20:09:15)
+ML54-none 20:09:21 builder harm=2 heal=131 (log 20:09:23)
+ML54-none 20:09:28 spender harm=3 heal=276 (log 20:09:30)
+ML54-none 20:09:36 builder harm=0 heal=146 (log 20:09:38)
+ML54-none 20:09:44 builder harm=1 heal=175 (log 20:09:46)
+ML54-none 20:09:51 builder harm=2 heal=126 (log 20:09:53)
+ML54-none 20:09:58 builder harm=3 heal=170 (log 20:10:00)
+ML54-none 20:10:05 spender harm=4 heal=334 (log 20:10:07)
+ML54-none 20:10:21 builder harm=0 heal=136 (log 20:10:23)
+ML54-none 20:10:28 builder harm=1 heal=155 (log 20:10:30)
+ML54-none 20:10:36 builder harm=2 heal=160 (log 20:10:38)
+ML54-none 20:10:43 builder harm=3 heal=170 (log 20:10:45)
+ML54-none 20:10:51 builder harm=4 heal=150 (log 20:10:53)
+ML54-none 20:10:58 spender harm=5 heal=396 (log 20:11:00)
+ML54-none 20:11:06 builder harm=0 heal=165 (log 20:11:08)
+ML54-none 20:11:13 spender harm=1 heal=160 (log 20:11:15)
+ML54-none 20:11:21 builder harm=0 heal=155 (log 20:11:23)
+ML54-none 20:11:28 builder harm=1 heal=170 (log 20:11:30)
+ML54-none 20:11:35 spender harm=2 heal=232 (log 20:11:37)
+ML54-none 20:10:13 spender harm=0 heal=NONE
+ML54-none 20:12:50 builder harm=0 heal=170 (log 20:12:51)
+ML54-none 20:12:57 builder harm=1 heal=146 (log 20:12:59)
+ML54-none 20:13:04 builder harm=2 heal=126 (log 20:13:06)
+ML54-none 20:13:11 builder harm=3 heal=160 (log 20:13:13)
+ML54-none 20:13:18 spender harm=4 heal=338 (log 20:13:20)
+ML54-none 20:13:34 builder harm=0 heal=146 (log 20:13:36)
+ML54-none 20:13:41 builder harm=1 heal=131 (log 20:13:43)
+ML54-none 20:13:49 builder harm=2 heal=170 (log 20:13:51)
+ML54-none 20:13:56 builder harm=3 heal=155 (log 20:13:58)
+ML54-none 20:14:03 builder harm=4 heal=160 (log 20:14:05)
+ML54-none 20:14:11 spender harm=5 heal=435 (log 20:14:12)
+ML54-none 20:14:18 builder harm=0 heal=126 (log 20:14:20)
+ML54-none 20:14:25 spender harm=1 heal=136 (log 20:14:27)
+ML54-none 20:14:33 builder harm=0 heal=146 (log 20:14:34)
+ML54-none 20:14:40 builder harm=1 heal=165 (log 20:14:41)
+ML54-none 20:14:47 spender harm=2 heal=242 (log 20:14:49)
+ML54-none 20:14:55 builder harm=0 heal=136 (log 20:14:56)
+ML54-none 20:15:02 builder harm=1 heal=146 (log 20:15:04)
+ML54-none 20:15:10 builder harm=2 heal=155 (log 20:15:11)
+ML54-none 20:15:17 spender harm=3 heal=276 (log 20:15:19)
+ML54-none 20:13:26 spender harm=0 heal=NONE
+ML54-none 20:16:41 builder harm=0 heal=150 (log 20:16:43)
+ML54-none 20:16:48 builder harm=1 heal=150 (log 20:16:50)
+ML54-none 20:16:55 builder harm=2 heal=165 (log 20:16:57)
+ML54-none 20:17:03 builder harm=3 heal=165 (log 20:17:04)
+ML54-none 20:17:10 builder harm=4 heal=175 (log 20:17:12)
+ML54-none 20:17:18 spender harm=5 heal=411 (log 20:17:19)
+ML54-none 20:17:25 builder harm=0 heal=146 (log 20:17:27)
+ML54-none 20:17:33 spender harm=1 heal=160 (log 20:17:35)
+ML54-none 20:17:41 builder harm=0 heal=131 (log 20:17:42)
+ML54-none 20:17:48 builder harm=1 heal=146 (log 20:17:50)
+ML54-none 20:17:55 spender harm=2 heal=237 (log 20:17:57)
+ML54-none 20:18:03 builder harm=0 heal=136 (log 20:18:04)
+ML54-none 20:18:10 builder harm=1 heal=170 (log 20:18:12)
+ML54-none 20:18:17 builder harm=2 heal=155 (log 20:18:19)
+ML54-none 20:18:24 spender harm=3 heal=290 (log 20:18:26)
+ML54-none 20:18:32 builder harm=0 heal=155 (log 20:18:33)
+ML54-none 20:18:39 builder harm=1 heal=155 (log 20:18:41)
+ML54-none 20:18:46 builder harm=2 heal=165 (log 20:18:48)
+ML54-none 20:18:53 builder harm=3 heal=136 (log 20:18:55)
+ML54-none 20:19:00 spender harm=4 heal=334 (log 20:19:02)
+ML54-none 20:16:33 spender harm=0 heal=NONE
+ML54-none 20:20:14 builder harm=0 heal=141 (log 20:20:16)
+ML54-none 20:20:22 builder harm=1 heal=170 (log 20:20:23)
+ML54-none 20:20:29 builder harm=2 heal=146 (log 20:20:30)
+ML54-none 20:20:36 builder harm=3 heal=170 (log 20:20:38)
+ML54-none 20:20:43 builder harm=4 heal=126 (log 20:20:45)
+ML54-none 20:20:50 spender harm=5 heal=406 (log 20:20:52)
+ML54-none 20:20:58 builder harm=0 heal=150 (log 20:20:59)
+ML54-none 20:21:05 spender harm=1 heal=165 (log 20:21:07)
+ML54-none 20:21:12 builder harm=0 heal=131 (log 20:21:14)
+ML54-none 20:21:20 builder harm=1 heal=131 (log 20:21:21)
+ML54-none 20:21:27 spender harm=2 heal=194 (log 20:21:28)
+ML54-none 20:21:34 builder harm=0 heal=150 (log 20:21:36)
+ML54-none 20:21:41 builder harm=1 heal=150 (log 20:21:43)
+ML54-none 20:21:49 builder harm=2 heal=155 (log 20:21:50)
+ML54-none 20:21:56 spender harm=3 heal=261 (log 20:21:57)
+ML54-none 20:22:03 builder harm=0 heal=146 (log 20:22:05)
+ML54-none 20:22:10 builder harm=1 heal=175 (log 20:22:12)
+ML54-none 20:22:18 builder harm=2 heal=160 (log 20:22:19)
+ML54-none 20:22:25 builder harm=3 heal=126 (log 20:22:27)
+ML54-none 20:22:32 spender harm=4 heal=353 (log 20:22:34)
+ML54-none 20:22:40 spender harm=0 heal=NONE
+ML54-none 20:23:54 builder harm=0 heal=141 (log 20:23:56)
+ML54-none 20:24:01 spender harm=1 heal=146 (log 20:24:03)
+ML54-none 20:24:09 builder harm=0 heal=155 (log 20:24:11)
+ML54-none 20:24:17 builder harm=1 heal=146 (log 20:24:18)
+ML54-none 20:24:24 spender harm=2 heal=213 (log 20:24:25)
+ML54-none 20:24:32 builder harm=0 heal=165 (log 20:24:33)
+ML54-none 20:24:39 builder harm=1 heal=131 (log 20:24:40)
+ML54-none 20:24:46 builder harm=2 heal=126 (log 20:24:48)
+ML54-none 20:24:53 spender harm=3 heal=300 (log 20:24:55)
+ML54-none 20:25:01 builder harm=0 heal=160 (log 20:25:03)
+ML54-none 20:25:09 builder harm=1 heal=136 (log 20:25:10)
+ML54-none 20:25:16 builder harm=2 heal=165 (log 20:25:18)
+ML54-none 20:25:23 builder harm=3 heal=170 (log 20:25:24)
+ML54-none 20:25:30 spender harm=4 heal=353 (log 20:25:32)
+ML54-none 20:25:38 spender harm=0 heal=NONE
+ML54-none 20:26:55 builder harm=0 heal=155 (log 20:26:56)
+ML54-none 20:27:02 builder harm=1 heal=146 (log 20:27:04)
+ML54-none 20:27:09 spender harm=2 heal=237 (log 20:27:11)
+ML54-none 20:27:17 builder harm=0 heal=155 (log 20:27:19)
+ML54-none 20:27:24 builder harm=1 heal=175 (log 20:27:26)
+ML54-none 20:27:31 builder harm=2 heal=170 (log 20:27:33)
+ML54-none 20:27:39 spender harm=3 heal=266 (log 20:27:40)
+ML54-none 20:27:46 builder harm=0 heal=175 (log 20:27:48)
+ML54-none 20:27:54 builder harm=1 heal=146 (log 20:27:55)
+ML54-none 20:28:01 builder harm=2 heal=160 (log 20:28:02)
+ML54-none 20:28:08 builder harm=3 heal=175 (log 20:28:09)
+ML54-none 20:28:15 spender harm=4 heal=348 (log 20:28:17)
+ML54-none 20:28:30 builder harm=0 heal=150 (log 20:28:32)
+ML54-none 20:28:38 builder harm=1 heal=165 (log 20:28:40)
+ML54-none 20:28:45 builder harm=2 heal=146 (log 20:28:47)
+ML54-none 20:28:53 builder harm=3 heal=165 (log 20:28:54)
+ML54-none 20:29:00 builder harm=4 heal=136 (log 20:29:01)
+ML54-none 20:29:07 spender harm=5 heal=435 (log 20:29:09)
+ML54-none 20:29:15 builder harm=0 heal=155 (log 20:29:16)
+ML54-none 20:29:22 spender harm=1 heal=150 (log 20:29:24)
+ML54-none 20:28:22 spender harm=0 heal=NONE
+ML54-none 20:30:36 builder harm=0 heal=155 (log 20:30:37)
+ML54-none 20:30:43 builder harm=1 heal=126 (log 20:30:44)
+ML54-none 20:30:50 builder harm=2 heal=170 (log 20:30:52)
+ML54-none 20:30:57 spender harm=3 heal=290 (log 20:30:59)
+ML54-none 20:31:05 builder harm=0 heal=150 (log 20:31:06)
+ML54-none 20:31:12 builder harm=1 heal=155 (log 20:31:14)
+ML54-none 20:31:19 builder harm=2 heal=155 (log 20:31:21)
+ML54-none 20:31:27 builder harm=3 heal=150 (log 20:31:28)
+ML54-none 20:31:34 spender harm=4 heal=367 (log 20:31:35)
+ML54-none 20:31:49 builder harm=0 heal=131 (log 20:31:50)
+ML54-none 20:31:56 builder harm=1 heal=165 (log 20:31:57)
+ML54-none 20:32:03 builder harm=2 heal=146 (log 20:32:05)
+ML54-none 20:32:10 builder harm=3 heal=170 (log 20:32:12)
+ML54-none 20:32:17 builder harm=4 heal=146 (log 20:32:19)
+ML54-none 20:32:25 spender harm=5 heal=425 (log 20:32:26)
+ML54-none 20:32:32 builder harm=0 heal=131 (log 20:32:34)
+ML54-none 20:32:40 spender harm=1 heal=126 (log 20:32:41)
+ML54-none 20:32:48 builder harm=0 heal=160 (log 20:32:49)
+ML54-none 20:32:55 builder harm=1 heal=170 (log 20:32:56)
+ML54-none 20:33:02 spender harm=2 heal=237 (log 20:33:04)
+ML54-none 20:31:41 spender harm=0 heal=NONE
+ML54-none 20:34:16 builder harm=0 heal=131 (log 20:34:18)
+ML54-none 20:34:24 builder harm=1 heal=126 (log 20:34:25)
+ML54-none 20:34:31 builder harm=2 heal=160 (log 20:34:33)
+ML54-none 20:34:38 builder harm=3 heal=150 (log 20:34:40)
+ML54-none 20:34:45 spender harm=4 heal=367 (log 20:34:47)
+ML54-none 20:35:00 builder harm=0 heal=141 (log 20:35:02)
+ML54-none 20:35:07 builder harm=1 heal=170 (log 20:35:09)
+ML54-none 20:35:14 builder harm=2 heal=136 (log 20:35:16)
+ML54-none 20:35:21 builder harm=3 heal=141 (log 20:35:23)
+ML54-none 20:35:29 builder harm=4 heal=155 (log 20:35:30)
+ML54-none 20:35:36 spender harm=5 heal=430 (log 20:35:37)
+ML54-none 20:35:43 builder harm=0 heal=150 (log 20:35:45)
+ML54-none 20:35:51 spender harm=1 heal=155 (log 20:35:53)
+ML54-none 20:35:59 builder harm=0 heal=146 (log 20:36:00)
+ML54-none 20:36:06 builder harm=1 heal=155 (log 20:36:07)
+ML54-none 20:36:13 spender harm=2 heal=203 (log 20:36:14)
+ML54-none 20:36:21 builder harm=0 heal=160 (log 20:36:22)
+ML54-none 20:36:28 builder harm=1 heal=175 (log 20:36:29)
+ML54-none 20:36:34 builder harm=2 heal=141 (log 20:36:36)
+ML54-none 20:36:42 spender harm=3 heal=295 (log 20:36:43)
+ML54-none 20:34:53 spender harm=0 heal=NONE
+ML54-none 20:38:03 builder harm=0 heal=165 (log 20:38:04)
+ML54-none 20:38:10 builder harm=1 heal=150 (log 20:38:12)
+ML54-none 20:38:17 builder harm=2 heal=155 (log 20:38:19)
+ML54-none 20:38:25 builder harm=3 heal=131 (log 20:38:26)
+ML54-none 20:38:32 builder harm=4 heal=170 (log 20:38:34)
+ML54-none 20:38:39 spender harm=5 heal=435 (log 20:38:41)
+ML54-none 20:38:47 builder harm=0 heal=170 (log 20:38:49)
+ML54-none 20:38:55 spender harm=1 heal=146 (log 20:38:56)
+ML54-none 20:39:03 builder harm=0 heal=170 (log 20:39:04)
+ML54-none 20:39:10 builder harm=1 heal=146 (log 20:39:12)
+ML54-none 20:39:17 spender harm=2 heal=223 (log 20:39:19)
+ML54-none 20:39:25 builder harm=0 heal=175 (log 20:39:26)
+ML54-none 20:39:32 builder harm=1 heal=146 (log 20:39:34)
+ML54-none 20:39:39 builder harm=2 heal=146 (log 20:39:41)
+ML54-none 20:39:46 spender harm=3 heal=300 (log 20:39:48)
+ML54-none 20:39:54 builder harm=0 heal=146 (log 20:39:56)
+ML54-none 20:40:01 builder harm=1 heal=150 (log 20:40:03)
+ML54-none 20:40:09 builder harm=2 heal=170 (log 20:40:10)
+ML54-none 20:40:16 builder harm=3 heal=150 (log 20:40:17)
+ML54-none 20:40:23 spender harm=4 heal=338 (log 20:40:25)
+ML54-none 20:37:55 spender harm=0 heal=NONE
+ML54-none 20:41:39 builder harm=0 heal=141 (log 20:41:41)
+ML54-none 20:41:46 builder harm=1 heal=136 (log 20:41:48)
+ML54-none 20:41:54 builder harm=2 heal=131 (log 20:41:56)
+ML54-none 20:42:01 builder harm=3 heal=136 (log 20:42:03)
+ML54-none 20:42:08 builder harm=4 heal=165 (log 20:42:10)
+ML54-none 20:42:15 spender harm=5 heal=406 (log 20:42:17)
+ML54-none 20:42:23 builder harm=0 heal=155 (log 20:42:24)
+ML54-none 20:42:30 spender harm=1 heal=170 (log 20:42:31)
+ML54-none 20:42:37 builder harm=0 heal=170 (log 20:42:39)
+ML54-none 20:42:45 builder harm=1 heal=126 (log 20:42:46)
+ML54-none 20:42:52 spender harm=2 heal=242 (log 20:42:53)
+ML54-none 20:43:00 builder harm=0 heal=165 (log 20:43:01)
+ML54-none 20:43:07 builder harm=1 heal=165 (log 20:43:08)
+ML54-none 20:43:14 builder harm=2 heal=155 (log 20:43:15)
+ML54-none 20:43:21 spender harm=3 heal=300 (log 20:43:23)
+ML54-none 20:43:29 builder harm=0 heal=160 (log 20:43:30)
+ML54-none 20:43:36 builder harm=1 heal=141 (log 20:43:37)
+ML54-none 20:43:43 builder harm=2 heal=175 (log 20:43:44)
+ML54-none 20:43:50 builder harm=3 heal=131 (log 20:43:52)
+ML54-none 20:43:57 spender harm=4 heal=377 (log 20:43:58)
+ML54-none 20:44:04 spender harm=0 heal=NONE
+ML54-none 20:45:21 builder harm=0 heal=165 (log 20:45:23)
+ML54-none 20:45:29 spender harm=1 heal=170 (log 20:45:30)
+ML54-none 20:45:36 builder harm=0 heal=146 (log 20:45:38)
+ML54-none 20:45:43 builder harm=1 heal=131 (log 20:45:45)
+ML54-none 20:45:51 spender harm=2 heal=199 (log 20:45:53)
+ML54-none 20:45:59 builder harm=0 heal=131 (log 20:46:00)
+ML54-none 20:46:06 builder harm=1 heal=175 (log 20:46:08)
+ML54-none 20:46:13 builder harm=2 heal=141 (log 20:46:15)
+ML54-none 20:46:21 spender harm=3 heal=271 (log 20:46:23)
+ML54-none 20:46:29 builder harm=0 heal=160 (log 20:46:31)
+ML54-none 20:46:36 builder harm=1 heal=175 (log 20:46:38)
+ML54-none 20:46:44 builder harm=2 heal=126 (log 20:46:45)
+ML54-none 20:46:51 builder harm=3 heal=141 (log 20:46:52)
+ML54-none 20:46:58 spender harm=4 heal=372 (log 20:46:59)
+ML54-none 20:47:13 builder harm=0 heal=170 (log 20:47:15)
+ML54-none 20:47:21 builder harm=1 heal=175 (log 20:47:22)
+ML54-none 20:47:28 builder harm=2 heal=126 (log 20:47:30)
+ML54-none 20:47:35 builder harm=3 heal=150 (log 20:47:37)
+ML54-none 20:47:42 builder harm=4 heal=136 (log 20:47:44)
+ML54-none 20:47:50 spender harm=5 heal=420 (log 20:47:51)
+ML54-none 20:47:05 spender harm=0 heal=NONE
+ML54-none 20:49:06 builder harm=0 heal=131 (log 20:49:07)
+ML54-none 20:49:13 builder harm=1 heal=146 (log 20:49:15)
+ML54-none 20:49:20 spender harm=2 heal=242 (log 20:49:21)
+ML54-none 20:49:27 builder harm=0 heal=131 (log 20:49:29)
+ML54-none 20:49:35 builder harm=1 heal=165 (log 20:49:36)
+ML54-none 20:49:42 builder harm=2 heal=155 (log 20:49:44)
+ML54-none 20:49:49 spender harm=3 heal=281 (log 20:49:51)
+ML54-none 20:49:57 builder harm=0 heal=136 (log 20:49:58)
+ML54-none 20:50:04 builder harm=1 heal=131 (log 20:50:06)
+ML54-none 20:50:11 builder harm=2 heal=155 (log 20:50:13)
+ML54-none 20:50:18 builder harm=3 heal=131 (log 20:50:20)
+ML54-none 20:50:25 spender harm=4 heal=353 (log 20:50:27)
+ML54-none 20:50:33 spender harm=0 heal=NONE
+END ML54-none
+VIRTUE ON (Sustain clicked)
+ML54-sustain 20:51:51 builder harm=0 heal=212 (log 20:51:52)
+ML54-sustain 20:51:58 builder harm=1 heal=278 (log 20:52:00)
+ML54-sustain 20:52:06 builder harm=2 heal=278 (log 20:52:07)
+ML54-sustain 20:52:13 builder harm=3 heal=229 (log 20:52:15)
+ML54-sustain 20:52:21 builder harm=4 heal=278 (log 20:52:22)
+ML54-sustain 20:52:28 spender harm=5 heal=745 (log 20:52:30)
+ML54-sustain 20:52:36 builder harm=0 heal=278 (log 20:52:38)
+ML54-sustain 20:52:44 spender harm=1 heal=229 (log 20:52:45)
+ML54-sustain 20:52:52 builder harm=0 heal=261 (log 20:52:53)
+ML54-sustain 20:52:59 builder harm=1 heal=220 (log 20:53:01)
+ML54-sustain 20:53:07 spender harm=2 heal=335 (log 20:53:08)
+ML54-sustain 20:53:15 builder harm=0 heal=212 (log 20:53:16)
+ML54-sustain 20:53:22 builder harm=1 heal=204 (log 20:53:24)
+ML54-sustain 20:53:30 builder harm=2 heal=253 (log 20:53:32)
+ML54-sustain 20:53:38 spender harm=3 heal=507 (log 20:53:39)
+ML54-sustain 20:53:46 builder harm=0 heal=204 (log 20:53:47)
+ML54-sustain 20:53:53 builder harm=1 heal=286 (log 20:53:55)
+ML54-sustain 20:54:01 builder harm=2 heal=204 (log 20:54:03)
+ML54-sustain 20:54:08 builder harm=3 heal=204 (log 20:54:10)
+ML54-sustain 20:54:16 spender harm=4 heal=564 (log 20:54:17)
+ML54-sustain 20:55:30 builder harm=0 heal=278 (log 20:55:31)
+ML54-sustain 20:55:37 spender harm=1 heal=229 (log 20:55:39)
+ML54-sustain 20:55:46 builder harm=0 heal=253 (log 20:55:48)
+ML54-sustain 20:55:54 builder harm=1 heal=245 (log 20:55:55)
+ML54-sustain 20:56:01 spender harm=2 heal=351 (log 20:56:03)
+ML54-sustain 20:56:09 builder harm=0 heal=245 (log 20:56:11)
+ML54-sustain 20:56:17 builder harm=1 heal=229 (log 20:56:18)
+ML54-sustain 20:56:24 builder harm=2 heal=245 (log 20:56:26)
+ML54-sustain 20:56:32 spender harm=3 heal=515 (log 20:56:34)
+ML54-sustain 20:56:40 builder harm=0 heal=237 (log 20:56:42)
+ML54-sustain 20:56:48 builder harm=1 heal=253 (log 20:56:50)
+ML54-sustain 20:56:56 builder harm=2 heal=278 (log 20:56:58)
+ML54-sustain 20:57:04 builder harm=3 heal=204 (log 20:57:05)
+ML54-sustain 20:57:11 spender harm=4 heal=564 (log 20:57:13)
+ML54-sustain 20:57:28 builder harm=0 heal=253 (log 20:57:29)
+ML54-sustain 20:57:35 builder harm=1 heal=278 (log 20:57:37)
+ML54-sustain 20:57:43 builder harm=2 heal=212 (log 20:57:45)
+ML54-sustain 20:57:51 builder harm=3 heal=253 (log 20:57:52)
+ML54-sustain 20:57:58 builder harm=4 heal=278 (log 20:58:00)
+ML54-sustain 20:58:06 spender harm=5 heal=679 (log 20:58:08)
+ML54-sustain 20:57:19 spender harm=0 heal=NONE
+ML54-sustain 20:59:21 builder harm=0 heal=220 (log 20:59:22)
+ML54-sustain 20:59:28 builder harm=1 heal=278 (log 20:59:30)
+ML54-sustain 20:59:36 spender harm=2 heal=351 (log 20:59:37)
+ML54-sustain 20:59:44 builder harm=0 heal=237 (log 20:59:46)
+ML54-sustain 20:59:51 builder harm=1 heal=261 (log 20:59:53)
+ML54-sustain 20:59:59 builder harm=2 heal=212 (log 21:00:00)
+ML54-sustain 21:00:06 spender harm=3 heal=483 (log 21:00:08)
+ML54-sustain 21:00:14 builder harm=0 heal=237 (log 21:00:16)
+ML54-sustain 21:00:22 builder harm=1 heal=212 (log 21:00:24)
+ML54-sustain 21:00:30 builder harm=2 heal=212 (log 21:00:32)
+ML54-sustain 21:00:38 builder harm=3 heal=245 (log 21:00:39)
+ML54-sustain 21:00:45 spender harm=4 heal=630 (log 21:00:47)
+ML54-sustain 21:01:02 builder harm=0 heal=270 (log 21:01:03)
+ML54-sustain 21:01:10 builder harm=1 heal=261 (log 21:01:11)
+ML54-sustain 21:01:17 builder harm=2 heal=278 (log 21:01:19)
+ML54-sustain 21:01:25 builder harm=3 heal=286 (log 21:01:26)
+ML54-sustain 21:01:32 builder harm=4 heal=261 (log 21:01:34)
+ML54-sustain 21:01:40 spender harm=5 heal=671 (log 21:01:41)
+ML54-sustain 21:01:48 builder harm=0 heal=270 (log 21:01:50)
+ML54-sustain 21:01:56 spender harm=1 heal=253 (log 21:01:57)
+ML54-sustain 21:00:54 spender harm=0 heal=NONE
+ML54-sustain 21:03:23 builder harm=0 heal=212 (log 21:03:25)
+ML54-sustain 21:03:31 builder harm=1 heal=286 (log 21:03:33)
+ML54-sustain 21:03:39 builder harm=2 heal=261 (log 21:03:40)
+ML54-sustain 21:03:46 spender harm=3 heal=507 (log 21:03:48)
+ML54-sustain 21:05:01 builder harm=0 heal=220 (log 21:05:02)
+ML54-sustain 21:05:08 builder harm=1 heal=229 (log 21:05:10)
+ML54-sustain 21:05:16 builder harm=2 heal=220 (log 21:05:18)
+ML54-sustain 21:05:24 builder harm=3 heal=220 (log 21:05:25)
+ML54-sustain 21:05:31 spender harm=4 heal=589 (log 21:05:33)
+ML54-sustain 21:05:48 builder harm=0 heal=237 (log 21:05:49)
+ML54-sustain 21:05:55 builder harm=1 heal=261 (log 21:05:57)
+ML54-sustain 21:06:03 builder harm=2 heal=261 (log 21:06:05)
+ML54-sustain 21:06:11 builder harm=3 heal=253 (log 21:06:13)
+ML54-sustain 21:06:19 builder harm=4 heal=212 (log 21:06:20)
+ML54-sustain 21:06:26 spender harm=5 heal=696 (log 21:06:28)
+ML54-sustain 21:06:34 builder harm=0 heal=245 (log 21:06:36)
+ML54-sustain 21:06:42 spender harm=1 heal=270 (log 21:06:44)
+ML54-sustain 21:06:50 builder harm=0 heal=237 (log 21:06:52)
+ML54-sustain 21:06:58 builder harm=1 heal=270 (log 21:06:59)
+ML54-sustain 21:07:06 spender harm=2 heal=335 (log 21:07:07)
+ML54-sustain 21:07:14 builder harm=0 heal=278 (log 21:07:15)
+ML54-sustain 21:07:21 builder harm=1 heal=270 (log 21:07:23)
+ML54-sustain 21:07:29 builder harm=2 heal=212 (log 21:07:31)
+ML54-sustain 21:07:37 spender harm=3 heal=433 (log 21:07:38)
+ML54-sustain 21:05:40 spender harm=0 heal=NONE
+ML54-sustain 21:09:14 builder harm=0 heal=278 (log 21:09:16)
+ML54-sustain 21:09:22 builder harm=1 heal=270 (log 21:09:23)
+ML54-sustain 21:09:29 builder harm=2 heal=253 (log 21:09:30)
+ML54-sustain 21:09:36 builder harm=3 heal=220 (log 21:09:38)
+ML54-sustain 21:09:44 builder harm=4 heal=237 (log 21:09:45)
+ML54-sustain 21:09:51 spender harm=5 heal=704 (log 21:09:53)
+ML54-sustain 21:09:59 builder harm=0 heal=286 (log 21:10:01)
+ML54-sustain 21:10:07 spender harm=1 heal=204 (log 21:10:09)
+ML54-sustain 21:10:15 builder harm=0 heal=253 (log 21:10:17)
+ML54-sustain 21:10:23 builder harm=1 heal=278 (log 21:10:25)
+ML54-sustain 21:10:31 spender harm=2 heal=335 (log 21:10:32)
+ML54-sustain 21:10:39 builder harm=0 heal=212 (log 21:10:40)
+ML54-sustain 21:10:46 builder harm=1 heal=229 (log 21:10:47)
+ML54-sustain 21:10:53 builder harm=2 heal=237 (log 21:10:55)
+ML54-sustain 21:11:01 spender harm=3 heal=499 (log 21:11:03)
+ML54-sustain 21:11:09 builder harm=0 heal=204 (log 21:11:11)
+ML54-sustain 21:11:17 builder harm=1 heal=253 (log 21:11:19)
+ML54-sustain 21:11:25 builder harm=2 heal=270 (log 21:11:26)
+ML54-sustain 21:11:32 builder harm=3 heal=278 (log 21:11:34)
+ML54-sustain 21:11:40 spender harm=4 heal=589 (log 21:11:42)
+ML54-sustain 21:09:06 spender harm=0 heal=NONE
+ML54-sustain 21:13:10 builder harm=0 heal=220 (log 21:13:12)
+ML54-sustain 21:13:18 builder harm=1 heal=253 (log 21:13:19)
+ML54-sustain 21:13:25 builder harm=2 heal=270 (log 21:13:27)
+ML54-sustain 21:13:33 builder harm=3 heal=237 (log 21:13:35)
+ML54-sustain 21:13:41 builder harm=4 heal=204 (log 21:13:42)
+ML54-sustain 21:13:48 spender harm=5 heal=737 (log 21:13:50)
+ML54-sustain 21:13:57 builder harm=0 heal=245 (log 21:13:58)
+ML54-sustain 21:14:04 spender harm=1 heal=245 (log 21:14:06)
+ML54-sustain 21:14:12 builder harm=0 heal=253 (log 21:14:14)
+ML54-sustain 21:14:20 builder harm=1 heal=286 (log 21:14:21)
+ML54-sustain 21:14:27 spender harm=2 heal=351 (log 21:14:29)
+ML54-sustain 21:14:36 builder harm=0 heal=204 (log 21:14:37)
+ML54-sustain 21:14:43 builder harm=1 heal=229 (log 21:14:45)
+ML54-sustain 21:14:51 builder harm=2 heal=212 (log 21:14:53)
+ML54-sustain 21:14:59 spender harm=3 heal=474 (log 21:15:01)
+ML54-sustain 21:15:07 builder harm=0 heal=286 (log 21:15:09)
+ML54-sustain 21:15:15 builder harm=1 heal=270 (log 21:15:16)
+ML54-sustain 21:15:22 builder harm=2 heal=245 (log 21:15:24)
+ML54-sustain 21:15:30 builder harm=3 heal=229 (log 21:15:32)
+ML54-sustain 21:15:38 spender harm=4 heal=548 (log 21:15:39)
+ML54-sustain 21:15:46 spender harm=0 heal=NONE
+ML54-sustain 21:17:14 builder harm=0 heal=237 (log 21:17:16)
+ML54-sustain 21:17:22 spender harm=1 heal=204 (log 21:17:24)
+ML54-sustain 21:17:30 builder harm=0 heal=261 (log 21:17:32)
+ML54-sustain 21:17:38 builder harm=1 heal=229 (log 21:17:39)
+ML54-sustain 21:17:45 spender harm=2 heal=343 (log 21:17:47)
+ML54-sustain 21:17:53 builder harm=0 heal=229 (log 21:17:55)
+ML54-sustain 21:18:01 builder harm=1 heal=278 (log 21:18:03)
+ML54-sustain 21:18:08 builder harm=2 heal=278 (log 21:18:10)
+ML54-sustain 21:18:16 spender harm=3 heal=507 (log 21:18:18)
+ML54-sustain 21:18:24 builder harm=0 heal=286 (log 21:18:26)
+ML54-sustain 21:18:32 builder harm=1 heal=245 (log 21:18:34)
+ML54-sustain 21:18:39 builder harm=2 heal=220 (log 21:18:41)
+ML54-sustain 21:18:47 builder harm=3 heal=204 (log 21:18:49)
+ML54-sustain 21:18:55 spender harm=4 heal=622 (log 21:18:57)
+ML54-sustain 21:19:11 builder harm=0 heal=253 (log 21:19:13)
+ML54-sustain 21:19:19 builder harm=1 heal=229 (log 21:19:20)
+ML54-sustain 21:19:27 builder harm=2 heal=220 (log 21:19:28)
+ML54-sustain 21:19:34 builder harm=3 heal=253 (log 21:19:36)
+ML54-sustain 21:19:42 builder harm=4 heal=229 (log 21:19:43)
+ML54-sustain 21:19:49 spender harm=5 heal=671 (log 21:19:51)
+ML54-sustain 21:19:03 spender harm=0 heal=NONE
+ML54-sustain 21:21:18 builder harm=0 heal=261 (log 21:21:20)
+ML54-sustain 21:21:26 builder harm=1 heal=212 (log 21:21:27)
+ML54-sustain 21:21:33 spender harm=2 heal=343 (log 21:21:35)
+ML54-sustain 21:21:41 builder harm=0 heal=204 (log 21:21:43)
+ML54-sustain 21:21:49 builder harm=1 heal=237 (log 21:21:51)
+ML54-sustain 21:21:57 builder harm=2 heal=212 (log 21:21:58)
+ML54-sustain 21:22:04 spender harm=3 heal=458 (log 21:22:06)
+ML54-sustain 21:22:13 builder harm=0 heal=261 (log 21:22:14)
+ML54-sustain 21:22:20 builder harm=1 heal=245 (log 21:22:22)
+ML54-sustain 21:22:28 builder harm=2 heal=220 (log 21:22:30)
+ML54-sustain 21:22:36 builder harm=3 heal=204 (log 21:22:37)
+ML54-sustain 21:22:43 spender harm=4 heal=548 (log 21:22:45)
+ML54-sustain 21:22:59 builder harm=0 heal=229 (log 21:23:01)
+ML54-sustain 21:23:07 builder harm=1 heal=261 (log 21:23:09)
+ML54-sustain 21:23:15 builder harm=2 heal=278 (log 21:23:16)
+ML54-sustain 21:23:22 builder harm=3 heal=212 (log 21:23:24)
+ML54-sustain 21:23:30 builder harm=4 heal=261 (log 21:23:32)
+ML54-sustain 21:23:38 spender harm=5 heal=737 (log 21:23:39)
+ML54-sustain 21:23:46 builder harm=0 heal=278 (log 21:23:48)
+ML54-sustain 21:23:54 spender harm=1 heal=261 (log 21:23:55)
+ML54-sustain 21:22:51 spender harm=0 heal=NONE
+ML54-sustain 21:25:08 builder harm=0 heal=204 (log 21:25:10)
+ML54-sustain 21:25:16 builder harm=1 heal=204 (log 21:25:17)
+ML54-sustain 21:25:23 builder harm=2 heal=220 (log 21:25:25)
+ML54-sustain 21:25:31 spender harm=3 heal=499 (log 21:25:33)
+ML54-sustain 21:25:39 builder harm=0 heal=212 (log 21:25:42)
+ML54-sustain 21:25:48 builder harm=1 heal=212 (log 21:25:49)
+ML54-sustain 21:25:55 builder harm=2 heal=212 (log 21:25:57)
+ML54-sustain 21:26:03 builder harm=3 heal=245 (log 21:26:04)
+ML54-sustain 21:26:11 spender harm=4 heal=589 (log 21:26:12)
+ML54-sustain 21:26:27 builder harm=0 heal=278 (log 21:26:29)
+ML54-sustain 21:26:35 builder harm=1 heal=278 (log 21:26:36)
+ML54-sustain 21:26:43 builder harm=2 heal=278 (log 21:26:44)
+ML54-sustain 21:26:50 builder harm=3 heal=286 (log 21:26:52)
+ML54-sustain 21:26:58 builder harm=4 heal=220 (log 21:27:00)
+ML54-sustain 21:27:06 spender harm=5 heal=728 (log 21:27:08)
+ML54-sustain 21:27:14 builder harm=0 heal=286 (log 21:27:16)
+ML54-sustain 21:27:22 spender harm=1 heal=212 (log 21:27:24)
+ML54-sustain 21:27:30 builder harm=0 heal=237 (log 21:27:32)
+ML54-sustain 21:27:38 builder harm=1 heal=253 (log 21:27:40)
+ML54-sustain 21:27:46 spender harm=2 heal=335 (log 21:27:48)
+ML54-sustain 21:26:19 spender harm=0 heal=NONE
+STOP mana 1883
+END ML54-sustain
+VIRTUE OFF (Sustain clicked)

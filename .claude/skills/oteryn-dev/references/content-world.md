@@ -20,6 +20,17 @@ content digests are derived from committed inputs.
   With `OTERYN_SPELL_SOURCE_ROOT` pointing to `canary/` and `crystal/` Git sources
   or extracted snapshots verified against the pinned input digests, this command also regenerates the field source catalogue
   before materializing the native Item provider.
+- Before the first regeneration of an Item change, list every overlay that pins a touched
+  shard: `git grep -l '<shard path>' -- 'tools/content-schema/native-gameplay/*-profiles.json'`.
+  Refresh all of them with their own tools (`refresh_item_overlay_inputs.py`, the
+  `*_profiles.py` refreshers), commit, then regenerate once: the refreshers compare
+  against `HEAD`, so an uncommitted repin costs a run, and fixing one blocker per run took
+  seven regenerations (about 80 minutes). Do not build cargo tests while it runs (OOM).
+  The scan also covers the imbuement binding evidence and candidate catalogue pins, not only
+  `*-profiles.json`. Before any run of 20 minutes or more: in a shallow clone, fetch the base
+  commits the refreshers read their Git baseline from (`git fetch --unshallow`); after a
+  container restart, reinstall `tools/content-schema/*/requirements.txt` (rfc3339-validator and
+  zstandard went missing mid-run); and plan for the second, idempotency run to change files.
 - The Item tree materializer reapplies the Summer, Primal and encounter corpse overlays before
   hashing its output. After materializing an Item admission change, regenerate the native loot facts
   with `python3 tools/content-schema/native-gameplay/build_full_spell_artifact.py --refresh-loot-tables`

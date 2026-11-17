@@ -67,11 +67,8 @@ impl<S: SessionStream> Session<S> {
         let outcome =
             wire::decode_item_move_result_for(payload, selection(self.selected_capabilities()))
                 .map_err(SessionError::ItemView)?;
-        check_status_pairing(
-            result.command_id,
-            result.status,
-            outcome == ItemMoveOutcome::Rejected,
-        )?;
+        // Command 9 accepts every typed outcome, including an equipment refusal.
+        check_status_pairing(result.command_id, result.status, false)?;
         if outcome == ItemMoveOutcome::Moved && detail.is_some() {
             return Err(SessionError::ItemView(wire::ItemViewWireError::Malformed));
         }

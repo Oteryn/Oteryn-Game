@@ -8,7 +8,7 @@
   "canonical_inputs": [
     {
       "path": "content/items/definitions/items-27500-27999.json",
-      "sha256": "3853af2c97a7fd33ace405005c7d4a3bf1e11aa5cf7da796f4f3a2d5f54f34c3"
+      "sha256": "a8e2f26c947ebfe42b60416e748929df10e585ffa101fce2412ad767e7e93e26"
     }
   ],
   "sources": [

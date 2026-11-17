@@ -2,6 +2,24 @@
 
 use super::*;
 
+/// Keep backpressure from holding a serve phase beyond the existing liveness cadence.
+pub(super) async fn write_frame<W: AsyncWrite + Unpin>(
+    stream: &mut W,
+    frame: &[u8],
+) -> std::io::Result<()> {
+    tokio::time::timeout(
+        IDLE_LIVENESS.interval,
+        crate::gameplay_transport::tcp_tls::write_frame(stream, frame),
+    )
+    .await
+    .map_err(|_| {
+        std::io::Error::new(
+            std::io::ErrorKind::TimedOut,
+            "gameplay frame write timed out",
+        )
+    })?
+}
+
 fn movement_magic_effect_event(
     ordinal: u32,
     position: crate::map::overlay::TilePos,

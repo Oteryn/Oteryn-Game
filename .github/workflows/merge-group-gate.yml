@@ -455,7 +455,8 @@ jobs:
     # so the resolved features match the protected-main cache and each other, and the job
     # result that game_gate reads is success only when every leg succeeds.
     strategy:
-      fail-fast: true
+      # Every partition and leg runs to the end, so one failure does not hide the others.
+      fail-fast: false
       matrix:
         shard: [lint, lib-content, lib-rest, integration-heavy, integration-rest, build-smoke]
     steps:
@@ -855,7 +856,8 @@ jobs:
     # together the twenty-four run every registered E2E target and PostgreSQL-backed library test exactly once.
     # These jobs install no toolchain and restore no cache: they cannot compile.
     strategy:
-      fail-fast: true
+      # Every partition and leg runs to the end, so one failure does not hide the others.
+      fail-fast: false
       matrix:
         partition: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
     services:
@@ -996,6 +998,8 @@ jobs:
       - name: Run registered PostgreSQL E2E targets
         run: |
           set -euo pipefail
+          # Copy the run output to a log so a failure step can list every failed test of this partition.
+          exec > >(tee -a "$RUNNER_TEMP/pg-nextest.log") 2>&1
           mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-e2e.filters"
           if (( ${#filters[@]} == 0 )); then exit 0; fi
           cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" \
@@ -1006,11 +1010,37 @@ jobs:
         if: ${{ !cancelled() && steps.partition.outcome == 'success' }}
         run: |
           set -euo pipefail
+          # Copy the run output to a log so a failure step can list every failed test of this partition.
+          exec > >(tee -a "$RUNNER_TEMP/pg-nextest.log") 2>&1
           mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib.filters"
           if (( ${#filters[@]} == 0 )); then exit 0; fi
           cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" \
             --workspace-remap "$GITHUB_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \
             --no-fail-fast "${filters[@]}"
+
+      # --no-fail-fast runs every planned test; this lists each failed one with a filter that
+      # reruns exactly it, so a fix can be checked without the whole partition.
+      - name: List failed PostgreSQL tests
+        if: ${{ failure() && steps.partition.outcome == 'success' }}
+        env:
+          LABEL: ${{ matrix.partition }}
+        run: |
+          set -uo pipefail
+          log="$RUNNER_TEMP/pg-nextest.log"
+          test -f "$log" || exit 0
+          failed="$(sed 's/\x1b\[[0-9;]*m//g' "$log" \
+            | grep -E '^[[:space:]]+(FAIL|TIMEOUT|SIGSEGV|SIGABRT|SIGKILL|ABORT|LEAK-FAIL)[[:space:]]+\[' \
+            | awk '{print $(NF-1), $NF}' | sort -u)"
+          test -n "$failed" || exit 0
+          {
+            echo "### Failed PostgreSQL tests, partition $LABEL"
+            echo
+            echo '```'
+            while read -r binary test; do
+              echo "--filterset 'binary_id(=$binary) & test(=$test)'"
+            done <<< "$failed"
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
 
   rust_windows:
     name: Merge Queue / Rust Windows client
@@ -1166,9 +1196,46 @@ jobs:
           fi
           "$deny_root/bin/cargo-deny" --all-features check
 
-  node_boot:
-    name: Merge Queue / Node boot against the real Platform
+  # The physical qualification runs as the `pr` shard set of node-boot-qualification.yml:
+  # the same journeys and rows as one run.sh, split over hosted machines.
+  node_boot_plan:
+    name: Merge Queue / Node boot / plan shards
     needs: candidate
+    # Fails closed: only an explicit protected-base `false` skips the physical qualification.
+    if: needs.candidate.outputs.server_qualification != 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      shards: ${{ steps.plan.outputs.shards }}
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.merge_group.head_sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact candidate
+        env:
+          EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Test the shard planner
+        run: python3 tools/qualification/node_boot/test_matrix.py
+
+      - name: Plan shards
+        id: plan
+        run: |
+          set -euo pipefail
+          python3 tools/qualification/node_boot/matrix.py plan --set pr > "$RUNNER_TEMP/shards.json"
+          # Every shard boots against the reviewed Platform producer.
+          test "$(python3 -c 'import json,sys; print(" ".join(sorted({s["platform_ref"] for s in json.load(open(sys.argv[1]))})))' "$RUNNER_TEMP/shards.json")" = 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
+          printf 'shards=%s\n' "$(cat "$RUNNER_TEMP/shards.json")" >> "$GITHUB_OUTPUT"
+
+  node_boot_shard:
+    name: Merge Queue / Node boot / ${{ matrix.shard.name }}
+    needs: [candidate, node_boot_plan]
     # Fails closed: only an explicit protected-base `false` skips the physical qualification.
     if: needs.candidate.outputs.server_qualification != 'false'
     runs-on: ubuntu-24.04
@@ -1177,14 +1244,18 @@ jobs:
     timeout-minutes: 240
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.node_boot_plan.outputs.shards) }}
     steps:
-      - name: Check out exact merge-group candidate
+      - name: Check out exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.merge_group.head_sha || github.sha }}
           persist-credentials: false
 
-      - name: Verify exact merge-group SHA
+      - name: Verify exact candidate
         env:
           EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
@@ -1193,18 +1264,20 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Oteryn/Oteryn-Platform
-          ref: 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
+          ref: ${{ matrix.shard.platform_ref }}
           path: _platform
           persist-credentials: false
 
       - name: Verify exact Platform revision
-        run: test "$(git -C _platform rev-parse HEAD)" = 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
+        env:
+          EXPECTED_PLATFORM: ${{ matrix.shard.platform_ref }}
+        run: test "$(git -C _platform rev-parse HEAD)" = "$EXPECTED_PLATFORM"
 
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.100.0 --profile minimal
 
-      # The qualification builds game-server in target/debug; protected-main artifacts make
-      # that build incremental. A cache hit never substitutes for running the qualification.
+      # Protected-main artifacts make the game-server build incremental. A cache hit
+      # never substitutes for running the qualification.
       - name: Restore trimmed Cargo cache from protected main
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -1213,48 +1286,122 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          key: rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-${{ github.event.merge_group.head_sha || github.sha }}
           restore-keys: |
             rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-
 
       - name: Normalize source mtimes for the restored Cargo cache
-        run: python tools/repository/normalize_cargo_mtimes.py
+        run: python3 tools/repository/normalize_cargo_mtimes.py
 
-      - name: Run node boot qualification
-        env:
-          PLATFORM_SOURCE: ${{ github.workspace }}/_platform
+      - name: Validate harness
         run: |
           set -euo pipefail
           bash -n tools/qualification/node_boot/run.sh
           python3 tools/qualification/node_boot/test_diagnostics.py
-          logs="$RUNNER_TEMP/node-boot-failure-logs"
-          mkdir -p "$logs"
-          evidence="$logs/qualification-client.log"
-          NODE_BOOT_FAILURE_LOG_DIR="$logs" bash tools/qualification/node_boot/run.sh | tee "$evidence"
-          grep -Fxq 'NODE_BOOT_RESULT=NODE_BOOT_PASS' "$evidence"
+          echo 'NODE_BOOT_EVIDENCE static_validation=PASS shell=parsed'
 
-      - name: Redact failed node boot logs
-        if: failure()
+      # Shard knobs enter the environment only after the harness self-tests ran clean.
+      - name: Select shard
+        env:
+          SHARD_JSON: ${{ toJSON(matrix.shard) }}
+        run: |
+          set -euo pipefail
+          python3 tools/qualification/node_boot/matrix.py export-env "$SHARD_JSON" > "$RUNNER_TEMP/shard.env"
+          cat "$RUNNER_TEMP/shard.env" | tee -a "$GITHUB_ENV"
+
+      - name: Run node boot shard
+        env:
+          PLATFORM_SOURCE: ${{ github.workspace }}/_platform
+        run: |
+          # A failing shard still writes result.json, so no errexit here.
+          set +e
+          set -uo pipefail
+          logs="$RUNNER_TEMP/node-boot-failure-logs"
+          mkdir -p "$logs" "$RUNNER_TEMP/node-boot-shard"
+          evidence="$logs/qualification-client.log"
+          started=$SECONDS
+          if [[ "$SHARD_ENTRY" == game_platform ]]; then
+            bash tools/qualification/game_platform/run.sh | tee "$evidence"
+            code=${PIPESTATUS[0]}
+          else
+            NODE_BOOT_FAILURE_LOG_DIR="$logs" bash tools/qualification/node_boot/run.sh | tee "$evidence"
+            code=${PIPESTATUS[0]}
+          fi
+          grep -E '^(NODE_BOOT_EVIDENCE |SEAM_EVIDENCE |NODE_BOOT_RESULT=|GAME_PLATFORM_RESULT=)' "$evidence" >> "$GITHUB_STEP_SUMMARY" || true
+          python3 tools/qualification/node_boot/matrix.py extract "$evidence" "$RUNNER_TEMP/node-boot-shard/result.json" \
+            --shard "$SHARD_NAME" --entry "$SHARD_ENTRY" --exit-code "$code" --seconds "$((SECONDS - started))"
+
+      - name: Redact shard logs
+        if: always()
         run: |
           set -euo pipefail
           source="$RUNNER_TEMP/node-boot-failure-logs"
-          artifact="$RUNNER_TEMP/node-boot-failure-artifact"
+          artifact="$RUNNER_TEMP/node-boot-shard"
           mkdir -p "$source" "$artifact"
           for log in node.log qualification-client.log; do
             if [[ ! -f "$source/$log" ]]; then
-              printf 'Log unavailable; failure occurred before %s was created.\n' "$log" > "$source/$log"
+              printf 'Log unavailable; %s was not created by this shard.\n' "$log" > "$source/$log"
             fi
-            python3 tools/redact_ci_log.py "$source/$log" "$artifact/$log"
+            python3 tools/qualification/node_boot/matrix.py redact "$source/$log" "$artifact/$log"
           done
 
-      - name: Upload failed node boot logs
-        if: failure()
+      - name: Upload redacted shard evidence
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: node-boot-failure-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/node-boot-failure-artifact
+          name: node-boot-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard.name }}
+          path: ${{ runner.temp }}/node-boot-shard
           if-no-files-found: error
           retention-days: 7
+
+  # Fails closed: the plan and every shard must succeed, and the summary fails on a
+  # shard without evidence or a World shard that ran no scenario. MISSING rows are
+  # reported, as the single-machine run never failed on them.
+  node_boot:
+    name: Merge Queue / Node boot against the real Platform
+    needs: [candidate, node_boot_plan, node_boot_shard]
+    # Fails closed: only an explicit protected-base `false` skips the physical qualification.
+    if: always() && needs.candidate.outputs.server_qualification != 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.merge_group.head_sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact candidate
+        env:
+          EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Download shard evidence
+        if: needs.node_boot_plan.result == 'success'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: node-boot-${{ github.run_id }}-${{ github.run_attempt }}-*
+          path: ${{ runner.temp }}/shards
+
+      - name: Require every node boot shard
+        env:
+          PLAN_RESULT: ${{ needs.node_boot_plan.result }}
+          SHARD_RESULT: ${{ needs.node_boot_shard.result }}
+          SHARDS: ${{ needs.node_boot_plan.outputs.shards }}
+          PREFIX: node-boot-${{ github.run_id }}-${{ github.run_attempt }}-
+        run: |
+          set -euo pipefail
+          echo "Node boot results: plan=$PLAN_RESULT shards=$SHARD_RESULT"
+          test "$PLAN_RESULT" = success
+          printf '%s' "$SHARDS" > "$RUNNER_TEMP/shards.json"
+          status=0
+          python3 tools/qualification/node_boot/matrix.py summarize "$RUNNER_TEMP/shards.json" "$RUNNER_TEMP/shards" \
+            --prefix "$PREFIX" --missing-informational > "$RUNNER_TEMP/summary.md" || status=$?
+          cat "$RUNNER_TEMP/summary.md" | tee -a "$GITHUB_STEP_SUMMARY"
+          test "$SHARD_RESULT" = success
+          exit "$status"
 
   server_seam:
     name: Merge Queue / Server Seam over TCP+TLS
