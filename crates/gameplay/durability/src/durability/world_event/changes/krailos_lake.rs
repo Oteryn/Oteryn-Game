@@ -17,8 +17,7 @@ pub(crate) async fn advance(
 ) -> Result<bool, DurabilityError> {
     let world = world.as_bytes().as_slice();
     let epoch: Option<String> = sqlx::query_scalar(
-        "SELECT reset_epoch::text FROM game_world_reset_active
-         WHERE world_id=encode($1,'hex')::uuid FOR SHARE",
+        "SELECT reset_epoch::text FROM game_world_reset_read_locked(encode($1,'hex')::uuid)",
     )
     .bind(world)
     .fetch_optional(&mut **tx)
