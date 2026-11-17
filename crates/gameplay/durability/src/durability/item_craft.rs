@@ -322,7 +322,8 @@ async fn write_with_skinning<C: ItemLoopContent>(
                 && request.tool.is_none()
                 && tool_id == request.source
         });
-        let thornfire_is_qualified = thornfire_bucket::extinguishes(request, gathering, &definition);
+        let thornfire_is_qualified =
+            thornfire_bucket::extinguishes(request, gathering, &definition);
         if tool
             .as_ref()
             .map(|(key, revision)| (key.as_str(), revision.as_str()))
@@ -362,8 +363,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
             |outputs| oteryn_gameplay_items::item_craft::CookingConversion {
                 recipe: if thornfire_is_qualified {
                     thornfire_bucket::EXTINGUISH_RECIPE
-                } else if soil_is_qualified
-                    && definition.production_key == "oteryn:item.tibia.i945"
+                } else if soil_is_qualified && definition.production_key == "oteryn:item.tibia.i945"
                 {
                     "oteryn:elemental_energy_soil.crystal"
                 } else if soil_is_qualified {
@@ -730,11 +730,20 @@ async fn write_with_skinning<C: ItemLoopContent>(
         .await?;
     }
     if conversion.recipe == thornfire_bucket::EXTINGUISH_RECIPE {
-        let gathering = request.gathering.as_ref().ok_or(DurabilityError::InvalidStoredState)?;
+        let gathering = request
+            .gathering
+            .as_ref()
+            .ok_or(DurabilityError::InvalidStoredState)?;
         thornfire_bucket::credit_firefighter(tx, fence, &event).await?;
         super::world_event::changes::thornfire::record_wolf_draw(
-            tx, fence, request.command, &gathering.scope, &gathering.mutation, &event,
-        ).await?;
+            tx,
+            fence,
+            request.command,
+            &gathering.scope,
+            &gathering.mutation,
+            &event,
+        )
+        .await?;
     }
     if conversion.recipe == "oteryn:elemental_energy_soil.crystal" {
         elemental_energy::create(tx, permit, fence, request, native, &transaction, occurred)

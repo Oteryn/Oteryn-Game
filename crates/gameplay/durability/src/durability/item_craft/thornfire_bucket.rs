@@ -41,7 +41,9 @@ pub(super) fn extinguishes(
     gathering: &GatheringCraft,
     definition: &TypedDefinitionRef,
 ) -> bool {
-    use oteryn_gameplay_world_change::thornfire::{FILLED_BUCKET, PREPARED_BUCKET_ID, is_thornfire};
+    use oteryn_gameplay_world_change::thornfire::{
+        FILLED_BUCKET, PREPARED_BUCKET_ID, is_thornfire,
+    };
 
     let mutation = &gathering.mutation;
     let Ok(placement) = <&[u8; 40]>::try_from(mutation.placement.as_slice()) else {
@@ -56,9 +58,8 @@ pub(super) fn extinguishes(
         && definition.family == "Item"
         && definition.revision_ref == "definition-r1"
         && definition.production_key == FILLED_BUCKET
-        && u16::try_from(mutation.before).is_ok_and(|appearance| {
-            is_thornfire(u64::from_be_bytes(key), appearance)
-        })
+        && u16::try_from(mutation.before)
+            .is_ok_and(|appearance| is_thornfire(u64::from_be_bytes(key), appearance))
         && mutation.after == 0
         && mutation.decay.is_empty()
         && gathering.attempt.after.is_none()
