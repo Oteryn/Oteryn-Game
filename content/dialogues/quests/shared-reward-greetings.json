@@ -585,17 +585,6 @@
       ]
     },
     {
-      "npc": "oteryn:npc.lubo",
-      "greet": "Welcome to my adventurer shop, |PLAYERNAME|! What do you need? Ask me for a {trade} to look at my wares.",
-      "farewell": "Good bye, |PLAYERNAME|.",
-      "walkaway": "Good bye.",
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lubo.lua:156:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lubo.lua:157:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lubo.lua:158:sha256:a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d"
-      ]
-    },
-    {
       "npc": "oteryn:npc.lugri",
       "greet": "What is it that you {want}, |PLAYERNAME|?",
       "farewell": "Bye.",
