@@ -30,6 +30,7 @@ impl PlayLink {
         character.clone_into(&mut mailbox.channel_switch_character);
         mailbox.channel_switch.current =
             oteryn_platform_client::native_login::parse_uuid_v7(current);
+        mailbox.party.own_channel = mailbox.channel_switch.current;
         // Ping per Channel needs a Platform endpoint and full a capacity: both stay "—"/false;
         // the online count arrives with command 6251.
         mailbox.channel_switch.rows = parsed

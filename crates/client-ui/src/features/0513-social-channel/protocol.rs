@@ -9,6 +9,7 @@ pub fn presence_notices(
     names: &ChannelNames,
     before: &VipPresenceBatch,
     after: &VipPresenceBatch,
+    notify_move: impl Fn(u64) -> bool,
 ) -> Vec<String> {
     let mut notices = Vec::new();
     for entry in &after.entries {
@@ -20,12 +21,14 @@ pub fn presence_notices(
                 channel = channel_text(names, entry.channel)
             )),
             VipPresenceStatus::Online => {
-                if prior.is_some_and(|old| {
-                    old.status == VipPresenceStatus::Online
-                        && old.channel.is_some()
-                        && entry.channel.is_some()
-                        && old.channel != entry.channel
-                }) {
+                if notify_move(entry.entry)
+                    && prior.is_some_and(|old| {
+                        old.status == VipPresenceStatus::Online
+                            && old.channel.is_some()
+                            && entry.channel.is_some()
+                            && old.channel != entry.channel
+                    })
+                {
                     notices.push(lfmt!(
                         "{name} has changed to channel {channel}.",
                         name = entry.name,

@@ -211,6 +211,7 @@ pub(super) struct Mailbox {
     pub(super) vip_presence: oteryn_client_ui::vip_presence::VipPresencePanel,
     /// chsw (capability 513): VIP login, logout and Channel-change notices naming the Channel,
     /// numbered so each is shown once.
+    pub(super) social_channel_selected: bool,
     pub(super) vip_channel_notices: Vec<(u64, String)>,
     pub(super) vip_channel_notice_serial: u64,
     /// chsw (capability 512): the Change Channel window, and the target once the server
@@ -221,6 +222,7 @@ pub(super) struct Mailbox {
     /// client-channel-probe-v1: the Platform the probe list comes from, the last refresh and
     /// the measured pings by Channel.
     pub(super) channel_probe_platform: Option<String>,
+    pub(super) channel_probe_cancel: Option<oteryn_foundation::CancellationToken>,
     pub(super) channel_probe_refreshed: Option<std::time::Instant>,
     pub(super) channel_probe_pings: Vec<([u8; 16], Option<u32>)>,
     pub(super) weapon_proficiency: oteryn_client_ui::weapon_proficiency::WeaponProficiencyPanel,

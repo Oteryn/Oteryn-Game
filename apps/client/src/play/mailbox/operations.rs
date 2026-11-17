@@ -86,15 +86,33 @@ impl Outbox {
             oteryn_client_ui::chat_party_room::replace_rooms(&mut mailbox.chat_party_room, rooms);
         }
         if let Some(presence) = mailbox.pushed.vip_presence.take() {
-            let notices = oteryn_client_ui::social_channel::presence_notices(
-                &mailbox.party.channel_names,
-                &mailbox.vip_presence.presence,
-                &presence,
-            );
-            for notice in notices {
-                mailbox.vip_channel_notice_serial += 1;
-                let serial = mailbox.vip_channel_notice_serial;
-                mailbox.vip_channel_notices.push((serial, notice));
+            if mailbox.social_channel_selected {
+                let contacts = mailbox
+                    .vip
+                    .view
+                    .as_deref()
+                    .and_then(|raw| serde_json::from_str::<serde_json::Value>(raw).ok());
+                let notices = oteryn_client_ui::social_channel::presence_notices(
+                    &mailbox.party.channel_names,
+                    &mailbox.vip_presence.presence,
+                    &presence,
+                    |id| {
+                        contacts
+                            .as_ref()
+                            .and_then(|v| v["entries"].as_array())
+                            .is_some_and(|entries| {
+                                entries.iter().any(|e| {
+                                    e["entry"].as_u64() == Some(id)
+                                        && e["notify"].as_bool() == Some(true)
+                                })
+                            })
+                    },
+                );
+                for notice in notices {
+                    mailbox.vip_channel_notice_serial += 1;
+                    let serial = mailbox.vip_channel_notice_serial;
+                    mailbox.vip_channel_notices.push((serial, notice));
+                }
             }
             oteryn_client_ui::vip_presence::replace(&mut mailbox.vip_presence, presence);
         }

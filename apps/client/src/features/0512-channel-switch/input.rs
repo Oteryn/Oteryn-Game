@@ -22,19 +22,24 @@ impl PlayLink {
         let mailbox = &mut *mailbox;
         let panel = &mut mailbox.channel_switch;
         panel.open = true;
-        let current = panel.current;
-        for row in &mut panel.rows {
-            row.ping_ms = channel_ping(row.channel, current, live, &mailbox.channel_probe_pings);
-        }
         let due = mailbox
             .channel_probe_refreshed
             .is_none_or(|at| at.elapsed() >= PROBE_REFRESH_INTERVAL);
         let platform = mailbox.channel_probe_platform.clone().filter(|_| due);
         if let Some(platform) = platform {
             mailbox.channel_probe_refreshed = Some(std::time::Instant::now());
-            refresh_probes(std::sync::Arc::downgrade(&self.mailbox), platform);
+            mailbox.channel_probe_pings.clear();
+            let cancel = CancellationToken::new();
+            if let Some(previous) = mailbox.channel_probe_cancel.replace(cancel.clone()) {
+                previous.cancel();
+            }
+            refresh_probes(std::sync::Arc::downgrade(&self.mailbox), platform, cancel);
         }
         let panel = &mut mailbox.channel_switch;
+        let current = panel.current;
+        for row in &mut panel.rows {
+            row.ping_ms = channel_ping(row.channel, current, live, &mailbox.channel_probe_pings);
+        }
         panel.confirming = None;
         if let Some(command) = channel_switch::request_status(panel)
             && self.commands.send(PlayCommand::Feature(command)).is_err()
@@ -82,6 +87,9 @@ impl PlayLink {
         panel.open = false;
         panel.confirming = None;
         panel.error = None;
+        if let Some(cancel) = mailbox.channel_probe_cancel.take() {
+            cancel.cancel();
+        }
     }
 }
 
@@ -108,6 +116,7 @@ fn channel_ping(
 fn refresh_probes(
     mailbox: std::sync::Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>,
     platform: String,
+    cancel: CancellationToken,
 ) {
     let open = move || {
         mailbox
@@ -123,15 +132,23 @@ fn refresh_probes(
             let config = PlatformClientConfig::new(&platform).ok()?;
             let list = PlatformClient::new(config)
                 .ok()?
-                .fetch_channel_probes(CancellationToken::new())
+                .fetch_channel_probes(cancel.clone())
                 .await
                 .ok()?;
             open()?;
-            Some(measure_all(&probe_client().ok()?, &list.probes).await)
+            let client = probe_client().ok()?;
+            tokio::select! {
+                biased;
+                () = cancel.cancelled() => None,
+                pings = measure_all(&client, &list.probes) => Some(pings),
+            }
         })?;
         let shared = open()?;
         let mut mailbox = lock(&shared);
         let mailbox = &mut *mailbox;
+        if cancel.is_cancelled() {
+            return None;
+        }
         let current = mailbox.channel_switch.current;
         for row in &mut mailbox.channel_switch.rows {
             if current != Some(row.channel) {
@@ -150,6 +167,18 @@ fn refresh_probes(
 
 #[cfg(test)]
 mod ping_tests {
+    #[test]
+    fn failed_probe_list_clears_the_previous_measurements() {
+        let (link, _commands, _) = crate::play::play_channel();
+        super::lock(&link.mailbox).channel_probe_pings.push(([2; 16], Some(17)));
+        link.channel_probe_platform(Some("invalid".into()));
+        link.channel_switch_open();
+        assert!(super::lock(&link.mailbox).channel_probe_pings.is_empty());
+        let cancel = super::lock(&link.mailbox).channel_probe_cancel.clone();
+        link.channel_switch_close();
+        assert!(cancel.is_some_and(|token| token.is_cancelled()));
+    }
+
     #[test]
     fn the_current_channel_is_live_and_another_takes_its_probe() {
         let probes = [([2; 16], Some(17)), ([3; 16], None)];
