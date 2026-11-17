@@ -250,5 +250,27 @@ pub(super) async fn exercise(
             "one donor cohort even after command replay"
         );
     }
+    drop(runtime);
+    let map = owner.bundle_map().ok_or("mirror map")?;
+    let current = map.facts.object_revision(key);
+    let stale_due = map
+        .facts
+        .next_movement_decay_time()
+        .ok_or("second mirror reset")?;
+    let newer = map
+        .facts
+        .quest_callback_replacement(key, 8721)
+        .ok_or("broken mirror facts")?;
+    assert!(
+        map.facts
+            .apply_quest_callback(key, current, newer, &[], &[], false, None)
+    );
+    assert_eq!(map.facts.object_revision(key), current + 1);
+    map.facts.expire_movement_items(stale_due);
+    assert_eq!(
+        map.facts.object_revision(key),
+        current + 1,
+        "the mirror timer created by real USE cannot overwrite a newer source revision"
+    );
     Ok(())
 }
