@@ -38,3 +38,26 @@ Next implementation steps:
 
 No runtime or content behavior is changed by this note. Reserved identifiers
 remain migration 2888, capability 541 and ordinal 6276 if required.
+
+## Production-path trace
+
+The current blockers in source (not environmental blockers) are:
+
+- `crates/gameplay/quests/src/quest/world_callbacks/effects.rs:636–643`:
+  `reset_after_ms` rejects every encounter combination.
+- The same file at lines 735–781 counts scene and encounter as separate
+  operations and rejects more than one operation.
+- `crates/gameplay/quests/src/quest/world_callbacks/scene.rs:97–103`:
+  relocation destinations must be on the origin floor; lines 105–120 also
+  constrain scenes to lever use and prohibit ordinary mirror transform effects.
+- `crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/scene_actors.rs`
+  owns the scene occupant collection; `quest_callbacks/execute.rs:1465`
+  calls `commit_source_scene_relocations` in the production executor.
+- Existing `scene_relocations_reject_unedited_duplicate_and_changed_landings`
+  explicitly rejects a changed floor for ordinary bridge callbacks. Preserve
+  that assertion: any cross-floor admission must be scoped to the new valid
+  encounter composition, rather than removing the floor guard universally.
+
+No implementation changes or new tests have been made. The next change must
+trace the executor's scene/encounter ordering and rollback before allowing
+these combinations in validation.
