@@ -6,6 +6,7 @@
 //!    precondition instead of passing.
 //! 3. After the window, require a monster-attributed damage frame and a lower HP, proving the
 //!    monster was only held back by the protection, then log out once the combat lock expires.
+use super::full_row_s15b::ProtectionWindow;
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind, EntityRef, SessionEvent};
 
@@ -23,10 +24,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0x8d).await?;
-    let admitted = tokio::time::Instant::now();
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    let protected = ProtectionWindow::start(&client, WINDOW, "step=protected-window")?;
+    travel_to_spawn_observed(
+        &mut client,
+        world,
+        &metadata.spawns,
+        "oteryn:creature.rat",
+        &mut |client| protected.check(client),
+    )
+    .await?;
     let (monster, own) = actors(&client)?;
-    let used = admitted.elapsed();
+    let used = WINDOW.saturating_sub(
+        protected
+            .deadline
+            .saturating_duration_since(tokio::time::Instant::now()),
+    );
     if used + MARGIN >= WINDOW {
         logout(&mut client).await?;
         return Ok((
@@ -37,16 +49,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
             ),
         ));
     }
-    client.take_events();
-    // Absolute boundary: quiet through admission + 10 s, damage counts only after it.
-    require_quiet(
-        &mut client,
-        monster,
-        own,
-        admitted + WINDOW,
-        "step=protected-window",
-    )
-    .await?;
+    protected.finish(&mut client).await?;
     require_damage(
         &mut client,
         monster,
@@ -106,31 +109,6 @@ fn health(client: &DevClientSession, own: EntityRef) -> TestResult<u8> {
         EntityDetail::Actor { health_percent, .. } => Ok(health_percent),
         _ => Err("observed=own-actor-has-no-health".into()),
     }
-}
-
-async fn require_quiet(
-    client: &mut DevClientSession,
-    monster: EntityRef,
-    own: EntityRef,
-    deadline: tokio::time::Instant,
-    step: &str,
-) -> TestResult {
-    let before = health(client, own)?;
-    while tokio::time::Instant::now() < deadline {
-        client.service_liveness(Duration::from_millis(25)).await?;
-        if client
-            .take_events()
-            .iter()
-            .any(|event| monster_damage(event, monster, own))
-            || health(client, own)? < before
-        {
-            return Err(format!(
-                "{step};observed=monster-damage-or-hp-loss-inside-login-protection"
-            )
-            .into());
-        }
-    }
-    Ok(())
 }
 
 async fn require_damage(

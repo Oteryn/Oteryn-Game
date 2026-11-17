@@ -148,9 +148,34 @@ fn decode_boosted_creature(payload: &[u8]) -> TestResult<String> {
 
 async fn stamina(client: &mut DevClientSession) -> TestResult<u16> {
     use oteryn_protocol_oteryn::cyclopedia_character as wire;
-    let reply = command(client, wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1, wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB, &[1, 0, 0, 50]).await?;
-    if reply.status != CommandStatus::Accepted || reply.payload.len() < 43 { return Err(format!("stamina tab status={:?} bytes={}", reply.status, reply.payload.len()).into()); }
-    Ok(u16::from_be_bytes([reply.payload[41], reply.payload[42]]))
+    let reply = command(
+        client,
+        wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+        wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+        &[1, 0, 0, 50],
+    )
+    .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!(
+            "stamina tab status={:?} bytes={}",
+            reply.status,
+            reply.payload.len()
+        )
+        .into());
+    }
+    decode_stamina(&reply.payload)
+}
+
+fn decode_stamina(payload: &[u8]) -> TestResult<u16> {
+    use oteryn_protocol_oteryn::cyclopedia_character::CharacterTab;
+    if payload.first() != Some(&(CharacterTab::GeneralStats as u8)) {
+        return Err("stamina reply is not the GeneralStats tab".into());
+    }
+    const GENERAL_STATS_BASE_LEN: usize = 42;
+    if payload.len() < GENERAL_STATS_BASE_LEN {
+        return Err("GeneralStats reply truncated".into());
+    }
+    Ok(u16::from_le_bytes(payload[29..31].try_into()?))
 }
 
 async fn hunt_rat(client: &mut DevClientSession, world: &BundleWorld, spawns: &oteryn_world_bundle::spawn::Table) -> TestResult<usize> {
@@ -182,4 +207,24 @@ mod tests {
     fn pass_requires_every_executed_step() { let mut row = Row::new(); row.ran.extend([1, 2, 3, 4, 7]); row.passed.extend([1, 2, 3, 4, 7]); assert!(!STEPS.iter().all(|s| row.ran.contains(s) && row.passed.contains(s))); }
     #[test]
     fn boost_creature_decoder_is_bounded() -> TestResult { let mut p = 7_u64.to_be_bytes().to_vec(); p.extend_from_slice(&[3, b'r', b'a', b't']); assert_eq!(decode_boosted_creature(&p)?, "rat"); assert!(decode_boosted_creature(&p[..10]).is_err()); Ok(()) }
+}
+
+#[cfg(test)]
+mod review_regressions {
+    use super::*;
+
+    #[test]
+    fn general_stats_reads_little_endian_stamina() -> TestResult {
+        use oteryn_protocol_oteryn::cyclopedia_character::{GeneralStats, TabView};
+        let payload = TabView::GeneralStats(GeneralStats {
+            stamina_minutes: 2520,
+            ..GeneralStats::default()
+        })
+        .encode()
+        .map_err(|error| format!("GeneralStats fixture: {error:?}"))?;
+        assert_eq!(payload.len(), 42);
+        assert_eq!(decode_stamina(&payload)?, 2520);
+        assert!(decode_stamina(&payload[..41]).is_err());
+        Ok(())
+    }
 }

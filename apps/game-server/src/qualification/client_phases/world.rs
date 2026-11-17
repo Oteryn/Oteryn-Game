@@ -2144,10 +2144,24 @@ pub(super) async fn reach_route(
     from: TilePos,
     goal: impl Fn(TilePos) -> bool,
 ) -> TestResult<Result<Vec<StepDirection>, ReachFailure>> {
+    reach_route_observed(client, world, from, goal, &mut |client| {
+        client.take_events();
+        Ok(())
+    })
+    .await
+}
+
+async fn reach_route_observed(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    from: TilePos,
+    goal: impl Fn(TilePos) -> bool,
+    observe: &mut impl FnMut(&mut oteryn_dev_client::DevClientSession) -> TestResult,
+) -> TestResult<Result<Vec<StepDirection>, ReachFailure>> {
     let mut origin = from;
     loop {
         client.service_liveness(Duration::from_millis(1)).await?;
-        client.take_events(); // Canonical session stores retain the applied observations.
+        observe(client)?;
         let observed = tile(client.world_spatial().actor_position)?;
         if observed != origin {
             origin = observed;
@@ -2155,12 +2169,12 @@ pub(super) async fn reach_route(
         let path = reach_route_serviced(world, origin, &goal, async || {
             verdict::Harness::global().progress("route-search");
             client.service_liveness(Duration::from_millis(1)).await?;
-            client.take_events();
+            observe(client)?;
             Ok(())
         })
         .await?;
         client.service_liveness(Duration::from_millis(1)).await?;
-        client.take_events();
+        observe(client)?;
         let observed = tile(client.world_spatial().actor_position)?;
         if observed == origin {
             return Ok(path);
@@ -2231,60 +2245,6 @@ async fn reach_route_serviced(
         searched: parents.len(),
         component: (low, high),
     }))
-}
-
-const REACH_SEARCH_NODES: usize = 3_000_000;
-const REACH_CHUNK: usize = 20_000;
-
-/// Like `route` without its 160-tile and two-floor window: it searches the whole bundle (stairs,
-/// ladders and floor changes included) up to `REACH_SEARCH_NODES` tiles. The search yields to the
-/// connection every `REACH_CHUNK` expansions so liveness is served and the harness sees progress.
-/// `Ok(Err(searched))` means the goal is not reachable (or the cap was hit) after `searched` tiles.
-pub(super) async fn reach_route(
-    client: &mut oteryn_dev_client::DevClientSession,
-    world: &BundleWorld,
-    from: TilePos,
-    goal: impl Fn(TilePos) -> bool,
-) -> TestResult<Result<Vec<StepDirection>, usize>> {
-    let mut queue = VecDeque::from([from]);
-    let mut parents = BTreeMap::from([(from, None)]);
-    let mut expanded = 0usize;
-    while let Some(at) = queue.pop_front() {
-        if goal(at) {
-            let mut path = Vec::new();
-            let mut cursor = at;
-            while let Some(Some((previous, direction))) = parents.get(&cursor) {
-                path.push(*direction);
-                cursor = *previous;
-            }
-            path.reverse();
-            return Ok(Ok(path));
-        }
-        if parents.len() > REACH_SEARCH_NODES {
-            break;
-        }
-        expanded += 1;
-        if expanded.is_multiple_of(REACH_CHUNK) {
-            verdict::Harness::global().progress("route-search");
-            client.service_liveness(Duration::from_millis(1)).await?;
-        }
-        for direction in [
-            StepDirection::North,
-            StepDirection::East,
-            StepDirection::South,
-            StepDirection::West,
-        ] {
-            let Some(next) = destination(world, at, direction) else {
-                continue;
-            };
-            if parents.contains_key(&next) {
-                continue;
-            }
-            parents.insert(next, Some((at, direction)));
-            queue.push_back(next);
-        }
-    }
-    Ok(Err(parents.len()))
 }
 
 /// Use the production floor resolver over the production bundle's collision facts.
@@ -2404,6 +2364,19 @@ async fn walk(
     world: &BundleWorld,
     path: &[StepDirection],
 ) -> TestResult {
+    walk_observed(client, world, path, &mut |client| {
+        client.take_events();
+        Ok(())
+    })
+    .await
+}
+
+async fn walk_observed(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+    observe: &mut impl FnMut(&mut oteryn_dev_client::DevClientSession) -> TestResult,
+) -> TestResult {
     for &direction in path {
         let before = client.world_spatial().actor_position;
         let mut outcome = client.step_retrying(direction).await?;
@@ -2444,7 +2417,7 @@ async fn walk(
             )
             .into());
         }
-        client.take_events();
+        observe(client)?;
     }
     Ok(())
 }
@@ -5131,6 +5104,20 @@ async fn travel_to_spawn(
     spawns: &oteryn_world_bundle::spawn::Table,
     creature: &str,
 ) -> TestResult {
+    travel_to_spawn_observed(client, world, spawns, creature, &mut |client| {
+        client.take_events();
+        Ok(())
+    })
+    .await
+}
+
+async fn travel_to_spawn_observed(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    creature: &str,
+    observe: &mut impl FnMut(&mut oteryn_dev_client::DevClientSession) -> TestResult,
+) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
     let points: Vec<_> = spawns
         .sources
@@ -5154,25 +5141,31 @@ async fn travel_to_spawn(
     if authored.is_empty() {
         return Err(format!("the served bundle authors no {creature} spawn point").into());
     }
-    let path = reach_route(client, world, from, |at| {
-        !world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_none_or(|tile| tile.protection_zone())
-            && (-1i16..=1).any(|dx| {
-                (-1i16..=1).any(|dy| {
-                    at.x.checked_add_signed(dx)
-                        .zip(at.y.checked_add_signed(dy))
-                        .is_some_and(|(x, y)| {
-                            authored.contains(&TilePos {
-                                x,
-                                y,
-                                floor: at.floor,
+    let path = reach_route_observed(
+        client,
+        world,
+        from,
+        |at| {
+            !world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_none_or(|tile| tile.protection_zone())
+                && (-1i16..=1).any(|dx| {
+                    (-1i16..=1).any(|dy| {
+                        at.x.checked_add_signed(dx)
+                            .zip(at.y.checked_add_signed(dy))
+                            .is_some_and(|(x, y)| {
+                                authored.contains(&TilePos {
+                                    x,
+                                    y,
+                                    floor: at.floor,
+                                })
                             })
-                        })
+                    })
                 })
-            })
-    })
+        },
+        observe,
+    )
     .await?
     .map_err(|searched| {
         format!(
@@ -5181,7 +5174,7 @@ async fn travel_to_spawn(
             authored.len()
         )
     })?;
-    walk(client, world, &path).await?;
+    walk_observed(client, world, &path, observe).await?;
     for _ in 0..32 {
         let here = client.world_spatial().actor_position;
         let target = client
@@ -5211,7 +5204,7 @@ async fn travel_to_spawn(
         let Some(direction) = path.first() else {
             return Ok(());
         };
-        walk(client, world, &[*direction]).await?;
+        walk_observed(client, world, &[*direction], observe).await?;
     }
     Err("could not approach a live creature within the route budget".into())
 }

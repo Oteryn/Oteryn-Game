@@ -89,22 +89,32 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         StepDirection::West,
     )
     .map(actor_position);
-    client = client_disconnect_resume::recover(client, clients, expected)
-        .await
-        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step=2 reconnect observed={error} need=committed CompleteReconnect"), error) })?;
+    let mut protected = None;
+    client = client_disconnect_resume::recover_observed(client, clients, expected, |resumed| {
+        let window = ProtectionWindow::start(
+            resumed,
+            Duration::from_secs(4),
+            "step=3 reconnect protection",
+        )?;
+        window.check(resumed)?;
+        protected = Some(window);
+        Ok(())
+    })
+    .await
+    .map_err(|error| {
+        verdict::record_error(verdict::IndexedError::as_error(&error));
+        verdict::context(
+            format!("step=2 reconnect observed={error} need=committed CompleteReconnect"),
+            error,
+        )
+    })?;
+    let protected = protected.ok_or("step=2 reconnect did not publish its commit boundary")?;
+    protected.check(&mut client)?;
     let (monster, own) = actors(&client)?;
     evidence("S15B_CHECK step=2 committed-reconnect PASS");
 
     player_commands(&mut client, monster).await?;
-    client.take_events();
-    require_quiet(
-        &mut client,
-        monster,
-        own,
-        Duration::from_millis(2_500),
-        "step=3 four-second protection",
-    )
-    .await?;
+    protected.finish(&mut client).await?;
     evidence("S15B_CHECK step=3 commands-accepted-and-monster-suppressed PASS");
     require_damage(
         &mut client,
@@ -129,20 +139,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     evidence("S15B_CHECK step=4 expiry-damage-and-logout-refusal PASS");
     drop(client);
 
-    let mut fresh = connect_world(clients, 0x8c)
-        .await
-        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step=5 fresh admission observed={error}"), error) })?;
-    travel_to_spawn(&mut fresh, world, &metadata.spawns, "oteryn:creature.rat").await?;
-    let (monster, own) = actors(&fresh)?;
-    fresh.take_events();
-    require_quiet(
-        &mut fresh,
-        monster,
-        own,
-        Duration::from_secs(3),
+    let mut fresh = connect_world(clients, 0x8c).await.map_err(|error| {
+        verdict::record_error(verdict::IndexedError::as_error(&error));
+        verdict::context(format!("step=5 fresh admission observed={error}"), error)
+    })?;
+    let protected = ProtectionWindow::start(
+        &fresh,
+        Duration::from_secs(10),
         "step=5 fresh-login protection",
+    )?;
+    travel_to_spawn_observed(
+        &mut fresh,
+        world,
+        &metadata.spawns,
+        "oteryn:creature.rat",
+        &mut |client| protected.check(client),
     )
     .await?;
+    let (monster, own) = actors(&fresh)?;
+    protected.finish(&mut fresh).await?;
     require_damage(
         &mut fresh,
         monster,
@@ -246,28 +261,90 @@ fn health(client: &DevClientSession, own: EntityRef) -> TestResult<u8> {
     }
 }
 
-async fn require_quiet(
-    client: &mut DevClientSession,
-    monster: EntityRef,
-    own: EntityRef,
-    duration: Duration,
-    step: &str,
-) -> TestResult {
-    let before = health(client, own)?;
-    let deadline = tokio::time::Instant::now() + duration;
-    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    while tokio::time::Instant::now() < deadline {
-        client.service_liveness(Duration::from_millis(25)).await?;
-        if client
-            .take_events()
-            .iter()
-            .any(|event| monster_damage(event, monster, own))
-            || health(client, own)? < before
-        {
-            return Err(format!("{step} observed=monster damage/HP loss before protection deadline need=no eligible monster target").into());
-        }
+fn protected_observation_is_quiet(
+    initial_health: u32,
+    current_health: u32,
+    observed_damage: bool,
+) -> bool {
+    !observed_damage && current_health >= initial_health
+}
+
+pub(super) struct ProtectionWindow {
+    pub(super) deadline: tokio::time::Instant,
+    own: [u8; 16],
+    health: u32,
+    step: &'static str,
+}
+
+impl ProtectionWindow {
+    pub(super) fn start(
+        client: &DevClientSession,
+        duration: Duration,
+        step: &'static str,
+    ) -> TestResult<Self> {
+        let deadline = tokio::time::Instant::now() + duration;
+        let own = *client
+            .world_entities()
+            .ok_or("missing own entity view at protection boundary")?
+            .own_identity();
+        let health = client
+            .actor_vitals()
+            .ok_or("missing vitals at protection boundary")?
+            .health;
+        Ok(Self {
+            deadline,
+            own,
+            health,
+            step,
+        })
     }
-    Ok(())
+
+    pub(super) fn check(&self, client: &mut DevClientSession) -> TestResult {
+        use oteryn_protocol_oteryn::presentation::PresentationEventKind;
+        let events = client.take_events();
+        let damage = events.iter().any(|event| match event {
+            SessionEvent::ActorVitals(delta) => delta.value.health < self.health,
+            SessionEvent::Presentation(delta) => delta.value.iter().any(|event| {
+                matches!(&event.kind, PresentationEventKind::ValueText { target, attacker: Some(_), primary, .. }
+                    if target.identity == self.own && primary.value > 0)
+            }),
+            _ => false,
+        });
+        let current = client
+            .actor_vitals()
+            .ok_or("own vitals disappeared during protection")?
+            .health;
+        if !protected_observation_is_quiet(self.health, current, damage) {
+            return Err(format!(
+                "{} observed=damage-or-hp-loss-inside-protection-window",
+                self.step
+            )
+            .into());
+        }
+        Ok(())
+    }
+
+    pub(super) async fn finish(&self, client: &mut DevClientSession) -> TestResult {
+        self.check(client)?;
+        if tokio::time::Instant::now() >= self.deadline {
+            return Err(format!(
+                "{} observed=preliminary-actions-exhausted-protection-window",
+                self.step
+            )
+            .into());
+        }
+        verdict::Harness::global().bounded_wait(self.deadline, "bounded-observation");
+        while tokio::time::Instant::now() < self.deadline {
+            let remaining = self
+                .deadline
+                .saturating_duration_since(tokio::time::Instant::now());
+            client
+                .service_liveness(remaining.min(Duration::from_millis(25)))
+                .await?;
+            self.check(client)?;
+        }
+        Ok(())
+    }
 }
 
 async fn require_damage(
@@ -319,7 +396,14 @@ async fn logout_after_combat(client: &mut DevClientSession) -> TestResult {
 
 #[cfg(test)]
 mod tests {
-    use super::compact;
+    use super::{compact, protected_observation_is_quiet};
+
+    #[test]
+    fn protection_observes_damage_even_during_preliminary_commands() {
+        assert!(protected_observation_is_quiet(100, 100, false));
+        assert!(!protected_observation_is_quiet(100, 100, true));
+        assert!(!protected_observation_is_quiet(100, 99, false));
+    }
 
     #[test]
     fn evidence_is_one_token() {

@@ -6,6 +6,15 @@ pub(super) async fn recover(
     clients: &SeamClients<'_>,
     expected_after_step: Option<ActorPosition>,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
+    recover_observed(client, clients, expected_after_step, |_| Ok(())).await
+}
+
+pub(super) async fn recover_observed(
+    client: oteryn_dev_client::DevClientSession,
+    clients: &SeamClients<'_>,
+    expected_after_step: Option<ActorPosition>,
+    observe_commit: impl FnOnce(&mut oteryn_dev_client::DevClientSession) -> TestResult,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
     let session = *client.join_snapshot().game_session_id.as_bytes();
     let position = client.world_spatial().actor_position;
     let next = client.next_command_id();
@@ -54,6 +63,7 @@ pub(super) async fn recover(
         },
     )
     .await?;
+    observe_commit(&mut resumed)?;
     evidence("mechanic=disconnect_resume phase=replacement_transport_joined");
     if resumed.join_snapshot().game_session_id.as_bytes() != &session
         || (resumed.world_spatial().actor_position != position

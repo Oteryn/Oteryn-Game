@@ -25,6 +25,7 @@
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::{CommandStatus, house, house_transfer, raw_feature};
+use oteryn_protocol_oteryn::house::HouseDisposition;
 
 const TOWN_KEY: &str = "oteryn:content.area.city.thais";
 const REQUIRED: &[&str] = &[
@@ -290,7 +291,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             .iter()
             .find(|candidate| candidate.house == guildhall.house)
             .is_some_and(|candidate| candidate.owned == before_owned);
-        if (4..=10).contains(&d) && unchanged {
+        if is_guildhall_authority_refusal(d) && unchanged {
             row.pass("guildhall-refusal", d);
         } else {
             row.fail("guildhall-refusal", format!("{reply},disposition={d},unchanged={unchanged}"));
@@ -433,5 +434,27 @@ mod tests {
         let private = entrance("oteryn:content.house.main_street_9_1st_floor_shop")?;
         assert!(private.x > 0 && private.y > 0);
         Ok(())
+    }
+}
+
+fn is_guildhall_authority_refusal(disposition: u64) -> bool {
+    disposition == HouseDisposition::NotGuildLeader as u64
+}
+
+#[cfg(test)]
+mod review_regressions {
+    use super::*;
+
+    #[test]
+    fn guildhall_authority_refusal_excludes_funding_failures() {
+        assert!(is_guildhall_authority_refusal(
+            HouseDisposition::NotGuildLeader as u64
+        ));
+        assert!(!is_guildhall_authority_refusal(
+            HouseDisposition::InsufficientFunds as u64
+        ));
+        assert!(!is_guildhall_authority_refusal(
+            HouseDisposition::BalanceLimit as u64
+        ));
     }
 }

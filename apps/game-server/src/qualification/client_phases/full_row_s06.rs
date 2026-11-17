@@ -5,20 +5,15 @@
 //!    expect Accepted/Committed plus a newer catalogue/binding showing that exact selection.
 //! 2. Send APPEARANCE_CHANGE for an unearned addon (or mount when no addon refusal candidate is
 //!    served); expect Rejected and no catalogue selection/root-revision change.
-//! 3. Acquire a taming item only through ordinary world loot or NPC trade, walk beside its authored
-//!    creature, and send the native USE-with-creature command; expect a committed attempt and its
-//!    inventory/creature/message delta. A failed random attempt is retried only after another item
-//!    is legitimately acquired. If the compiled player world exposes no such acquisition route,
-//!    still send the hotkey USE for an exact taming definition and report the observed refusal.
+//! 3. Claim the Golem Wrench through its authored reward chest if needed. Walk to a
+//!    modified gnarlhound spawn and send USE with the carried wrench and live creature.
+//!    Require the exact mount grant, target removal, retained wrench and Game feedback.
 //! 4. After a successful tame, select the newly earned mount with APPEARANCE_CHANGE; expect
 //!    Accepted/Committed and an own-actor appearance mapping carrying the new selection revision.
 //! 5. Log out, freshly admit the same character, and re-read the catalogue/binding; expect the
 //!    outfit colours/addons, earned mount availability, selected mount, and revisions to persist.
-//!
-//! This row deliberately cannot turn absent acquisition content into a source-derived verdict: the
-//! native taming command is sent before a runtime FAIL is emitted, with its status/disposition.
 use super::*;
-use oteryn_dev_client::DevClientSession;
+use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::{appearance, world_object};
 
 const ACTIONS: &[&str] = &[
@@ -207,12 +202,117 @@ async fn outfit_and_refusal(
     Ok(selection)
 }
 
-async fn taming_attempt(client: &mut DevClientSession) -> TestResult {
+fn taming_committed(status: CommandStatus, disposition: world_object::UseDisposition) -> bool {
+    status == CommandStatus::Accepted && disposition == world_object::UseDisposition::Committed
+}
+
+const WRENCH_ID: u32 = 16251;
+const WRENCH_CLAIM: &str = "oteryn:reward-claim.kv.golem_wrench";
+const GNARLHOUND: &str = "oteryn:creature.modified_gnarlhound";
+const MOUNT: &str = "oteryn:content.mount.gnarlhound";
+const TAME_FEEDBACK: &str = "You now own a modified gnarlhound.";
+
+fn carried_wrench(
+    client: &DevClientSession,
+    reference: std::num::NonZeroU32,
+) -> Option<oteryn_protocol_oteryn::item_view::ItemHandle> {
+    client
+        .inventory()?
+        .entries
+        .iter()
+        .find(|entry| entry.item_definition_ref == reference)
+        .map(|entry| entry.handle)
+}
+
+async fn claim_wrench(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    definitions: &crate::content::item_ref::ItemDefinitionIndex,
+) -> TestResult {
+    let report = crate::content::world_reward_claims::bind_embedded_reward_claims(
+        world.base().as_ref(),
+        &|item| {
+            item.key()
+                .as_str()
+                .strip_prefix("oteryn:item.tibia.i")
+                .and_then(|id| id.parse().ok())
+                .is_some_and(|id| provisioning::item_reference(definitions, id).is_ok())
+        },
+    )?;
+    let claim = report
+        .served
+        .iter()
+        .find(|claim| claim.key.as_str() == WRENCH_CLAIM)
+        .ok_or("step=taming-acquisition observed=no-bound-wrench-claim")?;
+    let placement = claim
+        .placements
+        .first()
+        .ok_or("step=taming-acquisition observed=no-wrench-chest")?;
+    let target = TilePos {
+        x: placement.cell.x,
+        y: placement.cell.y,
+        floor: placement.cell.floor,
+    };
+    let start = tile(client.world_spatial().actor_position)?;
+    let path = reach_route(client, world, start, |at| {
+        at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1
+    })
+    .await?
+    .map_err(|searched| {
+        format!("step=taming-acquisition observed=no-wrench-chest-route {searched}")
+    })?;
+    walk(client, world, &path).await?;
+    let mut key = world.base().digest().to_vec();
+    key.extend_from_slice(&placement.bundle_placement_key.to_be_bytes());
+    let reply = client.session_mut().use_object(&key, 0).await?;
+    if !taming_committed(reply.status, reply.disposition) {
+        return Err(format!("step=taming-acquisition observed=wrench-claim-{reply:?}").into());
+    }
+    Ok(())
+}
+
+async fn taming_attempt(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+) -> TestResult<String> {
     let definitions = provisioning::item_index()?;
-    let reference = provisioning::item_reference(&definitions, 16251)?;
+    let reference = provisioning::item_reference(&definitions, WRENCH_ID)?;
+    let before = snapshot(client)?;
+    if before.catalogue.mounts.iter().any(|mount| mount == MOUNT) {
+        return Err("step=taming-attempt observed=gnarlhound-already-earned".into());
+    }
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
+    if carried_wrench(client, reference).is_none() {
+        claim_wrench(client, world, &definitions).await?;
+    }
+    let source = tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            if let Some(handle) = carried_wrench(client, reference) {
+                return Ok::<_, oteryn_dev_client::DevClientError>(handle);
+            }
+            client.take_events();
+            client.service_liveness(Duration::from_millis(50)).await?;
+        }
+    })
+    .await
+    .map_err(|_| "step=taming-acquisition observed=no-carried-wrench")??;
+    travel_to_spawn(client, world, &metadata.spawns, GNARLHOUND).await?;
+    let target = full_row_w02::named_creature(client, "modified gnarlhound")
+        .await?
+        .ok_or("step=taming-attempt observed=no-visible-modified-gnarlhound")?;
+    client.take_events();
+    let before_use_sequence = client.last_server_sequence();
     let payload = world_object::encode_item_use_intent(&world_object::UseIntent {
-        target: world_object::UseTarget::ItemByDefinition(reference),
-        use_with: None,
+        target: world_object::UseTarget::Item(source),
+        use_with: Some(target),
         use_with_map_item: None,
         use_with_position: None,
     })
@@ -220,12 +320,35 @@ async fn taming_attempt(client: &mut DevClientSession) -> TestResult {
     let reply = client.session_mut().world_context_use(&payload).await?;
     let (result, _) = world_object::decode_use_result_with_gate(&reply.payload)
         .map_err(|error| format!("step=taming-attempt observed=reply-decode-{error:?}"))?;
-    Err(format!(
-        "step=taming-attempt observed=status-{status:?}-disposition-{result:?}-sequence-{sequence}-definition-oteryn:item.tibia.i16251 need=legitimate-player-acquisition-authored-creature-and-inventory-creature-message-deltas",
-        status = reply.status,
-        sequence = reply.server_sequence,
-    )
-    .into())
+    if !taming_committed(reply.status, result) {
+        return Err(format!(
+            "step=taming-attempt observed=status-{:?}-disposition-{result:?}-sequence-{}",
+            reply.status, reply.server_sequence
+        )
+        .into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let mut feedback = false;
+    loop {
+        let state = snapshot(client)?;
+        let earned = state.catalogue.mounts.iter().any(|mount| mount == MOUNT);
+        let removed = client
+            .world_entities()
+            .is_some_and(|entities| entities.get(&target).is_none());
+        feedback |= client.take_events().iter().any(|event| {
+            matches!(event, SessionEvent::ChatLine(delta)
+                if delta.server_sequence > before_use_sequence
+                    && matches!(&delta.value, oteryn_protocol_oteryn::chat::ChatLine::Private { speaker_name, text }
+                        if speaker_name == "Game" && text == TAME_FEEDBACK))
+        });
+        if earned && removed && feedback && carried_wrench(client, reference) == Some(source) {
+            return Ok(MOUNT.to_owned());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("step=taming-attempt observed=committed-without-grant-removal-retained-wrench-or-feedback earned={earned} removed={removed} feedback={feedback}").into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
@@ -239,17 +362,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         );
     }
     let selected = outfit_and_refusal(row, &mut client).await?;
-    // This is an actual native taming mechanic command. Failure returns only after the server's
-    // reply was decoded, and therefore cannot become a canned/source-only verdict.
-    taming_attempt(&mut client).await?;
+    let mount = taming_attempt(&mut client, clients).await?;
+    row.pass("taming-attempt", &mount);
 
     let state = snapshot(&mut client)?;
-    let mount = state
-        .catalogue
-        .mounts
-        .first()
-        .cloned()
-        .ok_or("step=mount-select observed=no-earned-mount")?;
     let mut mounted = selected;
     mounted.mount_key = Some(mount.clone());
     let request = appearance::Change {
@@ -308,6 +424,23 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn taming_committed_requires_accepted_committed_reply() {
+        use world_object::UseDisposition;
+        assert!(taming_committed(
+            CommandStatus::Accepted,
+            UseDisposition::Committed
+        ));
+        assert!(!taming_committed(
+            CommandStatus::Rejected,
+            UseDisposition::Committed
+        ));
+        assert!(!taming_committed(
+            CommandStatus::Accepted,
+            UseDisposition::NothingToUse
+        ));
+    }
 
     #[test]
     fn row_requires_the_complete_lifecycle_once() {

@@ -138,15 +138,21 @@ async fn talk(
     }
 }
 
+fn travel_contact_is_nearby(speaker: ActorPosition, npc: ActorPosition) -> bool {
+    speaker.floor == npc.floor && speaker.x.abs_diff(npc.x).max(speaker.y.abs_diff(npc.y)) <= 3
+}
+
 fn actor_at(
     client: &DevClientSession,
     npc: &oteryn_world_bundle::npc::Npc,
 ) -> Option<oteryn_dev_client::EntityRef> {
+    let speaker = client.world_spatial().actor_position;
     client
         .world_entities()?
         .iter()
         .find(|entry| {
             entry.kind == EntityKind::Npc
+                && travel_contact_is_nearby(speaker, entry.position)
                 && npc.placements.iter().any(|p| {
                     entry.position
                         == ActorPosition {
@@ -302,13 +308,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.step("refusal", &refusal);
     earn(&mut client, world, &metadata.spawns, fare).await?;
+    let actor = approach(&mut client, world, npc).await?;
+    let funded_position = client.world_spatial().actor_position;
     let funded_gold = carried_gold(&client)?;
     let _ = talk(&mut client, actor, "hi").await?;
     let _ = talk(&mut client, actor, keyword).await?;
     let (travelled, inventory_changed, _) = talk(&mut client, actor, "yes").await?;
     if !travelled.iter().any(|line| line.contains("Set the sails"))
         || !inventory_changed
-        || client.world_spatial().actor_position == before_position
+        || client.world_spatial().actor_position == funded_position
         || carried_gold(&client)? + fare != funded_gold
     {
         return Err(format!("step travel: observed reply={travelled:?} position={:?} carried_gold={}; need relocation and atomic fare burn", client.world_spatial().actor_position, carried_gold(&client)?).into());
@@ -316,21 +324,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.step("travel", &travelled);
     let rashid = metadata.npcs.npcs.iter().find(|npc| npc.key == "oteryn:npc.rashid").ok_or("step rashid-gate: compiled world omitted today's Rashid placement; need the node boot weekday rotation to retain it")?;
     let expected_rashid = utc_rashid_destination()?;
-    let observed_rashid = rashid
-        .placements
-        .iter()
-        .map(|placement| (placement.x, placement.y, placement.floor))
-        .collect::<Vec<_>>();
-    let expected_placement = expected_rashid.placement;
-    let expected_rashid_position = (
-        expected_placement.x,
-        expected_placement.y,
-        expected_placement.floor,
-    );
-    if observed_rashid.as_slice() != [expected_rashid_position] {
-        return Err(format!("step rashid-gate: observed compiled placements={observed_rashid:?}; need UTC {} placement={expected_rashid_position:?}", expected_rashid.city).into());
-    }
-    let rashid_actor = approach(&mut client, world, rashid).await?;
+    let (rashid, expected_rashid_position) = weekday_rashid(rashid, expected_rashid)?;
+    let rashid_actor = approach(&mut client, world, &rashid).await?;
     let _ = talk(&mut client, rashid_actor, "hi").await?;
     let (trade, _, shop_opened) = talk(&mut client, rashid_actor, "trade").await?;
     if trade.is_empty() || !shop_opened {
@@ -358,7 +353,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("step fresh-admission: durable state mismatch position={:?}/{saved_position:?} gold={}/{}", fresh.world_spatial().actor_position, carried_gold(&fresh)?, saved_gold).into());
     }
-    let fresh_rashid = approach(&mut fresh, world, rashid).await?;
+    let fresh_rashid = approach(&mut fresh, world, &rashid).await?;
     let _ = talk(&mut fresh, fresh_rashid, "hi").await?;
     let (fresh_trade, _, fresh_shop) = talk(&mut fresh, fresh_rashid, "trade").await?;
     if fresh_trade.is_empty() || !fresh_shop {
@@ -367,4 +362,89 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.step("fresh-admission", (saved_position, saved_gold, fresh_trade));
     let _ = fresh.session_mut().logout().await?;
     Ok(())
+}
+
+type PlacementCoordinates = (u16, u16, i8);
+
+fn weekday_rashid(
+    rashid: &oteryn_world_bundle::npc::Npc,
+    expected: RashidDestination,
+) -> TestResult<(oteryn_world_bundle::npc::Npc, PlacementCoordinates)> {
+    let placement = expected.placement;
+    let coordinates = (placement.x, placement.y, placement.floor);
+    let mut selected = rashid.clone();
+    selected
+        .placements
+        .retain(|p| (p.x, p.y, p.floor) == coordinates);
+    if selected.placements.is_empty() {
+        return Err(format!(
+            "step rashid-gate: compiled world lacks UTC {} placement={coordinates:?}",
+            expected.city
+        )
+        .into());
+    }
+    Ok((selected, coordinates))
+}
+
+#[cfg(test)]
+mod review_regressions {
+    use super::*;
+    use oteryn_world_bundle::npc::{Direction, Npc, Placement};
+
+    fn authored_placement(day: i64) -> Placement {
+        let expected =
+            oteryn_gameplay_entities::rashid_schedule::destination_at(day * 86_400_000).placement;
+        Placement {
+            x: expected.x,
+            y: expected.y,
+            floor: expected.floor,
+            direction: Direction::South,
+        }
+    }
+
+    #[test]
+    fn fare_service_requires_fresh_contact_in_speech_range() {
+        let captain = ActorPosition {
+            x: 32300,
+            y: 32200,
+            floor: 7,
+        };
+        let rat_spawn = ActorPosition {
+            x: 32320,
+            ..captain
+        };
+        assert!(!travel_contact_is_nearby(rat_spawn, captain));
+        assert!(travel_contact_is_nearby(
+            ActorPosition {
+                x: 32303,
+                ..captain
+            },
+            captain
+        ));
+        assert!(!travel_contact_is_nearby(
+            ActorPosition {
+                floor: 8,
+                ..captain
+            },
+            captain
+        ));
+    }
+
+    #[test]
+    fn weekday_gate_selects_today_from_unrotated_bundle() -> TestResult {
+        let today = authored_placement(0);
+        let yesterday = authored_placement(-1);
+        let mut rashid = Npc {
+            key: "oteryn:npc.rashid".into(),
+            placements: vec![yesterday, today],
+        };
+        let expected = oteryn_gameplay_entities::rashid_schedule::destination_at(0);
+        assert_eq!(
+            weekday_rashid(&rashid, expected)?.0.placements,
+            [today]
+        );
+        rashid.placements.pop();
+        assert!(weekday_rashid(&rashid, expected).is_err());
+        Ok(())
+    }
 }

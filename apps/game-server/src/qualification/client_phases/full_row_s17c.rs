@@ -3,70 +3,21 @@
 //!    viewer chat is possible.
 //! 2. The admitted player session sends cast chat (capability 291) and the caster moderation
 //!    command (505); without those capabilities the session must refuse both exactly with
-//!    `CapabilityNotSelected`.
+//!    a sequenced Rejected result.
 //!
 //! The row then reports the missing precondition.
+use super::full_row_s17b::{refused_by_session, viewer_join};
 use super::*;
 use oteryn_dev_client::DevClientSession;
-use oteryn_dev_client::client_runtime::CastViewerSession;
 use oteryn_protocol_oteryn::cast;
-use tokio_rustls::rustls::pki_types::ServerName;
 
-/// The viewer's first frame, a cast Join with a ticket Platform never issued, on the real
-/// listener. Returns the session error of the refused join.
-async fn viewer_join(clients: &SeamClients<'_>) -> TestResult<String> {
-    let connector =
-        crate::qualification::connector(clients.certificate, &crate::qualification::EXACT)?;
-    let tcp = tokio::net::TcpStream::connect(clients.address).await?;
-    let stream = connector
-        .connect(ServerName::try_from("localhost")?, tcp)
-        .await?;
-    match CastViewerSession::join(
-        stream,
-        b"oteryn-qualification-unissued-ticket",
-        Duration::from_secs(5),
-    )
-    .await
-    {
-        Ok(_) => Err("step=viewer-join;observed=joined-with-an-unissued-ticket".into()),
-        Err(error) => Ok(format!("{error:?}")),
-    }
-}
-
-/// A gated cast command from the admitted player session must fail before the wire.
-async fn refused_by_session(
-    client: &mut DevClientSession,
-    capability: u32,
-    command: u32,
-    message: &cast::Message,
-) -> TestResult<String> {
-    let payload = message
-        .encode()
-        .map_err(|error| format!("step=encode;observed={error:?}"))?;
-    let reply = client
-        .session_mut()
-        .gated_command(capability, command, &payload)
-        .await;
-    let error = reply
-        .err()
-        .map(|error| format!("{error:?}"))
-        .ok_or("step=cast-command;observed=accepted-without-capability")?;
-    expect(
-        error.contains("CapabilityNotSelected"),
-        "cast-command",
-        &error,
-    )?;
-    Ok(error)
-}
-
-async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
-    let refused = viewer_join(clients).await?;
+async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xa3).await?;
     let chat = refused_by_session(
         &mut client,
         cast::CAPABILITY_CAST_CHAT_V1,
         cast::COMMAND_TYPE_CAST_CHAT,
-        &cast::Message::Chat("hello".to_owned()),
+        &cast::Message::Reply("hello".to_owned()),
     )
     .await?;
     let moderate = refused_by_session(
@@ -76,32 +27,29 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         &cast::Message::Moderate {
             revision: 0,
             subject: [0; 16],
-            action: 0,
-            key: [0; 16],
+            action: 1,
+            key: [0x35; 16],
         },
     )
     .await?;
     logout(&mut client).await?;
-    Ok((
-        "FAIL",
-        format!(
-            "step=viewer-chat;observed=join-refused:{refused},chat:{chat},moderate:{moderate};needed=cast-listener-and-platform-issued-viewer-ticket"
-        ),
-    ))
+    evidence(&format!(
+        "S17C_CHECK chat-dispatch={chat} moderation-dispatch={moderate}"
+    ));
+    viewer_join(clients).await
 }
-
-type Verdict = (&'static str, String);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
-    let (status, detail) = match result {
-        Ok(Ok((status, detail))) => (status, token(&detail)),
-        Ok(Err(error)) => ("FAIL", token(&error.to_string())),
-        Err(_) => ("FAIL", "step=journey;observed=timeout".to_owned()),
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
+    let detail = match result {
+        Ok(Ok(())) => "step=viewer-join;needed=platform-issued-viewer-ticket".to_owned(),
+        Ok(Err(error)) => token(&error.to_string()),
+        Err(_) => "step=journey;observed=timeout".to_owned(),
     };
     evidence(&format!(
-        "e2e_all scenario=S17c.full status={status} seconds={:.3} evidence={detail}",
+        "e2e_all scenario=S17c.full status=FAIL seconds={:.3} evidence={detail}",
         started.elapsed().as_secs_f64()
     ));
 }

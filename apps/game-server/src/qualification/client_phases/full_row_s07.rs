@@ -60,12 +60,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if first != UseDisposition::OfflineTraining {
         return Err(format!("step-2:sleep-observed-{first:?}-need-OfflineTraining").into());
     }
-    let release = sleeper.service_liveness(Duration::from_secs(2)).await;
-    if release.is_ok() {
-        return Err(
-            "step-2:sleep-release-observed-session-live-after-OfflineTraining-need-closed".into(),
-        );
-    }
+    verify_release(&mut sleeper, clients, "step-2").await?;
 
     let mut peer = connect_character(clients, 0xb8, 0).await?;
     travel(&mut peer, "step-3").await?;
@@ -104,7 +99,28 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if again != UseDisposition::OfflineTraining {
         return Err(format!("step-4:wake-release-observed-{again:?}-need-OfflineTraining").into());
     }
-    Ok(())
+    verify_release(&mut woke, clients, "step-4").await
+}
+
+fn observed_sleep_close(result: &Result<(), oteryn_dev_client::SessionError>) -> bool {
+    matches!(result, Err(oteryn_dev_client::SessionError::Io(error)) if error.kind() == std::io::ErrorKind::UnexpectedEof)
+}
+
+async fn verify_release(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    step: &str,
+) -> TestResult {
+    let observed = client
+        .session_mut()
+        .service_liveness(Duration::from_secs(2))
+        .await;
+    if !observed_sleep_close(&observed) {
+        return Err(format!("{step}:expected-sleep-release-close observed={observed:?}").into());
+    }
+    tokio::time::timeout(Duration::from_secs(2), wait_fixture_released(clients, 1))
+        .await
+        .map_err(|_| format!("{step}: sleep did not promptly release the durable session"))?
 }
 
 async fn travel(client: &mut DevClientSession, step: &str) -> TestResult {
@@ -195,6 +211,19 @@ async fn logout(client: &mut DevClientSession, step: &str) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sleep_close_excludes_unusable_or_timed_out_session() {
+        use oteryn_dev_client::SessionError;
+        assert!(!observed_sleep_close(&Ok(())));
+        assert!(!observed_sleep_close(&Err(SessionError::SessionUnusable)));
+        assert!(!observed_sleep_close(&Err(SessionError::Timeout(
+            "server silence"
+        ))));
+        assert!(observed_sleep_close(&Err(SessionError::Io(
+            std::io::ErrorKind::UnexpectedEof.into()
+        ))));
+    }
 
     #[test]
     fn bed_payload_round_trips_through_the_native_decoder() -> TestResult {
