@@ -21,6 +21,16 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/thanita.lua:64-72"
       ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_1/tower_defence_quest/password",
+      "quest": "oteryn:quest.tower_defence_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 9999,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/thanita.lua:75-75"
+      ]
     }
   ],
   "rules": [
@@ -126,10 +136,14 @@
       "quest": "oteryn:quest.tower_defence_quest",
       "npc": "oteryn:npc.bunny_bonecrusher",
       "trigger": "say",
-      "keywords": [
-        "password*"
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_1/tower_defence_quest/questline",
+          "op": "eq",
+          "value": 4
+        }
       ],
-      "guards": [],
       "reply": [
         "That's right. Here is your reward some elementary arrows. You did pretty well on your mission!"
       ],
@@ -172,7 +186,8 @@
       ],
       "exclude_keywords": [
         "mission"
-      ]
+      ],
+      "any_message": true
     },
     {
       "key": "oteryn:quest-npc/tower-defence/deliver-parcel",
@@ -233,12 +248,13 @@
         {
           "kind": "storage",
           "track": "oteryn:quest-progress/quest/u8_1/tower_defence_quest/questline",
-          "op": "eq",
-          "value": 3
+          "op": "between",
+          "value": 3,
+          "maximum": 4
         }
       ],
       "reply": [
-        "Impressive!! I could need someone like you here at the watchtower! Okay, the password you need to tell Bunny is ' password* '. Come back and visit me if you like to!"
+        "Impressive!! I could need someone like you here at the watchtower! Okay, the password you need to tell Bunny is ' {password} '. Come back and visit me if you like to!"
       ],
       "effects": [
         {
