@@ -15,6 +15,37 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     .then_some((session, profile))
 }
 
+#[derive(Debug, PartialEq, Eq)]
+enum EarlyRefusal {
+    FixtureDisabled,
+    NativeUnavailable,
+    MalformedRequest,
+}
+
+fn prepare_request<T>(
+    enabled: bool,
+    native: Option<T>,
+    bytes: &[u8],
+) -> Result<(T, [u8; 16], &str), EarlyRefusal> {
+    if !enabled {
+        return Err(EarlyRefusal::FixtureDisabled);
+    }
+    let native = native.ok_or(EarlyRefusal::NativeUnavailable)?;
+    let (session, profile) = request(bytes).ok_or(EarlyRefusal::MalformedRequest)?;
+    Ok((native, session, profile))
+}
+
+fn early_refusal_warning(reason: EarlyRefusal) -> oteryn_error_codes::Line<'static> {
+    use oteryn_error_codes::{FieldValue, Level, Line};
+    let reason = match reason {
+        EarlyRefusal::FixtureDisabled => "fixture_disabled",
+        EarlyRefusal::NativeUnavailable => "native_unavailable",
+        EarlyRefusal::MalformedRequest => "malformed_request",
+    };
+    Line::new(Level::Warn, "node", "qualification_fixture_refused")
+        .field("reason", FieldValue::Token(reason))
+}
+
 pub(super) async fn prepare(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -23,15 +54,14 @@ pub(super) async fn prepare(
     native: Option<&NativeGameplayState>,
     bytes: &[u8],
 ) -> &'static str {
-    if !config.qualification_fixture {
-        return "rejected";
-    }
-    let Some(native) = native else {
-        return "rejected";
-    };
-    let Some((session, profile)) = request(bytes) else {
-        return "rejected";
-    };
+    let (native, session, profile) =
+        match prepare_request(config.qualification_fixture, native, bytes) {
+            Ok(prepared) => prepared,
+            Err(reason) => {
+                emit(PROCESS, &early_refusal_warning(reason));
+                return "rejected";
+            }
+        };
     match prepare_build(root, authority, proof, config, native, session, profile).await {
         Ok(()) => "qualified",
         Err(error) => {
@@ -238,6 +268,109 @@ async fn prepare_items(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn assert_early_warning(reason: EarlyRefusal, expected: &str) {
+        let line = early_refusal_warning(reason);
+        assert_eq!(line.level, oteryn_error_codes::Level::Warn);
+        let rendered = line.render("test", 0);
+        assert!(rendered.contains("event=qualification_fixture_refused"));
+        assert!(rendered.contains(&format!("reason={expected}")));
+        assert!(!rendered.contains("session=") && !rendered.contains("profile="));
+        assert_eq!(rendered.lines().count(), 1);
+    }
+
+    #[test]
+    fn fixture_disabled_has_a_classified_warning() {
+        let refused = prepare_request(false, Some(()), b"untrusted request").err();
+        assert_eq!(refused, Some(EarlyRefusal::FixtureDisabled));
+        assert_early_warning(EarlyRefusal::FixtureDisabled, "fixture_disabled");
+    }
+
+    #[test]
+    fn native_unavailable_has_a_classified_warning() {
+        let refused = prepare_request(true, None::<()>, b"untrusted request").err();
+        assert_eq!(refused, Some(EarlyRefusal::NativeUnavailable));
+        assert_early_warning(EarlyRefusal::NativeUnavailable, "native_unavailable");
+    }
+
+    #[test]
+    fn malformed_request_has_a_classified_warning() {
+        for bytes in [
+            b"untrusted\nproof=do-not-log".as_slice(),
+            &[0xff],
+            b"qualify invalid knight",
+        ] {
+            let refused = prepare_request(true, Some(()), bytes).err();
+            assert_eq!(refused, Some(EarlyRefusal::MalformedRequest));
+        }
+        assert_early_warning(EarlyRefusal::MalformedRequest, "malformed_request");
+    }
+
+    #[test]
+    fn python_provision_requests_reach_the_real_control_parser()
+    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| {
+                tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()?
+                    .block_on(async {
+                        let session = uuid_v7()?;
+                        let path = std::env::temp_dir()
+                            .join(format!("qualification-{}.sock", uuid_text(&session)));
+                        let result = tokio::time::timeout(Duration::from_secs(10), async {
+                            let listener = UnixListener::bind(&path)?;
+                            for profile in
+                                ["knight", "druid", "paladin", "sorcerer", "explorer", "monk"]
+                            {
+                                let script = Path::new(env!("CARGO_MANIFEST_DIR"))
+                                    .join("../../tools/qualification/node_boot/provision.py");
+                                let socket = path.clone();
+                                let id = uuid_text(&session);
+                                let child = tokio::task::spawn_blocking(move || {
+                                    std::process::Command::new("python3")
+                                        .arg(script)
+                                        .arg("--socket")
+                                        .arg(socket)
+                                        .args(["--session", &id, "--profile", profile])
+                                        .output()
+                                });
+                                let (mut stream, _) = listener.accept().await?;
+                                let bytes = handle_control(&mut stream)
+                                    .await
+                                    .ok_or("Python request exceeded control bound")?;
+                                assert_eq!(
+                                    bytes,
+                                    format!("qualify {} {profile}\n", uuid_text(&session))
+                                        .as_bytes()
+                                );
+                                let (_, actual_session, actual_profile) =
+                                    prepare_request(true, Some(()), &bytes)
+                                        .map_err(|_| "Python request refused by node parser")?;
+                                assert_eq!(actual_session, session);
+                                assert_eq!(actual_profile, profile);
+                                stream.write_all(b"qualified\n").await?;
+                                stream.shutdown().await?;
+                                let output = child.await??;
+                                if !output.status.success() {
+                                    return Err(format!(
+                                        "Python client rejected the parsed exchange: {:?}",
+                                        output.status
+                                    )
+                                    .into());
+                                }
+                            }
+                            Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
+                        })
+                        .await?;
+                        std::fs::remove_file(path)?;
+                        result
+                    })
+            })?
+            .join()
+            .map_err(|_| "control parser test thread failed")?
+    }
 
     #[test]
     fn refusal_warning_retains_error_kind_and_validated_context() {

@@ -70,3 +70,7 @@ class ProvisionTests(unittest.TestCase):
         with self.assertRaises(RuntimeError) as refused:
             self.exchange(b"")
         self.assertIn("node_answer=b''", str(refused.exception))
+
+
+if __name__ == "__main__":
+    unittest.main()
