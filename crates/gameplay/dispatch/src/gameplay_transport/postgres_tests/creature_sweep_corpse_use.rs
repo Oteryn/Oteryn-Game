@@ -57,13 +57,12 @@ pub(super) async fn open(
                         )
                         .map_err(debug)?;
                         for entity in snapshot.entities {
-                            if entity.kind == EntityKind::Corpse {
-                                if let EntityDetail::Object { item_handle, .. }
+                            if entity.kind == EntityKind::Corpse
+                                && let EntityDetail::Object { item_handle, .. }
                                 | EntityDetail::ObjectWithAppearance { item_handle, .. } =
                                     entity.detail
-                                {
-                                    handle = item_handle;
-                                }
+                            {
+                                handle = item_handle;
                             }
                         }
                     }

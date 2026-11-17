@@ -243,7 +243,7 @@ impl PendingProfilePass {
                 .map(|visible| visible.actor)
                 .collect()
         });
-        let end = start.saturating_add(64).min(actors.len());
+        let end = start.saturating_add(1).min(actors.len());
         actors.get(start..end).map(|batch| batch.to_vec()).ok_or(())
     }
     pub(super) fn finish_field_batch(&self, batch: &[ExactActorRef]) -> Result<(), ()> {
@@ -251,7 +251,7 @@ impl PendingProfilePass {
         let start = progress.field_cursor;
         let end = start.checked_add(batch.len()).ok_or(())?;
         let actors = progress.field_actors.as_ref().ok_or(())?;
-        if batch.len() > 64 || actors.get(start..end) != Some(batch) {
+        if batch.len() > 1 || actors.get(start..end) != Some(batch) {
             return Err(());
         }
         let complete = end == actors.len();

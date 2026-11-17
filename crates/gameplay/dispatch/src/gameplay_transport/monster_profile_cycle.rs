@@ -752,7 +752,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Preserve the native scheduler's proposal order across ordinary
                 // attacks and source callbacks. Delayed work also runs on idle turns.
                 let callback_result: Result<(), ()> = async {
-                    for _ in 0..64 {
+                    for _ in 0..1 {
                         if pending.items_ready() { break; }
                         if !retained::resume_one_due(owner,runtime,states,attack,room,native,
                             &mut map,&parties,now,execution_now,native_health_names).await? {
