@@ -2233,60 +2233,6 @@ async fn reach_route_serviced(
     }))
 }
 
-const REACH_SEARCH_NODES: usize = 3_000_000;
-const REACH_CHUNK: usize = 20_000;
-
-/// Like `route` without its 160-tile and two-floor window: it searches the whole bundle (stairs,
-/// ladders and floor changes included) up to `REACH_SEARCH_NODES` tiles. The search yields to the
-/// connection every `REACH_CHUNK` expansions so liveness is served and the harness sees progress.
-/// `Ok(Err(searched))` means the goal is not reachable (or the cap was hit) after `searched` tiles.
-pub(super) async fn reach_route(
-    client: &mut oteryn_dev_client::DevClientSession,
-    world: &BundleWorld,
-    from: TilePos,
-    goal: impl Fn(TilePos) -> bool,
-) -> TestResult<Result<Vec<StepDirection>, usize>> {
-    let mut queue = VecDeque::from([from]);
-    let mut parents = BTreeMap::from([(from, None)]);
-    let mut expanded = 0usize;
-    while let Some(at) = queue.pop_front() {
-        if goal(at) {
-            let mut path = Vec::new();
-            let mut cursor = at;
-            while let Some(Some((previous, direction))) = parents.get(&cursor) {
-                path.push(*direction);
-                cursor = *previous;
-            }
-            path.reverse();
-            return Ok(Ok(path));
-        }
-        if parents.len() > REACH_SEARCH_NODES {
-            break;
-        }
-        expanded += 1;
-        if expanded.is_multiple_of(REACH_CHUNK) {
-            verdict::Harness::global().progress("route-search");
-            client.service_liveness(Duration::from_millis(1)).await?;
-        }
-        for direction in [
-            StepDirection::North,
-            StepDirection::East,
-            StepDirection::South,
-            StepDirection::West,
-        ] {
-            let Some(next) = destination(world, at, direction) else {
-                continue;
-            };
-            if parents.contains_key(&next) {
-                continue;
-            }
-            parents.insert(next, Some((at, direction)));
-            queue.push_back(next);
-        }
-    }
-    Ok(Err(parents.len()))
-}
-
 /// Use the production floor resolver over the production bundle's collision facts.
 fn destination(world: &BundleWorld, from: TilePos, direction: StepDirection) -> Option<TilePos> {
     use crate::map::floor::{Ground, resolve_landing};
@@ -5125,12 +5071,79 @@ pub(super) async fn connect_character(
     Ok(client)
 }
 
+#[derive(Debug)]
+enum SpawnTravelFailure {
+    NoAuthoredSpawn,
+    NoRoute,
+    WaitingForSpawn,
+    NoApproach,
+}
+impl std::fmt::Display for SpawnTravelFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "spawn travel: {self:?}")
+    }
+}
+impl std::error::Error for SpawnTravelFailure {}
+
+fn creature_matches(entry: &oteryn_dev_client::WorldSpatialEntity, name: &str) -> bool {
+    entry.kind == oteryn_dev_client::EntityKind::Creature
+        && entry
+            .display_name
+            .as_ref()
+            .is_some_and(|value| value.as_str().is_ok_and(|value| value == name))
+}
+
+fn creature_display_name(key: &str) -> TestResult<&'static str> {
+    static NAMES: std::sync::OnceLock<Result<BTreeMap<String, String>, String>> =
+        std::sync::OnceLock::new();
+    let names = NAMES
+        .get_or_init(|| {
+            let read = || -> TestResult<BTreeMap<String, String>> {
+                let input = native_input()?;
+                let profiles: serde_json::Value =
+                    serde_json::from_slice(&input.creature_profiles.bytes)?;
+                let mut names = BTreeMap::new();
+                let mut unique = BTreeSet::new();
+                for row in profiles["records"]
+                    .as_array()
+                    .ok_or("creature profile records absent")?
+                {
+                    let key = row["profile"]["target"]["key"]
+                        .as_str()
+                        .ok_or("creature profile key absent")?;
+                    let Some(name) =
+                        row["profile"]["data"]["profile"]["details"]["display_name"].as_str()
+                    else {
+                        continue;
+                    };
+                    let key = key
+                        .strip_prefix("canary:creature/")
+                        .map(|key| format!("oteryn:creature.{key}"))
+                        .unwrap_or_else(|| key.to_owned());
+                    if !unique.insert(name.to_owned()) {
+                        return Err("creature display-name binding is ambiguous".into());
+                    }
+                    names.insert(key, name.to_owned());
+                }
+                Ok(names)
+            };
+            read().map_err(|error| error.to_string())
+        })
+        .as_ref()
+        .map_err(|error| error.clone())?;
+    names
+        .get(key)
+        .map(String::as_str)
+        .ok_or_else(|| format!("source creature name absent: {key}").into())
+}
+
 async fn travel_to_spawn(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
     creature: &str,
 ) -> TestResult {
+    let expected_name = creature_display_name(creature)?;
     let from = tile(client.world_spatial().actor_position)?;
     let points: Vec<_> = spawns
         .sources
@@ -5152,7 +5165,7 @@ async fn travel_to_spawn(
         })
         .collect();
     if authored.is_empty() {
-        return Err(format!("the served bundle authors no {creature} spawn point").into());
+        return Err(SpawnTravelFailure::NoAuthoredSpawn.into());
     }
     let path = reach_route(client, world, from, |at| {
         !world
@@ -5174,13 +5187,7 @@ async fn travel_to_spawn(
             })
     })
     .await?
-    .map_err(|searched| {
-        format!(
-            "no walkable route from {from:?} to any of {} authored {creature} spawn points \
-             (searched {searched} tiles, cap {REACH_SEARCH_NODES})",
-            authored.len()
-        )
-    })?;
+    .map_err(|_| SpawnTravelFailure::NoRoute)?;
     walk(client, world, &path).await?;
     for _ in 0..32 {
         let here = client.world_spatial().actor_position;
@@ -5190,8 +5197,7 @@ async fn travel_to_spawn(
                 entities
                     .iter()
                     .filter(|entry| {
-                        entry.kind == oteryn_dev_client::EntityKind::Creature
-                            && entry.position.floor == here.floor
+                        creature_matches(entry, expected_name) && entry.position.floor == here.floor
                     })
                     .min_by_key(|entry| {
                         entry
@@ -5202,12 +5208,12 @@ async fn travel_to_spawn(
                     })
             })
             .copied()
-            .ok_or("spawn route has no visible creature")?;
+            .ok_or(SpawnTravelFailure::WaitingForSpawn)?;
         let target = tile(target.position)?;
         let path = route(world, tile(here)?, |at| {
             at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1
         })
-        .ok_or("visible creature unreachable")?;
+        .ok_or(SpawnTravelFailure::NoApproach)?;
         let Some(direction) = path.first() else {
             return Ok(());
         };
@@ -5927,4 +5933,40 @@ fn flr2_catalogue_admission() -> TestResult {
         "catalogue blocking stone must block movement"
     );
     Ok(())
+}
+
+#[cfg(test)]
+mod review_spawn_tests {
+    use super::*;
+    #[test]
+    fn review_spawn_approach_binds_the_requested_species() -> TestResult {
+        use oteryn_protocol_oteryn::{entity_names::EntityDisplayName, world_spatial_entities::*};
+        let mut entity = WorldSpatialEntity {
+            display_name: Some(EntityDisplayName::new("Troll").map_err(|e| format!("{e:?}"))?),
+            kind: EntityKind::Creature,
+            entity: EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            },
+            position: ActorPosition {
+                x: 1,
+                y: 1,
+                floor: 7,
+            },
+            detail: EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        };
+        assert!(
+            !creature_matches(&entity, "Rat"),
+            "neighboring troll satisfied rat travel"
+        );
+        entity.display_name = Some(EntityDisplayName::new("Rat").map_err(|e| format!("{e:?}"))?);
+        assert!(creature_matches(&entity, "Rat"));
+        entity.display_name = None;
+        assert!(!creature_matches(&entity, "Rat"));
+        Ok(())
+    }
 }

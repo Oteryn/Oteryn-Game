@@ -376,8 +376,8 @@ async fn restore(client: &mut DevClientSession, slot: items::EquipmentSlot, defi
         .and_then(|inv| inv.entries.iter().find(|e| e.item_definition_ref == definition))
         .map(|e| e.handle)
         .ok_or("stripped item not carried")?;
-    let moved = client.move_item(&items::ItemMoveIntent { source: handle, destination: items::ItemMoveDestination::Equipment(slot) }).await?;
-    if moved.outcome != items::ItemMoveOutcome::Moved {
+    let moved = full_gold::equip_handle(client, handle, slot).await?;
+    if moved != items::ItemMoveOutcome::Moved {
         return Err(format!("re-equip ITEM_MOVE reply={moved:?}").into());
     }
     settle(client, "re-equip", |c| c.inventory().is_some_and(|inv| inv.equipment.iter().any(|e| e.slot == slot && e.item.item_definition_ref == definition))).await

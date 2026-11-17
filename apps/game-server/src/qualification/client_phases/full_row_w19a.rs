@@ -17,47 +17,17 @@
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::{npc_service as npc, world_object as use_wire};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 const BAG_ID: u32 = 6506;
 /// One bag is all the row consumes: USE-WITH refuses without consuming and ordinary USE takes one.
 const BAG_QUANTITY: u32 = 1;
-const OWNER_GAP: &str =
-    "source:crates/gameplay/dispatch/src/gameplay_transport/reward_bag_use.rs:167";
-
 fn quantities(client: &DevClientSession) -> TestResult<BTreeMap<u32, u64>> {
     let mut result = BTreeMap::new();
     for entry in &client.inventory().ok_or("W19a inventory absent")?.entries {
         *result.entry(entry.item_definition_ref.get()).or_default() += u64::from(entry.count.get());
     }
     Ok(result)
-}
-
-async fn wait_quantities(
-    client: &mut DevClientSession,
-    wanted: &BTreeMap<u32, u64>,
-    step: &str,
-) -> TestResult<u64> {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    loop {
-        let mut sequence = 0;
-        for event in client.take_events() {
-            if let SessionEvent::Inventory(delta) = event {
-                sequence = delta.server_sequence;
-            }
-        }
-        if &quantities(client)? == wanted && sequence != 0 {
-            return Ok(sequence);
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!(
-                "step {step}: missing inventory delta; observed={:?}",
-                quantities(client)?
-            )
-            .into());
-        }
-        client.service_liveness(Duration::from_millis(50)).await?;
-    }
 }
 
 fn bag_reference() -> TestResult<std::num::NonZeroU32> {
@@ -87,15 +57,83 @@ async fn use_intent(
 ) -> TestResult<(CommandStatus, use_wire::UseDisposition, u64)> {
     let payload = use_wire::encode_item_use_intent(&intent)
         .map_err(|error| format!("W19a USE encode: {error:?}"))?;
-    let reply = client
-        .session_mut()
-        .world_context_use(&payload)
-        .await?;
+    let reply = client.session_mut().world_context_use(&payload).await?;
     let (payload, _) = oteryn_protocol_oteryn::refusal_detail::split_refusal_detail(&reply.payload)
         .map_err(|error| format!("W19a refusal detail: {error:?}"))?;
     let disposition = use_wire::decode_use_result(payload)
         .map_err(|error| format!("W19a USE result: {error:?}"))?;
     Ok((reply.status, disposition, reply.server_sequence))
+}
+
+fn purchase_matches(
+    before: &BTreeMap<u32, u64>,
+    observed: &BTreeMap<u32, u64>,
+    bag: u32,
+    count: u64,
+    coins: &[(u32, u64)],
+    cost: u64,
+) -> bool {
+    let value = |map: &BTreeMap<u32, u64>| -> Option<u64> {
+        coins.iter().try_fold(0_u64, |sum, (key, denomination)| {
+            sum.checked_add(
+                map.get(key)
+                    .copied()
+                    .unwrap_or(0)
+                    .checked_mul(*denomination)?,
+            )
+        })
+    };
+    let noncoins = |map: &BTreeMap<u32, u64>| {
+        map.iter()
+            .filter(|(key, _)| !coins.iter().any(|(coin, _)| coin == *key))
+            .map(|(&key, &value)| (key, value))
+            .collect::<BTreeMap<_, _>>()
+    };
+    let mut wanted = noncoins(before);
+    let Some(total) = wanted.get(&bag).copied().unwrap_or(0).checked_add(count) else {
+        return false;
+    };
+    wanted.insert(bag, total);
+    value(before).and_then(|gold| gold.checked_sub(cost)) == value(observed)
+        && value(observed).is_some()
+        && noncoins(observed) == wanted
+}
+
+fn reward_matches(
+    consumed: &BTreeMap<u32, u64>,
+    observed: &BTreeMap<u32, u64>,
+    rewards: &BTreeMap<u32, (u32, u32)>,
+) -> bool {
+    // The source selects seven distinct entries without replacement from ten candidates.
+    let mut remaining = observed.clone();
+    let mut picks = 0;
+    for (&key, &(low, high)) in rewards {
+        let before = consumed.get(&key).copied().unwrap_or(0);
+        let after = remaining.get(&key).copied().unwrap_or(0);
+        let Some(delta) = after.checked_sub(before) else {
+            return false;
+        };
+        if delta != 0 {
+            if !(u64::from(low)..=u64::from(high)).contains(&delta) {
+                return false;
+            }
+            picks += 1;
+            if before == 0 {
+                remaining.remove(&key);
+            } else {
+                remaining.insert(key, before);
+            }
+        }
+    }
+    picks == 7 && &remaining == consumed
+}
+
+fn failure_status(_error: &(dyn std::error::Error + 'static)) -> &'static str {
+    "FAIL"
+}
+
+fn missing_live_offer() -> String {
+    "step 2: live Messenger trade window has no blue surprise bag".into()
 }
 
 async fn acquire(client: &mut DevClientSession, world: &BundleWorld) -> TestResult<u64> {
@@ -108,9 +146,7 @@ async fn acquire(client: &mut DevClientSession, world: &BundleWorld) -> TestResu
         .iter()
         .find(|entry| entry.key == "oteryn:npc.messenger_of_santa")
         .ok_or_else(|| {
-            format!(
-                "step 2: compiled world has no Messenger of Santa acquisition actor; {OWNER_GAP}"
-            )
+            "step 2: compiled world has no Messenger of Santa acquisition actor".to_owned()
         })?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         seller
@@ -118,7 +154,7 @@ async fn acquire(client: &mut DevClientSession, world: &BundleWorld) -> TestResu
             .iter()
             .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
     })
-    .ok_or_else(|| format!("step 2: no player-walk route to Messenger of Santa; {OWNER_GAP}"))?;
+    .ok_or_else(|| "step 2: no player-walk route to Messenger of Santa".to_owned())?;
     walk(client, world, &path).await?;
     let actor = client
         .world_entities()
@@ -137,9 +173,7 @@ async fn acquire(client: &mut DevClientSession, world: &BundleWorld) -> TestResu
         })
         .map(|entry| entry.entity)
         .ok_or_else(|| {
-            format!(
-                "step 2: Messenger of Santa absent after walking to compiled placement; {OWNER_GAP}"
-            )
+            "step 2: Messenger of Santa absent after walking to compiled placement".to_owned()
         })?;
     for text in ["hi", "trade"] {
         let reply = shop::talk(
@@ -168,9 +202,7 @@ async fn acquire(client: &mut DevClientSession, world: &BundleWorld) -> TestResu
         .find(|(_, offer)| {
             offer.side == npc::NpcTradeSide::Buy && offer.item_definition_ref == reference.get()
         })
-        .ok_or_else(|| {
-            format!("step 2: live Messenger trade window has no blue surprise bag; {OWNER_GAP}")
-        })?;
+        .ok_or_else(missing_live_offer)?;
     let before = quantities(client)?;
     client.take_events();
     let reply = shop::buy(
@@ -192,10 +224,45 @@ async fn acquire(client: &mut DevClientSession, world: &BundleWorld) -> TestResu
         )
         .into());
     }
-    let mut wanted = before;
-    *wanted.entry(reference.get()).or_default() +=
-        u64::from(offer.count) * u64::from(BAG_QUANTITY);
-    wait_quantities(client, &wanted, "BUY").await
+    let coins = [3031, 3035, 3043]
+        .into_iter()
+        .zip([1, 100, 10_000])
+        .map(|(id, value)| {
+            provisioning::item_reference(&provisioning::item_index()?, id)
+                .map(|reference| (reference.get(), value))
+        })
+        .collect::<TestResult<Vec<_>>>()?;
+    let cost = u64::from(offer.unit_price)
+        .checked_mul(u64::from(BAG_QUANTITY))
+        .ok_or("purchase-cost-overflow")?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let sequence = client
+            .take_events()
+            .into_iter()
+            .filter_map(|event| match event {
+                SessionEvent::Inventory(delta) => Some(delta.server_sequence),
+                _ => None,
+            })
+            .max()
+            .unwrap_or(0);
+        if sequence != 0
+            && purchase_matches(
+                &before,
+                &quantities(client)?,
+                reference.get(),
+                u64::from(offer.count) * u64::from(BAG_QUANTITY),
+                &coins,
+                cost,
+            )
+        {
+            return Ok(sequence);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("step BUY: exact purchase/payment delta absent".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -252,12 +319,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .iter()
         .find(|rule| rule.item_id == BAG_ID)
         .ok_or("step 4: blue surprise bag rule absent")?;
+    if rule.selection
+        != oteryn_gameplay_items::reward_bag::event_containers::Selection::WithoutReplacement
+        || rule.picks != 7
+    {
+        return Err("step 4: blue bag selection contract changed".into());
+    }
     let index = provisioning::item_index()?;
-    let rewards: BTreeSet<u32> = rule
+    let rewards: BTreeMap<u32, (u32, u32)> = rule
         .rewards
         .iter()
         .map(|reward| {
-            provisioning::item_reference(&index, reward.item_id).map(std::num::NonZeroU32::get)
+            provisioning::item_reference(&index, reward.item_id)
+                .map(|reference| (reference.get(), (reward.minimum, reward.maximum)))
         })
         .collect::<TestResult<_>>()?;
     client.take_events();
@@ -277,14 +351,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let saved = loop {
         let observed = quantities(&client)?;
-        let delta: Vec<_> = observed
-            .iter()
-            .filter(|(key, value)| after.get(key).copied().unwrap_or(0) != **value)
-            .collect();
-        if delta.len() == 1
-            && rewards.contains(delta[0].0)
-            && *delta[0].1 > after.get(delta[0].0).copied().unwrap_or(0)
-        {
+        if reward_matches(&after, &observed, &rewards) {
             break observed;
         }
         if tokio::time::Instant::now() >= deadline {
@@ -332,24 +399,86 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         Ok(Err(error)) => {
             let detail = error.to_string();
             evidence(&format!("W19A_FAIL {detail}"));
-            let status = if detail.contains(OWNER_GAP) {
-                "MISSING-SERVER"
-            } else {
-                "FAIL"
-            };
-            let suffix = if status == "MISSING-SERVER" {
-                format!(" evidence={OWNER_GAP}")
-            } else {
-                String::new()
-            };
+            let status = failure_status(error.as_ref());
             evidence(&format!(
-                "SEAM_EVIDENCE e2e_all scenario=W19a.full status={status} seconds={:.3}{suffix}",
+                "SEAM_EVIDENCE e2e_all scenario=W19a.full status={status} seconds={:.3}",
                 started.elapsed().as_secs_f64()
             ));
         }
-        Err(_) => evidence(&format!(
-            "SEAM_EVIDENCE e2e_all scenario=W19a.full status=FAIL seconds={:.3}",
-            started.elapsed().as_secs_f64()
+        Err(error) => evidence(&format!(
+            "SEAM_EVIDENCE e2e_all scenario=W19a.full status=FAIL seconds={:.3} evidence={}",
+            started.elapsed().as_secs_f64(),
+            verdict::sanitize_cause(&error.to_string())
         )),
+    }
+}
+
+#[cfg(test)]
+mod review_tests {
+    use super::*;
+    fn rewards() -> TestResult<BTreeMap<u32, (u32, u32)>> {
+        Ok(
+            oteryn_gameplay_items::reward_bag::event_containers::event_container_rules()
+                .ok_or("authored rules absent")?
+                .iter()
+                .find(|rule| rule.item_id == BAG_ID)
+                .ok_or("blue bag absent")?
+                .rewards
+                .iter()
+                .map(|reward| (reward.item_id, (reward.minimum, reward.maximum)))
+                .collect(),
+        )
+    }
+    #[test]
+    fn review_purchase_accepts_payment_and_denomination_change() {
+        let before = BTreeMap::from([(3035, 1), (3031, 3)]);
+        let after = BTreeMap::from([(3031, 98), (BAG_ID, 1)]);
+        let coins = [(3031, 1), (3035, 100), (3043, 10_000)];
+        assert!(purchase_matches(&before, &after, BAG_ID, 1, &coins, 5));
+        assert!(!purchase_matches(
+            &before,
+            &BTreeMap::from([(3035, 1), (3031, 3), (BAG_ID, 1)]),
+            BAG_ID,
+            1,
+            &coins,
+            5
+        ));
+    }
+    #[test]
+    fn review_blue_bag_requires_every_authored_gift() -> TestResult {
+        let rewards = rewards()?;
+        assert!(rewards.len() >= 7);
+        let consumed = BTreeMap::new();
+        let gifts = rewards
+            .iter()
+            .take(7)
+            .map(|(&key, &(low, high))| {
+                assert_eq!(low, high);
+                (key, u64::from(low))
+            })
+            .collect();
+        assert!(reward_matches(&consumed, &gifts, &rewards));
+        Ok(())
+    }
+    #[test]
+    fn review_blue_bag_rejects_wrong_quantity_and_unrelated_deletion() -> TestResult {
+        let rewards = rewards()?;
+        let (&key, &(low, _)) = rewards.iter().next().ok_or("gifts absent")?;
+        assert!(!reward_matches(
+            &BTreeMap::new(),
+            &BTreeMap::from([(key, u64::from(low) + 100)]),
+            &rewards
+        ));
+        assert!(!reward_matches(
+            &BTreeMap::from([(BAG_ID, 1)]),
+            &BTreeMap::from([(key, u64::from(low))]),
+            &rewards
+        ));
+        Ok(())
+    }
+    #[test]
+    fn review_live_offer_mismatch_is_a_failed_observation() {
+        let error: Box<dyn std::error::Error> = missing_live_offer().into();
+        assert_eq!(failure_status(error.as_ref()), "FAIL");
     }
 }

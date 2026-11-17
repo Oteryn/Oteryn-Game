@@ -1,11 +1,267 @@
 //! E2EF5: player speech -> cast dispatcher -> appearance frames -> fresh admission.
-//! No privileged provisioning or database access. Unfinished rows emit no invented verdict.
+//! Disposable free-account setup uses the fenced fixture; casts use normal player admission.
 use super::*;
 use oteryn_dev_client::{
     ChatDisposition, ChatIntent, ChatSpeechMode, DevClientSession, SessionEvent,
 };
 use oteryn_protocol_oteryn::appearance::{self, Binding, Look};
 use std::collections::BTreeSet;
+
+// Python: discovery 20s + intent 30s + reconciliation 60s + fixture 20s.
+// Admission/SQL has its own bounded 30s stage; casting retains its original row budget.
+pub(super) const C17_SETUP_LIMIT: Duration = Duration::from_secs(20 + 30 + 60 + 20 + 30);
+const C17_CLEANUP_LIMIT: Duration = Duration::from_secs(30);
+
+pub(super) async fn spell_fixture(
+    clients: &SeamClients<'_>,
+    profile: &'static str,
+    tag: u8,
+) -> TestResult<([[u8; 16]; 2], DevClientSession)> {
+    c17_lifecycle(C17_SETUP_LIMIT, async {
+        let characters = spell_characters(clients).await?;
+        let row_clients = SeamClients {
+            characters: &characters,
+            ..*clients
+        };
+        let client = provision_c17(&row_clients, profile, tag).await?;
+        Ok((characters, client))
+    })
+    .await
+}
+
+// Each invocation bootstraps a new Character from a real Platform intent. The
+// shared row Characters remain untouched, including their one-shot build fixture.
+pub(super) async fn spell_characters(clients: &SeamClients<'_>) -> TestResult<[[u8; 16]; 2]> {
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let revisions: (String, String, String, String) = sqlx::query_as(
+        "SELECT profile_revision, ruleset_revision, content_revision, starter_template_revision \
+         FROM game_character_roots WHERE character_id = encode($1, 'hex')::uuid",
+    )
+    .bind(clients.characters[1].as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    let request = serde_json::json!({
+        "account": clients.accounts[1], "world": uuid_text(&clients.world),
+        "revisions": [revisions.0, revisions.1, revisions.2, revisions.3],
+    })
+    .to_string();
+    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
+    let node_log = std::env::var("NODE_BOOT_NODE_LOG").ok();
+    let project = required("WP5_PROJECT")?;
+    let script = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tools/qualification/node_boot/provision.py");
+    let output = c17_output({
+        let mut command = std::process::Command::new("sudo");
+        command
+            .args(["-n", "python3"])
+            .arg(script)
+            .arg("--watch-parent-stdin");
+        if let Some(path) = node_log {
+            command.args(["--node-log", &path]);
+        }
+        command.args([
+            "--socket",
+            &socket,
+            "--project",
+            &project,
+            "--fresh-character",
+            &request,
+        ]);
+        command
+    })
+    .await?;
+    if !output.status.success() {
+        return Err(c17_subprocess_failure("fresh Platform character bootstrap", &output).into());
+    }
+    let name = std::str::from_utf8(&output.stdout)?.trim();
+    let character: Vec<u8> = sqlx::query_scalar(
+        "SELECT uuid_send(character_id) FROM game_character_roots \
+         WHERE account_id = $1::uuid AND name = $2 LIMIT 1",
+    )
+    .bind(&clients.accounts[1])
+    .bind(name)
+    .fetch_one(&mut database)
+    .await?;
+    database.close().await?;
+    let character = <[u8; 16]>::try_from(character.as_slice())?;
+    Ok([clients.characters[0], character])
+}
+
+// Own the child until it is reaped. Dropping a row deadline kills the complete
+// helper process group, including sudo/Python, before it can submit another request.
+struct ProvisionChild(std::process::Child);
+impl Drop for ProvisionChild {
+    fn drop(&mut self) {
+        drop(self.0.stdin.take());
+        if self.0.try_wait().ok().flatten().is_none() {
+            let _ = std::process::Command::new("kill")
+                .args(["-KILL", "--", &format!("-{}", self.0.id())])
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .status();
+            let _ = self.0.kill();
+            let _ = self.0.wait();
+        }
+    }
+}
+
+async fn c17_output(mut command: std::process::Command) -> TestResult<std::process::Output> {
+    use std::io::Read;
+    use std::os::unix::process::CommandExt;
+    command
+        .process_group(0)
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+    let mut child = ProvisionChild(command.spawn()?);
+    let read = |mut stream: Box<dyn Read + Send>| {
+        std::thread::spawn(move || -> std::io::Result<Vec<u8>> {
+            let mut tail = Vec::new();
+            let mut chunk = [0_u8; 4096];
+            loop {
+                let count = stream.read(&mut chunk)?;
+                if count == 0 {
+                    return Ok(tail);
+                }
+                tail.extend_from_slice(&chunk[..count]);
+                if tail.len() > 65536 {
+                    tail.drain(..tail.len() - 65536);
+                }
+            }
+        })
+    };
+    let stdout = read(Box::new(
+        child.0.stdout.take().ok_or("provision stdout missing")?,
+    ));
+    let stderr = read(Box::new(
+        child.0.stderr.take().ok_or("provision stderr missing")?,
+    ));
+    let status = loop {
+        if let Some(status) = child.0.try_wait()? {
+            break status;
+        }
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    };
+    Ok(std::process::Output {
+        status,
+        stdout: stdout
+            .join()
+            .map_err(|_| "provision stdout reader panicked")??,
+        stderr: stderr
+            .join()
+            .map_err(|_| "provision stderr reader panicked")??,
+    })
+}
+
+async fn c17_lifecycle<T>(
+    limit: Duration,
+    work: impl std::future::Future<Output = TestResult<T>>,
+) -> TestResult<T> {
+    tokio::time::timeout(limit, work).await.map_err(|_| {
+        verdict::HarnessError::boxed(
+            verdict::Cause::Deadline {
+                phase: "c17-lifecycle",
+            },
+            "C17 lifecycle deadline; setup/journey/cleanup incomplete",
+        )
+    })?
+}
+
+pub(super) fn c17_success_status() -> &'static str {
+    "PASS"
+}
+
+fn c17_subprocess_failure(stage: &str, output: &std::process::Output) -> String {
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let mut tail: Vec<_> = stderr
+        .lines()
+        .rev()
+        .take(20)
+        .filter(|line| {
+            let lower = line.to_ascii_lowercase();
+            ![
+                "password",
+                "postgres://",
+                "mysql://",
+                "secret",
+                "token",
+                "key=",
+            ]
+            .iter()
+            .any(|pattern| lower.contains(pattern))
+        })
+        .collect();
+    tail.reverse();
+    let tail = if tail.is_empty() {
+        "<empty or filtered>".into()
+    } else {
+        tail.join(" | ")
+    };
+    format!(
+        "C17 {stage} failed; status={}; stderr_tail={tail}",
+        output.status
+    )
+}
+
+pub(super) async fn provision_c17(
+    clients: &SeamClients<'_>,
+    profile: &'static str,
+    tag: u8,
+) -> TestResult<DevClientSession> {
+    let mut client = connect_world(clients, tag).await?;
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
+    let node_log = std::env::var("NODE_BOOT_NODE_LOG").ok();
+    let script = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tools/qualification/node_boot/provision.py");
+    let output = c17_output({
+        let mut command = std::process::Command::new("sudo");
+        command
+            .args(["-n", "python3"])
+            .arg(script)
+            .arg("--watch-parent-stdin");
+        if let Some(path) = node_log {
+            command.args(["--node-log", &path]);
+        }
+        command.args([
+            "--socket",
+            &socket,
+            "--session",
+            &session,
+            "--profile",
+            profile,
+        ]);
+        command
+    })
+    .await?;
+    if !output.status.success() {
+        return Err(c17_subprocess_failure("one-shot spell fixture", &output).into());
+    }
+    logout(&mut client).await?;
+    drop(client);
+    let mut client = connect_world(clients, tag).await?;
+    let words = match profile {
+        "c17a" => "utani gran hur",
+        "c17d" => "exeta res",
+        "c04" => "exevo vis lux",
+        _ => "utevo res ina",
+    };
+    let spell = native_spell_book()?
+        .spoken(words)
+        .ok_or("C17 fixture spell absent")?
+        .spell;
+    let crate::spell::ManaCost::Fixed(cost) = spell.mana else {
+        return Err("C17 fixture requires fixed mana".into());
+    };
+    if level(&mut client).await? != spell.level
+        || client
+            .actor_vitals()
+            .is_none_or(|vitals| vitals.mana < cost)
+    {
+        return Err("C17 fresh admission lacks source spell level/mana".into());
+    }
+    Ok(client)
+}
 
 const ILLUSION_ACTIONS: &[&str] = &[
     "cast-rat",
@@ -70,44 +326,57 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
     ] {
         let mut row = Row::new(id, actions);
         let watch = row.0.watch();
-        let result: TestResult = async {
-            let _row = watch.enter();
-            let mut client = connect_world(clients, tag).await?;
-            let mut completed = false;
-            let deadline =
-                format!("{id} native journey exceeded {limit}s; remaining actions unproven");
-            let result = watch
-                .bound(Duration::from_secs(limit), deadline, async {
-                    let result = if id == "C17a" {
-                        haste(&mut row, &mut client, clients, world).await
-                    } else {
-                        illusion(&mut row, &mut client, clients).await
-                    };
-                    completed = true;
-                    result
+        let result: TestResult = c17_lifecycle(
+            C17_SETUP_LIMIT + Duration::from_secs(limit) + C17_CLEANUP_LIMIT,
+            async {
+                let _row = watch.enter();
+                let profile = if id == "C17a" { "c17a" } else { "c17c" };
+                let (characters, mut client) = spell_fixture(clients, profile, tag).await?;
+                let row_clients = SeamClients {
+                    characters: &characters,
+                    ..*clients
+                };
+                let clients = &row_clients;
+                let mut completed = false;
+                let deadline =
+                    format!("{id} native journey exceeded {limit}s; remaining actions unproven");
+                let result = watch
+                    .bound(Duration::from_secs(limit), deadline, async {
+                        let result = if id == "C17a" {
+                            haste(&mut row, &mut client, clients, world).await
+                        } else {
+                            illusion(&mut row, &mut client, clients).await
+                        };
+                        completed = true;
+                        result
+                    })
+                    .await;
+                if !completed {
+                    return result;
+                }
+                // Only a completed exchange can be followed by cleanup. A timeout
+                // returns above and drops this connection with its uncertain reply/frame.
+                // Restore the entry tile even after a failed movement/cast assertion.
+                let cleanup: TestResult = c17_lifecycle(C17_CLEANUP_LIMIT, async {
+                    let from = tile(client.world_spatial().actor_position)?;
+                    if from != TOWN {
+                        let back = reach_route(&mut client, world, from, |at| at == TOWN)
+                            .await?
+                            .map_err(|searched| {
+                                format!("E2EF5 return route unavailable after {searched} tiles")
+                            })?;
+                        walk(&mut client, world, &back).await?;
+                    }
+                    logout(&mut client).await
                 })
                 .await;
-            if !completed {
-                return result;
-            }
-            // Only a completed exchange can be followed by cleanup. A timeout
-            // returns above and drops this connection with its uncertain reply/frame.
-            // Restore the entry tile even after a failed movement/cast assertion.
-            let cleanup: TestResult = async {
-                let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
-                    at == TOWN
-                })
-                .ok_or("E2EF5 return route unavailable")?;
-                walk(&mut client, world, &back).await?;
-                logout(&mut client).await
-            }
-            .await;
-            if let Err(error) = &cleanup {
-                evidence(&format!("E2EF5_GAP {id} cleanup: {error}"));
-            }
-            result?;
-            cleanup
-        }
+                if let Err(error) = &cleanup {
+                    evidence(&format!("E2EF5_GAP {id} cleanup: {error}"));
+                }
+                result?;
+                cleanup
+            },
+        )
         .await;
         row.finish(result);
     }
@@ -171,7 +440,7 @@ async fn say(
         })
         .await?)
 }
-async fn logout(client: &mut DevClientSession) -> TestResult {
+pub(super) async fn logout(client: &mut DevClientSession) -> TestResult {
     let (result, logout, attempts, busy_timed_out) = super::logout_retrying_busy(client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!(
@@ -720,7 +989,7 @@ async fn haste(
         return Err(format!("C17a player level frame={player_level}, Haste requires level {}, Strong Haste requires level {}; this packet has no legitimate advancement/vocation journey; source:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/spells.rs:225", haste.level, strong.level).into());
     }
     let haste_duration = duration(haste)?;
-    let strong_duration = duration(strong)?;
+
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         world
             .base()
@@ -786,6 +1055,7 @@ async fn haste(
     if !same_cadence(cadence(client, &cells).await?, hasted) {
         return Err("C17a recast did not reapply haste".into());
     }
+    let strong_duration = duration(strong)?;
     let cooldown = haste
         .groups
         .iter()
@@ -830,6 +1100,90 @@ async fn haste(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn review_c17_success_is_never_a_missing_server_route() {
+        assert_eq!(c17_success_status(), "PASS");
+    }
+    #[test]
+    fn review_c17_setup_and_cleanup_have_a_deadline() -> TestResult {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()?;
+        runtime.block_on(async {
+            tokio::time::pause();
+            let result = c17_lifecycle(Duration::from_secs(1), async {
+                tokio::time::sleep(Duration::from_secs(2)).await;
+                Ok(())
+            })
+            .await;
+            assert!(
+                result.is_err(),
+                "lifecycle setup/cleanup escaped the row deadline"
+            );
+        });
+        Ok(())
+    }
+    #[test]
+    fn review_c17_cancelled_child_cannot_continue_provisioning() -> TestResult {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()?;
+        let marker = std::env::temp_dir().join(format!("c17-cancel-{}", std::process::id()));
+        let _ = std::fs::remove_file(&marker);
+        runtime.block_on(async {
+            let mut command = std::process::Command::new("python3");
+            command.args(["-c", "import pathlib,sys,time; time.sleep(0.3); pathlib.Path(sys.argv[1]).write_text('committed')"]).arg(&marker);
+            let result = tokio::time::timeout(Duration::from_millis(100), c17_output(command)).await;
+            assert!(result.is_err());
+            tokio::time::sleep(Duration::from_millis(350)).await;
+            let continued = marker.exists();
+            let _ = std::fs::remove_file(&marker);
+            assert!(!continued, "cancelled provisioning child continued committing work");
+        });
+        Ok(())
+    }
+    #[test]
+    fn c17_subprocess_failure_keeps_status_and_sanitized_tail() -> TestResult {
+        let output = std::process::Command::new("python3").args(["-c",
+            r"import sys; sys.stderr.write('name rejected\nPASSWORD=hidden\npostgres://hidden\nSeCrEt=hidden\nTOKEN=hidden\nkey=hidden\nnode answer=rejected\n'); sys.exit(7)",
+        ]).output()?;
+        assert_eq!(output.status.code(), Some(7));
+        let message = c17_subprocess_failure("fresh Platform character bootstrap", &output);
+        assert!(message.contains(&output.status.to_string()));
+        assert!(message.contains("name rejected"));
+        assert!(message.contains("node answer=rejected"));
+        assert!(!message.contains("hidden"));
+        let output = std::process::Output {
+            stderr: (0..30)
+                .map(|n| format!("line-{n:02}\n"))
+                .collect::<String>()
+                .into_bytes(),
+            ..output
+        };
+        let message = c17_subprocess_failure("fixture", &output);
+        assert!(!message.contains("line-09"));
+        assert!(message.contains("line-10"));
+        assert!(message.contains("line-29"));
+        Ok(())
+    }
+
+    #[test]
+    fn c17_subprocess_generated_names_match_game_policy() -> TestResult {
+        let script = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../tools/qualification/node_boot/provision.py");
+        let output = std::process::Command::new("python3").args(["-c",
+            "import importlib.util,sys,uuid; s=importlib.util.spec_from_file_location('provision',sys.argv[1]); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); [print(m.fresh_character_name(uuid.UUID(int=n))) for n in (0,(1<<128)-1,0x01934f107c047001805b3b1122334401)]",
+        ]).arg(script).output()?;
+        assert!(output.status.success());
+        let names = std::str::from_utf8(&output.stdout)?;
+        assert_eq!(names.lines().count(), 3);
+        for name in names.lines() {
+            assert_eq!(name.len(), 26);
+            assert!(crate::domain::character_name::CharacterName::parse(name).is_ok());
+        }
+        Ok(())
+    }
+
     #[test]
     fn verdict_requires_every_distinct_action_and_nonzero_frame() {
         let mut row = Row::new("C17c", &["cast", "expiry"]);

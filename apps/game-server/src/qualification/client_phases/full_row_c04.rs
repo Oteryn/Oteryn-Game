@@ -137,17 +137,49 @@ async fn wait_ready(
     client: &mut DevClientSession,
     spell: std::num::NonZeroU32,
 ) -> TestResult<oteryn_dev_client::CastOutcome> {
+    Ok(wait_ready_observed(client, spell).await?.1)
+}
+
+async fn wait_ready_observed(
+    client: &mut DevClientSession,
+    spell: std::num::NonZeroU32,
+) -> TestResult<(u32, oteryn_dev_client::CastOutcome)> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
     loop {
+        let before = mana(client)?;
         let outcome = cast(client, spell).await?;
         if outcome.disposition != SpellCastDisposition::CoolingDown {
-            return Ok(outcome);
+            return Ok((before, outcome));
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!("CAST cooldown did not expire reply={outcome:?}").into());
         }
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
+    }
+}
+
+fn same_spell_debit(
+    inside: std::num::NonZeroU32,
+    outside: std::num::NonZeroU32,
+    before: u32,
+    after: u32,
+    cost: u32,
+) -> bool {
+    inside == outside && before.checked_sub(cost) == Some(after)
+}
+
+#[cfg(test)]
+mod review_tests {
+    use super::*;
+    #[test]
+    fn review_outside_cast_must_prove_the_same_spell_and_exact_cost() -> TestResult {
+        let a = std::num::NonZeroU32::new(1).ok_or("spell index one")?;
+        let b = std::num::NonZeroU32::new(2).ok_or("spell index two")?;
+        assert!(!same_spell_debit(a, b, 100, 80, 20));
+        assert!(!same_spell_debit(a, a, 100, 99, 20));
+        assert!(same_spell_debit(a, a, 100, 80, 20));
+        Ok(())
     }
 }
 
@@ -188,12 +220,18 @@ async fn journey(
     })
     .ok_or("no player STEP route out of protection zone")?;
     walk(&mut client, world, &path).await?;
-    let before = mana(&client)?;
-    let outside = wait_ready(&mut client, ordinary).await?;
+    let (before, outside) = wait_ready_observed(&mut client, aggressive).await?;
+    let crate::spell::ManaCost::Fixed(cost) = book
+        .indexed(aggressive)
+        .ok_or("aggressive spell missing")?
+        .mana
+    else {
+        return Err("aggressive spell has no fixed mana cost".into());
+    };
     if outside.status != CommandStatus::Accepted
         || outside.disposition != SpellCastDisposition::Cast
         || outside.actor_vitals_delta.is_none()
-        || mana(&client)? >= before
+        || !same_spell_debit(aggressive, aggressive, before, mana(&client)?, cost)
     {
         return Err(format!(
             "outside CAST expected cast/vitals debit reply={outside:?} mana={before}->{}",
@@ -203,6 +241,21 @@ async fn journey(
     }
     row.pass(2, &outside);
 
+    // Start the original healing cooldown experiment independently. The PZ
+    // control above now proves the aggressive spell on both sides of the boundary.
+    let (heal_before, healing) = wait_ready_observed(&mut client, ordinary).await?;
+    let crate::spell::ManaCost::Fixed(heal_cost) =
+        book.indexed(ordinary).ok_or("ordinary spell missing")?.mana
+    else {
+        return Err("ordinary spell has no fixed cost".into());
+    };
+    if healing.status != CommandStatus::Accepted
+        || healing.disposition != SpellCastDisposition::Cast
+        || healing.actor_vitals_delta.is_none()
+        || !same_spell_debit(ordinary, ordinary, heal_before, mana(&client)?, heal_cost)
+    {
+        return Err("healing cooldown prerequisite did not cast with its exact cost".into());
+    }
     let paid = mana(&client)?;
     let retry = cast(&mut client, ordinary).await?;
     if retry.disposition != SpellCastDisposition::CoolingDown

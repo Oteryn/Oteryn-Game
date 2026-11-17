@@ -257,13 +257,8 @@ async fn buy(
 }
 
 async fn equip(client: &mut DevClientSession, key: NonZeroU32, slot: EquipmentSlot) -> TestResult {
-    let reply = client
-        .move_item(&items::ItemMoveIntent {
-            source: carried(client, key)?,
-            destination: items::ItemMoveDestination::Equipment(slot),
-        })
-        .await?;
-    if reply.outcome != items::ItemMoveOutcome::Moved
+    let reply = full_gold::equip_handle(client, carried(client, key)?, slot).await?;
+    if reply != items::ItemMoveOutcome::Moved
         || client.inventory().is_none_or(|v| {
             !v.equipment
                 .iter()
