@@ -41,18 +41,18 @@ pub(super) fn current<S: SessionStream>(
         return position == selection.position
             && map.is_some_and(|map| map.tiles.iter().any(|tile| tile.position == position));
     }
+    let spatial_position = if raw_wire {
+        super::wire_floor(selection.position)
+    } else {
+        selection.position
+    };
     if let Target::Creature(reference) = command.target {
         return session.world_entities().is_some_and(|entities| {
             entities.iter().any(|entity| {
                 (entity.entity.identity != *entities.own_identity()
                     || matches!(command.action, super::Action::UseOn(_)))
                     && entity.entity == reference
-                    && entity.position
-                        == if raw_wire {
-                            super::wire_floor(selection.position)
-                        } else {
-                            selection.position
-                        }
+                    && entity.position == spatial_position
                     && matches!(
                         entity.detail,
                         EntityDetail::Actor {
@@ -92,7 +92,7 @@ pub(super) fn current<S: SessionStream>(
         }
     }
     session.world_entities().is_some_and(|entities| entities.iter().any(|entity| {
-        entity.position == selection.position && matches!((&command.target, entity.detail), (Target::Item(handle), EntityDetail::Object { item_handle: Some(current), .. } | EntityDetail::ObjectWithAppearance { item_handle: Some(current), .. }) if *handle == current)
+        entity.position == spatial_position && matches!((&command.target, entity.detail), (Target::Item(handle), EntityDetail::Object { item_handle: Some(current), .. } | EntityDetail::ObjectWithAppearance { item_handle: Some(current), .. }) if *handle == current)
     }))
 }
 fn placement(

@@ -88,8 +88,8 @@ pub async fn send<S: SessionStream>(
 }
 
 /// `command` is selected on the native map. With `raw_wire` the session's domain-1 frame
-/// negates floors: creature positions are compared there and a position target is encoded
-/// there, while map tiles and items stay native.
+/// negates floors: spatial entities are compared there and a position target is encoded
+/// there, while map tiles stay native.
 pub async fn send_framed<S: SessionStream>(
     session: &mut Session<S>,
     command: &Command,

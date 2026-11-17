@@ -219,3 +219,29 @@ fn input_preserves_wire_sources_elements_rates_and_reset() -> Result<(), &'stati
     assert!(panel_text(&panel).contains("No damage received yet"));
     Ok(())
 }
+
+#[test]
+fn xp_chart_keeps_partial_reset_minute() {
+    let mut panel = Panel {
+        selected: true,
+        ..Default::default()
+    };
+    panel.reset_at.fill(58);
+    apply_at(
+        &mut panel,
+        &[AnalyserFact::Experience {
+            raw: 11,
+            gained: 15,
+        }],
+        59,
+    );
+    let text = super::view::xp_text(&panel, 60);
+    for peak in [15, 11] {
+        assert!(
+            text.contains(&format!(
+                "█▁\r\nPer minute · oldest → newest · peak {peak} "
+            )),
+            "{text}"
+        );
+    }
+}

@@ -54,8 +54,9 @@ fn report_elapsed(panel: &Panel, seconds: u64, tool: super::Tool) -> u64 {
         .unwrap_or(0);
     seconds.saturating_sub(panel.reset_at[index])
 }
-fn interval_chart(values: &[u64], elapsed: u64) -> String {
-    let count = usize::try_from(elapsed / 60 + 1)
+fn interval_chart(values: &[u64], seconds: u64, elapsed: u64) -> String {
+    let start_minute = seconds.saturating_sub(elapsed) / 60;
+    let count = usize::try_from(seconds / 60 - start_minute + 1)
         .unwrap_or(usize::MAX)
         .min(values.len());
     super::state::chart_values(&values[values.len() - count..])
@@ -102,8 +103,8 @@ pub(super) fn xp_text(panel: &Panel, seconds: u64) -> String {
         panel.gained_xp,
         per_hour(panel.gained_xp, elapsed),
         per_hour(panel.raw_xp, elapsed),
-        interval_chart(&panel.xp_chart.values(seconds), elapsed),
-        interval_chart(&panel.raw_xp_chart.values(seconds), elapsed),
+        interval_chart(&panel.xp_chart.values(seconds), seconds, elapsed),
+        interval_chart(&panel.raw_xp_chart.values(seconds), seconds, elapsed),
         panel.feedback.unwrap_or(""),
         eta = eta,
         goal = goal,
@@ -138,7 +139,7 @@ fn loot_text_at(panel: &Panel, seconds: u64, elapsed: u64) -> String {
         panel.loot_value(),
         per_hour(panel.loot_value(), elapsed),
         panel.omitted_items,
-        interval_chart(&panel.loot_values(seconds), elapsed),
+        interval_chart(&panel.loot_values(seconds), seconds, elapsed),
         unpriced = unpriced
     );
     for (item, row) in &panel.loot {
@@ -201,7 +202,7 @@ fn supply_text_at(panel: &Panel, seconds: u64, elapsed: u64) -> String {
         panel.supply_cost(),
         per_hour(panel.supply_cost(), elapsed),
         panel.omitted_supplies,
-        interval_chart(&panel.supply_values(seconds), elapsed),
+        interval_chart(&panel.supply_values(seconds), seconds, elapsed),
         unpriced = unpriced
     );
     for (item, row) in &panel.supply {
@@ -289,7 +290,7 @@ pub(super) fn outgoing_text(panel: &Panel, seconds: u64, tool: super::Tool) -> S
         "\r\nElapsed: {elapsed} seconds\r\n{label}: {}\r\n{} per minute\r\n{}",
         panel.recent[usize::from(tool == super::Tool::Healing)].rate(seconds, 10),
         tool.title(),
-        interval_chart(&chart.values(seconds), elapsed)
+        interval_chart(&chart.values(seconds), seconds, elapsed)
     );
     text.push_str(&format!(
         "\r\nSession average {label}: {}",
@@ -322,8 +323,8 @@ pub(super) fn impact_text(panel: &Panel, seconds: u64) -> String {
         gauge(panel.damage, total),
         panel.healing,
         gauge(panel.healing, total),
-        interval_chart(&panel.damage_chart.values(seconds), elapsed),
-        interval_chart(&panel.healing_chart.values(seconds), elapsed),
+        interval_chart(&panel.damage_chart.values(seconds), seconds, elapsed),
+        interval_chart(&panel.healing_chart.values(seconds), seconds, elapsed),
         seconds = elapsed
     );
     text.push_str(&format!(
@@ -353,7 +354,7 @@ pub(super) fn input_text(panel: &Panel, seconds: u64) -> String {
         "Input Analyser\r\nElapsed: {seconds} seconds\r\nDamage received: {}\r\nIncoming DPS: {}\r\n{}",
         panel.received,
         panel.recent[2].rate(seconds, 3),
-        interval_chart(&panel.received_chart.values(seconds), elapsed),
+        interval_chart(&panel.received_chart.values(seconds), seconds, elapsed),
         seconds = elapsed
     );
     text.push_str(&format!(

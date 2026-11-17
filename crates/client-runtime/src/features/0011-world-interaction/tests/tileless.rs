@@ -56,7 +56,7 @@ async fn exchange_carried() -> Result<(), BoxError> {
     let (client, mut server) = tokio::io::duplex(16 * 1024);
     let peer = tokio::spawn(async move {
         admit_peer_with_carried(&mut server, Some(carried)).await?;
-        for index in 0..12 {
+        for index in 0..13 {
             let frame = read_frame(&mut server).await?;
             assert!(!frame.is_empty());
             let payload = if index % 3 == 0 {
@@ -125,6 +125,23 @@ async fn exchange_carried() -> Result<(), BoxError> {
                 "Target changed"
             );
         }
+        let ground = Command {
+            target: Target::Item(item(5)?.handle),
+            action: Action::Look,
+            selection: Some(Selection {
+                position: ActorPosition { floor: -7, ..SPOT },
+                binding: None,
+            }),
+        };
+        assert_eq!(
+            send_framed(&mut session, &ground, false).await?,
+            "Target changed"
+        );
+        assert!(
+            send_framed(&mut session, &ground, true)
+                .await?
+                .contains("backpack")
+        );
         Ok::<_, BoxError>(())
     }
     .await;
