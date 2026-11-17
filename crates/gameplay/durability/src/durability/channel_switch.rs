@@ -40,6 +40,7 @@ pub fn preflight_status(
 ) -> Option<SwitchStatus> {
     let cooldown_left_ms = u32::try_from(cooldown_left_ms).ok()?.min(COOLDOWN_MS);
     let lock = match lock_reason {
+        Some("TRANSITION") => SwitchLock::Transition,
         Some("COMBAT") => SwitchLock::Combat,
         Some("SKULL") if has_target => SwitchLock::Skull,
         Some("SKULL") | None => SwitchLock::None,

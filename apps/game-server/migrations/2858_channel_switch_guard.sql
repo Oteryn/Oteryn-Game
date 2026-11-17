@@ -34,6 +34,13 @@ CREATE TABLE game_channel_switch_guards (
 REVOKE ALL ON game_channel_switch_guards FROM PUBLIC;
 GRANT SELECT ON game_channel_switch_guards TO oteryn_game_runtime, oteryn_game_control;
 
+-- Fresh receipts retain the increasing character lease generation across admissions.
+LOCK TABLE game_durability_fresh_admission_receipts IN SHARE ROW EXCLUSIVE MODE;
+INSERT INTO game_channel_switch_guards (character_id, world_id, last_channel_id, last_game_session_id)
+SELECT DISTINCT ON (character_id, world_id) character_id, world_id, channel_id, game_session_id
+FROM game_durability_fresh_admission_receipts
+ORDER BY character_id, world_id, character_lease_generation DESC, authorization_decided_at DESC, game_session_id DESC;
+
 -- Five minutes between voluntary switches (owner decision 2026-11-17, §10).
 CREATE FUNCTION game_channel_switch_cooldown_ms() RETURNS BIGINT LANGUAGE sql IMMUTABLE AS $$
     SELECT 300000::BIGINT
@@ -49,8 +56,12 @@ $$;
 CREATE FUNCTION game_channel_switch_lock(p_character UUID, p_world UUID, p_channel UUID)
 RETURNS TEXT LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, public AS $$
     SELECT CASE
+        WHEN EXISTS (SELECT 1 FROM game_character_last_positions p
+                     WHERE p.character_id = p_character AND p.world_id = p_world
+                       AND p.house_key IS NOT NULL AND p.origin_channel_id <> p_channel)
+            THEN 'TRANSITION'
         WHEN EXISTS (SELECT 1 FROM game_character_pvp_state s WHERE s.character_id = p_character
-                     AND s.logout_block_until > clock_timestamp()) THEN 'COMBAT'
+                     AND GREATEST(s.logout_block_until, s.kill_block_until, s.pz_block_until) > clock_timestamp()) THEN 'COMBAT'
         WHEN EXISTS (SELECT 1 FROM game_character_pvp_state s WHERE s.character_id = p_character
                      AND s.skull IN (1, 2) AND s.skull_until > clock_timestamp())
              AND COALESCE((SELECT t.pvp_type FROM game_channel_pvp_types t

@@ -144,6 +144,26 @@ fn channel_switch_guard_classifies_admissions_and_enforces_the_cooldown() -> Tes
                     // The same Channel again (a relog or reconnect) is not a switch.
                     admit(pool, 2, CHANNEL_A).await?;
                     assert_eq!(guard(pool).await?, Some((channel_text(CHANNEL_A), 0, false)));
+                    // Upgrade from a database with receipts and no switch guard.
+                    let mut upgrade = pool.begin().await?;
+                    sqlx::raw_sql("DROP TRIGGER game_channel_switch_admit ON game_durability_fresh_admission_receipts;
+                        DROP FUNCTION game_channel_switch_admit(), game_channel_switch_status(uuid,uuid), game_channel_switch_lock(uuid,uuid,uuid), game_channel_switch_cooldown_ms(), game_channel_switch_now_ms();
+                        DROP TABLE game_channel_switch_guards, game_channel_pvp_types;")
+                        .execute(&mut *upgrade).await?;
+                    sqlx::raw_sql(include_str!("../../../migrations/2858_channel_switch_guard.sql"))
+                        .execute(&mut *upgrade).await?;
+                    admit(&mut *upgrade, 13, CHANNEL_B).await?;
+                    let switches: i64 = sqlx::query_scalar("SELECT switch_count FROM game_channel_switch_guards WHERE character_id=$1::uuid")
+                        .bind(hex(id(CHARACTER))).fetch_one(&mut *upgrade).await?;
+                    assert_eq!(switches, 1, "first post-upgrade switch");
+                    upgrade.rollback().await?;
+                    // A saved House can only be restored on its origin Channel.
+                    let mut house = pool.begin().await?;
+                    sqlx::query("INSERT INTO game_character_last_positions(character_id,world_id,tile_x,tile_y,tile_floor,coordinate_frame_digest,map_revision_digest,server_artifact_digest,character_lease_generation,write_sequence,house_key,origin_channel_id,origin_tile_x,origin_tile_y,origin_tile_floor) VALUES($1::uuid,$2::uuid,10,10,7,decode(repeat('00',32),'hex'),decode(repeat('00',32),'hex'),decode(repeat('00',32),'hex'),1,1,'oteryn:content.house.home',$3::uuid,10,10,7)")
+                        .bind(hex(id(CHARACTER))).bind(hex(id(WORLD))).bind(hex(id(CHANNEL_A)))
+                        .execute(&mut *house).await?;
+                    assert_eq!(code(admit(&mut *house, 14, CHANNEL_B).await).as_deref(), Some("OTH02"));
+                    house.rollback().await?;
                     // A failed destination (the admission rolls back) leaves the guard unchanged.
                     let mut tx = pool.begin().await?;
                     admit(&mut *tx, 3, CHANNEL_B).await?;
@@ -196,6 +216,15 @@ fn channel_switch_guard_classifies_admissions_and_enforces_the_cooldown() -> Tes
                     assert_eq!(code(admit(pool, 9, CHANNEL_B).await).as_deref(), Some("OTH02"));
                     assert_eq!(preflight(pool, None).await?, (0, Some("COMBAT".into()), true));
                     assert_eq!(guard(pool).await?, Some((channel_text(CHANNEL_A), 2, false)));
+                    for deadline in ["kill_block_until", "pz_block_until"] {
+                        let mut tx = pool.begin().await?;
+                        sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+                        sqlx::query(sqlx::AssertSqlSafe(format!("UPDATE game_character_pvp_state SET logout_block_until=now()-interval '1 second', {deadline}=now()+interval '15 minutes' WHERE character_id=$1::uuid")))
+                            .bind(hex(id(CHARACTER))).execute(&mut *tx).await?;
+                        sqlx::query("SET LOCAL session_replication_role = origin").execute(&mut *tx).await?;
+                        assert_eq!(code(admit(&mut *tx, 12, CHANNEL_B).await).as_deref(), Some("OTH02"), "{deadline}");
+                        tx.rollback().await?;
+                    }
                     // Migration 2859: a held Party membership survives a refused admission and
                     // is taken back by the committed admission into the target Channel.
                     let mut party = pool.begin().await?;
