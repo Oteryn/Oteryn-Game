@@ -74,3 +74,15 @@ Passed locally on the batch-2 tree: `run_checks.py --part checks` and `--part un
 `oteryn-gameplay-dispatch --all-features --tests`, and `test_qh_missing_tile_cell`. The dispatch
 test binary was killed for memory twice (SIGKILL) in the cloud container, so the
 `qh_` PostgreSQL cases run on the PC (packet in the READY message).
+
+## P2 backlog (rvqh)
+
+Recorded from the Codex rvqh review; fixed later in one grouped PR, not in this batch.
+
+- The qh PG cases install substitute NPC placements and call the talk handler directly instead of
+  walking to the registered placements.
+- The PG wrapper tests the route with `var_os`, so the completion marker cannot report a skipped
+  run.
+- The Small Sapphire replay check compares only row counts, not the minted rows themselves.
+- `tools/content-schema/npc-authoring/chosen_placement_adjustments.py:58` accepts a tie for the
+  nearest ground tile.

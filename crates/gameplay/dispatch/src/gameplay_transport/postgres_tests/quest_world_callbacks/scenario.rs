@@ -1528,6 +1528,9 @@ fn scenario_case(
                 5
             } else if matches!(name, "authored-anniversary" | "authored-venore") {
                 12
+            } else if super::super::qh_authored_cases::is_case(name) {
+                // One player plus Iriana and Jimmy for Top of the City.
+                3
             } else if name == "authored-torch" {
                 3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
