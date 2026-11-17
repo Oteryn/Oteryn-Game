@@ -10,8 +10,7 @@
 //! (`sudo -n python3`, as `provision.rs` runs the fixture), answered by the node's uid-0 `spawn`
 //! control route (`qualification_wild_spawn.rs`, feature `qualification-spawn`).
 //!
-//! One shared session serves the whole sweep: it is re-admitted and re-provisioned only when its
-//! health is low or the session became unusable. A creature that cannot be killed within the bound
+//! One shared session serves the whole sweep and restores low health using the classed build. A creature that cannot be killed within the bound
 //! gets `kill FAIL cause=deadline`; the sweep releases the target and moves on.
 //!
 //! Rows per species: `CS.<key>.spawn|kill|xp|corpse|loot|full`. `spawn` carries the node answer, or
@@ -39,7 +38,7 @@ const BATCH_VARIABLE: &str = "OTERYN_E2E_CREATURE_BATCH";
 const BATCH_DEFAULT: (usize, usize) = (0, 3);
 const STEPS: [&str; 5] = ["spawn", "kill", "xp", "corpse", "loot"];
 const SWEEP_LEVEL: u32 = 100;
-const CORE_CHARACTER: usize = 0;
+const SWEEP_CHARACTER: usize = 0;
 /// A full stamina bar in minutes (`composed_admission/vitals.rs:191`); no hunting time passes first.
 const FULL_STAMINA_MINUTES: i32 = 2520;
 const VISIBLE_SECONDS: u64 = 30;
@@ -494,30 +493,61 @@ async fn sweep_species(
     rows.finish(started, tally, evidence)
 }
 
-/// The shared session is admitted once; it is re-provisioned only when health is low and dropped
-/// when the wire failed, so the next species starts from a usable player.
+/// The sweep owns a dedicated classed Character and carries its progression between hunts.
 async fn ready(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     session: &mut Option<DevClientSession>,
 ) -> TestResult {
     if session.is_none() {
-        *session = Some(connect_character(clients, 0x80, CORE_CHARACTER).await?);
+        *session = Some(connect_character(clients, 0x80, SWEEP_CHARACTER).await?);
     }
     prepare_player(clients, session).await?;
-    let low = session
-        .as_ref()
-        .and_then(|client| client.actor_vitals())
-        .is_some_and(|vitals| vitals.health.saturating_mul(2) < vitals.max_health);
-    if low {
-        let mut client = session.take().ok_or("session absent")?;
-        release(&mut client).await?;
-        drop(client);
-        let fresh = connect_character(clients, 0x80, CORE_CHARACTER).await?;
-        *session = Some(provisioning::provision_fixture(fresh, clients, CORE_CHARACTER).await?);
-    }
     let client = session.as_mut().ok_or("session absent")?;
+    restore_fixture_health(client).await?;
     leave_protection_zone(client, world).await
+}
+
+async fn restore_fixture_health(client: &mut DevClientSession) -> TestResult {
+    use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
+    let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sorcerer".into());
+    let words = match profile.as_str() {
+        "knight" | "explorer" => "exura infir ico",
+        _ => "exura infir",
+    };
+    let mut spell_index = None;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
+    tokio::time::timeout_at(deadline, async {
+        loop {
+            let vitals = client
+                .actor_vitals()
+                .ok_or("sweep recovery vitals absent")?;
+            if vitals.health.saturating_mul(2) >= vitals.max_health {
+                return Ok(());
+            }
+            let index = match spell_index {
+                Some(index) => index,
+                None => {
+                    let index = client_spell_journey::spell_index(native_spell_book()?, words)?;
+                    spell_index = Some(index);
+                    index
+                }
+            };
+            let cast = client.cast_spell(index, SpellTarget::None, false).await?;
+            if !(cast.status == CommandStatus::Accepted
+                && cast.disposition == SpellCastDisposition::Cast)
+                && cast.disposition != SpellCastDisposition::CoolingDown
+            {
+                return Err(
+                    format!("classed sweep recovery spell {words} refused: {cast:?}").into(),
+                );
+            }
+            client.service_liveness(Duration::from_millis(250)).await?;
+            client.take_events();
+        }
+    })
+    .await
+    .map_err(|_| "classed sweep recovery did not reach half health")?
 }
 
 /// The spawn needs free non-PZ cells next to the player: walk once to open ground.
@@ -600,66 +630,6 @@ fn corpse_at(
 
 fn confirmed_kill(death_distance: u32, has_death_receipt: bool) -> bool {
     death_distance <= 2 && has_death_receipt
-}
-
-/// Match the durable Channel death key to the exact wire incarnation before deriving
-/// its corpse identity. Creature type and a neighbouring floor tile are insufficient.
-async fn committed_sweep_death(
-    client: &mut DevClientSession,
-    clients: &SeamClients<'_>,
-    key: &str,
-    target: oteryn_dev_client::EntityRef,
-    deadline: tokio::time::Instant,
-) -> TestResult<(crate::foundation::ExactActorRef, u16)> {
-    use crate::foundation::{
-        ActorLocalGeneration, ActorLocalId, ActorRef, ExactActorRef, ScopeOwnershipGeneration,
-    };
-    let world = WorldId::decode(&clients.world)?;
-    let channel = ChannelId::decode(&clients.channel)?;
-    let scope = ScopeOwnershipGeneration::new(clients.scope_generation)
-        .map_err(|error| format!("invalid sweep scope generation: {error:?}"))?;
-    let prefix = [
-        clients.world.as_slice(),
-        clients.channel.as_slice(),
-        &clients.scope_generation.to_be_bytes(),
-    ]
-    .concat();
-    tokio::time::timeout_at(deadline, async {
-        let mut database = sqlx::PgConnection::connect(clients.url).await?;
-        loop {
-            let actor_slots: Vec<(Vec<u8>, i32)> = sqlx::query_as(
-                "SELECT substring(r.death_key FROM 41 FOR 4), m.stamina_minutes
-                 FROM game_party_kill_xp_receipts r JOIN game_party_kill_xp_members m
-                 ON m.death_key=r.death_key AND m.character_id=r.principal_id
-                 WHERE r.principal_id=encode($1,'hex')::uuid AND r.creature_key=$2
-                 AND octet_length(r.death_key)=52 AND substring(r.death_key FROM 1 FOR 40)=$3
-                 AND substring(r.death_key FROM 45 FOR 8)=$4",
-            )
-            .bind(clients.characters[CORE_CHARACTER].as_slice())
-            .bind(key)
-            .bind(&prefix)
-            .bind(target.generation.to_be_bytes().as_slice())
-            .fetch_all(&mut database)
-            .await?;
-            for (slot, stamina) in actor_slots {
-                let slot = <[u8; 4]>::try_from(slot).map_err(|_| "invalid death actor slot")?;
-                let actor = ExactActorRef(ActorRef::from_owner_parts(
-                    world,
-                    channel,
-                    scope,
-                    ActorLocalId(u32::from_be_bytes(slot)),
-                    ActorLocalGeneration(target.generation),
-                ));
-                if actor.placement_identity() == target.identity {
-                    return TestResult::Ok((actor, u16::try_from(stamina)?));
-                }
-            }
-            client.service_liveness(Duration::from_millis(100)).await?;
-            client.take_events();
-        }
-    })
-    .await
-    .map_err(|_| "no committed death receipt for the spawned creature")?
 }
 
 async fn hunt(
@@ -845,9 +815,10 @@ async fn hunt(
             ),
         ));
     }
-    let receipt = committed_sweep_death(
+    let receipt = committed_hunt_death(
         client,
         clients,
+        Some(clients.characters[SWEEP_CHARACTER]),
         &species.key,
         target.entity,
         tokio::time::Instant::now() + Duration::from_secs(20),
@@ -864,7 +835,7 @@ async fn hunt(
             ),
         ));
     }
-    let (dead, death_stamina) =
+    let (dead, death_stamina, _) =
         receipt.map_err(|error| failure("kill", "unconfirmed_death", error))?;
     let corpse_identity = dead.corpse_identity();
     rows.pass(
@@ -1207,7 +1178,7 @@ async fn prepare_player(
         return Ok(());
     }
     let fresh = session.take().ok_or("session absent")?;
-    *session = Some(provisioning::provision_fixture(fresh, clients, CORE_CHARACTER).await?);
+    *session = Some(provisioning::provision_fixture(fresh, clients, SWEEP_CHARACTER).await?);
     Ok(())
 }
 
@@ -1286,6 +1257,19 @@ mod evidence_tests {
     use super::*;
     use oteryn_dev_client::{EntityRef, WorldSpatialEntity};
     use oteryn_protocol_oteryn::{entity_names::EntityDisplayName, world_spatial::ActorPosition};
+
+    #[test]
+    fn qualification_sweep_recovery_does_not_repeat_fresh_build() -> TestResult {
+        let (_, ready) = include_str!("creature_sweep.rs")
+            .split_once("async fn ready(")
+            .ok_or("missing sweep admission")?;
+        let (ready, _) = ready
+            .split_once("async fn leave_protection_zone(")
+            .ok_or("missing sweep route")?;
+        assert!(!ready.contains("provisioning::provision_fixture"));
+        assert!(ready.contains("restore_fixture_health("));
+        Ok(())
+    }
 
     #[test]
     fn review_loot_requires_output_when_the_seeded_roll_produces_items() -> TestResult {

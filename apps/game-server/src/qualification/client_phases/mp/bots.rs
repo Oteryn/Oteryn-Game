@@ -174,7 +174,7 @@ async fn connect_bot(bot: &mut Bot<'_, '_>, tag: u8, stage: &str) -> TestResult 
     Ok(())
 }
 
-async fn logout_at(bot: &mut Bot<'_, '_>, stage: &str) -> TestResult {
+pub(super) async fn logout_at(bot: &mut Bot<'_, '_>, stage: &str) -> TestResult {
     bot.progress(stage, "begin")?;
     let begin = bot
         .session

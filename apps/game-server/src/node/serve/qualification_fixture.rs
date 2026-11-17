@@ -150,6 +150,55 @@ pub(super) async fn spawn(
 }
 
 #[cfg(any(test, feature = "qualification-spawn"))]
+pub(super) async fn inspect_damage(
+    config: &NodeConfig,
+    owners: Option<SpawnOwners<'_>>,
+    request: &[u8],
+) -> Option<String> {
+    if !config.qualification_fixture {
+        return None;
+    }
+    let text = std::str::from_utf8(request).ok()?.strip_suffix('\n')?;
+    let mut fields = text.split(' ');
+    if fields.next()? != "inspect-damage" {
+        return None;
+    }
+    let session =
+        crate::foundation::GameSessionId::decode(&parse_operation_id(fields.next()?.as_bytes())?)
+            .ok()?;
+    let identity = super::super::operator_files::hex_bytes::<16>(fields.next()?).ok()?;
+    let generation = fields.next()?.parse::<std::num::NonZeroU64>().ok()?.get();
+    if fields.next().is_some() {
+        return None;
+    }
+    let mut runtime = owners?.runtime.lock().await;
+    runtime.positioned_player_for_session(session).ok()??;
+    let actor = runtime
+        .positioned_actor_census()
+        .ok()?
+        .into_iter()
+        .find(|(actor, _, session)| {
+            session.is_none()
+                && actor.actor_local_generation() == generation
+                && actor.placement_identity() == identity
+        })?
+        .0;
+    let total = runtime
+        .borrow_combat_death()
+        .current_session_damage_shares(actor)
+        .ok()?
+        .into_iter()
+        .find(|share| share.session == Some(session))
+        .map_or(0, |share| share.total);
+    let corpse = actor
+        .corpse_identity()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    Some(format!("damage {total} {corpse}"))
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
 #[allow(clippy::too_many_arguments)]
 async fn spawn_placed(
     root: &DurabilityRoot,
@@ -229,28 +278,18 @@ async fn place(
     )
     .await
     .map_err(|error| fence(format!("qualification spawn transaction: {error:?}")))?;
-    // The Channel owner stays held through the read-only fence and the realisation, as in the
-    // harness; the control deadline bounds it, and this path exists only in the fixture mode.
     let mut runtime = owners.runtime.lock().await;
-    let creature = wild_spawn::realize_creature_in_transaction(
-        &mut tx,
-        root,
-        authority,
-        proof,
-        owners.room,
-        native,
-        &mut runtime,
-        key,
-        session,
-        source,
-    )
-    .await?;
+    let plan =
+        wild_spawn::snapshot_adjacent_spawn(owners.room, native, &mut runtime, key, session)?;
     drop(runtime);
-    // The spawn is runtime state, not a SQL mutation; the transaction only held the fences.
+    let eligible = wild_spawn::read_spawn_tiles(&mut tx, root, authority, proof, &plan).await?;
     tx.commit()
         .await
         .map_err(|error| fence(format!("qualification spawn commit: {error:?}")))?;
-    Ok(creature)
+    drop(holder);
+    // The durable fence is committed. Recheck the exact runtime and session before publication.
+    let mut runtime = owners.runtime.lock().await;
+    wild_spawn::publish_spawn(&mut runtime, plan, source, key, &eligible)
 }
 
 /// This fixture emits only classified errors/static context, never request bytes or node proof.
@@ -343,27 +382,45 @@ async fn prepare_build(
         .ok_or("qualification progression unavailable")?;
     let policy = progression.policy_for(profile_revision, ruleset_revision, content_revision)?;
     let context = policy.context.clone();
+    let vocation = if profile == "explorer" {
+        "knight"
+    } else {
+        profile
+    };
     qualification_build::prepare_character_with_policy_until(
         root,
         authority,
         proof,
         &current,
         qualification_build::QualificationBuildSpec {
-            vocation: if profile == "explorer" {
-                "knight"
-            } else {
-                profile
-            },
+            vocation,
             level: 100,
             context,
-            xp_occurrence: uuid_v7()?,
-            build_occurrence: uuid_v7()?,
+            xp_occurrence: fixture_occurrence(character.as_bytes(), vocation, b"xp"),
+            build_occurrence: fixture_occurrence(character.as_bytes(), vocation, b"vocation"),
         },
         policy,
         deadline,
     )
     .await?;
     prepare_items(root, authority, proof, &current, native, deadline).await
+}
+
+// Stable, domain-separated occurrence IDs give retries an exact retained receipt.
+fn fixture_occurrence(character: &[u8; 16], vocation: &str, phase: &[u8]) -> [u8; 16] {
+    use sha2::{Digest, Sha256};
+    let digest = Sha256::new()
+        .chain_update(b"oteryn:node-boot-fixture:v1:")
+        .chain_update(character)
+        .chain_update(vocation.as_bytes())
+        .chain_update(b":")
+        .chain_update(phase)
+        .finalize();
+    let mut result = [0; 16];
+    result.copy_from_slice(&digest[..16]);
+    result[6] = (result[6] & 0x0f) | 0x70;
+    result[8] = (result[8] & 0x3f) | 0x80;
+    result
 }
 
 // Fixture claims use the ordinary fenced/audited reward owner, never SQL item
@@ -411,6 +468,7 @@ async fn prepare_items(
     .map_err(|error| format!("qualification inventory: {error:?}"))?;
     let bag = inventory
         .backpack
+        .as_ref()
         .ok_or("qualification requires the real starter backpack")?;
     let backpack = generation_item_facts(native, &bag.backpack.definition)
         .map_err(|error| format!("qualification backpack: {error:?}"))?;
@@ -429,6 +487,15 @@ async fn prepare_items(
                 .ok_or("qualification Item absent")?
                 .into(),
         };
+        if inventory
+            .equipment
+            .iter()
+            .chain(bag.entries.iter().map(|entry| &entry.item))
+            .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
+            .any(|existing| existing.definition == definition && existing.quantity == 1)
+        {
+            continue;
+        }
         let item = generation_item_facts(native, &definition)
             .map_err(|error| format!("qualification Item {key}: {error:?}"))?;
         let request = RewardClaimMintRequest {
@@ -508,6 +575,40 @@ fn fixture_item_committed(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn control_spawn_source() -> Result<&'static str, &'static str> {
+        include_str!("qualification_fixture.rs")
+            .split_once("async fn place(")
+            .and_then(|(_, body)| body.split_once("/// This fixture"))
+            .map(|(body, _)| body)
+            .ok_or("missing control spawn boundary")
+    }
+
+    #[test]
+    fn qualification_spawn_releases_runtime_before_durable_reads() -> Result<(), &'static str> {
+        let source = control_spawn_source()?;
+        let release = source
+            .find("drop(runtime)")
+            .ok_or("missing snapshot lock release")?;
+        let read = source
+            .find("read_spawn_tiles(")
+            .or_else(|| source.find("realize_creature_in_transaction("))
+            .ok_or("missing durable read")?;
+        assert!(release < read);
+        Ok(())
+    }
+
+    #[test]
+    fn qualification_spawn_commits_before_placement() -> Result<(), &'static str> {
+        let source = control_spawn_source()?;
+        let commit = source.find("tx.commit()").ok_or("missing fence commit")?;
+        let publish = source
+            .find("publish_spawn(")
+            .or_else(|| source.find("realize_creature_in_transaction("))
+            .ok_or("missing runtime placement")?;
+        assert!(commit < publish);
+        Ok(())
+    }
 
     #[test]
     fn review_accepts_fixture_item_receipt_replay() {

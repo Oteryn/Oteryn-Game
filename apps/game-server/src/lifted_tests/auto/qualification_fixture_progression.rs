@@ -25,6 +25,7 @@ mod binding;
 enum Case {
     Admitted,
     Advanced,
+    FixtureXpCommitted,
     Vocation,
     Skill,
     EarnedThenDied,
@@ -154,16 +155,16 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
     }
     let sequencer = CharacterRevisionSequencer::new();
     let mut slot = sequencer.acquire(initial.character_id).await;
-    if matches!(case, Case::Advanced | Case::EarnedThenDied) {
-        // Still level one: even one earned XP must make the Character ineligible.
+    if matches!(case, Case::Advanced | Case::EarnedThenDied | Case::FixtureXpCommitted) {
+        let checkpoint = matches!(case, Case::FixtureXpCommitted);
         slot.commit_experience(
             &h.root,
             &authority,
             &h.node,
             initial,
             ExperienceAwardRequest {
-                occurrence: ExperienceRewardOccurrence::from_bytes(id(81)).map_err(debug)?,
-                amount: ExactI64::new(1),
+                occurrence: ExperienceRewardOccurrence::from_bytes(id(if checkpoint { 83 } else { 81 })).map_err(debug)?,
+                amount: ExactI64::new(if checkpoint { 100 } else { 1 }),
                 context: context(),
                 policy_revision: "policy-1".into(),
                 reward_revision: "reward-1".into(),
@@ -277,7 +278,7 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
             .has_character_experience_or_death_receipts(&authority, initial.character_id)
             .await
             .map_err(debug)?,
-        matches!(case, Case::Advanced | Case::Died | Case::EarnedThenDied)
+        matches!(case, Case::Advanced | Case::Died | Case::EarnedThenDied | Case::FixtureXpCommitted)
     );
     let before_progression = h
         .root
@@ -300,7 +301,8 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
     if matches!(case, Case::MismatchedReward) {
         served.reward_revision = "other-reward".into();
     }
-    let result = prepare_character_with_policy(
+    let prepare = async || {
+        prepare_character_with_policy(
         &h.root,
         &authority,
         &h.node,
@@ -312,10 +314,16 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
             xp_occurrence: id(83),
             build_occurrence: id(84),
         },
-        served,
+        served.clone(),
     )
-    .await;
-    if matches!(case, Case::Admitted | Case::BootstrapOnly) {
+    .await
+    };
+    let result = prepare().await;
+    if matches!(case, Case::FixtureXpCommitted) && result.is_ok() {
+        // The build commit itself can also succeed before its caller loses the reply.
+        prepare().await?;
+    }
+    if matches!(case, Case::Admitted | Case::BootstrapOnly | Case::FixtureXpCommitted) {
         result?;
         let after = h
             .root
@@ -357,7 +365,7 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
             Case::MismatchedContext => "spell fixture progression context mismatch",
             Case::MismatchedPolicy => "spell fixture progression policy revision mismatch",
             Case::MismatchedReward => "spell fixture progression reward revision mismatch",
-            Case::Admitted | Case::BootstrapOnly => {
+            Case::Admitted | Case::BootstrapOnly | Case::FixtureXpCommitted => {
                 return Err("positive fixture case reached refusal assertion".into());
             }
         };
@@ -428,4 +436,9 @@ fn qualification_fixture_refuses_earned_skills_without_xp() -> TestResult {
 #[test]
 fn qualification_fixture_refuses_earned_xp_after_death_returns_it_to_zero() -> TestResult {
     run(Case::EarnedThenDied, "qfixture_earned_death")
+}
+
+#[test]
+fn qualification_fixture_resumes_its_exact_committed_experience() -> TestResult {
+    run(Case::FixtureXpCommitted, "qfixture_resume_xp")
 }

@@ -119,7 +119,10 @@ async fn words_and_cooldown(
     }
 }
 
-fn spell_index(book: &crate::spell::SpellBook, words: &str) -> TestResult<std::num::NonZeroU32> {
+pub(super) fn spell_index(
+    book: &crate::spell::SpellBook,
+    words: &str,
+) -> TestResult<std::num::NonZeroU32> {
     let spell = book
         .spoken(words)
         .ok_or("spell words missing from book")?

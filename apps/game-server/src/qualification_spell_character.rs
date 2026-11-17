@@ -231,19 +231,52 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     })
     .await
     .map_err(debug)?;
-    if before.vocation() != NO_VOCATION {
+    let experience = policy
+        .thresholds
+        .iter()
+        .find(|threshold| threshold.level == level)
+        .ok_or("qualification level absent from the served progression policy")?
+        .minimum_experience;
+    let checkpoint = if level > 1
+        && progression
+            .as_ref()
+            .is_some_and(|state| state.level >= level)
+    {
+        retry_holder(Some(root), deadline, progression_busy, async || {
+            root.reconcile_character_experience(authority, xp_occurrence)
+                .await
+        })
+        .await
+        .map_err(debug)?
+        .is_some_and(|receipt| {
+            receipt.character_id == character
+                && receipt.level_before == 1
+                && receipt.level_after == level
+                && receipt.experience_after == experience
+                && receipt.experience_awarded == experience
+        })
+    } else {
+        false
+    };
+    let classed = before.vocation() != NO_VOCATION;
+    if classed && !(checkpoint && before.vocation() == vocation) {
         return Err("spell fixture vocation is set".into());
     }
-    if before != DurableBuildState::default() {
+    if !classed && before != DurableBuildState::default() {
         return Err("spell fixture build is not initial".into());
     }
     if let Some(state) = &progression {
-        if state.level != 1
-            || !policy.thresholds.first().is_some_and(|first| {
-                first.level == 1 && state.total_experience == first.minimum_experience
-            })
+        if !checkpoint
+            && (state.level != 1
+                || !policy.thresholds.first().is_some_and(|first| {
+                    first.level == 1 && state.total_experience == first.minimum_experience
+                }))
         {
             return Err("spell fixture progression level or XP is not initial".into());
+        }
+        if !classed && checkpoint && (state.level != level || state.total_experience != experience)
+        {
+            return Err("qualification fixture XP checkpoint has changed".into());
         }
         if state.context != policy.context {
             return Err("spell fixture progression context mismatch".into());
@@ -254,10 +287,8 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         if state.reward_revision != policy.reward_revision {
             return Err("spell fixture progression reward revision mismatch".into());
         }
-        // Admission/offline settlement and logout advance revisions even with an
-        // unchanged build. Retained XP/death receipts distinguish earned history
-        // from those checkpoints, including XP that later returned to zero.
-        if state.character_revision.get() != 1
+        if !checkpoint
+            && state.character_revision.get() != 1
             && retry_holder(Some(root), deadline, progression_busy, async || {
                 root.has_character_experience_or_death_receipts(authority, character)
                     .await
@@ -273,12 +304,11 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     if policy.context != context {
         return Err("qualification policy context mismatch".into());
     }
-    let experience = policy
-        .thresholds
-        .iter()
-        .find(|threshold| threshold.level == level)
-        .ok_or("qualification level absent from the served progression policy")?
-        .minimum_experience;
+    if classed {
+        // A matching retained fixture receipt authorizes resuming the item stage.
+        // Do not replay the build on a classed Character or discard later play.
+        return Ok(());
+    }
     let mut fence = CurrentCharacterGameplayFence {
         character_id: character,
         game_session_id: current.current_game_session_id(),
@@ -320,7 +350,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         .await
         .map_err(debug)?;
     }
-    if level > 1 {
+    if level > 1 && !checkpoint {
         retry_holder(Some(root), deadline, progression_busy, async || {
             slot.commit_experience(
                 root,

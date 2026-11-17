@@ -122,6 +122,18 @@ class KnobTests(unittest.TestCase):
                     self.assertEqual(result.stdout.strip(), f'NODE_BOOT_RESULT=BLOCKED reason={reason}')
 
 
+class WorldFixtureTests(unittest.TestCase):
+    def test_fresh_world_has_disjoint_core_packet_mp_and_sweep_fixtures(self):
+        fixtures = section('readonly ACCOUNT_ID=', 'readonly FRESH_KEY_ID=')
+        fixtures += section('BOOTSTRAP_ACCOUNTS=(', 'source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"')
+        result = bash('set -Eeuo pipefail\nNODE_BOOT_WORLD=1\n' + fixtures
+                      + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        accounts = result.stdout.splitlines()
+        self.assertEqual(len(accounts), 10)
+        self.assertEqual(len(set(accounts)), 10)
+
+
 class ReuseTests(unittest.TestCase):
     GUARD = re.search(r'(?ms)^if \[\[ "\$NODE_BOOT_REUSE_STACK" != 0 \]\]; then.*?^fi\n', RUN_TEXT)
 

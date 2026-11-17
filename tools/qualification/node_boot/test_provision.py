@@ -6,6 +6,7 @@ from pathlib import Path
 import socket
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 SPEC = importlib.util.spec_from_file_location(
@@ -121,6 +122,26 @@ class SpawnTests(unittest.TestCase):
         ):
             with self.assertRaises(ValueError):
                 PROVISION.spawn("/nonexistent.sock", session, key)
+
+
+class DamageInspectionTests(unittest.TestCase):
+    TARGET = "0123456789abcdef0123456789abcdef 7"
+    CORPSE = "fedcba9876543210fedcba9876543210"
+
+    def test_request_names_the_exact_actor_incarnation(self):
+        with patch.object(PROVISION, "_request", return_value=f"damage 12 {self.CORPSE}\n".encode()) as exchange:
+            self.assertEqual(PROVISION.inspect_damage("/control.sock", SESSION, self.TARGET),
+                             f"damage 12 {self.CORPSE}")
+            exchange.assert_called_once_with("/control.sock",
+                                             f"inspect-damage {SESSION} {self.TARGET}\n", 128)
+
+    def test_invalid_generation_and_incomplete_replies_are_refused(self):
+        with patch.object(PROVISION, "_request", return_value=b"damage 12\n") as exchange:
+            with self.assertRaises(ValueError):
+                PROVISION.inspect_damage("/control.sock", SESSION, self.TARGET[:-1] + "0")
+            exchange.assert_not_called()
+            with self.assertRaises(RuntimeError):
+                PROVISION.inspect_damage("/control.sock", SESSION, self.TARGET)
 
 
 if __name__ == "__main__":

@@ -2951,6 +2951,13 @@ async fn control_loop(
                     .to_owned(),
                     "character_bootstrap",
                 ),
+                #[cfg(any(test, feature = "qualification-spawn"))]
+                Some(request) if request.starts_with(b"inspect-damage ") => (
+                    qualification_fixture::inspect_damage(config, spawn, &request)
+                        .await
+                        .unwrap_or_else(|| "rejected reason=damage_unavailable".to_owned()),
+                    "qualification_damage",
+                ),
                 Some(request) if request.starts_with(b"spawn ") => (
                     qualification_fixture::spawn(
                         root, authority, proof, config, native, spawn, &request,
@@ -2975,6 +2982,7 @@ async fn control_loop(
             };
             match event_name {
                 "ops_health" => event_traced("event=ops_health result=served", connection),
+                "qualification_damage" => {}
                 "ops_diagnose" => {
                     event_traced("event=ops_diagnose result=served", connection);
                 }

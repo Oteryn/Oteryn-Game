@@ -7,7 +7,7 @@ use super::observations::{analyser_fact, committed_swing};
 use super::*;
 use bots::{Bot, attack_target, party};
 use oteryn_dev_client::{
-    EntityDetail, EntityKind, SessionEvent, client_ui::cyclopedia_character as panel,
+    EntityDetail, EntityKind, EntityRef, SessionEvent, client_ui::cyclopedia_character as panel,
 };
 use oteryn_protocol_oteryn::{
     analyser::AnalyserFact,
@@ -20,6 +20,9 @@ use oteryn_protocol_oteryn::{
 /// Hunt target (key, shown name, base XP), spawned next to the leader through provision.py --spawn. Experience is the
 /// authored `experience` of the bonelord record (`oteryn:creature.bonelord`, creatures-*-00000-00499.json).
 const HUNT_TARGET: (&str, &str, u64) = ("oteryn:creature.bonelord", "bonelord", 170);
+
+// A low-armour hostile creature lets the level-one fixture register real party activity.
+const ELIGIBILITY_TARGET: (&str, u64) = ("oteryn:creature.cave_rat", 10);
 
 const XP_SOURCE: &str = "crates/gameplay/social-rules/src/shared_experience_split.rs:122";
 
@@ -54,12 +57,18 @@ pub(super) async fn run(
     let started = std::time::Instant::now();
     let (mut bots, setup) = match profile_roles(core, packets).await {
         Ok(profiles) => {
-            let (bots, setup) =
-                bots::connect_bots(&[(core, 0, None), (packets, 0, None), (packets, 1, None)])
-                    .await;
+            let (bots, setup) = bots::connect_bots(&[
+                (core, 0, None),
+                (packets, 0, None),
+                (packets, 1, None),
+                (core, 1, None),
+            ])
+            .await;
             (
                 bots,
-                setup.map(|()| format!("three distinct real sessions;{profiles}")),
+                setup.map(|()| {
+                    format!("three eligible sessions and one underlevel session;{profiles}")
+                }),
             )
         }
         Err(error) => (Vec::new(), Err(error)),
@@ -76,6 +85,7 @@ pub(super) async fn run(
             }
             let highest = before.iter().map(|(_, level)| *level).max().ok_or("no levels")?;
             if before.iter().any(|(_, level)| u64::from(*level) * 3 < u64::from(highest) * 2) { return Err(format!("GeneralStats={before:?};Crystal party.cpp:594 requires ceil(highest*2/3)").into()); }
+            underlevel_party(&mut bots, world).await?;
             bots::approach(&mut bots, 1, 0, world, false).await?;
             bots::approach(&mut bots, 2, 0, world, false).await?;
             bots::invite_accept(&mut bots, 0, 1).await?;
@@ -168,7 +178,14 @@ pub(super) async fn run(
     }
     if earned.is_some() {
         let result = bounded("distance-inactive", 180, out_of_range(&mut bots, world)).await;
-        check("distance-inactive", result, &mut failures);
+        check(
+            "distance-inactive",
+            result.map(|(detail, after)| {
+                earned = Some(after);
+                detail
+            }),
+            &mut failures,
+        );
     } else {
         check(
             "distance-inactive",
@@ -266,25 +283,12 @@ pub(super) async fn run(
 /// session's admission churn closed MP01's waiting leader
 /// (crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:412).
 async fn profile_roles(core: &SeamClients<'_>, packets: &SeamClients<'_>) -> TestResult<String> {
-    let mut reused = Vec::new();
-    let mut provisioned = Vec::new();
+    let mut confirmed = Vec::new();
     for (pair, index, profile) in [
         (core, 0, "knight"),
         (packets, 0, "druid"),
         (packets, 1, "paladin"),
     ] {
-        let mut database = sqlx::PgConnection::connect(pair.url).await?;
-        let stored: Option<String> = sqlx::query_scalar("SELECT vocation FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid")
-            .bind(pair.characters[index].as_slice()).fetch_optional(&mut database).await?;
-        database.close().await?;
-        match stored.as_deref() {
-            Some(stored) if stored == profile => {
-                reused.push(profile);
-                continue;
-            }
-            None | Some("none") => {}
-            Some(stored) => return Err(format!("role={profile} durable vocation={stored};fixture provisions only fresh Characters;source:apps/game-server/src/qualification_spell_character.rs:234").into()),
-        }
         let (mut alone, setup) = bots::connect_bots(&[(pair, index, Some(profile))]).await;
         let released = bots::release_all(&mut alone, core, packets).await;
         if let Err(error) = setup {
@@ -293,11 +297,9 @@ async fn profile_roles(core: &SeamClients<'_>, packets: &SeamClients<'_>) -> Tes
             );
         }
         released?;
-        provisioned.push(profile);
+        confirmed.push(profile);
     }
-    Ok(format!(
-        "profiles reused={reused:?} provisioned={provisioned:?}"
-    ))
+    Ok(format!("profiles and items confirmed={confirmed:?}"))
 }
 
 fn native_three_vocation_share(pool: u64) -> u64 {
@@ -425,7 +427,10 @@ async fn icons(bot: &mut Bot<'_, '_>) -> TestResult<Vec<party_skull::PartyIcon>>
         .map_err(|e| format!("shield decode={e:?};reply={reply:?}").into())
 }
 
-async fn out_of_range(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestResult<String> {
+async fn out_of_range(
+    bots: &mut [Bot<'_, '_>],
+    world: &BundleWorld,
+) -> TestResult<(String, [u64; 3])> {
     let own = bots[0].own()?;
     let active = icons(&mut bots[0]).await?;
     if !active
@@ -437,7 +442,7 @@ async fn out_of_range(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestResu
     let leader = tile(bots[0].client()?.world_spatial().actor_position)?;
     let from = tile(bots[2].client()?.world_spatial().actor_position)?;
     let path = route(world, from, |at| {
-        at.floor == leader.floor && at.x.abs_diff(leader.x).max(at.y.abs_diff(leader.y)) > 30
+        at.floor == leader.floor && at.x.abs_diff(leader.x).max(at.y.abs_diff(leader.y)) > 35
     })
     .ok_or("no walkable tile outside Crystal 30-tile range")?;
     bots::walk_bot(bots, 2, world, &path).await?;
@@ -456,10 +461,14 @@ async fn out_of_range(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestResu
     {
         return Err(format!("distant C own inactive shield absent;reply={peer_reply:?};source:crates/gameplay/dispatch/src/gameplay_transport/party_skull.rs:28").into());
     }
+    let (award, after) = solo_hunt_award(bots).await?;
     // Returning is ordinary movement, allowing subsequent leader/leave commands nearby.
     bots::approach(bots, 2, 0, world, false).await?;
-    Ok(format!(
-        "C walked beyond 30;A own inactive shield;reply={reply:?};Crystal party.cpp:562"
+    Ok((
+        format!(
+            "C walked beyond 30;A own inactive shield;reply={reply:?};{award};Crystal party.cpp:562"
+        ),
+        after,
     ))
 }
 
@@ -503,10 +512,7 @@ fn far_route(
     Err(parents.into_keys().collect())
 }
 
-async fn encounter(
-    bots: &mut [Bot<'_, '_>],
-    world: &BundleWorld,
-) -> TestResult<([u64; 3], [u64; 3], [bool; 3], u64)> {
+async fn prepare_hunt_ground(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestResult<TilePos> {
     let from = tile(bots[0].client()?.world_spatial().actor_position)?;
     let open = |at: TilePos| {
         world
@@ -515,6 +521,7 @@ async fn encounter(
             .is_some_and(|t| !t.protection_zone())
     };
     // The spawn needs free open cells next to the leader (as creature_sweep's leave_protection_zone).
+    let participants = bots.len();
     let roomy = |at: TilePos| {
         open(at)
             && [
@@ -526,7 +533,7 @@ async fn encounter(
             .into_iter()
             .filter(|direction| destination(world, at, *direction).is_some_and(open))
             .count()
-                >= 3
+                >= participants
     };
     let path = far_route(world, from, roomy).map_err(|reached| {
         format!(
@@ -540,8 +547,8 @@ async fn encounter(
         .ok_or("route to open ground leaves the walkable world")?;
     let mut walks = vec![(0, path)];
     let mut parked = vec![leader];
-    for actor in [1, 2] {
-        let here = tile(bots[actor].client()?.world_spatial().actor_position)?;
+    for (actor, bot) in bots.iter_mut().enumerate().skip(1) {
+        let here = tile(bot.client()?.world_spatial().actor_position)?;
         let near = |at: TilePos| {
             !parked.contains(&at)
                 && at.floor == leader.floor
@@ -561,6 +568,14 @@ async fn encounter(
     evidence(&format!(
         "MP_CHECK MP09 hunt-arrived PASS leader={leader:?} peers within 1 tile on open ground outside the protection zone"
     ));
+    Ok(leader)
+}
+
+async fn encounter(
+    bots: &mut [Bot<'_, '_>],
+    world: &BundleWorld,
+) -> TestResult<([u64; 3], [u64; 3], [bool; 3], u64)> {
+    let leader = prepare_hunt_ground(bots, world).await?;
     let (key, name, pool) = HUNT_TARGET;
     let mut start = [0; 3];
     for (index, bot) in bots.iter_mut().enumerate() {
@@ -591,53 +606,21 @@ async fn encounter(
     )
     .await?;
 
-    let modes = FightModes {
-        fight_mode: FightMode::Offensive,
-        chase: ChaseMode::Chase,
-        ..FightModes::DEFAULT
-    };
     let mut hits = [false; 3];
-    // Each session receives its own committed melee damage as an analyser Impact. Give
-    // it exactly one target and stop it after proof so peers get their turns before death.
+    let mut corpse_identity = [0; 16];
     for index in 0..bots.len() {
-        let client = bots[index].client()?;
-        let reply = client.session_mut().set_fight_modes(&modes).await?;
-        if reply.status != CommandStatus::Accepted
-            || reply.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
-        {
-            return Err(format!("hunt fight modes refused: {reply:?}").into());
+        contribute(bots, index, target, deadline).await?;
+        attack_target(&mut bots[index], None).await?;
+        let (damage, corpse) = inspect_hunt_damage(bots, index, target).await?;
+        if damage == 0 {
+            return Err(format!("no committed damage from hunter {index} on {target:?}").into());
         }
-        bots::pump(bots).await?;
-        let client = bots[index].client()?;
-        let after = client.last_server_sequence();
-        let health_before = client
-            .world_entities()
-            .and_then(|view| view.get(&target))
-            .and_then(|entity| hunt_health(entity.detail))
-            .ok_or("spawned target health absent before swing")?;
-        attack_target(&mut bots[index], Some(&target)).await?;
-        let (mut selected, mut damaged) = (false, false);
-        bots::wait_observation(bots, deadline, "member lands committed damage on the hunt target", |bots, events| {
-            let client = bots[index].session.as_ref().ok_or("hunter closed")?;
-            let target_view = client.world_entities().and_then(|view| view.get(&target))
-                .ok_or_else(|| format!("spawned target left hunter {index}'s view before all contributions: {hits:?}"))?;
-            let actor = client.world_spatial().actor_position;
-            let in_range = actor.floor == target_view.position.floor
-                && actor.x.abs_diff(target_view.position.x).max(actor.y.abs_diff(target_view.position.y)) <= 1;
-            selected |= events[index].iter().any(|event| {
-                matches!(event, SessionEvent::ActorCombatState(delta)
-                    if delta.server_sequence > after && delta.value.target == Some(target) && delta.value.modes == modes)
-            });
-            damaged |= events[index].iter().any(|event| committed_swing(event, after));
-            Ok(in_range && selected && damaged
-                && hunt_health(target_view.detail).is_some_and(|health| health < health_before))
-        }).await?;
+        corpse_identity = corpse;
         hits[index] = true;
         evidence(&format!(
-            "MP_CHECK MP09 hunt-contribution PASS participant={} target={target:?}",
+            "MP_CHECK MP09 hunt-contribution PASS participant={} target={target:?} damage={damage}",
             bots[index].name
         ));
-        attack_target(&mut bots[index], None).await?;
     }
 
     bots::pump(bots).await?;
@@ -658,9 +641,13 @@ async fn encounter(
         });
         let leader = bots[0].session.as_ref().ok_or("leader closed")?;
         Ok(killed
-            && leader
-                .world_entities()
-                .is_some_and(|view| view.get(&target).is_none()))
+            && leader.world_entities().is_some_and(|view| {
+                view.get(&target).is_none()
+                    && view.iter().any(|entity| {
+                        entity.kind == EntityKind::Corpse
+                            && entity.entity.identity == corpse_identity
+                    })
+            }))
     })
     .await?;
     evidence(&format!(
@@ -686,10 +673,356 @@ async fn encounter(
     Ok((start, end, hits, pool))
 }
 
+const HUNT_MODES: FightModes = FightModes {
+    fight_mode: FightMode::Offensive,
+    chase: ChaseMode::Chase,
+    ..FightModes::DEFAULT
+};
+
+async fn set_hunt_modes(bot: &mut Bot<'_, '_>) -> TestResult {
+    let client = bot.client()?;
+    let reply = client.session_mut().set_fight_modes(&HUNT_MODES).await?;
+    if reply.status != CommandStatus::Accepted
+        || reply.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
+    {
+        return Err(format!("hunt fight modes refused: {reply:?}").into());
+    }
+    Ok(())
+}
+
+async fn contribute(
+    bots: &mut [Bot<'_, '_>],
+    index: usize,
+    target: EntityRef,
+    deadline: tokio::time::Instant,
+) -> TestResult {
+    set_hunt_modes(&mut bots[index]).await?;
+    bots::pump(bots).await?;
+    let client = bots[index].client()?;
+    let after = client.last_server_sequence();
+    let health_before = client
+        .world_entities()
+        .and_then(|view| view.get(&target))
+        .and_then(|entity| hunt_health(entity.detail))
+        .ok_or("spawned target health absent before swing")?;
+    attack_target(&mut bots[index], Some(&target)).await?;
+    let (mut selected, mut damaged) = (false, false);
+    bots::wait_observation(bots, deadline, "member lands committed damage on the hunt target", |bots, events| {
+            let client = bots[index].session.as_ref().ok_or("hunter closed")?;
+            let target_view = client.world_entities().and_then(|view| view.get(&target))
+                .ok_or_else(|| format!("spawned target left hunter {index}'s view during contribution"))?;
+            let actor = client.world_spatial().actor_position;
+            let in_range = actor.floor == target_view.position.floor
+                && actor.x.abs_diff(target_view.position.x).max(actor.y.abs_diff(target_view.position.y)) <= 1;
+            selected |= events[index].iter().any(|event| {
+                matches!(event, SessionEvent::ActorCombatState(delta)
+                    if delta.server_sequence > after && delta.value.target == Some(target) && delta.value.modes == HUNT_MODES)
+            });
+            damaged |= events[index].iter().any(|event| committed_swing(event, after));
+            Ok(in_range && selected && damaged
+                && hunt_health(target_view.detail).is_some_and(|health| health < health_before))
+        }).await?;
+    Ok(())
+}
+
+async fn inspect_hunt_damage(
+    bots: &mut [Bot<'_, '_>],
+    index: usize,
+    target: EntityRef,
+) -> TestResult<(u64, [u8; 16])> {
+    let session = uuid_text(
+        bots[index]
+            .client()?
+            .join_snapshot()
+            .game_session_id
+            .as_bytes(),
+    );
+    let identity = target
+        .identity
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    let request = request_fixture_control(
+        session,
+        "--inspect-damage",
+        format!("{identity} {}", target.generation),
+    );
+    let answer = super::observations::while_servicing_liveness(request, async || {
+        bots::pump(bots).await?;
+        Ok(())
+    })
+    .await?
+    .map_err(|error| format!("hunt damage inspection: {error}"))?;
+    let mut fields = answer.split_ascii_whitespace();
+    let (Some("damage"), Some(total), Some(corpse), None) =
+        (fields.next(), fields.next(), fields.next(), fields.next())
+    else {
+        return Err(format!("invalid hunt damage response: {answer}").into());
+    };
+    Ok((
+        total.parse()?,
+        crate::node::operator_files::hex_bytes::<16>(corpse)
+            .map_err(|_| "invalid corpse identity")?,
+    ))
+}
+
+async fn solo_hunt_award(bots: &mut [Bot<'_, '_>]) -> TestResult<(String, [u64; 3])> {
+    let (key, pool) = ELIGIBILITY_TARGET;
+    let mut start = Vec::new();
+    for bot in bots.iter_mut() {
+        start.push(stats(bot).await?.0);
+    }
+    let session = uuid_text(bots[0].client()?.join_snapshot().game_session_id.as_bytes());
+    let answer = request_spawn(session, key.to_owned()).await?;
+    let target = parse_spawned_entity(&answer)?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(45);
+    bots::wait_observation(bots, deadline, "solo XP target visible", |bots, _| {
+        Ok(bots[0]
+            .session
+            .as_ref()
+            .and_then(|client| client.world_entities())
+            .is_some_and(|view| view.get(&target).is_some()))
+    })
+    .await?;
+    let (_, corpse) = inspect_hunt_damage(bots, 0, target).await?;
+    set_hunt_modes(&mut bots[0]).await?;
+    attack_target(&mut bots[0], Some(&target)).await?;
+    bots::wait_observation(bots, deadline, "solo XP exact corpse", |bots, _| {
+        Ok(bots[0]
+            .session
+            .as_ref()
+            .and_then(|client| client.world_entities())
+            .is_some_and(|view| {
+                view.get(&target).is_none()
+                    && view.iter().any(|entity| {
+                        entity.kind == EntityKind::Corpse && entity.entity.identity == corpse
+                    })
+            }))
+    })
+    .await?;
+    attack_target(&mut bots[0], None).await?;
+    let leader = tile(bots[0].client()?.world_spatial().actor_position)?;
+    let distant = tile(bots[2].client()?.world_spatial().actor_position)?;
+    if distant.floor == leader.floor
+        && distant
+            .x
+            .abs_diff(leader.x)
+            .max(distant.y.abs_diff(leader.y))
+            <= 30
+    {
+        return Err("solo XP creature died with C inside shared XP range".into());
+    }
+    let character = bots[0].character;
+    let pair = bots[0].pair;
+    let (leader, peers) = bots.split_at_mut(1);
+    let death = committed_hunt_death(
+        leader[0].client()?,
+        pair,
+        Some(character),
+        key,
+        target,
+        tokio::time::Instant::now() + Duration::from_secs(20),
+    );
+    let (_, _, shared) = super::observations::while_servicing_liveness(death, async || {
+        bots::pump(peers).await?;
+        Ok(())
+    })
+    .await??;
+    if shared {
+        return Err("server committed a shared hunt award while C was out of range".into());
+    }
+    let mut end = Vec::new();
+    // Observe all totals after the exact durable award committed.
+    for bot in bots.iter_mut() {
+        end.push(stats(bot).await?.0);
+    }
+    let expected = start[0].checked_add(pool).ok_or("solo XP overflow")?;
+    if end[0] != expected || end[1..] != start[1..] {
+        return Err(format!(
+            "out-of-range hunt must give A all {pool} XP; before={start:?};after={end:?}"
+        )
+        .into());
+    }
+    let detail = format!("solo XP before={start:?};after={end:?}");
+    Ok((
+        detail,
+        end.try_into()
+            .map_err(|_| "expected three XP observations")?,
+    ))
+}
+
+async fn underlevel_party(bots: &mut Vec<Bot<'_, '_>>, world: &BundleWorld) -> TestResult {
+    let (_, leader_level, _) = stats(&mut bots[0]).await?;
+    let (_, low_level, _) = stats(&mut bots[3]).await?;
+    if u64::from(low_level) * 3 >= u64::from(leader_level) * 2 {
+        return Err(format!(
+            "underlevel probe is eligible: leader={leader_level};member={low_level}"
+        )
+        .into());
+    }
+    prepare_hunt_ground(bots, world).await?;
+    bots::invite_accept(bots, 0, 3).await?;
+    for index in [0, 3] {
+        let view = party(&mut bots[index], None).await?;
+        if view.members.len() != 2
+            || !view
+                .members
+                .iter()
+                .any(|member| member.name == bots[3].name)
+        {
+            return Err(format!("two-member underlevel party absent: {view:?}").into());
+        }
+    }
+    let reply = bots[0]
+        .client()?
+        .chat(&oteryn_dev_client::ChatIntent::Say {
+            mode: oteryn_protocol_oteryn::chat::ChatSpeechMode::Say,
+            text: "/sharedxp on".into(),
+        })
+        .await?;
+    if reply.status != CommandStatus::Accepted
+        || reply.disposition != oteryn_dev_client::ChatDisposition::Ok
+    {
+        return Err(format!("underlevel shared-XP toggle refused: {reply:?}").into());
+    }
+    let session = uuid_text(bots[3].client()?.join_snapshot().game_session_id.as_bytes());
+    let answer = request_spawn(session, ELIGIBILITY_TARGET.0.into()).await?;
+    let target = parse_spawned_entity(&answer)?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(45);
+    bots::wait_observation(
+        bots,
+        deadline,
+        "underlevel activity target visible",
+        |bots, _| {
+            Ok(bots[3]
+                .session
+                .as_ref()
+                .and_then(|client| client.world_entities())
+                .is_some_and(|view| view.get(&target).is_some()))
+        },
+    )
+    .await?;
+    contribute(bots, 3, target, deadline).await?;
+    attack_target(&mut bots[3], None).await?;
+    let (damage, corpse) = inspect_hunt_damage(bots, 3, target).await?;
+    if damage == 0 {
+        return Err("underlevel member did not exercise attack activity".into());
+    }
+    let own = bots[3].own()?;
+    let view = icons(&mut bots[3]).await?;
+    let leader = tile(bots[0].client()?.world_spatial().actor_position)?;
+    let low = tile(bots[3].client()?.world_spatial().actor_position)?;
+    if low.floor != leader.floor
+        || low.x.abs_diff(leader.x).max(low.y.abs_diff(leader.y)) > 30
+        || !view
+            .iter()
+            .any(|entry| entry.entity == own && entry.shield == 7)
+    {
+        return Err(format!(
+            "active, nearby underlevel member should be individually XP-ineligible: {view:?}"
+        )
+        .into());
+    }
+    // Finish the probe creature before returning the other party members to their normal journey.
+    set_hunt_modes(&mut bots[0]).await?;
+    attack_target(&mut bots[0], Some(&target)).await?;
+    bots::wait_observation(bots, deadline, "underlevel activity corpse", |bots, _| {
+        Ok(bots[0]
+            .session
+            .as_ref()
+            .and_then(|client| client.world_entities())
+            .is_some_and(|view| {
+                view.iter().any(|entity| {
+                    entity.kind == EntityKind::Corpse && entity.entity.identity == corpse
+                })
+            }))
+    })
+    .await?;
+    attack_target(&mut bots[0], None).await?;
+    let pair = bots[0].pair;
+    let (leader, peers) = bots.split_at_mut(1);
+    let death = committed_hunt_death(
+        leader[0].client()?,
+        pair,
+        None,
+        ELIGIBILITY_TARGET.0,
+        target,
+        tokio::time::Instant::now() + Duration::from_secs(20),
+    );
+    let (_, _, shared) = super::observations::while_servicing_liveness(death, async || {
+        bots::pump(peers).await?;
+        Ok(())
+    })
+    .await??;
+    if shared {
+        return Err("server split the exact hunt award across an underlevel party".into());
+    }
+    clear_fight(bots).await?;
+    party(&mut bots[3], Some(PartyIntent::Leave)).await?;
+    let (members, low) = bots.split_at_mut(3);
+    let low = low.first_mut().ok_or("missing underlevel bot")?;
+    super::observations::while_servicing_liveness(
+        bots::logout_at(low, "underlevel-release"),
+        async || {
+            bots::pump(members).await?;
+            Ok(())
+        },
+    )
+    .await??;
+    bots.pop();
+    Ok(())
+}
+
 fn hunt_health(detail: EntityDetail) -> Option<u8> {
     match detail {
         EntityDetail::Actor { health_percent, .. }
         | EntityDetail::ActorWithIcons { health_percent, .. } => Some(health_percent),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod qualification_review_tests {
+    use super::*;
+
+    #[test]
+    fn qualification_mp09_rejects_foreign_damage_and_foreign_corpses() -> TestResult {
+        let source = include_str!("mp09_party_xp.rs");
+        let (_, encounter) = source
+            .split_once("async fn encounter(")
+            .ok_or("missing hunt")?;
+        let (encounter, _) = encounter
+            .split_once("#[cfg(test)]")
+            .ok_or("missing hunt boundary")?;
+        assert!(encounter.contains("inspect_hunt_damage("));
+        assert!(encounter.contains("corpse_identity"));
+        Ok(())
+    }
+
+    #[test]
+    fn qualification_mp09_distance_measures_a_real_award() -> TestResult {
+        let source = include_str!("mp09_party_xp.rs");
+        let (_, distance) = source
+            .split_once("async fn out_of_range(")
+            .ok_or("missing distance row")?;
+        let (distance, _) = distance
+            .split_once("fn whole_map_route(")
+            .or_else(|| distance.split_once("async fn encounter("))
+            .ok_or("missing distance boundary")?;
+        assert!(distance.contains("solo_hunt_award("));
+        Ok(())
+    }
+
+    #[test]
+    fn qualification_mp09_checks_the_underlevel_party_on_dispatch() -> TestResult {
+        let source = include_str!("mp09_party_xp.rs");
+        let (_, run) = source
+            .split_once("async fn run(")
+            .ok_or("missing MP09 run")?;
+        let (run, _) = run
+            .split_once("async fn profile_roles(")
+            .ok_or("missing MP09 boundary")?;
+        assert!(run.contains("underlevel_party("));
+        Ok(())
     }
 }

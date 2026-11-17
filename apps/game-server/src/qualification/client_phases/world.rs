@@ -567,6 +567,68 @@ fn town_route_retry_delay(
         .then_some(Duration::from_millis(500))
 }
 
+/// Match the durable Channel death key to the exact wire incarnation before deriving
+/// its corpse identity. Creature type and a neighbouring floor tile are insufficient.
+async fn committed_hunt_death(
+    client: &mut oteryn_dev_client::DevClientSession,
+    clients: &SeamClients<'_>,
+    principal: Option<[u8; 16]>,
+    key: &str,
+    target: oteryn_dev_client::EntityRef,
+    deadline: tokio::time::Instant,
+) -> TestResult<(crate::foundation::ExactActorRef, u16, bool)> {
+    use crate::foundation::{
+        ActorLocalGeneration, ActorLocalId, ActorRef, ExactActorRef, ScopeOwnershipGeneration,
+    };
+    let world = WorldId::decode(&clients.world)?;
+    let channel = ChannelId::decode(&clients.channel)?;
+    let scope = ScopeOwnershipGeneration::new(clients.scope_generation)
+        .map_err(|error| format!("invalid hunt scope generation: {error:?}"))?;
+    let prefix = [
+        clients.world.as_slice(),
+        clients.channel.as_slice(),
+        &clients.scope_generation.to_be_bytes(),
+    ]
+    .concat();
+    tokio::time::timeout_at(deadline, async {
+        let mut database = sqlx::PgConnection::connect(clients.url).await?;
+        loop {
+            let actor_slots: Vec<(Vec<u8>, i32, bool)> = sqlx::query_as(
+                "SELECT substring(r.death_key FROM 41 FOR 4), m.stamina_minutes, r.shared
+                 FROM game_party_kill_xp_receipts r JOIN game_party_kill_xp_members m
+                 ON m.death_key=r.death_key AND m.character_id=r.principal_id
+                 WHERE ($1::bytea IS NULL OR r.principal_id=encode($1,'hex')::uuid)
+                 AND r.creature_key=$2
+                 AND octet_length(r.death_key)=52 AND substring(r.death_key FROM 1 FOR 40)=$3
+                 AND substring(r.death_key FROM 45 FOR 8)=$4",
+            )
+            .bind(principal.as_ref().map(|id| id.as_slice()))
+            .bind(key)
+            .bind(&prefix)
+            .bind(target.generation.to_be_bytes().as_slice())
+            .fetch_all(&mut database)
+            .await?;
+            for (slot, stamina, shared) in actor_slots {
+                let slot = <[u8; 4]>::try_from(slot).map_err(|_| "invalid death actor slot")?;
+                let actor = ExactActorRef(ActorRef::from_owner_parts(
+                    world,
+                    channel,
+                    scope,
+                    ActorLocalId(u32::from_be_bytes(slot)),
+                    ActorLocalGeneration(target.generation),
+                ));
+                if actor.placement_identity() == target.identity {
+                    return TestResult::Ok((actor, u16::try_from(stamina)?, shared));
+                }
+            }
+            client.service_liveness(Duration::from_millis(100)).await?;
+            client.take_events();
+        }
+    })
+    .await
+    .map_err(|_| "no committed death receipt for the spawned creature")?
+}
+
 fn parse_spawned_entity(answer: &str) -> TestResult<oteryn_dev_client::EntityRef> {
     let fields: Vec<_> = answer.split_ascii_whitespace().collect();
     let ["spawned", identity, generation] = fields.as_slice() else {
@@ -584,6 +646,14 @@ fn parse_spawned_entity(answer: &str) -> TestResult<oteryn_dev_client::EntityRef
 /// `spawn <session> <key>` through `provision.py --spawn`; Err carries the rejected token.
 /// Shared by `creature_sweep` and MP09 (both reach it through `use super::*`).
 async fn request_spawn(session: String, key: String) -> Result<String, String> {
+    request_fixture_control(session, "--spawn", key).await
+}
+
+async fn request_fixture_control(
+    session: String,
+    operation: &'static str,
+    argument: String,
+) -> Result<String, String> {
     let socket = required("NODE_BOOT_CONTROL_SOCKET").map_err(|error| error.to_string())?;
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
@@ -591,7 +661,14 @@ async fn request_spawn(session: String, key: String) -> Result<String, String> {
         std::process::Command::new("sudo")
             .args(["-n", "python3"])
             .arg(script)
-            .args(["--socket", &socket, "--session", &session, "--spawn", &key])
+            .args([
+                "--socket",
+                &socket,
+                "--session",
+                &session,
+                operation,
+                &argument,
+            ])
             .output()
     })
     .await
@@ -723,6 +800,77 @@ pub(super) async fn logout_retrying_busy_observed(
                 format!("logout Busy retry liveness failed after attempt {attempts}: {outcome:?}; error={error}")
             })?;
     }
+}
+
+struct WorldFixturePair {
+    accounts: [String; 2],
+    characters: [[u8; 16]; 2],
+}
+
+impl WorldFixturePair {
+    fn clients<'a>(&'a self, scope: &SeamClients<'a>) -> SeamClients<'a> {
+        SeamClients {
+            accounts: &self.accounts,
+            characters: &self.characters,
+            ..*scope
+        }
+    }
+}
+
+async fn extra_world_fixtures(
+    core: &SeamClients<'_>,
+    packets: &SeamClients<'_>,
+) -> TestResult<[WorldFixturePair; 3]> {
+    let configured = required("NODE_BOOT_EXTRA_WORLD_ACCOUNTS")?;
+    let ids: [String; 6] = configured
+        .split(',')
+        .map(str::to_owned)
+        .collect::<Vec<_>>()
+        .try_into()
+        .map_err(|_| "expected six dedicated MP and sweep Accounts")?;
+    let mut accounts = std::collections::BTreeSet::new();
+    let mut characters = std::collections::BTreeSet::new();
+    for pair in [core, packets] {
+        for account in pair.accounts {
+            accounts.insert(crate::node::uuid_bytes(account).ok_or("invalid fixture Account")?);
+        }
+        characters.extend(pair.characters.iter().copied());
+    }
+    let mut database = sqlx::PgConnection::connect(core.url).await?;
+    let mut resolved = Vec::new();
+    let [a, b, c, d, e, f] = ids;
+    for pair_accounts in [[a, b], [c, d], [e, f]] {
+        let mut pair = WorldFixturePair {
+            accounts: pair_accounts,
+            characters: [[0; 16]; 2],
+        };
+        for (account, character) in pair.accounts.iter().zip(&mut pair.characters) {
+            if !accounts.insert(crate::node::uuid_bytes(account).ok_or("invalid fixture Account")?)
+            {
+                return Err("dedicated World fixture reused an Account".into());
+            }
+            let rows: Vec<Vec<u8>> = sqlx::query_scalar(
+                "SELECT uuid_send(character_id) FROM game_character_roots
+                 WHERE account_id=$1::uuid AND world_id=encode($2,'hex')::uuid",
+            )
+            .bind(account)
+            .bind(core.world.as_slice())
+            .fetch_all(&mut database)
+            .await?;
+            let [row] = rows.as_slice() else {
+                return Err("dedicated World fixture must own one Character".into());
+            };
+            *character = row.as_slice().try_into()?;
+            if !characters.insert(*character) {
+                return Err("dedicated World fixture reused a Character".into());
+            }
+        }
+        resolved.push(pair);
+    }
+    database.close().await?;
+    resolved
+        .try_into()
+        .map_err(|_| "dedicated World fixture count".into())
 }
 
 pub(super) async fn journeys(
@@ -2896,11 +3044,23 @@ pub(super) async fn journeys(
             clients.accounts.len()
         ));
     }
-    if groups.runs("creature_sweep") {
-        creature_sweep::run(clients, world, &generation.rewards).await?;
-    }
-    if groups.runs("mp") {
-        mp::run(clients, packet_clients, world, &metadata.manifest.subareas).await;
+    let mp_selected = groups.runs("mp");
+    let sweep_selected = groups.runs("creature_sweep")
+        && std::env::var("NODE_BOOT_E2E_ONLY").is_ok_and(|list| !list.trim().is_empty());
+    if mp_selected || sweep_selected {
+        let [mp_first, mp_second, sweep] = extra_world_fixtures(clients, packet_clients).await?;
+        if sweep_selected {
+            creature_sweep::run(&sweep.clients(clients), world, &generation.rewards).await?;
+        }
+        if mp_selected {
+            mp::run(
+                &mp_first.clients(clients),
+                &mp_second.clients(clients),
+                world,
+                &metadata.manifest.subareas,
+            )
+            .await;
+        }
     }
     // The core/profile pair has not inherited packet movement, loot or death.
     if !groups.runs("core") {

@@ -67,6 +67,16 @@ def spawn(socket_path, session, creature_key):
     return answer.decode("ascii").rstrip("\n")
 
 
+def inspect_damage(socket_path, session, target):
+    identifier = uuid.UUID(session)
+    if identifier.version != 7 or str(identifier) != session or not re.fullmatch(r"[0-9a-f]{32} [1-9][0-9]{0,19}", target):
+        raise ValueError("invalid qualification damage inspection")
+    answer = bytes(_request(socket_path, f"inspect-damage {session} {target}\n", 128))
+    if not re.fullmatch(rb"damage [0-9]{1,20} [0-9a-f]{32}\n", answer):
+        raise RuntimeError(f"node refused qualification damage inspection: {answer[:128]!r}")
+    return answer.decode("ascii").rstrip("\n")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--socket", required=True)
@@ -74,8 +84,11 @@ if __name__ == "__main__":
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--profile", choices=PROFILES)
     group.add_argument("--spawn", metavar="CREATURE_KEY")
+    group.add_argument("--inspect-damage", metavar="TARGET")
     args = parser.parse_args()
     if args.spawn is not None:
         print(spawn(args.socket, args.session, args.spawn))
+    elif args.inspect_damage is not None:
+        print(inspect_damage(args.socket, args.session, args.inspect_damage))
     else:
         provision(args.socket, args.session, args.profile)
