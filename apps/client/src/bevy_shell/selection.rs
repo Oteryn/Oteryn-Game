@@ -59,6 +59,7 @@ pub(super) struct PickerState {
     /// Show outfits: 66px rows with the outfit column, otherwise 29px rows.
     outfits: bool,
     list: Option<Entity>,
+    reveal_selection: bool,
     revision: u64,
     rendered: Option<(u64, u64)>,
     last_click: Option<(u64, usize, std::time::Instant)>,
@@ -146,6 +147,7 @@ pub(super) fn project(
                 .position(|row| row.available && row.character.character_id == request.preselect)
                 .or_else(|| request.rows.iter().position(|row| row.available)),
             outfits,
+            reveal_selection: true,
             ..PickerState::default()
         };
     }
@@ -393,6 +395,24 @@ pub(super) fn project(
     state.rendered = Some(key);
 }
 /// One list line: fixed-width cells, a `None` width fills the remaining space.
+/// The widget scrolls from the laid-out row bounds, which account for outfit height and zoom.
+pub(super) fn reveal_selection(
+    mut commands: Commands,
+    mut state: ResMut<PickerState>,
+    mut lists: Query<(&Children, &ComputedNode, &mut ScrollPosition)>,
+) {
+    if std::mem::take(&mut state.reveal_selection)
+        && let Some(list) = state.list
+        && let Some(index) = state.selected
+        && let Ok((rows, node, mut scroll)) = lists.get_mut(list)
+        && let Some(&entity) = rows.get(index)
+    {
+        // A rebuilt list can be shorter than the requested scroll offset.
+        scroll.0.y = node.scroll_position.y * node.inverse_scale_factor();
+        commands.trigger(bevy::ui_widgets::ScrollIntoView { entity });
+    }
+}
+
 fn line(
     commands: &mut Commands,
     skin: &Skin,
@@ -450,6 +470,7 @@ fn toggle_outfits(
         && state.request == Some(toggle.0)
     {
         state.outfits = event.value;
+        state.reveal_selection = true;
         state.revision = state.revision.wrapping_add(1);
     }
 }

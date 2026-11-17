@@ -154,6 +154,22 @@ fn manage_buttons_persists_visibility_order_and_restores_defaults() -> TestResul
     let mut owner = app.world_mut().non_send_mut::<HostOwner>();
     owner.route_input(&[event], false);
     assert!(owner.play.as_ref().ok_or("play")?.link.market_panel().open);
+    for (hidden, moving, up, expected) in [
+        ("store", "vip", true, ["vip", "battle"]),
+        ("shell.options", "battle", false, ["vip", "battle"]),
+    ] {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        let mut preferences = owner.settings.preferences.clone();
+        preferences.toolbar_order = Some(["battle", hidden, "vip"].map(str::to_owned).into());
+        owner.settings.apply(preferences);
+        app.world_mut().resource_mut::<Manager>().open = true;
+        app.update();
+        click(
+            &mut app,
+            |action| matches!(action, Edit::Move(id, direction) if *id == moving && *direction == up),
+        )?;
+        assert_eq!(order(app.world().non_send::<HostOwner>()), expected);
+    }
     std::fs::remove_dir_all(folder)?;
     Ok(())
 }

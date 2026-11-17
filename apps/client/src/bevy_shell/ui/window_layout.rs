@@ -144,6 +144,9 @@ impl Layout {
         } else {
             1.
         };
+        if zoom == self.zoom {
+            return;
+        }
         let ratio = zoom / self.zoom;
         self.zoom = zoom;
         if let Some(size) = self.size {
@@ -291,7 +294,7 @@ impl WindowLayouts {
             .create(true)
             .truncate(false)
             .open(path.with_extension("json.lock"))?;
-        lock.lock()?;
+        lock.try_lock().map_err(io::Error::from)?;
         write()
     }
 
@@ -467,14 +470,17 @@ type Fonts<'w, 's> = Query<
 const SAVE_DELAY: std::time::Duration = std::time::Duration::from_secs(1);
 
 #[derive(Resource, Default)]
-struct SavedBaseline(Option<WindowLayouts>);
+struct SavedBaseline {
+    layouts: Option<WindowLayouts>,
+    reset_pending: bool,
+}
 
 fn load_layouts(
     owner: Option<NonSend<crate::bevy_shell::owner::HostOwner>>,
     mut layouts: ResMut<WindowLayouts>,
     mut loaded: ResMut<SavedBaseline>,
 ) {
-    if loaded.0.is_some() {
+    if loaded.layouts.is_some() {
         return;
     }
     let Some(path) = owner.and_then(|owner| owner.window_layouts_path()) else {
@@ -484,7 +490,7 @@ fn load_layouts(
         Ok(saved) => *layouts = saved,
         Err(error) => eprintln!("Could not load window layouts: {error}"),
     }
-    loaded.0 = Some(layouts.clone());
+    loaded.layouts = Some(layouts.clone());
 }
 
 /// Observe edits after the final resize correction, including on the exit frame.
@@ -497,37 +503,54 @@ fn persist(
     mut exits: MessageReader<AppExit>,
 ) {
     let exiting = exits.read().count() > 0;
-    if layouts.is_changed()
-        && loaded
-            .0
-            .as_ref()
-            .is_some_and(|baseline| baseline != &*layouts)
-    {
+    let Some(baseline) = loaded.layouts.as_ref() else {
+        return;
+    };
+    if !loaded.reset_pending && baseline == &*layouts {
+        *pending = None;
+        return;
+    }
+    if layouts.is_changed() || pending.is_none() {
         *pending = Some(time.elapsed());
     }
     if pending.is_some_and(|since| exiting || time.elapsed().saturating_sub(since) >= SAVE_DELAY)
         && let Some(path) = owner.and_then(|owner| owner.window_layouts_path())
     {
-        let Some(baseline) = loaded.0.as_ref() else {
-            return;
-        };
         let result = WindowLayouts::locked(&path, || {
-            let mut latest = WindowLayouts::load(&path)?;
+            if loaded.reset_pending {
+                return layouts.publish(&path);
+            }
+            let mut latest = match WindowLayouts::load(&path) {
+                Err(error) if error.kind() == io::ErrorKind::InvalidData => baseline.clone(),
+                result => result?,
+            };
             for (&id, layout) in &layouts.0 {
-                if baseline.0.get(id) != Some(layout) {
-                    latest.0.insert(id, *layout);
+                let (Some(before), Some(saved)) = (baseline.0.get(id), latest.0.get_mut(id)) else {
+                    continue;
+                };
+                if layout.size != before.size {
+                    saved.size = layout.size;
+                }
+                if layout.zoom != before.zoom {
+                    saved.zoom = layout.zoom;
+                }
+                if layout.offset != before.offset {
+                    saved.offset = layout.offset;
                 }
             }
             latest.publish(&path)
         });
         match result {
             Ok(()) => {
-                loaded.0 = Some(layouts.clone());
+                loaded.layouts = Some(layouts.clone());
+                loaded.reset_pending = false;
                 *pending = None;
             }
             Err(error) => {
                 *pending = Some(time.elapsed());
-                leprintln!("Could not save window layout: {error}", error = error);
+                if error.kind() != io::ErrorKind::WouldBlock {
+                    leprintln!("Could not save window layout: {error}", error = error);
+                }
             }
         }
     }
@@ -620,3 +643,5 @@ pub(in crate::bevy_shell) fn project(
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+pub(in crate::bevy_shell) use tests::stacking::ui_layout as test_ui_layout;

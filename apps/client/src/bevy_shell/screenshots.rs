@@ -46,12 +46,43 @@ fn save(
         }
         image = image.crop_imm(crop.origin.x, crop.origin.y, crop.size.x, crop.size.y);
     }
+    #[cfg(unix)]
+    let private_folder;
+    #[cfg(unix)]
+    let folder = if folder.as_os_str().is_empty() {
+        private_folder = private_capture_directory()?;
+        private_folder.as_path()
+    } else {
+        folder
+    };
     let rgba = image.to_rgba8();
     Pixels::new(rgba.width(), rgba.height(), rgba.into_raw())?.save(
         folder
             .to_str()
             .ok_or_else(|| io::Error::other("Invalid screenshot folder"))?,
     )
+}
+
+/// Create the fallback with private permissions from its first moment on a shared temp volume.
+#[cfg(unix)]
+fn private_capture_directory() -> io::Result<PathBuf> {
+    use std::{
+        os::unix::fs::DirBuilderExt,
+        sync::atomic::{AtomicU64, Ordering},
+        time::{SystemTime, UNIX_EPOCH},
+    };
+    static SEQUENCE: AtomicU64 = AtomicU64::new(0);
+    let stamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(io::Error::other)?
+        .as_nanos();
+    let folder = std::env::temp_dir().join(format!(
+        "oteryn-screenshots-{}-{stamp}-{}",
+        std::process::id(),
+        SEQUENCE.fetch_add(1, Ordering::Relaxed),
+    ));
+    std::fs::DirBuilder::new().mode(0o700).create(&folder)?;
+    Ok(folder)
 }
 
 #[cfg(test)]

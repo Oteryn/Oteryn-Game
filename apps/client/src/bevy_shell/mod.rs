@@ -207,7 +207,8 @@ fn build_app(options: Options, owner: HostOwner) -> App {
     )
     .add_systems(
         PostUpdate,
-        game_ui::viewport::project.after(bevy::ui::UiSystems::PostLayout),
+        (game_ui::viewport::project, selection::reveal_selection)
+            .after(bevy::ui::UiSystems::PostLayout),
     )
     .add_systems(PostUpdate, audit::write.after(bevy::ui::UiSystems::Layout))
     .add_systems(Update, audit::capture_on_key);

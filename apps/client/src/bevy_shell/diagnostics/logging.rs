@@ -15,7 +15,7 @@ use std::{
     fs,
     io::{self, Write},
     path::{Path, PathBuf},
-    sync::{Arc, Mutex, OnceLock, PoisonError},
+    sync::{Arc, Mutex, OnceLock, PoisonError, TryLockError},
     time::SystemTime,
 };
 
@@ -51,10 +51,11 @@ impl RollingFile {
         self.write_dated(&Utc::at(now).date(), text)
     }
     pub(super) fn write_dated(&self, date: &str, text: &str) -> io::Result<()> {
-        let mut capped_date = self
-            .capped_date
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner);
+        let mut capped_date = match self.capped_date.try_lock() {
+            Ok(state) => state,
+            Err(TryLockError::Poisoned(error)) => error.into_inner(),
+            Err(TryLockError::WouldBlock) => return Err(io::ErrorKind::WouldBlock.into()),
+        };
         if capped_date.as_deref() == Some(date) {
             return Ok(());
         }
@@ -65,8 +66,8 @@ impl RollingFile {
             .truncate(false)
             .read(true)
             .write(true)
-            .open(self.directory.with_added_extension("lock"))?;
-        lock.lock()?;
+            .open(self.directory.join(".lock"))?;
+        lock.try_lock().map_err(io::Error::from)?;
         let name = format!("client-{date}.log");
         let mut file = fs::File::options()
             .create(true)
@@ -165,7 +166,7 @@ impl Drop for SinkWriter {
             let _ = io::stderr().write_all(text.as_bytes());
         }
         if let Some(file) = &self.sink.file {
-            // A full disk must not take the game down with it; the ring still keeps the line.
+            // A busy lock or failed disk write leaves the line in stderr and the crash ring.
             let _ = file.write_text(SystemTime::now(), &text);
         }
         if !self.sink.ring {
@@ -363,6 +364,7 @@ mod tests {
         let mut names: Vec<_> = fs::read_dir(directory)?
             .filter_map(Result::ok)
             .filter_map(|entry| entry.file_name().into_string().ok())
+            .filter(|name| name != ".lock")
             .collect();
         names.sort();
         Ok(names)
@@ -402,23 +404,97 @@ mod tests {
             .chain(["client-2030-01-10.log".into(), "unrelated.txt".into()])
             .collect();
         assert_eq!(names(&directory)?, expected);
-        fs::remove_dir_all(directory)?;
+        fs::remove_dir_all(&directory)?;
+        assert!(!directory.with_added_extension("lock").exists());
         Ok(())
     }
 
     #[test]
     fn two_clients_share_the_daily_budget() -> TestResult {
         let directory = temp("shared");
-        let writers = [
-            RollingFile::new(directory.clone(), 7, 1000),
-            RollingFile::new(directory.clone(), 7, 1000),
-        ];
-        for i in 0..100 {
-            writers[i % 2].write_text(SystemTime::now(), "a shared line of log output\n")?;
-        }
-        let path = fs::read_dir(&directory)?.next().ok_or("log")??.path();
-        assert!(fs::metadata(path)?.len() <= 1000);
-        fs::remove_dir_all(directory)?;
+        let writers = [(); 2].map(|()| Arc::new(RollingFile::new(directory.clone(), 7, 1000)));
+        let date = "2030-01-01";
+        writers[0].write_dated(date, "first line\n")?;
+        let lock = fs::File::options()
+            .read(true)
+            .write(true)
+            .open(directory.join(".lock"))?;
+        lock.lock()?;
+        let (finished, wait) = std::sync::mpsc::channel();
+        let holder = std::thread::spawn(move || {
+            let result = wait.recv_timeout(std::time::Duration::from_secs(1));
+            drop(lock);
+            result
+        });
+        tracing::subscriber::with_default(test_subscriber(&writers[1], "info"), || {
+            tracing::warn!("contended foreground log");
+        });
+        let result = writers[1].write_dated(date, "contended line\n");
+        finished.send(())?;
+        holder.join().map_err(|_| "lock holder panicked")??;
+        assert_eq!(
+            result.err().map(|error| error.kind()),
+            Some(io::ErrorKind::WouldBlock)
+        );
+        let barrier = std::sync::Barrier::new(2);
+        std::thread::scope(|scope| -> io::Result<()> {
+            let mut workers = Vec::new();
+            for writer in &writers {
+                let barrier = &barrier;
+                workers.push(scope.spawn(move || -> io::Result<()> {
+                    let mut failure = None;
+                    for _ in 0..100 {
+                        barrier.wait();
+                        if let Err(error) =
+                            writer.write_dated(date, "a shared line of log output\n")
+                            && error.kind() != io::ErrorKind::WouldBlock
+                        {
+                            failure = Some(error);
+                        }
+                    }
+                    failure.map_or(Ok(()), Err)
+                }));
+            }
+            for worker in workers {
+                worker
+                    .join()
+                    .map_err(|_| io::Error::other("writer panicked"))??;
+            }
+            Ok(())
+        })?;
+        let text = fs::read_to_string(directory.join("client-2030-01-01.log"))?;
+        assert!(text.len() <= 1000);
+        assert!(text.ends_with(CAPPED));
+        fs::remove_dir_all(&directory)?;
+        assert!(!directory.with_added_extension("lock").exists());
+        Ok(())
+    }
+
+    #[test]
+    fn writable_log_directory_works_when_sibling_lock_cannot_be_created() -> TestResult {
+        let directory = temp("writable");
+        let logs = directory.join("logs");
+        fs::create_dir_all(&logs)?;
+        #[cfg(unix)]
+        let original = {
+            use std::os::unix::fs::PermissionsExt;
+            let original = fs::metadata(&directory)?.permissions();
+            fs::set_permissions(&directory, fs::Permissions::from_mode(0o555))?;
+            original
+        };
+        #[cfg(not(unix))]
+        fs::create_dir(logs.with_added_extension("lock"))?;
+        let file = Arc::new(RollingFile::new(logs.clone(), KEEP_FILES, TOTAL_CAP));
+        tracing::subscriber::with_default(test_subscriber(&file, "info"), || {
+            tracing::warn!("daily output");
+        });
+        let text = fs::read_to_string(
+            logs.join(format!("client-{}.log", Utc::at(SystemTime::now()).date())),
+        );
+        #[cfg(unix)]
+        fs::set_permissions(&directory, original)?;
+        fs::remove_dir_all(&directory)?;
+        assert!(text?.contains("daily output"));
         Ok(())
     }
 
@@ -446,7 +522,8 @@ mod tests {
         let today = fs::read_to_string(directory.join("client-2030-01-03.log"))?;
         assert!(today.starts_with("line 0000\n"));
         assert!(today.ends_with(CAPPED));
-        fs::remove_dir_all(directory)?;
+        fs::remove_dir_all(&directory)?;
+        assert!(!directory.with_added_extension("lock").exists());
         Ok(())
     }
 
@@ -476,7 +553,8 @@ mod tests {
         assert!(line.contains("oteryn_test:"), "{line}");
         assert!(line.contains("password=[redacted]") && !line.contains("hunter2"));
         assert!(!text.contains("hidden at info"));
-        fs::remove_dir_all(directory)?;
+        fs::remove_dir_all(&directory)?;
+        assert!(!directory.with_added_extension("lock").exists());
         Ok(())
     }
 
@@ -497,7 +575,8 @@ mod tests {
             assert!(text.contains(&format!("hyper warning {directives}")));
             assert!(text.contains(&format!("client detail {directives}")));
         }
-        fs::remove_dir_all(directory)?;
+        fs::remove_dir_all(&directory)?;
+        assert!(!directory.with_added_extension("lock").exists());
         Ok(())
     }
 }

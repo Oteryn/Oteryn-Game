@@ -179,19 +179,23 @@ fn death_event_captures_without_f12_and_deduplicates() -> TestResult {
 fn f12_without_config_home_saves_capture() -> TestResult {
     const CHILD: &str = "OTERYN_TEST_F12_NO_HOME";
     if std::env::var_os(CHILD).is_none() {
-        assert!(
-            std::process::Command::new(std::env::current_exe()?)
-                .args([
-                    "--exact",
-                    "bevy_shell::screenshots::tests::f12_without_config_home_saves_capture"
-                ])
-                .env(CHILD, "1")
-                .env_remove("HOME")
-                .env_remove("LOCALAPPDATA")
-                .env_remove("XDG_CONFIG_HOME")
-                .status()?
-                .success()
-        );
+        let root = std::env::temp_dir().join(format!("oteryn-f12-no-home-{}", std::process::id()));
+        std::fs::create_dir(&root)?;
+        let status = std::process::Command::new("sh")
+            .args(["-c", r#"umask 022; exec "$@""#, "sh"])
+            .arg(std::env::current_exe()?)
+            .args([
+                "--exact",
+                "bevy_shell::screenshots::tests::f12_without_config_home_saves_capture",
+            ])
+            .env(CHILD, "1")
+            .env("TMPDIR", &root)
+            .env_remove("HOME")
+            .env_remove("LOCALAPPDATA")
+            .env_remove("XDG_CONFIG_HOME")
+            .status();
+        std::fs::remove_dir_all(root)?;
+        assert!(status?.success());
         return Ok(());
     }
     let mut app = app(std::path::Path::new(""), false)?;
@@ -202,7 +206,11 @@ fn f12_without_config_home_saves_capture() -> TestResult {
         .status
         .strip_prefix("Screenshot saved: ")
         .ok_or("capture failed")?;
-    assert!(std::path::Path::new(path).is_file());
-    std::fs::remove_file(path)?;
+    use std::os::unix::fs::PermissionsExt;
+    let path = std::path::Path::new(path);
+    assert!(path.is_file());
+    let parent = path.parent().ok_or("capture directory")?;
+    assert_eq!(parent.metadata()?.permissions().mode() & 0o077, 0);
+    std::fs::remove_dir_all(parent)?;
     Ok(())
 }

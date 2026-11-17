@@ -346,7 +346,8 @@ fn a_panicking_ecs_error_is_logged_with_its_context_and_still_panics() -> TestRe
     assert!(text.contains("ECS command `"), "{text}");
     assert!(text.contains("failed: Entity despawned"), "{text}");
     assert!(text.contains(" ERROR "), "{text}");
-    std::fs::remove_dir_all(directory)?;
+    std::fs::remove_dir_all(&directory)?;
+    assert!(!directory.with_added_extension("lock").exists());
     Ok(())
 }
 

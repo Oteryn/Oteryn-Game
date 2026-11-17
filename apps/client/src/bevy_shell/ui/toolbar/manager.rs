@@ -25,17 +25,14 @@ enum Edit {
 }
 
 fn order(owner: &HostOwner) -> Vec<String> {
-    owner
+    let mut ids = owner
         .settings
         .preferences
         .toolbar_order
         .clone()
-        .unwrap_or_else(|| {
-            super::grid::DEFAULT
-                .iter()
-                .map(|id| (*id).to_owned())
-                .collect()
-        })
+        .unwrap_or_else(|| grid::DEFAULT.iter().map(|id| (*id).to_owned()).collect());
+    ids.retain(|id| grid::entries().any(|(_, entry, _)| entry == id));
+    ids
 }
 fn edit(
     event: On<Activate>,

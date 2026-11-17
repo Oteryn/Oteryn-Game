@@ -162,6 +162,7 @@ fn choose(
     scale: Option<Res<UiScale>>,
     owner: Option<NonSend<HostOwner>>,
     mut layouts: ResMut<WindowLayouts>,
+    mut baseline: ResMut<super::SavedBaseline>,
 ) {
     let Ok((entry, id)) = entries.get(event.entity) else {
         return;
@@ -175,7 +176,14 @@ fn choose(
         }
         Entry::Reset(_) => {
             let path = owner.and_then(|owner| owner.window_layouts_path());
-            if let Err(error) = layouts.reset(path.as_deref()) {
+            let result = layouts.reset(path.as_deref());
+            baseline.reset_pending = result.is_err();
+            if path.is_some() && result.is_ok() {
+                baseline.layouts = Some(layouts.clone());
+            }
+            if let Err(error) = result
+                && error.kind() != std::io::ErrorKind::WouldBlock
+            {
                 leprintln!("Could not save window layout: {error}", error = error);
             }
             commands.trigger(super::LayoutReset);
