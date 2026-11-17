@@ -205,6 +205,9 @@ async fn exercise(admin: String) -> TestResult {
             .fetch_one(&h.pool)
             .await?;
             assert_eq!(receipts, i64::from(attempt) + 1);
+            drop(owner);
+            drop(authority);
+            drop(seal);
             h.cleanup().await?;
             return Ok(());
         }
