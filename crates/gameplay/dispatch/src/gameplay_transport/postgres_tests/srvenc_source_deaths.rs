@@ -630,10 +630,24 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                 drop(taken); // Leave the real original queue entry for durable settlement below.
             }
         }
-        assert_eq!(
-            owner.drain_kill_rewards(session).await,
-            DrainOutcome::Drained
-        );
+        let drained = owner.drain_kill_rewards(session).await;
+        if drained != DrainOutcome::Drained {
+            let roots: Vec<(String, String)> = sqlx::query_as(
+                "SELECT character_id::text,character_revision::text FROM game_character_roots ORDER BY character_id",
+            ).fetch_all(&h.pool).await?;
+            let tracks: Vec<(String, String, i64)> = sqlx::query_as(
+                "SELECT character_id::text,track_key,value FROM game_character_quest_tracks ORDER BY character_id,track_key",
+            ).fetch_all(&h.pool).await?;
+            let xp: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_character_experience_receipts")
+                    .fetch_one(&h.pool)
+                    .await?;
+            eprintln!(
+                "SOURCE_DEATH_DEFERRED creature={} roots={roots:?} tracks={tracks:?} xp_receipts={xp}",
+                rule.creature
+            );
+        }
+        assert_eq!(drained, DrainOutcome::Drained);
     }
     assert_eq!(
         owner.drain_kill_rewards(session).await,
