@@ -20,7 +20,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "0dd450485daab2b2ffe6da36f82be5fb948c4de0"
+APPROVED = "f33677bbc611a998af31d20ae98dee632afafb0b"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -380,7 +380,9 @@ def main() -> int:
         ("durability_postgres", "if: needs.candidate.outputs.rust == 'true'"),
         ("rust_windows", "if: needs.candidate.outputs.windows == 'true'"),
         ("rust_supply_chain", "if: needs.candidate.outputs.rust == 'true'"),
-        ("node_boot", "if: needs.candidate.outputs.server_qualification != 'false'"),
+        ("node_boot_plan", "if: needs.candidate.outputs.server_qualification != 'false'"),
+        ("node_boot_shard", "if: needs.candidate.outputs.server_qualification != 'false'"),
+        ("node_boot", "if: always() && needs.candidate.outputs.server_qualification != 'false'"),
         ("server_seam", "if: needs.candidate.outputs.server_qualification != 'false'"),
     ):
         block = core.indented_yaml_mapping_block(original, job, 2)
