@@ -91,6 +91,8 @@ mod tests {
             assert!(lake.advance(10, Action::Purify));
         }
         assert!(!lake.advance(10, Action::Start));
+        assert!(!lake.advance(10, Action::Purify));
+        assert!(!lake.advance(10, Action::Pour));
         assert_eq!(lake.phase(12), Some(Phase::ShallowWater));
         assert_eq!(lake.phase(13), Some(Phase::Dry));
         assert!(lake.advance(13, Action::Start));
