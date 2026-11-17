@@ -19,7 +19,8 @@ pub(super) fn cause(value: &OneItemFeeBurnV1) -> Option<&OneItemNpcPurchaseV1> {
             FeeBurnCauseV1::GemReveal(cause)
             | FeeBurnCauseV1::GemGradeUp(cause)
             | FeeBurnCauseV1::GemSwitchDomain(cause)
-            | FeeBurnCauseV1::GemReshape(cause),
+            | FeeBurnCauseV1::GemReshape(cause)
+            | FeeBurnCauseV1::HorseRental(cause),
         ) => Some(cause),
         Some(FeeBurnCauseV1::QuestRewardPayment(cause)) => cause.purchase.as_ref(),
         _ => None,
@@ -331,8 +332,10 @@ mod tests {
 
     #[test]
     fn atelier_audit_binds_reshape_position_to_its_fee_and_fragments() {
-        let lesser = |count: u32| json!({"count":count,"before":{"key":"oteryn:item.tibia.i46625"}});
-        let greater = |count: u32| json!({"count":count,"before":{"key":"oteryn:item.tibia.i46626"}});
+        let lesser =
+            |count: u32| json!({"count":count,"before":{"key":"oteryn:item.tibia.i46625"}});
+        let greater =
+            |count: u32| json!({"count":count,"before":{"key":"oteryn:item.tibia.i46626"}});
         for (position, fee, inputs) in [
             (1, 125_000, json!([lesser(1)])),
             (2, 1_000_000, json!([lesser(1), lesser(1)])),
@@ -367,16 +370,40 @@ mod tests {
             (cause, value)
         };
         for (position, fee, inputs, stash, key) in [
-            (2, 1_000_000, json!([lesser(1)]), 1, "oteryn:item.tibia.i46625"),
+            (
+                2,
+                1_000_000,
+                json!([lesser(1)]),
+                1,
+                "oteryn:item.tibia.i46625",
+            ),
             (2, 1_000_000, json!([]), 2, "oteryn:item.tibia.i46625"),
-            (3, 5_000_000, json!([greater(1)]), 2, "oteryn:item.tibia.i46626"),
+            (
+                3,
+                5_000_000,
+                json!([greater(1)]),
+                2,
+                "oteryn:item.tibia.i46626",
+            ),
         ] {
             let (cause, value) = stashed(position, fee, inputs, stash, key);
             assert_eq!(check(&cause, &value, "Reshape"), Ok(()));
         }
         for (position, fee, inputs, stash, key) in [
-            (2, 1_000_000, json!([lesser(1)]), 2, "oteryn:item.tibia.i46625"),
-            (3, 5_000_000, json!([greater(1)]), 2, "oteryn:item.tibia.i46625"),
+            (
+                2,
+                1_000_000,
+                json!([lesser(1)]),
+                2,
+                "oteryn:item.tibia.i46625",
+            ),
+            (
+                3,
+                5_000_000,
+                json!([greater(1)]),
+                2,
+                "oteryn:item.tibia.i46625",
+            ),
         ] {
             let (cause, value) = stashed(position, fee, inputs, stash, key);
             assert_eq!(

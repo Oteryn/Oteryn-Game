@@ -114,9 +114,15 @@ fn scenario() -> TestResult {
             .execute(&mut *tx)
             .await?;
         sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
-            "{}{}",
+            "{}{}{}",
             crate::durability::item_fee_burn::test_support::item(
                 70,
+                "oteryn:item.tibia.i2854",
+                "definition-r1",
+                1
+            ),
+            crate::durability::item_fee_burn::test_support::item(
+                71,
                 "oteryn:item.tibia.i2854",
                 "definition-r1",
                 1
@@ -133,7 +139,9 @@ fn scenario() -> TestResult {
         sqlx::query("INSERT INTO game_item_container_slots(character_id,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
             .bind(id(41).as_slice()).bind(id(70).as_slice()).bind(id(42).as_slice()).bind(id(74).as_slice()).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1,encode($5,'hex')::uuid)")
-            .bind(id(41).as_slice()).bind(id(70).as_slice()).bind(id(72).as_slice()).bind(id(42).as_slice()).bind(id(75).as_slice()).execute(&mut *tx).await?;
+            .bind(id(41).as_slice()).bind(id(70).as_slice()).bind(id(71).as_slice()).bind(id(42).as_slice()).bind(id(75).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($5,'hex')::uuid)")
+            .bind(id(41).as_slice()).bind(id(71).as_slice()).bind(id(72).as_slice()).bind(id(42).as_slice()).bind(id(76).as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
         let fence = owner
             .current_quest_fence(session)

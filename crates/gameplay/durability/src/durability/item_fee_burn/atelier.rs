@@ -11,7 +11,9 @@ const COIN_INPUTS_MAX: usize = 508;
 pub(super) fn is_cause(cause: &FeeBurnCause) -> bool {
     matches!(
         cause,
-        FeeBurnCause::QuestRewardPayment { .. } | FeeBurnCause::GemReveal { .. }
+        FeeBurnCause::HorseRental { .. }
+            | FeeBurnCause::QuestRewardPayment { .. }
+            | FeeBurnCause::GemReveal { .. }
             | FeeBurnCause::GemSwitchDomain { .. }
             | FeeBurnCause::GemGradeUp { .. }
             | FeeBurnCause::GemReshape { .. }
@@ -187,7 +189,10 @@ impl CarriedInputs {
             | FeeBurnCauseV1::GemSwitchDomain(value)
             | FeeBurnCauseV1::GemGradeUp(value)
             | FeeBurnCauseV1::GemReshape(value) => value,
-            FeeBurnCauseV1::QuestRewardPayment(value) => value.purchase.as_mut().ok_or(FeeBurnError::InvalidInput)?,
+            FeeBurnCauseV1::HorseRental(value) => value,
+            FeeBurnCauseV1::QuestRewardPayment(value) => {
+                value.purchase.as_mut().ok_or(FeeBurnError::InvalidInput)?
+            }
             _ => return Err(FeeBurnError::InvalidInput),
         };
         let mut proof: Value = if value.atelier_proof.is_empty() {

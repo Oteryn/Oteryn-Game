@@ -44,7 +44,7 @@ CREATE CONSTRAINT TRIGGER game_horse_rental_receipt_consistent
 REVOKE ALL ON FUNCTION game_horse_rental_receipt_guard() FROM PUBLIC;
 
 DO $migration$
-DECLARE rule RECORD; body TEXT;
+DECLARE rule RECORD; body TEXT; target TEXT;
 BEGIN
     FOR rule IN
         SELECT conname, regexp_replace(pg_get_constraintdef(oid),' NOT VALID$','') AS definition
@@ -62,11 +62,49 @@ BEGIN
         EXECUTE format('ALTER TABLE game_item_fee_burns ADD CONSTRAINT %I CHECK ((%s) OR (%s)) NOT VALID',
                        rule.conname,substr(rule.definition,7),body);
     END LOOP;
+    FOREACH target IN ARRAY ARRAY['game_atelier_coin_admit()', 'game_atelier_coin_complete(uuid)'] LOOP
+        SELECT pg_get_functiondef(target::regprocedure) INTO STRICT body;
+        IF position('IN (9,10,11,18)' IN body)=0 THEN
+            RAISE EXCEPTION 'Horse Station requires the carried coin guard anchor in %',target;
+        END IF;
+        body := replace(body,'IN (9,10,11,18)','IN (9,10,11,18,19)');
+        IF target='game_atelier_coin_complete(uuid)' THEN
+            IF position('OR (f.cause_kind=18 AND EXISTS' IN body)=0 THEN
+                RAISE EXCEPTION 'Horse Station requires the carried coin receipt anchor';
+            END IF;
+            body := replace(body,'OR (f.cause_kind=18 AND EXISTS',$proof$
+                OR (f.cause_kind=19 AND EXISTS (
+                    SELECT 1 FROM game_horse_rental_receipts h
+                    WHERE h.fee_transaction_id=f.transaction_id AND h.character_id=f.character_id
+                      AND h.world_id=f.world_id AND h.occurrence_id=f.cause_occurrence_id
+                      AND h.created_xact_id=pg_current_xact_id() AND f.fee_gold_units=500
+                )) OR (f.cause_kind=18 AND EXISTS$proof$);
+        END IF;
+        EXECUTE body;
+    END LOOP;
+    FOR rule IN SELECT conname,pg_get_constraintdef(oid) AS definition
+        FROM pg_constraint WHERE conrelid='game_item_fee_burns'::regclass AND contype='c'
+    LOOP
+        IF position('ARRAY[9, 10, 11, 18]' IN rule.definition)>0 THEN
+            EXECUTE format('ALTER TABLE game_item_fee_burns DROP CONSTRAINT %I',rule.conname);
+            EXECUTE format('ALTER TABLE game_item_fee_burns ADD CONSTRAINT %I %s',
+                rule.conname,replace(rule.definition,'ARRAY[9, 10, 11, 18]','ARRAY[9, 10, 11, 18, 19]'));
+        END IF;
+    END LOOP;
     SELECT pg_get_functiondef('game_item_fee_burn_consistency_guard()'::regprocedure) INTO STRICT body;
-    IF position('(NEW.cause_kind=5 AND EXISTS' IN body)=0 THEN
-        RAISE EXCEPTION 'Horse Station requires the item-only fee guard anchor';
+    IF position('IF NEW.cause_kind=18 THEN' IN body)=0 THEN
+        RAISE EXCEPTION 'Horse Station requires the fee source guard anchor';
     END IF;
-    EXECUTE replace(body,'(NEW.cause_kind=5 AND EXISTS',
-        '(NEW.cause_kind=19 AND EXISTS(SELECT 1 FROM game_horse_rental_receipts r WHERE r.fee_transaction_id=NEW.transaction_id AND r.character_id=NEW.character_id AND r.created_xact_id=pg_current_xact_id())) OR (NEW.cause_kind=5 AND EXISTS');
+    EXECUTE replace(body,'IF NEW.cause_kind=18 THEN',$guard$
+        IF NEW.cause_kind=19 THEN
+            PERFORM game_atelier_coin_complete(NEW.transaction_id);
+            RETURN NULL;
+        END IF;
+        IF NEW.cause_kind=18 THEN$guard$);
+    SELECT pg_get_functiondef('game_item_audit_envelope_size_proven()'::regprocedure) INTO STRICT body;
+    IF position('f.cause_kind IN (9,10,11)' IN body)=0 THEN
+        RAISE EXCEPTION 'Horse Station requires the fee audit envelope guard anchor';
+    END IF;
+    EXECUTE replace(body,'f.cause_kind IN (9,10,11)','f.cause_kind IN (9,10,11,19)');
     EXECUTE format('ALTER FUNCTION game_horse_rental_receipt_guard() SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $migration$;

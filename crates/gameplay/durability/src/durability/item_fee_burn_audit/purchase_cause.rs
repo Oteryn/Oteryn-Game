@@ -13,18 +13,17 @@ pub struct OneItemNpcPurchaseV1 {
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemQuestRewardPaymentV1 {
-    #[prost(message, optional, tag="1")]
+    #[prost(message, optional, tag = "1")]
     pub purchase: Option<OneItemNpcPurchaseV1>,
-    #[prost(uint64, tag="2")]
+    #[prost(uint64, tag = "2")]
     pub fee_gold_units: u64,
-    #[prost(bool, tag="3")]
+    #[prost(bool, tag = "3")]
     pub include_bank: bool,
 }
 
 pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
     if let Some(
         FeeBurnCauseV1::ArenaEntry(cause)
-        | FeeBurnCauseV1::HorseRental(cause)
         | FeeBurnCauseV1::HirelingService(cause)
         | FeeBurnCauseV1::PromotionPurchase(cause)
         | FeeBurnCauseV1::BlessingPurchase(cause)
@@ -41,9 +40,10 @@ pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
     match value.cause.as_ref().and_then(|value| value.cause.as_ref()) {
         Some(FeeBurnCauseV1::HorseRental(cause))
             if cause.service_key == "oteryn:service.horse_station.rent"
+                && !cause.atelier_proof.is_empty()
                 && value.fee_gold_units == oteryn_gameplay_world_change::horse_station::RENTAL_PRICE_GOLD =>
         {
-            check_uuid_v7(&cause.occurrence)
+            super::atelier_cause::check_switch(cause, value)
         }
         Some(FeeBurnCauseV1::QuestRewardPayment(cause))
             if cause.fee_gold_units == value.fee_gold_units
