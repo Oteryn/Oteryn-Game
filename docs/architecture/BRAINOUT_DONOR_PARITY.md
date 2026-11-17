@@ -2,6 +2,7 @@
 
 Branch: `claude/happy-davinci-ijz3wy-brainout`.
 Base: `origin/main` at `e2152d050038cecdb3728c222af2ac184e1cac5a`.
+Merged main: `382ba2e5891680675c40ffa10a9a255500647c67` (merge commit `921360963`).
 Primary donor: Crystal `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`,
 checked out at `/workspace/crystal`. Donor code is reference data.
 
@@ -108,14 +109,16 @@ The table records the named local qualification steps.
 | Clippy, dispatch | Passed: final all-target/all-feature check with warnings denied; cross-mount error formatter fixed without allowances |
 | Clippy, server | Passed: final all-target check with warnings denied; one shared World fixture module, no lint allowances |
 | Full World regeneration | Passed with all default checks; second full regeneration left no diff; World pin unchanged |
-| No-URL guards and public schema | Passed on final source: 6 filtered tests in 0.13 seconds without the admin URL |
-| Full focused PG suite | Passed on final source: 6 tests, including 5 real PG cases, in 322.87 seconds; all requested assertions plus east control and whole stacks |
+| No-URL guards and public schema | Passed on final source: 6 filtered tests in 0.11 seconds without the admin URL |
+| Full focused PG suite | Passed on final source: 6 tests, including 5 real PG cases, in 181.12 seconds; all requested assertions plus east control and whole stacks |
 | Quest source-cohort loader | Passed: focused owner-scope test in 9.66 seconds |
-| Pin verification | Passed: source-fresh release compiler `pin-check`; World digest `9aa91f7abe59f92ff7b159151f9588cb6fd42f0bfb8ef1826520e48d9921a82b`; command exit status 0 |
+| Pin verification | Passed: source-fresh release compiler `pin-check`; World digest `0676b1568f55a55fbe994f344a8e0c60debf766751d12849f56c19f60c93aae5`; command exit status 0 |
 
-Qualification is complete. No PR was created. Migration 2889 is used; capability
+Post-merge qualification is in progress: unit, item-profile and Clippy reruns
+remain active; PG, pin-check, authoring checks, content tree and fmt passed.
+No PR was created. Migration 2889 is used; capability
 542 and command/mechanic ordinal 6277 are unnecessary because the existing USE
-command and custody owner carry the new effect. No requested work remains.
+command and custody owner carry the new effect.
 
 Reproduce the focused PG qualification after sourcing the retained environment:
 
