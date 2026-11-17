@@ -44,12 +44,7 @@ pub(super) fn resolve(
     {
         return Ok(None);
     }
-    // Only the declared ticket exchange may enter this random value participant.
-    if !plan.effects.iter().any(|effect| {
-        matches!(effect,
-        NpcRuleEffect::TakeItem { item, count: 1, subtype: None, optional: false }
-        if item == SANDRA_LOTTERY.input)
-    }) {
+    if !valid_ticket_effects(&plan.effects) {
         return Err(DurabilityError::InvalidStoredState);
     }
     let draw =
@@ -58,9 +53,6 @@ pub(super) fn resolve(
         .draw(draw)
         .ok_or(DurabilityError::InvalidStoredState)?;
     let mut resolved = plan.clone();
-    resolved.inventory_after = SANDRA_LOTTERY
-        .inventory_after(&plan.inventory_before, draw)
-        .ok_or(DurabilityError::InvalidStoredState)?;
     resolved.inventory_after = SANDRA_LOTTERY
         .inventory_after(&plan.inventory_before, draw)
         .ok_or(DurabilityError::InvalidStoredState)?;
@@ -103,4 +95,28 @@ pub(super) async fn has_prize_room<C: crate::durability::item_loop_move::ItemLoo
     };
     let entries = load_entries(tx, slot.item_instance_id).await?;
     Ok(u32::try_from(entries.len()).is_ok_and(|count| count < capacity))
+}
+
+/// Reject extra or optional inventory effects before choosing a random reward.
+pub fn valid_ticket_effects(effects: &[NpcRuleEffect]) -> bool {
+    let mut takes = 0;
+    let mut gives = 0;
+    for effect in effects {
+        match effect {
+            NpcRuleEffect::TakeItem {
+                item,
+                count: 1,
+                subtype: None,
+                optional: false,
+            } if item == SANDRA_LOTTERY.input => takes += 1,
+            NpcRuleEffect::GiveItem {
+                item,
+                count: 1,
+                subtype: None,
+            } if item == "oteryn:item.tibia.i5958" => gives += 1,
+            NpcRuleEffect::TakeItem { .. } | NpcRuleEffect::GiveItem { .. } => return false,
+            _ => {}
+        }
+    }
+    takes == 1 && gives == 1
 }

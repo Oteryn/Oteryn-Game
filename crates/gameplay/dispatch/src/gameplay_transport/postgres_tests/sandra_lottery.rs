@@ -201,6 +201,26 @@ pub(super) async fn exercise_missing(
         .bind("oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt")
         .bind("oteryn:quest.outfit_and_addon_quests").execute(&h.pool).await?;
     let catalogue = owner.quest_catalogue.clone().ok_or("quest catalogue")?;
+    let source = oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime()?
+        .admitted_for_npc("oteryn:npc.sandra", &catalogue)?
+        .ok_or("Sandra source not admitted")?;
+    assert!(
+        source
+            .programs()
+            .iter()
+            .flat_map(|program| &program.document.rules)
+            .any(|rule| rule.key == "oteryn:quest-npc/sandra/lottery")
+    );
+    assert_eq!(SANDRA_LOTTERY.total_weight(), Some(98));
+    assert_eq!(
+        SANDRA_LOTTERY
+            .outcomes
+            .iter()
+            .map(|outcome| outcome.weight)
+            .collect::<Vec<_>>(),
+        [1, 97]
+    );
+
     let before = owner
         .root
         .read_character_quest_state(authority, fence.character_id)
@@ -499,4 +519,21 @@ fn sandra_lottery_postgres_full_inventory_refuses_without_consuming_ticket() -> 
             false,
         )
     })
+}
+
+#[test]
+fn sandra_lottery_rejects_extra_or_optional_inventory_effects() -> super::TestResult {
+    use crate::durability::quest_state::npc_program::sandra_lottery::valid_ticket_effects;
+    use oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect;
+    let mut effects = SANDRA_LOTTERY.effects(1, |_| 0).ok_or("winning effects")?;
+    assert!(valid_ticket_effects(&effects));
+    effects.push(effects[0].clone());
+    assert!(!valid_ticket_effects(&effects));
+    effects.pop();
+    if let NpcRuleEffect::TakeItem { optional, .. } = &mut effects[0] {
+        *optional = true;
+    }
+    assert!(!valid_ticket_effects(&effects));
+    assert!(!valid_ticket_effects(&[]));
+    Ok(())
 }
