@@ -71,6 +71,7 @@ const ORIGINAL_PROFILES: usize = 432;
 /// The item profiles each mechanic adds, one row per mechanic in name order, so a new mechanic
 /// adds its own row instead of rewriting a shared total.
 const PROFILE_ADDITIONS: &[(&str, usize)] = &[
+    ("ELEPHANT-CORPSES", 4),
     ("ENGNPC2-SLUG-CORPSES", 4),
     // M41 source operands: sculpture 31574, beak 52632 and corpse stages 52677..=52680.
     // Regenerated from m41_quest_item_profiles.IDS, independently of the profile union.
@@ -738,7 +739,8 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         .filter(|(name, _)| {
             matches!(
                 *name,
-                "ENGCLAIM-M34"
+                "ELEPHANT-CORPSES"
+                    | "ENGCLAIM-M34"
                     | "ENGNPC-M04"
                     | "ENGNPC-M05"
                     | "ENGNPC2-SLUG-CORPSES"
@@ -791,7 +793,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         })
         .map(|(_, count)| count)
         .sum::<usize>();
-    assert_eq!(later_main_profiles, 2589);
+    assert_eq!(later_main_profiles, 2593);
     const QENGINE2_BASE_PROFILES: usize = 53;
     assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 103);
     let baseline = ORIGINAL_PROFILES
