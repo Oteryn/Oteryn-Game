@@ -52,7 +52,8 @@ pub(super) fn opened_source(
     if shown != intent.npc_actor {
         return None;
     }
-    let npc = runtime.visible_entities().npcs.iter().find(|npc| {
+    let visible = runtime.visible_entities();
+    let npc = visible.npcs.iter().find(|npc| {
         npc.actor.placement_identity() == shown.identity && npc.generation == shown.generation
     })?;
     Some((
