@@ -46,8 +46,10 @@ All four first full code-generation builds passed sequentially at `-j1`:
 These are the first full code-generation measurements, before the final unused-import
 cfg cleanup. Final warning-free rechecks passed for g1 (3m51s), g2 (4m34s),
 g3 (3m50s), g4 (3m46s), and no-feature (1m14s), with zero dispatch warnings.
-All-targets/all-features Clippy with `-D warnings` passed before the final
-import-only cfg cleanup; its final repeat is running. Existing vendored Tokio/SQLx
+All-targets/all-features Clippy with `-D warnings` passed on the final tree
+(2m03s). The final no-feature binary lists zero PG tests. Final formatting, source
+inventory, all-features source equivalence, repository policy, architecture,
+governance (135 tests), and full merge-queue simulation checks passed. Existing vendored Tokio/SQLx
 dependency warnings are outside this change. Each final compiled binary’s
 `--list` PG names also matched its source inventory exactly (636/504/557/582).
 
