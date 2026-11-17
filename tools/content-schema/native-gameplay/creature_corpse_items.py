@@ -11,6 +11,8 @@ encounter loot importer. Every corpse root's capacity is within the runtime
 corpse cap of 30. The per-Item capacities and their source lines are listed in
 docs/reference/parity/corpses.md and checked by test_creature_corpse_items.py.
 """
+import hashlib
+import json
 from pathlib import Path
 import sys
 
@@ -42,3 +44,18 @@ def admit_native(root, generated, profile_path, manifest_path, order, canonical)
     corpses.admit_native(root, generated, profile_path, manifest_path, order, canonical, CREATURES)
     loot.admit_native(root, generated, profile_path, manifest_path, order, canonical,
                       item_ids=loot.selected(root, CREATURES))
+    # The rows this wave creates carry Crystal's source top order (items.cpp:203-208)
+    # in the provider itself, so SRX-1 does not re-emit them as bounded updates.
+    sys.path.insert(0, str(root / 'tools/content-migration'))
+    import house_decoration_actions as house
+    keys = ({f'oteryn:item.tibia.i{i}' for i in corpses.policies(root, CREATURES)[0]}
+            | {f'oteryn:item.tibia.i{i}' for i in loot.selected(root, CREATURES)})
+    document = json.loads(generated[profile_path])
+    house.apply_top_order(
+        [row for row in document['records'] if row['production_definition']['production_key'] in keys],
+        json.loads((root / house.PROFILES).read_bytes()))
+    raw = canonical(document)
+    generated[profile_path] = raw
+    manifest = json.loads(generated[manifest_path])
+    manifest['item_profiles']['sha256'] = hashlib.sha256(raw).hexdigest()
+    generated[manifest_path] = canonical(manifest)
