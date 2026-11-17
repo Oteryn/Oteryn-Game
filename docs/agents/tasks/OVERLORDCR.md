@@ -26,7 +26,7 @@ Current validation table (ci-local.sh is absent at this base):
 | quest crate clippy, all targets, warnings denied | Passed |
 | governance validator and unit tests | Passed, 135 tests |
 | full dispatch lethal-path PG regressions | Two compiler OOM failures, including clean single-job retry; no test execution |
-| supplemental authority PG proof | Building with one job |
+| supplemental authority PG proof | Passed: 1 test, 0 failures, 138.002037182 seconds |
 | dispatch clippy, all targets/all features | Pending |
 | game-server touched authority target clippy | Pending |
 | pin/lock verification | Pending |
@@ -35,3 +35,5 @@ Current validation table (ci-local.sh is absent at this base):
 Donor key rechecked on the current 201189f8 checkout: `data-global/lib/core/storages.lua:1084`, `BossStorage = 41652`. Its overlord death script is byte-identical to packet revision 9f5a72c for the relevant file. The supplemental build has progressed past the content crate into gameplay dependencies.
 
 Additional donor participant witness: `data/libs/functions/functions.lua:1075-1082` implements `onDeathForDamagingPlayers` by iterating `creature:getDamageMap()`, resolving each key with `Player(key)`, and invoking the callback for resolved players. This confirms damage-map rather than proximity/party eligibility. Supplemental PG compilation has progressed through production dispatch and into the final application/client dependency chain; it has not reported a test outcome yet.
+
+PG GREEN: `cargo test --locked -p oteryn-game-server --test character_authority_postgres overlordcr -- --nocapture` passed `overlordcr_quest_owner_rejects_non_damage_and_replays_all_four_flags_postgres`: one passed, zero failed, marker `OVERLORDCR_OWNER_PG_EXECUTED duration=138.002037182s`. This proves the native quest-state transaction for all four flags, rejection of non-damage/non-overlord requests, duplicate receipt replay and a distinct later overlord preserving the shared flag. It does not replace execution of the full dispatch lethal-path cases.
