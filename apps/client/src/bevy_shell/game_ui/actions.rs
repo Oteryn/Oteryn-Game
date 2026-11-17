@@ -418,6 +418,7 @@ fn edit_click(
     owner: NonSend<HostOwner>,
     editor: Res<editor::EditorState>,
     skins: Res<Skins>,
+    scale: Option<Res<UiScale>>,
     mut menu: ResMut<SlotMenu>,
     mut commands: Commands,
 ) {
@@ -454,10 +455,11 @@ fn edit_click(
         checked: Some(skins.checked.clone()),
         unchecked: Some(skins.unchecked.clone()),
     };
-    let opened = popup::spawn(
+    let opened = super::hud_panes::context_menu::spawn(
         &mut commands,
         &look,
         event.pointer.location().position,
+        scale.as_deref(),
         &items,
     );
     let layer = commands
@@ -572,13 +574,8 @@ fn menu_action(
         | MenuChoice::SetText
         | MenuChoice::EditHotkey => editor.open(entry.slot, owner.generation()),
         MenuChoice::Clear => {
-            if entry.slot < ROW_SLOTS * 3 {
-                play.link.clear_bar_action(entry.slot);
-                play.link.assign_spell_slot(entry.slot, None);
-            } else {
-                // Bars 4 to 9 keep no assignments yet; say so as the editor does.
-                editor.refuse(entry.slot, owner.generation());
-            }
+            play.link.clear_bar_action(entry.slot);
+            play.link.assign_spell_slot(entry.slot, None);
         }
     }
 }

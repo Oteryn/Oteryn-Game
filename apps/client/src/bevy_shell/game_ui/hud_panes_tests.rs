@@ -855,3 +855,70 @@ fn every_module_fits_without_overlap_from_1020x650_to_4k() -> TestResult {
 
 #[path = "hud_panes_float_tests.rs"]
 mod floating;
+
+#[test]
+fn logout_retries_failed_dock_save() -> TestResult {
+    let mut app = playing_app(preferences("dock-retry"))?;
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+        std::time::Duration::from_secs(2),
+    ));
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .enter_character(Some([5; 16]));
+    app.update();
+    let path = app
+        .world()
+        .non_send::<HostOwner>()
+        .dock_layout_path()
+        .ok_or("dock path")?;
+    let staging = path.with_extension("json.tmp");
+    std::fs::create_dir(&staging)?;
+    *app.world_mut().resource_mut::<SidebarWidgets>() = moved_dock();
+    app.update();
+    app.update();
+    std::fs::remove_dir(staging)?;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .enter_character(None);
+    app.update();
+    assert_eq!(SidebarWidgets::load(&path)?, moved_dock());
+    std::fs::remove_file(path)?;
+    Ok(())
+}
+
+#[test]
+fn scaled_context_menu_keeps_its_last_entry_inside_the_window() -> TestResult {
+    use crate::bevy_shell::gameplay_dialogs::popup;
+    use bevy::ecs::system::RunSystemOnce;
+    let mut app = laid_out_app(1200, 720)?;
+    app.insert_resource(UiScale(1.5))
+        .add_systems(Update, popup::layout);
+    let frame = app
+        .world_mut()
+        .run_system_once(
+            |mut commands: Commands, skins: Res<Skins>, scale: Res<UiScale>| {
+                let look = popup::Look {
+                    font: skins.font.clone(),
+                    frame: skins.frame.clone(),
+                    checked: None,
+                    unchecked: None,
+                };
+                let menu = context_menu::spawn(
+                    &mut commands,
+                    &look,
+                    Vec2::new(1190., 715.),
+                    Some(&scale),
+                    &[popup::Item::entry("Copy Message")],
+                );
+                menu.root
+            },
+        )
+        .map_err(|error| error.to_string())?;
+    app.world_mut().get_mut::<Node>(frame).ok_or("frame")?.width = px(150.);
+    app.update();
+    app.update();
+    let menu = rect(&app, frame)?;
+    assert!(menu.width() >= 225. && menu.height() > 0.);
+    assert!(menu.max.x <= 1200. && menu.max.y <= 720., "{menu:?}");
+    Ok(())
+}

@@ -138,14 +138,36 @@ fn visible_slots_follow_real_computed_width_and_saved_scroll_offset() -> TestRes
         .ok_or("play")?
         .link
         .bar_gesture(BarGesture::Scroll { bar: 0, by: 40 });
-    for (width, expected) in [(218., 40..45), (110., 40..42)] {
+    for (dock, extent, expected) in [
+        (crate::play::BarDock::Bottom, 218., 40..44),
+        (crate::play::BarDock::Bottom, 110., 40..41),
+        (crate::play::BarDock::Left, 230., 40..44),
+    ] {
+        let link = &app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link;
+        link.bar_gesture(BarGesture::Configure {
+            bar: 0,
+            dock,
+            enabled: true,
+            locked: true,
+        });
+        let side = dock != crate::play::BarDock::Bottom;
         for (bar, mut computed) in app
             .world_mut()
             .query::<(&BarRow, &mut ComputedNode)>()
             .iter_mut(app.world_mut())
         {
             if bar.0 == 0 {
-                computed.size = Vec2::new(width, 34.);
+                computed.size = if side {
+                    Vec2::new(34., extent)
+                } else {
+                    Vec2::new(extent, 34.)
+                };
                 computed.inverse_scale_factor = 1.;
             }
         }
@@ -163,6 +185,13 @@ fn visible_slots_follow_real_computed_width_and_saved_scroll_offset() -> TestRes
                 _ => None,
             })
             .collect::<Vec<_>>();
+        let lock_extent = if side { LOCK_SIZE.y } else { LOCK_SIZE.x };
+        let slots = visible.len() as f32;
+        let used = slots * SLOT_SIZE + 2. * SCROLL_SIZE + lock_extent + (slots + 2.) * SLOT_GAP;
+        assert!(
+            used <= extent,
+            "lock ends at {used} in a {extent}-pixel row"
+        );
         assert_eq!(visible, expected.collect::<Vec<_>>());
     }
     Ok(())
@@ -190,6 +219,7 @@ fn unlocking_and_selecting_slot_opens_shared_editor_without_casting() -> TestRes
             .locked
     );
     let first = slot(&mut app, 0)?;
+    app.insert_resource(UiScale(1.5));
     // Editing is an explicit secondary click; ordinary activation still executes.
     app.world_mut().trigger(PointerClick {
         entity: first,
@@ -197,10 +227,10 @@ fn unlocking_and_selecting_slot_opens_shared_editor_without_casting() -> TestRes
             bevy::picking::pointer::PointerId::Mouse,
             bevy::picking::pointer::Location {
                 target: bevy::camera::NormalizedRenderTarget::None {
-                    width: 100,
-                    height: 100,
+                    width: 1000,
+                    height: 600,
                 },
-                position: Vec2::ZERO,
+                position: Vec2::new(200., 100.),
             },
         ),
         button: bevy::picking::pointer::PointerButton::Secondary,
@@ -209,6 +239,15 @@ fn unlocking_and_selecting_slot_opens_shared_editor_without_casting() -> TestRes
         count: 1,
     });
     app.update();
+    let parent = app
+        .world_mut()
+        .query_filtered::<&ChildOf, With<popup::PopupEntry>>()
+        .iter(app.world())
+        .next()
+        .ok_or("popup entry")?
+        .parent();
+    let frame = app.world().get::<Node>(parent).ok_or("popup frame")?;
+    assert_eq!((frame.left, frame.top), (px(200. / 1.5), px(100. / 1.5)));
     // The secondary click opens the Tibia slot menu; its Assign Spell entry opens the editor.
     let mut labels = Vec::new();
     let mut assign = None;
@@ -606,7 +645,7 @@ fn slots_show_their_bound_hotkey_and_follow_a_150_percent_bar_zoom() -> TestResu
 }
 
 #[test]
-fn clear_on_a_bar_without_assignments_is_refused_visibly() -> TestResult {
+fn clear_removes_assigned_fourth_bar_action() -> TestResult {
     let (mut app, mut commands) = fixture()?;
     let generation = {
         let owner = app.world().non_send::<HostOwner>();
@@ -621,6 +660,15 @@ fn clear_on_a_bar_without_assignments_is_refused_visibly() -> TestResult {
                 enabled: true,
                 locked: false,
             });
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        assert!(link.assign_bar_action(
+            150,
+            crate::play::BarAction::Text {
+                text: "hello".into(),
+                send_automatically: true,
+            }
+        ));
+        assert!(link.spell_slot_tooltips()[150].contains("hello"));
         owner.generation()
     };
     let entry = app
@@ -633,9 +681,15 @@ fn clear_on_a_bar_without_assignments_is_refused_visibly() -> TestResult {
         .observe(menu_action)
         .id();
     app.world_mut().trigger(Activate { entity: entry });
-    let editor = app.world().resource::<editor::EditorState>();
-    assert!(editor.active(), "the refusal is shown in the slot editor");
-    assert!(editor.message().starts_with("Choose a valid"));
+    let link = &app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link;
+    assert!(!link.spell_slot_tooltips()[150].contains("hello"));
+    assert!(!app.world().resource::<editor::EditorState>().active());
     assert!(commands.try_recv().is_err());
     Ok(())
 }

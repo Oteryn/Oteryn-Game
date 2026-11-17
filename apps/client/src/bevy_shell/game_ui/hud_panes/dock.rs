@@ -196,9 +196,11 @@ pub(super) fn persist(
         *pending = Some(now);
     }
     if pending.is_some_and(|since| now.saturating_sub(since) >= SAVE_DELAY) {
-        *pending = None;
         if let Err(error) = widgets.save(path) {
+            *pending = Some(now);
             leprintln!("Could not save window layout: {error}", error = error);
+        } else {
+            *pending = None;
         }
     }
 }
