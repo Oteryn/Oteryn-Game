@@ -52,8 +52,9 @@ turned into a new owner prompt.
 
 ### Owner review rule for every PR (2026-11-09)
 
-The owner authorizes one manual Codex review (`codex exec`, read-only, single
-agent, model `gpt-6.1-sol`, reasoning effort `high`, or, from a session without
+The owner authorizes one manual Codex review (Codex Cloud, read-only, single
+agent, model `gpt-6.2-sol`, reasoning effort `high`, never `codex exec` on the
+PC, per owner rule 2026-11-17, or, from a session without
 the PC, one native `@codex review` PR comment naming the exact head) of every
 Game PR before it merges. This
 replaces the 2026-10-29 trial and its "at most 5 a day" limit. These reviews
@@ -77,7 +78,7 @@ implementation, repair or any other Codex use.
 Owner decision 2026-11-11 (fix of confirmed findings): the review run itself stays
 read-only and never edits code. Findings the coordinator has verified against the
 code may then be handed, as one list, to a single code-writing Codex run at
-reasoning effort `medium` (on the PC: `codex-review.sh <worktree> <tag>
+reasoning effort `medium`, model `gpt-6.2-sol` (on the PC: `codex-review.sh <worktree> <tag>
 --fix-confirmed <file>`). That run writes a red test per finding before any fix,
 reports a finding it cannot reproduce without changing code, changes no existing
 assertion, timeout or budget and nothing outside the list, and commits nothing;
@@ -103,7 +104,7 @@ GitHub control-plane write and must obey one-writer routing.
 - Owner decision 2026-11-11 (lanes that work alone): a Claude session, child
   session or PC lane that owns a branch or PR, named as its owner in its packet
   or allocation, is the exact task owner for the heads it pushes. It runs that
-  head's local `codex exec` review itself under the per-PR rule above and
+  head's Codex Cloud review itself under the per-PR rule above and
   reports the result (head SHA, findings, fixes) to its coordinator, which does
   not run a second review of the same head. A Codex lane never reviews code; its
   result is reviewed by the coordinator or the lane that takes it over.
