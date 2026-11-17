@@ -390,7 +390,18 @@ impl RewardCallback {
                 && matches!(self.present.as_slice(), [item] if item.item == "oteryn:item.tibia.i22009" && item.count == 1)
                 && self.give.is_none()
                 && self.corpse_target.is_none()
-                && !self.fresh_corpse;
+                && !self.fresh_corpse
+                && matches!(
+                    self.state_ops.as_slice(),
+                    [StateOperation {
+                        from: StateCondition::Between {
+                            minimum: 0,
+                            maximum: 99
+                        },
+                        effect: StateMutation::Add { value: 1 },
+                        ..
+                    }]
+                );
         }
         match (&self.carried_item, &self.carried_target) {
             (Some(source), Some(target)) => {
@@ -1002,6 +1013,7 @@ fn validate_document_with_capacity(
             })
             || (!c.repeatable
                 && c.counter.is_none()
+                && c.key != TAINTED_SOUL_REDEMPTION
                 && !c.value_only_guarded()
                 && !c.is_save_restart_only()
                 && c.storage
