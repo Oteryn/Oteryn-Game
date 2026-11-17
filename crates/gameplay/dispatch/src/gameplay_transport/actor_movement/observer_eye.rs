@@ -1,6 +1,9 @@
 //! Observer Eye's control chamber and west platform field.
 //! Source placements: Crystal 201189f8, data-global/world/world.otbm, floor 14.
 
+use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+use crate::map::boot::BundleCollisionIndexExt;
+
 use super::{
     CardinalStep, ChannelRuntimeV1, ChannelSpellStates, ExactActorRef, GameSessionId,
     MovementLocalPosition, NativeEntryMovementCells,
@@ -34,6 +37,15 @@ const ATTEMPT_MICROS: u64 = 300_000_000;
 const PLATFORM_INTERVAL_MICROS: u64 = 2_000_000;
 // These are the four platform appearances qualified by the shipped World.
 const PLATFORM_PHASES: [u16; 4] = [24912, 24889, 24898, 24899];
+const WEST_EXIT: MovementLocalPosition = MovementLocalPosition {
+    x: 32777,
+    y: 32904,
+    floor: bindings::FLOOR,
+};
+
+fn is_submerged(appearance: u16) -> bool {
+    matches!(appearance, 24891..=24893 | 24912)
+}
 
 type Player = (ExactActorRef, GameSessionId);
 
@@ -61,8 +73,7 @@ fn platform_at(map: &crate::map::boot::BundleMap, at: MovementLocalPosition) -> 
             return None;
         };
         let appearance = entry.facts.appearance_id;
-        PLATFORM_PHASES
-            .contains(&appearance)
+        (PLATFORM_PHASES.contains(&appearance) || is_submerged(appearance))
             .then_some((placement_key, appearance))
     })
 }
@@ -232,6 +243,24 @@ pub(super) fn mirror_step(
     let Ok(expected) = runtime.read_actor_position(partner) else {
         return;
     };
+    if let NativeMovementCollisionIndex::Bundle(index) = cells.index()
+        && platform_at(index.map(), destination)
+            .is_some_and(|(_, appearance)| is_submerged(appearance))
+    {
+        if let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
+            runtime,
+            cells,
+            partner,
+            partner_session,
+            expected,
+            WEST_EXIT,
+            blocking,
+        ) && runtime.commit_source_step(proof).is_ok()
+        {
+            states.observer_eye_pair = None;
+        }
+        return;
+    }
     let Ok(proof) = crate::map::floor::prepare_bundle_step(
         runtime,
         cells,

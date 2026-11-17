@@ -10,6 +10,24 @@ fn qoptic_observer_eye_dispatch_moves_only_the_paired_player() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    observer_eye_scenario(admin, Scenario::Movement)
+}
+
+#[test]
+fn qoptic_observer_eye_submerged_platform_ejects_the_west_player() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    observer_eye_scenario(admin, Scenario::Fall)
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Scenario {
+    Movement,
+    Fall,
+}
+
+fn observer_eye_scenario(admin: String, scenario: Scenario) -> TestResult {
     super::kill_reward_e2e::scenario_thread::run_async(async move |_| {
         let h =
             Harness::create_with_admission_seed(admin, "qoptic_observer_eye", false, false).await?;
@@ -40,7 +58,11 @@ fn qoptic_observer_eye_dispatch_moves_only_the_paired_player() -> TestResult {
             .await
             .map_err(debug)?;
         let fixture = Dependencies::new()?;
-        let world = platform_world(fixture.admitted.world_id, fixture.admitted.channel_id)?;
+        let world = platform_world(
+            fixture.admitted.world_id,
+            fixture.admitted.channel_id,
+            scenario,
+        )?;
         let cells = world
             .movement_cells(fixture.room.movement_cells())
             .map_err(debug)?;
@@ -121,12 +143,15 @@ fn qoptic_observer_eye_dispatch_moves_only_the_paired_player() -> TestResult {
             (4, StepDirection::North, 32914, 32908),
             (5, StepDirection::North, 32913, 32908),
             (6, StepDirection::South, 32914, 32908),
-        ] {
+        ]
+        .into_iter()
+        .take(if scenario == Scenario::Fall { 2 } else { 6 })
+        {
             let (result, _) = owner
                 .paced_step(deps.actor, deps.admitted.game_session_id, direction)
                 .await;
             assert_eq!(result.disposition, StepDisposition::Moved);
-            if command == 1 {
+            if command == 1 && scenario == Scenario::Movement {
                 let map = owner.bundle_map().ok_or("platform bundle")?;
                 let position = crate::map::overlay::TilePos {
                     x: 32775,
@@ -178,7 +203,11 @@ fn qoptic_observer_eye_dispatch_moves_only_the_paired_player() -> TestResult {
                     .map_err(debug)?
                     .position(),
                 MovementLocalPosition {
-                    y: partner_y,
+                    y: if scenario == Scenario::Fall && command == 2 {
+                        32904
+                    } else {
+                        partner_y
+                    },
                     ..partner_start
                 },
                 "partner after controller STEP {command}",
@@ -194,6 +223,7 @@ fn qoptic_observer_eye_dispatch_moves_only_the_paired_player() -> TestResult {
 fn platform_world(
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
+    scenario: Scenario,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use crate::map::{boot, overlay::TilePos};
     use oteryn_world_bundle::{
@@ -228,6 +258,13 @@ fn platform_world(
                     depth: 0,
                     attrs: Attrs::default(),
                 }];
+                if x == 32777 && y == 32908 && scenario == Scenario::Fall {
+                    items.push(Item {
+                        palette: 1,
+                        depth: 0,
+                        attrs: Attrs::default(),
+                    });
+                }
                 if x == 32775 && (32908..=32911).contains(&y) {
                     items.push(Item {
                         palette: u32::from(y - 32907),
@@ -270,7 +307,7 @@ fn platform_world(
         channel,
         |key| {
             let id = key.rsplit_once(".i")?.1.parse::<u32>().ok()?;
-            Some(boot::ItemDefinition {
+            Some(crate::map::facts::ItemDefinition {
                 reference: std::num::NonZeroU32::new(id + 1)?,
                 solid: Some(false),
                 blocks_projectile: false,
