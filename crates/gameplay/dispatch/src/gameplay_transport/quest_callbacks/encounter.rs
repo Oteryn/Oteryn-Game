@@ -264,10 +264,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             monsters.push((monster.creature.as_str(), policy.maximum_health, at));
         }
         if preflight {
-            return if runtime
-                .preflight_quest_encounter_entry(proofs, &monsters)
-                .is_ok()
-            {
+            let result = if encounter.phase.is_some() {
+                runtime.preflight_quest_encounter_with_phase(proofs, &monsters)
+            } else {
+                runtime.preflight_quest_encounter_entry(proofs, &monsters)
+            };
+            return if result.is_ok() {
                 UseDisposition::Committed
             } else {
                 UseDisposition::Occupied
