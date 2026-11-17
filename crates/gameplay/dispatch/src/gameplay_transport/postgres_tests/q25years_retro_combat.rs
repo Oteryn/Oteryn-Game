@@ -88,6 +88,8 @@ fn q25years_retro_propagates_native_spell_damage_in_instance() -> TestResult {
         let first = spawn("hard_times", 2)?;
         let second = spawn("hard_times", 4)?;
         let castle = spawn("parcel_castle", 6)?;
+        let lethal_blast = spawn("blissful_times", 8)?;
+        let distant_castle = spawn("parcel_castle", 11)?;
 
         cast(&mut runtime, distortion, "retro_time_distortion")?;
         assert!(runtime.matches_live_creature_identity(first, b"oteryn:creature.blissful_times"));
@@ -101,6 +103,11 @@ fn q25years_retro_propagates_native_spell_damage_in_instance() -> TestResult {
         assert_eq!(runtime.live_creature_health(castle), Some(500));
         cast(&mut runtime, second, "retro_blissful_blast")?;
         assert_eq!(runtime.live_creature_health(castle), Some(500));
+
+        cast(&mut runtime, lethal_blast, "retro_blissful_blast")?;
+        assert!(!runtime.contains_live_creature(castle));
+        assert!(!runtime.contains_live_creature(lethal_blast));
+        assert_eq!(runtime.live_creature_health(distant_castle), Some(1_000));
         Ok(())
     })
 }
