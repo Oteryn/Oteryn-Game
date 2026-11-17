@@ -16,6 +16,10 @@ pub enum NativeDeathSource {
     },
     Encounter(super::encounter_deaths::EncounterDeathContext),
     Source(super::source_deaths::SourceDeathContext),
+    TopExperience {
+        source: super::source_deaths::SourceDeathContext,
+        death: crate::foundation::CreatureDeathOccurrenceKey,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -79,10 +83,12 @@ impl NativeQuestDeath {
                             })
                     })
                 }
-                NativeDeathSource::Source(_) => {
+                NativeDeathSource::Source(_) | NativeDeathSource::TopExperience { .. } => {
                     self.definition_hash.is_none()
                         && oteryn_gameplay_quests::quest::source_deaths::rule(&self.transition)
-                            .is_some_and(|rule| rule.creature == self.creature)
+                            .is_some_and(|rule| rule.creature == self.creature
+                                && rule.top_experience_only
+                                    == matches!(self.source, NativeDeathSource::TopExperience { .. }))
                 }
             }
     }
@@ -104,7 +110,9 @@ impl NativeQuestDeath {
         match &self.source {
             NativeDeathSource::PositionedParty { source, .. } | NativeDeathSource::Party(source)
             | NativeDeathSource::InstanceBoss { party: source, .. } => Some(source.as_ref()),
-            NativeDeathSource::Source(_) | NativeDeathSource::Encounter(_) => None,
+            NativeDeathSource::Source(_)
+            | NativeDeathSource::TopExperience { .. }
+            | NativeDeathSource::Encounter(_) => None,
         }
     }
 
@@ -140,6 +148,15 @@ impl NativeQuestDeath {
                 binding[1..].copy_from_slice(&digest);
             }
             NativeDeathSource::Source(source) => source.bind(binding),
+            NativeDeathSource::TopExperience { source, death } => {
+                source.bind(binding);
+                let digest = Sha256::new()
+                    .chain_update(*binding)
+                    .chain_update(b"native-top-experience-v1")
+                    .chain_update(super::super::party_kill_xp::encode_death_key(*death))
+                    .finalize();
+                binding[1..].copy_from_slice(&digest);
+            }
             NativeDeathSource::Encounter(source) => source.bind(binding),
         }
         let mut digest = Sha256::new()
@@ -164,6 +181,31 @@ impl NativeQuestDeath {
     ) -> StoredResult<bool> {
         if let NativeDeathSource::Source(source) = &self.source {
             return source.admit(tx, fence, self).await;
+        }
+        if let NativeDeathSource::TopExperience { source, death } = &self.source {
+            let key = super::super::party_kill_xp::encode_death_key(*death);
+            if !super::super::party_kill_xp::death_matches_fence(&key, &fence)
+                || !source.admit(tx, fence, self).await?
+            {
+                return Ok(false);
+            }
+            let awards: Vec<(Vec<u8>, i64, bool)> = sqlx::query_as(
+                "SELECT uuid_send(m.character_id), m.xp_awarded, m.character_id = d.principal_id \
+                 FROM game_party_kill_xp_receipts d JOIN game_party_kill_xp_members m USING (death_key) \
+                 WHERE d.death_key=$1 AND d.creature_key=$2 ORDER BY m.character_id LIMIT 51",
+            )
+            .bind(key)
+            .bind(&self.creature)
+            .fetch_all(&mut **tx)
+            .await?;
+            if awards.len() > 50 {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            let awards = awards.into_iter().map(|(character, xp, principal)| {
+                Ok((character.try_into().map_err(|_| DurabilityError::InvalidStoredState)?, xp, principal))
+            }).collect::<StoredResult<Vec<_>>>()?;
+            return Ok(oteryn_gameplay_quests::quest::source_deaths::top_experience(awards)
+                == Some(*fence.character_id.as_bytes()));
         }
         if let NativeDeathSource::InstanceBoss {
             death,

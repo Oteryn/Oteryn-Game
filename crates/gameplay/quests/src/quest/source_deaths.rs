@@ -2,7 +2,7 @@
 //! HeartBossDeath: creaturescripts_heart_boss_death.lua:26-138 (room players);
 //! Court Warlock: court_warlock_fight.lua:323-329 (room players);
 //! MagmaBubbleDeath: creaturescripts_magma_bubble_death.lua:12-23 (damage map);
-//! GoblinLeaderDeath: creaturescripts_goblin_leader_kill.lua:3-8 (damaging players).
+//! Goblin Leader: TibiaWiki Tower Defence Quest/Spoiler rev. 749438 (highest awarded XP).
 //! Herald: Crystal 9f5a72c creaturescripts_herald_of_fire.lua:43-45, local top-damage recipient.
 use super::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
@@ -57,6 +57,9 @@ pub struct Rule {
     /// A qualified local source rule may require the present most-damage player.
     #[serde(default)]
     pub top_damage_only: bool,
+    /// The quest recipient must have won the actual award for this lethal occurrence.
+    #[serde(default)]
+    pub top_experience_only: bool,
     define_transition: bool,
     /// Only mission-start guards are revision predecessors for cumulative counters.
     /// Counter increments from earlier queued deaths must not invalidate later ones.
@@ -79,7 +82,7 @@ impl Rule {
                     && (x1..=x2).contains(&position[0])
                     && (y1..=y2).contains(&position[1])
             }
-            None => dealt_damage,
+            None => self.top_experience_only || dealt_damage,
         }
     }
     pub(super) fn transition(&self) -> Result<QuestTransition, String> {
@@ -254,4 +257,28 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
         transitions.into_values().collect(),
     )
     .map_err(|error| format!("{error:?}"))
+}
+
+/// Zero XP never earns credit. Prefer the reward principal on a tie, then use
+/// Character identity so selection remains stable after transaction replay.
+pub fn top_experience(
+    awards: impl IntoIterator<Item = ([u8; 16], i64, bool)>,
+) -> Option<[u8; 16]> {
+    awards.into_iter().filter(|(_, xp, _)| *xp > 0)
+        .max_by_key(|(character, xp, is_principal)| (*xp, *is_principal, std::cmp::Reverse(*character)))
+        .map(|(character, _, _)| character)
+}
+
+#[cfg(test)]
+mod tower_defence_tests {
+    use super::*;
+
+    #[test]
+    fn qtowerdef_top_experience_uses_awarded_xp_and_selects_one_winner() {
+        let principal = [1; 16];
+        let second = [2; 16];
+        assert_eq!(top_experience([(principal, 25, true), (second, 50, false)]), Some(second));
+        assert_eq!(top_experience([(second, 50, false), (principal, 50, true)]), Some(principal));
+        assert_eq!(top_experience([(principal, 0, true), (second, 0, false)]), None);
+    }
 }

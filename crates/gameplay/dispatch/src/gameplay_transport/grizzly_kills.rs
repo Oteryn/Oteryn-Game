@@ -86,6 +86,7 @@ pub(super) struct FrozenGrizzlyDeath {
     recipients: Vec<Recipient>,
     pub(super) native: Vec<super::quest_kills::Recipient>,
     native_goals: Option<native_goals::Recipient>,
+    ordinary_before_top_experience: std::sync::OnceLock<SettleReport>,
 }
 
 impl FrozenGrizzlyDeath {
@@ -261,6 +262,7 @@ fn freeze_at(
         recipients,
         native,
         native_goals: None,
+        ordinary_before_top_experience: Default::default(),
     }
 }
 
@@ -716,7 +718,7 @@ pub(super) async fn settle(
     entry: &PendingKillSettlement,
     ordinary: impl std::future::Future<Output = SettleReport>,
 ) -> SettleReport {
-    if !super::quest_kills::settle(admission, entry).await
+    if !super::quest_kills::settle(admission, entry, false).await
         || !admission.credit_grizzly_death(entry).await
     {
         return SettleReport {
@@ -724,7 +726,32 @@ pub(super) async fn settle(
             no_progression: false,
         };
     }
-    ordinary.await
+    let Some(frozen) = entry.grizzly.as_ref().filter(|frozen| {
+        frozen
+            .native
+            .iter()
+            .any(super::quest_kills::Recipient::requires_awarded_experience)
+    }) else {
+        return ordinary.await;
+    };
+    // Keep the ordinary verdict across quest-only retries, even after the corpse
+    // projection was released. The durable quest gate reads the settled XP audit.
+    let result = if let Some(report) = frozen.ordinary_before_top_experience.get() {
+        *report
+    } else {
+        let report = ordinary.await;
+        if report.verdict == SettleVerdict::Retry {
+            return report;
+        }
+        *frozen.ordinary_before_top_experience.get_or_init(|| report)
+    };
+    if !super::quest_kills::settle(admission, entry, true).await {
+        return SettleReport {
+            verdict: SettleVerdict::Retry,
+            no_progression: false,
+        };
+    }
+    result
 }
 
 #[cfg(test)]

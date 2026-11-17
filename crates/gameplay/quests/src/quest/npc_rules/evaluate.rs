@@ -6,6 +6,25 @@ use super::{
     NpcRuleProgram, NpcTrackChange, NpcTrackDefinition, keyword,
 };
 
+pub(super) const TOWER_PASSWORD: &str =
+    "oteryn:quest-progress/quest/u8_1/tower_defence_quest/password";
+pub(super) const TOWER_ISSUE: &str = "oteryn:quest-npc/tower-defence/receive-password";
+pub(super) const TOWER_REWARD: &str = "oteryn:quest-npc/tower-defence/reward";
+
+fn draw_tower_password() -> Result<i64, NpcRuleError> {
+    const PASSWORD_COUNT: u32 = 9000;
+    const LIMIT: u32 = u32::MAX - u32::MAX % PASSWORD_COUNT;
+    loop {
+        let mut bytes = [0; 4];
+        getrandom::fill(&mut bytes)
+            .map_err(|_| NpcRuleError::Invalid("Tower Defence password draw failed".into()))?;
+        let random = u32::from_le_bytes(bytes);
+        if random < LIMIT {
+            return Ok(1000 + i64::from(random % PASSWORD_COUNT));
+        }
+    }
+}
+
 struct Staged<'a> {
     definitions: BTreeMap<&'a str, &'a NpcTrackDefinition>,
     original: &'a BTreeMap<String, i64>,
@@ -385,6 +404,14 @@ fn plan_with_teleport(
             if !eligible {
                 continue;
             }
+            if rule.key == TOWER_REWARD {
+                let password = state.track(TOWER_PASSWORD)?;
+                if !(1000..=9999).contains(&password)
+                    || input.message.trim() != password.to_string()
+                {
+                    continue;
+                }
+            }
             for effect in &rule.effects {
                 if storage_only
                     && !(allow_teleport
@@ -423,7 +450,21 @@ fn plan_with_teleport(
             }
             completes |= rule.completes;
             selected_rule_keys.push(rule.key.clone());
-            reply.extend_from_slice(&rule.reply);
+            if rule.key == TOWER_ISSUE {
+                let mut password = state.track(TOWER_PASSWORD)?;
+                if password == 0 {
+                    password = draw_tower_password()?;
+                    state.set_track(TOWER_PASSWORD, password)?;
+                }
+                let password = password.to_string();
+                reply.extend(
+                    rule.reply
+                        .iter()
+                        .map(|line| line.replace("{password}", &password)),
+                );
+            } else {
+                reply.extend_from_slice(&rule.reply);
+            }
             if reply.len() > 32 {
                 return Err(NpcRuleError::LimitExceeded);
             }
@@ -533,11 +574,21 @@ mod tower_defence_tests {
             sex: 0,
             outfits: &outfits,
         };
-        let plan = catalogue.plan_storage(&input)?.ok_or_else(|| NpcRuleError::Invalid("no issuance".into()))?;
-        let code = plan.track_changes.iter().find(|change| change.key == password)
-            .ok_or_else(|| NpcRuleError::MissingTrack(password.into()))?.after;
+        let plan = catalogue
+            .plan_storage(&input)?
+            .ok_or_else(|| NpcRuleError::Invalid("no issuance".into()))?;
+        let code = plan
+            .track_changes
+            .iter()
+            .find(|change| change.key == password)
+            .ok_or_else(|| NpcRuleError::MissingTrack(password.into()))?
+            .after;
         assert!((1000..=9999).contains(&code));
-        assert!(plan.reply.iter().any(|line| line.contains(&code.to_string())));
+        assert!(
+            plan.reply
+                .iter()
+                .any(|line| line.contains(&code.to_string()))
+        );
 
         let tracks = BTreeMap::from([(questline.into(), 4), (password.into(), code)]);
         let correct = code.to_string();
@@ -554,7 +605,10 @@ mod tower_defence_tests {
         Ok(())
     }
 
-    fn plan_inventory(catalogue: &NpcRuleCatalog, input: &NpcRuleInput<'_>) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+    fn plan_inventory(
+        catalogue: &NpcRuleCatalog,
+        input: &NpcRuleInput<'_>,
+    ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
         plan(catalogue, input, &BTreeMap::new(), false)
     }
 }

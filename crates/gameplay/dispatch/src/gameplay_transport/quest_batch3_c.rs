@@ -1,6 +1,6 @@
 //! Source boss-death quest continuations on the existing captured lethal queue.
 //! Crystal 201189f HeartBossDeath:26-138; CourtWarlock:323-329;
-//! MagmaBubbleDeath:12-23 and GoblinLeaderDeath:3-8. Never infer social-party credit.
+//! MagmaBubbleDeath:12-23 and GoblinLeaderDeath:3-8. Tower Defence qualifies against awarded XP.
 //! Herald's qualified local recipient is the present most-damage player only.
 use super::{kill_reward::PendingKillSettlement, quest_kills::Recipient};
 use crate::durability::quest_state::{
@@ -80,6 +80,26 @@ pub(super) fn capture(
             {
                 continue;
             }
+            let source = SourceDeathContext {
+                scope,
+                scope_generation: generation,
+                character: snapshot.character,
+                session: snapshot.session,
+                lease_generation: snapshot.lease_generation,
+                position,
+                dealt_damage: damaged,
+                top_damage_character: rule
+                    .top_damage_only
+                    .then_some(*principal.character.as_bytes()),
+            };
+            let source = if rule.top_experience_only {
+                NativeDeathSource::TopExperience {
+                    source,
+                    death: entry.facts.death,
+                }
+            } else {
+                NativeDeathSource::Source(source)
+            };
             recipients.push(Recipient {
                 actor: snapshot.actor,
                 session: snapshot.session,
@@ -90,18 +110,7 @@ pub(super) fn capture(
                     creature: entry.creature.clone(),
                     observed_revision: snapshot.observed_revision,
                     definition_hash: None,
-                    source: NativeDeathSource::Source(SourceDeathContext {
-                        scope,
-                        scope_generation: generation,
-                        character: snapshot.character,
-                        session: snapshot.session,
-                        lease_generation: snapshot.lease_generation,
-                        position,
-                        dealt_damage: damaged,
-                        top_damage_character: rule
-                            .top_damage_only
-                            .then_some(*principal.character.as_bytes()),
-                    }),
+                    source,
                 },
             });
         }

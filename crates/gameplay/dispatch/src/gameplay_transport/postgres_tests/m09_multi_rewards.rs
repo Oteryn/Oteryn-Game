@@ -41,15 +41,14 @@ pub(super) async fn exercise(
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
             .ok_or("NPC capabilities")?;
-    for (ordinal, step) in [(8998, "npc_1"), (8999, "npc_3"), (9000, "creature_event_1")] {
-        super::qengine_outfit_stories::commit_fixture(
-            owner,
-            admitted,
-            &format!("oteryn:quest-transition/quest/u8_1/tower_defence_quest/questline/{step}"),
-            ordinal,
-        )
-        .await?;
-    }
+    super::qengine_outfit_stories::seed_quest_prerequisites(
+        h,
+        owner,
+        admitted,
+        &[(TRACK.into(), 3)],
+        0xac,
+    )
+    .await?;
     owner.refresh_quest_session(admitted.game_session_id, false).await;
     let [thanita] = super::classic_quests::install(owner, admitted, [super::qtowerdef_password::NPC]).await?;
     let code = super::qtowerdef_password::issue(owner, admitted, thanita).await?;

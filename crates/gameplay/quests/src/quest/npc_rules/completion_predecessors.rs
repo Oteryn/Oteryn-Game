@@ -1,5 +1,5 @@
 //! Completion metadata preserves exact old NPC pins and existing absent-track semantics.
-use super::{NpcRuleCatalog, admission};
+use super::{NpcComparison, NpcRuleCatalog, NpcRuleGuard, admission, evaluate};
 use crate::quest::{NpcDefinitionPredecessor, QuestStateCatalogue};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
@@ -60,6 +60,70 @@ pub(super) fn register(
                 });
         }
     }
+    register_tower_defence(active, source)?;
+    Ok(())
+}
+
+/// Rebuild the exact NPC definition shipped before Thanita kept a password.
+fn register_tower_defence(
+    active: &mut QuestStateCatalogue,
+    source: &NpcRuleCatalog,
+) -> Result<(), String> {
+    const QUEST: &str = "oteryn:quest.tower_defence_quest";
+    let Some(program) = source.program(QUEST) else {
+        return Ok(());
+    };
+    let mut previous = program.clone();
+    previous
+        .document
+        .tracks
+        .retain(|track| track.key != evaluate::TOWER_PASSWORD);
+    for rule in &mut previous.document.rules {
+        if rule.key == evaluate::TOWER_ISSUE {
+            let [NpcRuleGuard::Storage { op, maximum, .. }] = rule.guards.as_mut_slice() else {
+                return Err("unexpected Thanita password stage guard".into());
+            };
+            *op = NpcComparison::Eq;
+            *maximum = None;
+            for line in &mut rule.reply {
+                *line = line.replace("{password}", "password*");
+            }
+        } else if rule.key == evaluate::TOWER_REWARD {
+            rule.guards.clear();
+            rule.keywords = vec!["password*".into()];
+            rule.any_message = false;
+        }
+    }
+    previous.digest =
+        Sha256::digest(serde_json::to_vec(&previous.document).map_err(|e| e.to_string())?).into();
+    let mut transitions = active.transitions.clone();
+    let mut marker = transitions
+        .remove(&admission::binding_key(program))
+        .ok_or("missing Tower Defence NPC marker")?;
+    marker.key = admission::binding_key(&previous);
+    transitions.insert(marker.key.clone(), marker);
+    let predecessor = QuestStateCatalogue::new(
+        active.content_revision.clone(),
+        active
+            .tracks
+            .values()
+            .filter(|track| track.key != evaluate::TOWER_PASSWORD)
+            .cloned()
+            .collect(),
+        transitions.into_values().collect(),
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    let hash = predecessor
+        .definition_hash(QUEST)
+        .ok_or("missing Tower Defence predecessor")?;
+    active
+        .predecessors
+        .entry(QUEST.into())
+        .or_default()
+        .push(NpcDefinitionPredecessor {
+            hash,
+            defaults: BTreeMap::new(),
+        });
     Ok(())
 }
 

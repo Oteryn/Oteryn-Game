@@ -15,9 +15,19 @@ pub(super) struct Recipient {
     pub(super) death: crate::durability::quest_state::native_kills::NativeQuestDeath,
 }
 
+impl Recipient {
+    pub(super) fn requires_awarded_experience(&self) -> bool {
+        matches!(
+            self.death.source,
+            crate::durability::quest_state::native_kills::NativeDeathSource::TopExperience { .. }
+        )
+    }
+}
+
 pub(super) async fn settle(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     entry: &PendingKillSettlement,
+    after_experience: bool,
 ) -> bool {
     // Encounter-only counters are absent from ordinary creature discovery.
     // Their admitted phase owner already froze exact recipients on this death;
@@ -50,7 +60,9 @@ pub(super) async fn settle(
     let Ok(occurrence) = ExperienceRewardOccurrence::from_bytes(entry.facts.occurrence) else {
         return false;
     };
-    for recipient in &frozen.native {
+    for recipient in frozen.native.iter().filter(|recipient| {
+        recipient.requires_awarded_experience() == after_experience
+    }) {
         let fence = match owner.current_quest_fence(recipient.session).await {
             Ok(Some(fence)) => fence,
             Ok(None) => continue,
