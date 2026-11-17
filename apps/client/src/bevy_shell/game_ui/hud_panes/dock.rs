@@ -45,12 +45,17 @@ struct SavedEntry {
     open: bool,
     minimised: bool,
     height: Option<f32>,
+    #[serde(default)]
+    floating: bool,
 }
 #[derive(Serialize, Deserialize)]
 struct Saved {
     left: bool,
     extra: bool,
     modules: Vec<SavedEntry>,
+    /// The floating regions (minimap, chat).
+    #[serde(default)]
+    floating: Vec<String>,
 }
 
 impl SidebarWidgets {
@@ -90,6 +95,7 @@ impl SidebarWidgets {
                     .filter(|height| height.is_finite())
                     .map(|height| height.clamp(MIN_CONTENT, MAX_CONTENT))
                     .or(widget.content_height()),
+                floating: saved_entry.floating,
             });
         }
         let defaults = Self::default();
@@ -102,6 +108,10 @@ impl SidebarWidgets {
             entries,
             left: saved.left,
             extra: saved.extra,
+            floating: super::float::REGIONS
+                .into_iter()
+                .filter(|region| saved.floating.iter().any(|saved| saved == region))
+                .collect(),
         }
     }
     /// Writes beside the target and renames, so a crash never leaves half a file.
@@ -121,8 +131,10 @@ impl SidebarWidgets {
                     open: entry.open,
                     minimised: entry.minimised,
                     height: entry.height,
+                    floating: entry.floating,
                 })
                 .collect(),
+            floating: self.floating.iter().map(|id| (*id).into()).collect(),
         };
         let bytes = serde_json::to_vec_pretty(&saved)
             .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;

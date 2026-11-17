@@ -30,6 +30,7 @@ pub(in crate::bevy_shell) const SLOTS: &[(&str, &str)] = &[
     ("battle-filter-monsters", "M"),
     ("battle-filter-players", "P"),
     ("battle-sort", "≡"),
+    ("chat-float", "Fl"),
     ("combat-balanced", "Ba"),
     ("combat-chase", "Ch"),
     ("combat-defensive", "De"),
@@ -45,6 +46,7 @@ pub(in crate::bevy_shell) const SLOTS: &[(&str, &str)] = &[
     ("inventory-minimise", "−"),
     ("inventory-purse", "Purse"),
     ("minimap-centre", "◎"),
+    ("minimap-float", "Fl"),
     ("minimap-floor-down", "▼"),
     ("minimap-floor-up", "▲"),
     ("minimap-full-map", "Map"),
@@ -68,6 +70,7 @@ pub(in crate::bevy_shell) const SLOTS: &[(&str, &str)] = &[
     ("status-mana", "♦"),
     ("status-serene", "Sr"),
     ("widget-close", "×"),
+    ("widget-float", "^"),
     ("widget-maximise", "+"),
     ("widget-minimise", "−"),
 ];
