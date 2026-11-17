@@ -12,9 +12,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         target: Option<ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
-        let (Some(ItemKey::Instance(source)), Some(ItemKey::Instance(target))) = (source, target) else { return Ok(None); };
         if !matches!(intent.use_with_map_item, Some(MapUseTarget::Item(_))) { return Ok(None); }
         let Some(fence) = command.item_fence else { return Ok(None); };
+        let command_ref = CommandRef::new(command.game_session_id, CommandId::new(command.command_id).map_err(|_| ())?);
+        if let Some(matches) = self.root.reconcile_quest_carried_use(self.character, fence.character_id, command_ref, encode_item_use_intent(intent).map_err(|_| ())?).await.map_err(|_| ())? {
+            if matches { self.refresh_quest_session(command.game_session_id, false).await; }
+            return Ok(Some(UseOutcome { disposition: if matches { UseDisposition::Committed } else { UseDisposition::Rejected }, ..UseOutcome::rejected() }));
+        }
+        let (Some(ItemKey::Instance(source)), Some(ItemKey::Instance(target))) = (source, target) else { return Ok(None); };
         let inventory = self.root.read_item_use_inventory(self.character, self.holder, fence).await.map_err(|_| ())?;
         let Some(item) = inventory.backpack.iter().flat_map(|bag| &bag.entries)
             .chain(inventory.nested.iter().map(|(_, entry)| entry)).find(|entry| entry.item.item_instance_id == source) else { return Ok(None); };
@@ -39,7 +44,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             reset_epoch: self.reset_epoch, actor_placement: actor.placement_identity(), movement_revision: at.revision(), party: Vec::new(),
         }.with_selected_ground_tool(source, encode_item_use_intent(intent).map_err(|_| ())?, target,
             [at.position().x, at.position().y, i32::from(at.position().floor)]).ok_or(())?;
-        let command_ref = CommandRef::new(command.game_session_id, CommandId::new(command.command_id).map_err(|_| ())?);
         let result = revision.commit_world_callback_with_items_selected(self.root, self.character, self.holder, current,
             QuestTransitionRequest { transition_key: callback.key.clone(), cause: QuestCause::Use(command_ref) },
             std::sync::Arc::clone(catalogue), &permit, context, self.active_generation.and_then(|generation| generation.native_gameplay()), None, &self.premium_coordinator).await.map_err(|_| ())?;

@@ -1,7 +1,7 @@
 //! The carried selection accompanies a World turn without changing legacy contexts.
 use super::QuestWorldContext;
 use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseTarget};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct QuestWorldToolContext {
@@ -11,12 +11,13 @@ pub struct QuestWorldToolContext {
     pub(super) selected_tool: Option<SelectedQuestTool>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub(super) struct SelectedQuestTool {
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct SelectedQuestTool {
     pub source: [u8; 16],
     pub intent: Vec<u8>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub target: Option<SelectedGroundTarget>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(super) target: Option<SelectedGroundTarget>,
 }
 
 impl From<QuestWorldContext> for QuestWorldToolContext {
@@ -77,7 +78,8 @@ impl QuestWorldContext {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(super) struct SelectedGroundTarget {
     pub item: [u8; 16],
     pub actor_position: [i32; 3],
