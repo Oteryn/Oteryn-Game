@@ -553,3 +553,82 @@ pub(super) fn grimvale_spawns(
     }
     Some(sources)
 }
+
+#[cfg(test)]
+mod phase_tests {
+    use super::*;
+
+    #[test]
+    fn world_change_phase_sectors_emit_awash_teleports_and_thornfire_fire_items()
+    -> Result<(), Error> {
+        let (bytes, _) = super::super::boot::tests::bundle_with_items(
+            "oteryn:item.tibia.i1949",
+            "oteryn:item.tibia.i622",
+        );
+        let mut manifest = bundle::read(&bytes)?.manifest;
+        manifest.world = bundle::Extent {
+            min_x: 32500,
+            max_x: 33200,
+            min_y: 32000,
+            max_y: 32300,
+            floors: (-15..=0).collect(),
+        };
+        let daily = |active| DailyMap {
+            seed: [0; 32],
+            phases: BTreeMap::from([("awash", active), ("thornfire", active)]),
+            fungus: false,
+            grimvale_full_moon: false,
+            items: Vec::new(),
+            trader: None,
+        };
+        let normal = daily(false);
+        let active = daily(true);
+        let appearances: std::collections::BTreeSet<_> = phase_tiles(&manifest, &normal)
+            .chain(phase_tiles(&manifest, &active))
+            .flat_map(|tile| tile.entries.iter().copied())
+            .collect();
+        manifest.palette = appearances
+            .into_iter()
+            .map(|appearance| bundle::PaletteEntry {
+                key: format!("oteryn:item.tibia.i{appearance}"),
+                family: bundle::Family::Item,
+                id: u32::from(appearance),
+                terrain: None,
+            })
+            .collect();
+        let flooded = phase_sectors(&manifest, phase_tiles(&manifest, &normal))?;
+        let dry = phase_sectors(&manifest, phase_tiles(&manifest, &active))?;
+        let entries = |sectors: &BTreeMap<_, Sector>, (x, y, floor)| {
+            sectors
+                .values()
+                .filter(|sector| sector.floor == floor)
+                .flat_map(|sector| &sector.tiles)
+                .find(|tile| tile.x == x && tile.y == y)
+                .map(|tile| {
+                    tile.items
+                        .iter()
+                        .map(|item| {
+                            (
+                                palette_appearance(&manifest.palette[item.palette as usize].key),
+                                item.attrs.teleport,
+                            )
+                        })
+                        .collect::<Vec<_>>()
+                })
+        };
+        assert_eq!(
+            entries(&flooded, (32516, 32018, -9)),
+            Some(vec![(Some(622), None)])
+        );
+        assert!(entries(&dry, (32516, 32018, -9)).is_some_and(|items| {
+            items.contains(&(Some(1949), Some((32516, 32018, (-10i8).to_ne_bytes()[0]))))
+        }));
+        assert!(entries(&flooded, (32515, 32018, -10)).is_some_and(|items| {
+            items.contains(&(Some(1949), Some((32515, 32018, (-9i8).to_ne_bytes()[0]))))
+        }));
+        let fire = (33074, 32166, -2);
+        assert!(entries(&dry, fire).is_some_and(|items| items.contains(&(Some(5063), None))));
+        assert!(entries(&flooded, fire).is_some_and(|items| !items.contains(&(Some(5063), None))));
+        Ok(())
+    }
+}
