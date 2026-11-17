@@ -2,7 +2,7 @@
 use super::*;
 
 pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> TestResult {
-    scenario_case(name, trigger, lever_fixture, None)
+    scenario_case(name, trigger, lever_fixture, None, None)
 }
 
 #[allow(
@@ -14,7 +14,15 @@ pub(crate) fn stateless_scenario(
     trigger: Position,
     expected_destination: Position,
 ) -> TestResult {
-    scenario_case(name, trigger, false, Some(expected_destination))
+    scenario_case(name, trigger, false, Some(expected_destination), None)
+}
+
+pub(crate) fn cursed_stairs_scenario(
+    name: &str,
+    trigger: Position,
+    action_control: Option<u16>,
+) -> TestResult {
+    scenario_case(name, trigger, false, None, Some(action_control))
 }
 
 fn scenario_case(
@@ -22,6 +30,7 @@ fn scenario_case(
     trigger: Position,
     lever_fixture: bool,
     stateless_destination: Option<Position>,
+    cursed_stairs_qualification: Option<Option<u16>>,
 ) -> TestResult {
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
@@ -1025,7 +1034,13 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if cursed_stairs {
+        let world = if let Some(action_control) = cursed_stairs_qualification {
+            super::super::cursed_crystal_stairs::world(
+                &callback,
+                generation.native_gameplay().ok_or("native stairs")?,
+                action_control,
+            )?
+        } else if cursed_stairs {
             super::super::actmark::native_world(
                 &callback,
                 generation.native_gameplay().ok_or("native stairs")?,
@@ -1865,7 +1880,18 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if m03_use {
+        if let Some(action_control) = cursed_stairs_qualification {
+            Box::pin(super::super::cursed_crystal_stairs::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                &callback,
+                action_control,
+            ))
+            .await?;
+        } else if m03_use {
             Box::pin(super::super::qengine_m03_use::exercise(
                 &mut owner,
                 &mut admitted,
