@@ -786,10 +786,10 @@ pub(crate) mod tests {
                         day.their_masters_voice && day.fury_gates.is_some()
                     }).ok_or("active source occurrence")?;
                     let inactive = (active + 1..=active + 128).find(|epoch| {
-                        let day = roll_calendar(world, *epoch, 6, 14);
+                        let day = roll_calendar(world, *epoch, 6, 15);
                         !day.their_masters_voice && day.fury_gates.is_none()
                     }).ok_or("inactive source occurrence")?;
-                    for (epoch, day, enabled) in [(active, 13, true), (inactive, 14, false)] {
+                    for (epoch, day, enabled) in [(active, 13, true), (inactive, 15, false)] {
                         let timestamp = format!("2026-06-{day:02} 06:00:00+00");
                         sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,'qworld',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,$4::text::timestamptz,'2026-06')")
                             .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind([7_u8;32].as_slice()).bind(timestamp).execute(&h.pool).await?;

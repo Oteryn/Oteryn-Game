@@ -13,7 +13,17 @@ fn worldchg_overhunting_kill_save_trap_benevola_save_deer_postgres() -> TestResu
         return Ok(());
     }
     super::kill_reward_e2e::scenario_thread::run("worldchg-overhunting-chain", || {
-        super::worldchg_benevola::scenario_with_chain(true)
+        super::worldchg_benevola::scenario_with_chain(true, false)
+    })
+}
+
+#[test]
+fn worldchg_overhunting_deer_kill_credits_and_save_departs_deer_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e::scenario_thread::run("worldchg-overhunting-deer", || {
+        super::worldchg_benevola::scenario_with_chain(true, true)
     })
 }
 
@@ -29,20 +39,64 @@ pub(super) async fn save(h: &Harness, world: WorldId, epoch: u64) -> TestResult 
     Ok(())
 }
 
+/// Production installs the durable cycles at channel boot for one reset epoch, and a new
+/// epoch is a new boot; the test runtime therefore installs the cycles of the day it kills in.
+async fn install_cycles(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    epoch: u64,
+) -> TestResult {
+    let day = h
+        .root
+        .world_changes(owner.world_id, epoch)
+        .await?
+        .ok_or("cycle day")?;
+    let cycles = CounterKind::ALL
+        .into_iter()
+        .map(|kind| (kind.key().to_owned(), day.counter_generations[kind.index()]))
+        .collect();
+    owner
+        .runtime
+        .lock()
+        .await
+        .install_world_change_cycles(epoch, cycles)
+        .map_err(debug)?;
+    Ok(())
+}
+
+async fn set_state(h: &Harness, world: WorldId, state: CounterState) -> TestResult {
+    sqlx::query("UPDATE game_world_change_counters SET state=$2 WHERE world_id=encode($1,'hex')::uuid AND change_key='overhunting'")
+        .bind(world.as_bytes().as_slice()).bind(serde_json::to_value(state)?).execute(&h.pool).await?;
+    Ok(())
+}
+
+/// `deer`: the epoch-1 runtime credits the final White Deer kill and the real save departs
+/// them. Otherwise a fresh epoch-2 runtime (a new channel boot after the save) kills wolves.
 pub(super) async fn hunt_and_save(
     h: &Harness,
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+    deer: bool,
 ) -> TestResult {
     let world = owner.world_id;
     let kind = CounterKind::Overhunting;
     let bindings = counters::bindings()?;
-    // Fixture starts one kill below departure; the final kill uses the durable
-    // native damage commit, captured death queue and durable reward drain.
     let mut state = CounterState::new(kind, 1, false);
-    state.counts[0] = bindings.parameters.deer_kills - 1;
-    sqlx::query("UPDATE game_world_change_counters SET state=$2 WHERE world_id=encode($1,'hex')::uuid AND change_key='overhunting'")
-        .bind(world.as_bytes().as_slice()).bind(serde_json::to_value(state)?).execute(&h.pool).await?;
+    if deer {
+        // Fixture starts one kill below departure; the final kill uses the durable
+        // native damage commit, captured death queue and durable reward drain.
+        state.counts[0] = bindings.parameters.deer_kills - 1;
+        set_state(h, world, state).await?;
+        install_cycles(h, owner, 1).await?;
+    } else {
+        // The deer phase is proven by its own case; this one starts at the departure threshold
+        // and takes the real save to stage two before a fresh epoch-2 runtime hunts wolves.
+        state.counts[0] = bindings.parameters.deer_kills;
+        set_state(h, world, state).await?;
+        save(h, world, 2).await?;
+        owner.reset_epoch = 2;
+        install_cycles(h, owner, 2).await?;
+    }
     owner
         .active_generation
         .and_then(|g| g.native_gameplay())
@@ -61,32 +115,36 @@ pub(super) async fn hunt_and_save(
         },
     )
     .await?;
-    for (creature, epoch, deaths) in [
-        ("oteryn:creature.white_deer", 1u64, 1u32),
-        ("oteryn:creature.starving_wolf", 2, 90),
-    ] {
-        for death in 0..deaths {
-            super::qengine_kill_stories::death(
-                owner,
-                admitted,
-                creature,
-                20_000 + epoch * 100 + u64::from(death),
-            )
-            .await?;
-        }
-        let day = h
-            .root
-            .world_changes(world, epoch)
-            .await?
-            .ok_or("current day")?;
-        assert_eq!(
-            day.counter_stages[kind.index()],
-            if epoch == 1 { 1 } else { 2 }
-        );
-        if epoch == 1 {
-            save(h, world, 2).await?;
-            owner.reset_epoch = 2;
-        }
+    let (creature, epoch, deaths) = if deer {
+        ("oteryn:creature.white_deer", 1u64, 1u32)
+    } else {
+        ("oteryn:creature.starving_wolf", 2, 90)
+    };
+    for death in 0..deaths {
+        super::qengine_kill_stories::death(
+            owner,
+            admitted,
+            creature,
+            20_000 + epoch * 100 + u64::from(death),
+        )
+        .await?;
+    }
+    let day = |epoch| async move {
+        Ok::<_, Box<dyn std::error::Error>>(
+            h.root
+                .world_changes(world, epoch)
+                .await?
+                .ok_or("current day")?,
+        )
+    };
+    assert_eq!(
+        day(epoch).await?.counter_stages[kind.index()],
+        if deer { 1 } else { 2 }
+    );
+    if deer {
+        save(h, world, 2).await?;
+        assert_eq!(day(2).await?.counter_stages[kind.index()], 2);
+        return Ok(());
     }
     super::autowalk::place(
         owner,

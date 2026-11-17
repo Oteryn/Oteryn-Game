@@ -49,15 +49,17 @@ fn handover_for(
     })
 }
 fn scenario() -> TestResult {
-    scenario_with_chain(false)
+    scenario_with_chain(false, false)
 }
-pub(super) fn scenario_with_chain(chain: bool) -> TestResult {
+pub(super) fn scenario_with_chain(chain: bool, deer: bool) -> TestResult {
     run(async |admin| {
         let start = std::time::Instant::now();
         reset();
         let h = Harness::create_with_admission_seed(
             admin,
-            if chain {
+            if deer {
+                "worldchg_overhunting_deer"
+            } else if chain {
                 "worldchg_overhunting_chain"
             } else {
                 "worldchg_benevola"
@@ -183,7 +185,13 @@ pub(super) fn scenario_with_chain(chain: bool) -> TestResult {
         if chain {
             let mut hunter = deps.admitted;
             hunter.runtime_actor = Some(deps.actor);
-            super::worldchg_overhunting_chain::hunt_and_save(&h, &mut owner, &mut hunter).await?;
+            super::worldchg_overhunting_chain::hunt_and_save(&h, &mut owner, &mut hunter, deer).await?;
+            if deer {
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
             super::worldchg_overhunting_chain::capture(
                 &mut *deps.runtime.lock().await,
                 deps.room.movement_cells(),
