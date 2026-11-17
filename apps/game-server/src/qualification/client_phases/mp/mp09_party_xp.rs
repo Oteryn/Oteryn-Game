@@ -657,8 +657,10 @@ async fn encounter(
                 }
             }
         }
-        if let Some(shown) = bots[0].session.as_ref().and_then(|c| c.world_entities()).and_then(|e| e.get(&target).copied()) {
-            if let oteryn_dev_client::EntityDetail::Actor { health_percent, .. } = shown.detail { last_health = Some((health_percent, shown.position)); }
+        if let Some(shown) = bots[0].session.as_ref().and_then(|c| c.world_entities()).and_then(|e| e.get(&target).copied())
+            && let oteryn_dev_client::EntityDetail::Actor { health_percent, .. } = shown.detail
+        {
+            last_health = Some((health_percent, shown.position));
         }
         let gone = bots[0].session.as_ref().and_then(|c| c.world_entities()).is_some_and(|e| e.get(&target).is_none());
         if gone && !hits.iter().all(|hit| *hit) { return Err(format!("hunt target removed before all contributions;attributed_damage={hits:?};texts_on_target={texts_on_target};other_texts={other_texts};sources={sources:?};last_health={last_health:?};source:crates/gameplay/dispatch/src/gameplay_transport/attack/shared_experience.rs:52").into()); }
