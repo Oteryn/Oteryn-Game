@@ -2620,7 +2620,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     let rune_reservation=match rune.as_ref(){
                         Some(r)=>match rune_item_cast::reserve(&mut tx,&authority,runtime,room,content,spell,r).await {
                             Ok(reserved)=>Some(reserved),
-                            Err(_)=>{refusal_on_live_transaction(&mut tx).await?;return Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{
+                            Err(_)=>{Box::pin(refusal_on_live_transaction(&mut tx)).await?;return Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{
                                 disposition:SpellCastDisposition::Rejected,vitals:super::observe_vitals(runtime,states,actor,session)}))},
                         },
                         None=>None,
@@ -2674,7 +2674,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     };
                     let mut prepared=match prepared_result{
                         Ok(p)=>p,Err(disposition)=>{
-                        refusal_on_live_transaction(&mut tx).await?;
+                        Box::pin(refusal_on_live_transaction(&mut tx)).await?;
                         #[cfg(test)]
                         eprintln!("SEAM_EVIDENCE native_combat_prepare result={disposition:?} ordinary={}",ordinary_combat::applicable(spell));
                         if let (Some(rune),Some(legacy))=(rune.as_ref(),legacy.as_ref()) {
