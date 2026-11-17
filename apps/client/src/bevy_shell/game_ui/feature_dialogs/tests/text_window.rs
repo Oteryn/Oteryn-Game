@@ -549,6 +549,9 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
             .query::<(&super::super::houses::Field, &mut EditableText)>()
             .iter_mut(app.world_mut())
         {
+            if field.0 == 2 {
+                text.editor_mut().set_text("2");
+            }
             if field.0 == 4 {
                 text.editor_mut().set_text("intervening edit");
             }
@@ -578,6 +581,12 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
                 .query::<(&super::super::houses::Field, &EditableText)>()
                 .iter(app.world())
                 .any(|(field, text)| field.0 == 4 && text.value() == "")
+        );
+        assert!(
+            app.world_mut()
+                .query::<(&super::super::houses::Field, &EditableText)>()
+                .iter(app.world())
+                .any(|(field, text)| field.0 == 2 && text.value() == "1")
         );
         return Ok(());
     }

@@ -171,7 +171,7 @@ fn project(
     if rebuilding {
         for (field, text) in &fields {
             if (same_house || !matches!(field.0, 2 | 4 | 6))
-                && !(acl_loaded && matches!(field.0, 4 | 6))
+                && !(acl_loaded && matches!(field.0, 2 | 4 | 5 | 6))
                 && panel.fields[field.0] == state.fields[field.0]
             {
                 editors[field.0] = text.value().to_string();
