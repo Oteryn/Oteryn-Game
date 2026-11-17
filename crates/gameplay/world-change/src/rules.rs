@@ -284,6 +284,32 @@ mod tests {
     }
 
     #[test]
+    fn calendar_range_crosses_new_year_and_rejects_invalid_endpoints() {
+        let mut definition = Definition {
+            key: "winter".into(),
+            schedule: Schedule::CalendarRange {
+                start: (12, 31),
+                end: (1, 1),
+            },
+            counter: None,
+            sources: vec!["test:annual-window".into()],
+        };
+        for (month, day, active) in [(12, 30, false), (12, 31, true), (1, 1, true), (1, 2, false)] {
+            let native = DailyWorldChanges::roll(1, month, day, |_| 0);
+            assert_eq!(
+                definition.selected(&[0; 16], 1, month, day, &native),
+                active
+            );
+            assert!(!definition.selected(&[0; 16], 0, month, day, &native));
+        }
+        definition.schedule = Schedule::CalendarRange {
+            start: (2, 30),
+            end: (4, 1),
+        };
+        assert_eq!(definition.validate(), Err(RuleError::Schedule));
+    }
+
+    #[test]
     fn catalogue_order_does_not_change_persisted_identity() -> Result<(), String> {
         let original = Catalogue::embedded().map_err(|error| format!("{error:?}"))?;
         let mut reordered = original.definitions().to_vec();
