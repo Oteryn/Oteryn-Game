@@ -28,6 +28,10 @@ pub enum Schedule {
     AtReset {
         chance_permille: u16,
     },
+    PreviousContribution {
+        resource: crate::owner::ContributionKind,
+        minimum: u64,
+    },
     Calendar {
         months: Vec<u8>,
         days: Vec<u8>,
@@ -86,6 +90,13 @@ pub fn valid_key(key: &str) -> bool {
             .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'_')
 }
 
+impl Schedule {
+    pub fn selects_for_previous_contribution(&self, epoch: u64, tally: u64) -> bool {
+        matches!(self, Self::PreviousContribution { minimum, .. }
+            if epoch > 1 && *minimum > 0 && tally >= *minimum)
+    }
+}
+
 impl Definition {
     pub fn validate(&self) -> Result<(), RuleError> {
         if !valid_key(&self.key)
@@ -105,6 +116,7 @@ impl Definition {
             return Err(RuleError::Definition);
         }
         match &self.schedule {
+            Schedule::PreviousContribution { minimum: 0, .. } => Err(RuleError::Schedule),
             Schedule::AtReset { chance_permille } if *chance_permille > 1000 => {
                 Err(RuleError::Schedule)
             }
@@ -161,6 +173,7 @@ impl Definition {
                 (u128::from(daily::draw_for_epoch(world, epoch, &purpose)) * 1000) >> 64
                     < u128::from(*chance_permille)
             }
+            Schedule::PreviousContribution { .. } => false,
             Schedule::Calendar { months, days } => {
                 (months.is_empty() || months.contains(&month))
                     && (days.is_empty() || days.contains(&day))
@@ -237,6 +250,20 @@ impl Catalogue {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn previous_contribution_selects_only_after_save_at_the_inclusive_threshold() {
+        let schedule = Schedule::PreviousContribution {
+            resource: crate::owner::ContributionKind::Coal,
+            minimum: 202,
+        };
+        assert!(!schedule.selects_for_previous_contribution(0, 203));
+        assert!(!schedule.selects_for_previous_contribution(1, 203));
+        assert!(!schedule.selects_for_previous_contribution(2, 201));
+        assert!(schedule.selects_for_previous_contribution(2, 202));
+        assert!(schedule.selects_for_previous_contribution(2, 203));
+        assert!(!schedule.selects_for_previous_contribution(3, 0));
+    }
 
     #[test]
     fn catalogue_order_does_not_change_persisted_identity() -> Result<(), String> {

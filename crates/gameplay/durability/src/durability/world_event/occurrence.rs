@@ -2,7 +2,7 @@
 use super::*;
 use oteryn_gameplay_world_change::{
     decision::NativeDecision,
-    rules::{Catalogue, Definition},
+    rules::{Catalogue, Definition, Schedule},
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -132,13 +132,21 @@ pub(super) async fn insert(
     if bytes.len() > 16384 {
         return Err(DurabilityError::InvalidStoredState);
     }
-    let selected = definition.selected(
-        world.as_bytes(),
-        epoch,
-        bound.month,
-        bound.day,
-        &bound.native,
-    );
+    let selected = match definition.schedule {
+        Schedule::PreviousContribution { resource, .. } if epoch > 1 => {
+            let previous = changes::tally(tx, world, epoch - 1, resource).await?;
+            definition
+                .schedule
+                .selects_for_previous_contribution(epoch, previous)
+        }
+        _ => definition.selected(
+            world.as_bytes(),
+            epoch,
+            bound.month,
+            bound.day,
+            &bound.native,
+        ),
+    };
     let counter = definition.counter.as_ref().filter(|_| selected);
     let active = counter.map_or(selected, |c| c.initial_active);
     let creature = counter.map(|c| c.creature.as_str());
