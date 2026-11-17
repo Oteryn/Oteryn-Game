@@ -1,8 +1,12 @@
 //! Level gates and level-scaled rewards through the real NPC dialogue owner.
 use crate::bestiary_postgres_harness as fixture;
+use crate::foundation::{
+    ChannelContentPin, ChannelRuntimeV1, CharacterId, CharacterLease, GameSessionId, NodeId,
+};
 use fixture::{debug, id};
-use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, CharacterId, CharacterLease, GameSessionId, NodeId};
-use oteryn_gameplay_dispatch::gameplay_transport::composed_test_owner::{self, ComposedTestOwner, FreshAdmissionAuthority, UseCommand};
+use oteryn_gameplay_dispatch::gameplay_transport::composed_test_owner::{
+    self, ComposedTestOwner, FreshAdmissionAuthority, UseCommand,
+};
 use oteryn_gameplay_dispatch::gameplay_transport::{ComposedFreshAdmission, FreshEvidenceSource};
 use oteryn_gameplay_quests::quest::reward_callbacks;
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
@@ -11,7 +15,9 @@ use tokio::sync::Mutex;
 type TestResult<T = ()> = fixture::TestResult<T>;
 
 #[test]
-fn reward_callback_maximum_level_refuses_above_bound() -> TestResult { run(false, 25) }
+fn reward_callback_maximum_level_refuses_above_bound() -> TestResult {
+    run(false, 25)
+}
 #[test]
 fn reward_callback_maximum_level_pays_at_or_below_bound() -> TestResult {
     run(false, 24)?;
@@ -24,18 +30,34 @@ fn reward_callback_level_scaled_experience_pays_factor_times_level() -> TestResu
 }
 
 fn run(spirit: bool, level: i64) -> TestResult {
-    let Some(admin) = fixture::configured_admin() else { return Ok(()); };
-    std::thread::Builder::new().stack_size(64 << 20).spawn(move || -> Result<(), String> {
-        fixture::runtime().map_err(debug)?.block_on(async {
-            let h = fixture::Harness::create_with_admission_seed(admin, "reward_levels", true, false).await?;
-            let result = exercise(&h, spirit, level).await;
-            let cleanup = h.cleanup().await;
-            result?;
-            cleanup?;
-            eprintln!("PG_EXECUTED reward_levels spirit={spirit} level={level}");
-            Ok::<(), Box<dyn std::error::Error>>(())
-        }).map_err(|e| e.to_string())
-    })?.join().map_err(|_| "reward level PG thread failed")?.map_err(Into::into)
+    let Some(admin) = fixture::configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            fixture::runtime()
+                .map_err(debug)?
+                .block_on(async {
+                    let h = fixture::Harness::create_with_admission_seed(
+                        admin,
+                        "reward_levels",
+                        true,
+                        false,
+                    )
+                    .await?;
+                    let result = exercise(&h, spirit, level).await;
+                    let cleanup = h.cleanup().await;
+                    result?;
+                    cleanup?;
+                    eprintln!("PG_EXECUTED reward_levels spirit={spirit} level={level}");
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                })
+                .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "reward level PG thread failed")?
+        .map_err(Into::into)
 }
 
 async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult {
@@ -169,19 +191,33 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
             .clone(),
     ));
 
-
     let catalogue = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
-    let key = if spirit { "oteryn:quest-reward/l6-spirit-confession" } else { "oteryn:quest-reward/m01c-pilgrimage-s8" };
-    let callback = reward_callbacks::load_for(catalogue)?.into_iter().find(|c| c.key == key).ok_or("production callback")?;
+    let key = if spirit {
+        "oteryn:quest-reward/l6-spirit-confession"
+    } else {
+        "oteryn:quest-reward/m01c-pilgrimage-s8"
+    };
+    let callback = reward_callbacks::load_for(catalogue)?
+        .into_iter()
+        .find(|c| c.key == key)
+        .ok_or("production callback")?;
     let terms = serde_json::to_value(&callback)?;
-    if spirit { assert_eq!(terms["experience_per_level"], 50); }
-    else { assert_eq!(terms["maximum_level"], 24); }
+    if spirit {
+        assert_eq!(terms["experience_per_level"], 50);
+    } else {
+        assert_eq!(terms["maximum_level"], 24);
+    }
     // Establish only this terminal dialogue's prerequisites; production callback,
     // catalogue, fresh session, premium and all durable writers remain real.
     super::engnpc2_live_transport::seed_tool(h, native, "oteryn:item.tibia.i11544").await?;
     let mut tx = h.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
-    sqlx::query("UPDATE game_character_progression_state SET level=$1").bind(level).execute(&mut *tx).await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("UPDATE game_character_progression_state SET level=$1")
+        .bind(level)
+        .execute(&mut *tx)
+        .await?;
     sqlx::query("UPDATE game_item_instances SET quantity=3 WHERE definition_production_key='oteryn:item.tibia.i11544'").execute(&mut *tx).await?;
     for s in &callback.storage {
         sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,value,quest_key,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,2) ON CONFLICT(character_id,track_key) DO UPDATE SET value=excluded.value")
@@ -193,39 +229,91 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
         std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../content")),
         std::ffi::OsStr::new("world"),
         oteryn_gameplay_content::content::npc_catalogue_preproduction_limits(),
-    ).map_err(debug)?;
+    )
+    .map_err(debug)?;
     let model = npcs.service_model_for_project().map_err(debug)?;
-    owner.states.chat.install_npc_talk(Arc::new(oteryn_gameplay_npc::npc_talk::NpcTalkBook::from_model_with_native_quests(&model, &[&callback.npc])));
-    owner.states.chat.admit(session, "Reward witness", oteryn_simulation_determinism::SemanticTimeMicros::from_micros(1));
+    owner.states.chat.install_npc_talk(Arc::new(
+        oteryn_gameplay_npc::npc_talk::NpcTalkBook::from_model_with_native_quests(
+            &model,
+            &[&callback.npc],
+        ),
+    ));
+    owner.states.chat.admit(
+        session,
+        "Reward witness",
+        oteryn_simulation_determinism::SemanticTimeMicros::from_micros(1),
+    );
     owner.states.chat.set_npc_service(session);
     let npc = {
         let mut r = runtime.lock().await;
-        r.place_npcs(&crate::foundation::NpcPlacementTable { npcs: vec![crate::foundation::NpcPlacements {
-            key: callback.npc.clone(), placements: vec![crate::foundation::NpcPlacement {
-                x: u16::try_from(at.x + 1)?, y: u16::try_from(at.y)?, floor: -i8::try_from(at.floor)?, direction: crate::foundation::MovementFacing::South,
-            }],
-        }] }, |_| true, true).map_err(debug)?;
-        let n = r.visible_entities().npcs.into_iter().next().ok_or("placed NPC")?;
-        oteryn_protocol_oteryn::world_spatial_entities::EntityRef { identity: n.actor.placement_identity(), generation: n.generation }
+        r.place_npcs(
+            &crate::foundation::NpcPlacementTable {
+                npcs: vec![crate::foundation::NpcPlacements {
+                    key: callback.npc.clone(),
+                    placements: vec![crate::foundation::NpcPlacement {
+                        x: u16::try_from(at.x + 1)?,
+                        y: u16::try_from(at.y)?,
+                        floor: -i8::try_from(at.floor)?,
+                        direction: crate::foundation::MovementFacing::South,
+                    }],
+                }],
+            },
+            |_| true,
+            true,
+        )
+        .map_err(debug)?;
+        let n = r
+            .visible_entities()
+            .npcs
+            .into_iter()
+            .next()
+            .ok_or("placed NPC")?;
+        oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+            identity: n.actor.placement_identity(),
+            generation: n.generation,
+        }
     };
-    let say = |command_id, text: String| owner.npc_talk(actor, UseCommand { game_session_id: session, command_id, item_fence: Some(fence.item_fence()) }, NpcTalkIntent { npc_actor: npc, text });
+    let say = |command_id, text: String| {
+        owner.npc_talk(
+            actor,
+            UseCommand {
+                game_session_id: session,
+                command_id,
+                item_fence: Some(fence.item_fence()),
+            },
+            NpcTalkIntent {
+                npc_actor: npc,
+                text,
+            },
+        )
+    };
     let hello = say(17000, "hi".into()).await;
     assert_eq!(hello.disposition, NpcIntentDisposition::Ok);
     let outcome = say(17001, callback.keywords[0].clone()).await;
     let gold: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3035' AND lifecycle=1").fetch_one(&h.pool).await?;
-    let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1").bind(key).fetch_one(&h.pool).await?;
+    let receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+    )
+    .bind(key)
+    .fetch_one(&h.pool)
+    .await?;
     if !spirit && level > 24 {
         assert_eq!(outcome.disposition, NpcIntentDisposition::Rejected);
         assert_eq!(gold, 0);
         assert_eq!(receipts, 0);
-        assert_eq!(outcome.conversation.ok_or("refusal conversation")?.lines, callback.failure_reply);
+        assert_eq!(
+            outcome.conversation.ok_or("refusal conversation")?.lines,
+            callback.failure_reply
+        );
     } else {
         assert_eq!(outcome.disposition, NpcIntentDisposition::Ok);
         assert_eq!(receipts, 1);
         if spirit {
             let amount: i64 = sqlx::query_scalar("SELECT coalesce((SELECT sum(amount) FROM game_character_quest_xp_obligations),(SELECT sum(experience_awarded) FROM game_character_xp_receipts),0)::bigint").fetch_one(&h.pool).await?;
             assert_eq!(amount, 50 * level);
-        } else { assert_eq!(gold, 20); }
+        } else {
+            assert_eq!(gold, 20);
+        }
     }
     Ok(())
 }
