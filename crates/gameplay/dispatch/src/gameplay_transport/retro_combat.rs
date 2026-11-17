@@ -63,6 +63,11 @@ pub(super) fn execute(
         return Err(CarrierError::PlanConflict);
     }
 
+    let consumes_caster = matches!(source, Source::BlissfulTimes);
+    if consumes_caster {
+        let caster_slot = runtime.encounter_actor_index(proposal.issuer)?;
+        runtime.assert_encounter_slot_unreserved(caster_slot)?;
+    }
     let centre = runtime.read_actor_position(proposal.issuer)?.position();
     let range = u32::from(proposal.range_tiles);
     let mut transforms = Vec::new();
@@ -114,7 +119,7 @@ pub(super) fn execute(
     for transformation in transforms {
         runtime.commit_creature_profile_transformation(transformation)?;
     }
-    if matches!(source, Source::BlissfulTimes) {
+    if consumes_caster {
         runtime.remove_encounter_actor(proposal.issuer)?;
     }
     Ok(true)
