@@ -907,7 +907,7 @@ pub(super) async fn exercise(
                 ("ajax-leather", Some((5876, 50)), None, None),
                 ("ajax-axe", None, None, Some(1)),
             ],
-            143,
+            147,
         ),
         // TibiaWiki `Citizen_Outfits_Quest/Spoiler`: Lubo and Hanna on the mainland.
         "qengine-rewards-qb-citizen-story" => (
