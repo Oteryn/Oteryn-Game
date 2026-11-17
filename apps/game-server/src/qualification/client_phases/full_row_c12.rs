@@ -504,7 +504,19 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let mut client = connect_world(clients, 0xc2).await?;
     let from = tile(client.world_spatial().actor_position)?;
-    let (creature, health) = pick_creature(world, &metadata.spawns, from, &creature_health()?)?;
+    // The route search over every spawn takes long enough that an unserviced connection misses
+    // its liveness probe and the server drops it (C12 Broken pipe), so it runs off this task.
+    let search = {
+        let spawns = metadata.spawns.clone();
+        let health = creature_health()?;
+        tokio::task::spawn_blocking(move || {
+            pick_creature(world, &spawns, from, &health).map_err(|error| error.to_string())
+        })
+    };
+    while !search.is_finished() {
+        client.service_liveness(Duration::from_millis(250)).await?;
+    }
+    let (creature, health) = search.await??;
     let hunt = Hunt { world, spawns: &metadata.spawns, creature, health };
 
     let baseline = samples(&hunt, &mut client, spell).await?;
