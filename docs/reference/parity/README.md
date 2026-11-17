@@ -2,6 +2,8 @@
 
 One table per gameplay area, comparing the live Global game with our content and code. Evidence only: a table grants no authority and changes no behaviour. Fixes land in separate commits that cite the row.
 
+The Global import and Crystal are the baseline; a client measurement decides; a Wiki value alone never changes content (owner 2026-11-16).
+
 ## Format
 
 Each file has a header (area, date, source legend, confidence legend) and rows:
@@ -26,6 +28,7 @@ When the Crystal re-audit (`docs/architecture/reviews/OTERYN_GAME_CRYSTAL_REAUDI
 
 ## Areas
 
+- `corpses.md`: creature corpse Items (capacity, decay) admitted so kills settle; GAP list of the rest.
 - `healing.md`: healing spells, potions, monk mechanics, leech, regeneration. Machine rows: `healing.json`.
 ## Machine rows (`<area>.json`)
 

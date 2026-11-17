@@ -1,13 +1,18 @@
 """Global healing-potion facts that win over the immutable legacy World package (HEALPAR).
 
-Each value names its TibiaWiki revision (docs/reference/parity/healing.md, section B).
+Each value names its measurement source or TibiaWiki revision (docs/reference/parity/healing.md, section B).
 The legacy package stays unchanged; the producers apply these after it, the way ITEMGLOB
 replays the Global client weights.
 """
 
-# key -> (TibiaWiki revision, [(resource, min, max)]) for the shard definitions.
+# key -> (measurement source or TibiaWiki revision, [(resource, min, max)]) for the shard definitions.
 POTION_RESTORES = {
-    "oteryn:item.tibia.i7642": (1183259, [("HEALTH", 250, 350), ("MANA", 125, 185)]),
+    # Global mana n=12, min=124, max=160 contradicts the Wiki minimum 125.
+    # Retain the imported range; HP is unchanged.
+    "oteryn:item.tibia.i7642": (
+        "docs/reference/parity/evidence/2026-11-15-global-client/ct-potions-summary.txt",
+        [("HEALTH", 250, 350), ("MANA", 100, 200)],
+    ),
     "oteryn:item.tibia.i23374": (1183261, [("HEALTH", 420, 580), ("MANA", 150, 250)]),
     "oteryn:item.tibia.i23375": (1183258, [("HEALTH", 875, 1175)]),
 }

@@ -45,6 +45,9 @@ A flaky test is a timing, environment or state problem until shown otherwise.
 - **State:** another test leaves rows, files or globals behind. Run the test
   alone and then with its neighbours; the one that turns it red is the
   polluter. PostgreSQL cases must use their own schema or rows.
+- **Load:** a test that fails only in the full run is run alone first.
+  Before diagnosing the product, look in `pg_stat_activity` and `pg_locks`
+  for a lock held by a hung test; one hung test also fails its neighbours.
 
 Push the failure rate up until most runs fail; only then move on to
 hypotheses.
@@ -65,6 +68,13 @@ prefix per session (`[DBG-<task>]`) so one grep removes them all.
 - If `main` has the same failure, follow `oteryn-dev`
   `references/ci-merge.md`, *Reading a red check*, step 3 (main fix first,
   one copy).
+- Before pushing, rerun the tests near the fix that were green before it,
+  not only the failing ones: a fix that turns a passing test red starts the
+  next CI round with new failures. Rerun by exact test name; a whole group
+  only for the final sweep, with `--no-fail-fast` (cargo otherwise skips the
+  crate's remaining test targets after the first red one).
+- A PostgreSQL harness that does not compile hides every PG failure: treat
+  the PR as red until the harness builds and runs.
 - Three failed fixes in a row mean the hypothesis is wrong or the design is:
   stop, write down what the three attempts ruled out, and re-plan.
 

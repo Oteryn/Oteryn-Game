@@ -47,8 +47,10 @@ POTION_KEYS = {f"oteryn:item.tibia.i{i}" for i in (
     23373, 23374, 23375, 23535,
 )}
 # Exact TibiaWiki revisions and restore values; agreeing health/level/flask facts stay intact.
+# i7642 mana: Global client measurement (owner 2026-11-16), see
+# docs/reference/parity/evidence/2026-11-15-global-client/ct-potions-summary.txt.
 GLOBAL_POTION_RESTORES = {
-    "oteryn:item.tibia.i7642": (1183259, [("HEALTH", 250, 350), ("MANA", 125, 185)]),
+    "oteryn:item.tibia.i7642": (1183259, [("HEALTH", 250, 350), ("MANA", 100, 200)]),
     "oteryn:item.tibia.i23374": (1183261, [("HEALTH", 420, 580), ("MANA", 150, 250)]),
     "oteryn:item.tibia.i23375": (1183258, [("HEALTH", 875, 1175)]),
 }
@@ -523,6 +525,8 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     native_goal_corpse_items.admit_native(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import native_goal_loot_items
     native_goal_loot_items.admit_native(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import creature_corpse_items
+    creature_corpse_items.admit_native(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import questpc2_soul_loot_items
     questpc2_soul_loot_items.admit_native(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import questpc2_rotten_loot_items

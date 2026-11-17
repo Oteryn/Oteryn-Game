@@ -1,0 +1,107 @@
+# Tibia hotbar map (Monk). Source: conf/clientoptions.json hotkeySets.Monk.actionBarOptions + geometry x=106+36*(n-1), y=857/891/927 for bottom bars 1/2/3.
+# The config is saved by the client and can be stale; verified live by tooltip: 1.1 Spirit Mend, 1.2 superior mana, 1.4 Intense Healing, 1.7 Restore Balance, 1.8 Light Healing, 1.18 ultimate spirit, 1.27 Mass Spirit Mend, 2.1 great mana (live; config shows a multi-action), 2.2 ultimate spirit, 3.16 Justice, 3.17 Harmony, 3.18 Sustain, 3.20 Mass Spirit Mend. Spirit Mend is also at (1220,892).
+# Right vertical bar (Equip): helmet (1509,150), armor (1549,150), legs (1509,222), boots (1509,367), weapon (1549,440).
+1.1  ( 106,857)  say "exura gran tio"
+1.2  ( 142,857)  UseOnYourself item 53162 (superior mana potion)
+1.3  ( 178,857)  say "exori gran mas nia"
+1.4  ( 214,857)  say "exura gran"
+1.5  ( 250,857)  Use item 49271
+1.6  ( 286,857)  say "exori infir amp pug"
+1.7  ( 322,857)  say "exura tio sio"
+1.8  ( 358,857)  say "exura"
+1.9  ( 394,857)  say "exori med pug"
+1.10 ( 430,857)  say "utani gran hur"
+1.11 ( 466,857)  SelectUseTarget item 3457
+1.12 ( 502,857)  SelectUseTarget item 9598
+1.13 ( 538,857)  say "exiva moe res"
+1.14 ( 574,857)  say "utevo lux"
+1.15 ( 610,857)  UseOnYourself item 7642
+1.16 ( 646,857)  say "exiva"
+1.17 ( 682,857)  UseOnTarget item 32093
+1.18 ( 718,857)  UseOnYourself item 23374 (ultimate spirit potion)
+1.19 ( 754,857)  UseOnYourself item 53162 (superior mana potion)
+1.20 ( 790,857)  say "uteta res tio"
+1.21 ( 826,857)  multi: exori med pug; exori gran mas pug; exori mas pug
+1.22 ( 862,857)  say "utevo mas sio"
+1.24 ( 934,857)  SelectUseTarget item 284
+1.25 ( 970,857)  SelectUseTarget item 40523
+1.26 (1006,857)  Use item 16277
+1.27 (1042,857)  say "exura mas nia"
+1.28 (1078,857)  say "uteta tio"
+1.29 (1114,857)  Use item 22516
+1.30 (1150,857)  Equip item 3051
+1.31 (1186,857)  say "hi, port hope, yes"
+1.32 (1222,857)  say "hi, darashia, yes"
+1.33 (1258,857)  say "hi, edron, yes"
+1.34 (1294,857)  say "hi, thais, yes"
+1.35 (1330,857)  say "hi, passage, east, yes"
+1.36 (1366,857)  Equip item 50167
+1.37 (1402,857)  Equip item 50161
+1.38 (1438,857)  Equip item 50159
+1.39 (1474,857)  Equip item 50157
+1.40 (1510,857)  Equip item 50154
+1.41 (1546,857)  Equip item 25977
+2.1  ( 106,891)  multi: exori med pug; exori gran mas pug; exori mas amp pug
+2.2  ( 142,891)  UseOnYourself item 23374 (ultimate spirit potion)
+2.3  ( 178,891)  say "exura gran tio"
+2.5  ( 250,891)  say "exori gran pug"
+2.6  ( 286,891)  say "exori amp pug"
+2.7  ( 322,891)  say "utani gran hur"
+2.8  ( 358,891)  say "exani tera"
+2.9  ( 394,891)  UseAtMouseCursor item 3191
+2.10 ( 430,891)  UseOnYourself item 53162 (superior mana potion)
+2.11 ( 466,891)  UseOnYourself item 23374 (ultimate spirit potion)
+2.12 ( 502,891)  SelectUseTarget item 939
+2.13 ( 538,891)  multi: utura tio; 23374; exura gran tio
+2.14 ( 574,891)  say "exori mas res"
+2.15 ( 610,891)  say "exori mas amp pug"
+2.16 ( 646,891)  multi: exori med pug; exori gran mas pug; exori mas pug
+2.17 ( 682,891)  say "exori gran mas nia"
+2.20 ( 790,891)  multi: exori med pug; exori gran mas pug; exori mas pug
+2.25 ( 970,891)  say "exani hur up"
+2.26 (1006,891)  say "exani hur down"
+2.28 (1078,891)  say "exori med pug"
+2.29 (1114,891)  say "exori gran mas pug"
+2.30 (1150,891)  say "exori mas amp pug"
+2.32 (1222,891)  SelectUseTarget item 3032
+2.33 (1258,891)  UseOnTarget item 3155
+2.35 (1330,891)  Equip item 51275
+2.36 (1366,891)  Equip item 3097
+2.37 (1402,891)  Equip item 5460
+2.38 (1438,891)  SelectUseTarget item 5908
+2.39 (1474,891)  Use item 11586
+2.40 (1510,891)  Use item 9086
+3.1  ( 106,927)  say "exura gran"
+3.2  ( 142,927)  say "exori mas amp pug"
+3.4  ( 214,927)  UseOnYourself item 238 (great mana potion)
+3.7  ( 322,927)  SelectUseTarget item 3161
+3.8  ( 358,927)  SelectUseTarget item 3192
+3.9  ( 394,927)  SelectUseTarget item 3149
+3.10 ( 430,927)  SelectUseTarget item 3180
+3.11 ( 466,927)  SelectUseTarget item 3166
+3.12 ( 502,927)  SelectUseTarget item 22009
+3.13 ( 538,927)  UseOnTarget item 3155
+3.15 ( 610,927)  say "utevo gran res tio"
+3.16 ( 646,927)  say "utito virtu"
+3.17 ( 682,927)  say "utori virtu"
+3.18 ( 718,927)  say "utura tio"
+3.20 ( 790,927)  say "exura mas nia"
+3.21 ( 826,927)  Use item 3725
+3.22 ( 862,927)  Equip item 53288
+3.24 ( 934,927)  {"passiveAbility": 1}
+3.25 ( 970,927)  {"passiveAbility": 1}
+3.26 (1006,927)  say "exori med pug"
+3.27 (1042,927)  say "exori mas pug"
+3.28 (1078,927)  say "exori gran mas pug"
+3.29 (1114,927)  multi: exori mas nia
+3.30 (1150,927)  say "exura tio sio Brainless Borkita"
+3.31 (1186,927)  say "exura tio sio Whayz"
+3.32 (1222,927)  say "exura tio sio Profesores"
+3.34 (1294,927)  say "utevo nia"
+3.35 (1330,927)  say "utamo tio"
+3.36 (1366,927)  Equip item 16108
+3.37 (1402,927)  Equip item 50147
+3.38 (1438,927)  Equip item 50150
+3.39 (1474,927)  Equip item 50152
+3.40 (1510,927)  Equip item 3081
+3.41 (1546,927)  Equip item 3048

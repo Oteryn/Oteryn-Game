@@ -76,9 +76,9 @@ def profiles(root, ids):
     return result
 
 
-def apply_admissions(definitions, root=ROOT):
+def apply_admissions(definitions, root=ROOT, creatures=None):
     definitions = list(definitions)
-    selected_keys = {f'oteryn:item.tibia.i{i}' for i in selected(root)}
+    selected_keys = {f'oteryn:item.tibia.i{i}' for i in selected(root, creatures)}
     # Existing qualified Items retain every field. Only the missing closure is authored.
     pending = [d for d in definitions if d['identity']['key'] in selected_keys and not d.get('materializable', False)]
     if pending:

@@ -2,7 +2,7 @@
   "canonical_inputs": [
     {
       "path": "content/items/definitions/items-21000-21499.json",
-      "sha256": "f873f6d55b382602c8f2d63e13c79f795b5aa7926c3eb5a8c1afc9fffd7af96c"
+      "sha256": "1d48043c3d416d105fb666a4a6bf33668fb1ac773454a852941fb38fbaf47485"
     },
     {
       "path": "content/items/definitions/items-27000-27499.json",
@@ -10,11 +10,11 @@
     },
     {
       "path": "content/items/definitions/items-31000-31499.json",
-      "sha256": "63910417edbaa8a1e8a5b93834ed7dbc298ab4f55662084527aa286ee949e630"
+      "sha256": "e97b844b84a3ff89bcffa19beeb28da9c3662536b0401a9c505a5a0aedfb2fec"
     },
     {
       "path": "content/items/definitions/items-31500-31999.json",
-      "sha256": "3ba713258b6797d9d6bba33205a3376c78b11d9254e577ae83994b18db0b05ef"
+      "sha256": "0f0765e2a9df76dac610c99e5eb15fea4821298fb79aca4cd8c6b7ad6f822fa0"
     }
   ],
   "donor_rule": "crystal/data/scripts/actions/items/potions.lua:1-42,52-54,57,62-63,78-110,115-147",

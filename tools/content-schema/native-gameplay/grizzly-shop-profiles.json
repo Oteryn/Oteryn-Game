@@ -19,7 +19,7 @@
   "canonical_inputs": [
     {
       "path": "content/items/definitions/items-00000-00499.json",
-      "sha256": "01e376a83b78137a1f687fe402570bd71ddfeb73f99154481199e897cac2a1da"
+      "sha256": "6c4475bb5ddcf1f34b125b314819aef3e0fe3f44b009d9736ec348e469020c02"
     },
     {
       "path": "content/items/definitions/items-00500-00999.json",
@@ -27,7 +27,7 @@
     },
     {
       "path": "content/items/definitions/items-01000-01499.json",
-      "sha256": "6b0ff0ce370507360d6b72e9c1f032e20dc24bd0242ac5dc2aea9c3c592f827a"
+      "sha256": "3a50d0bbf15aec2f82739e532eb78dbbac0b2602e96278ac7fb5de0be2af5fa7"
     },
     {
       "path": "content/items/definitions/items-02000-02499.json",
@@ -39,7 +39,7 @@
     },
     {
       "path": "content/items/definitions/items-07000-07499.json",
-      "sha256": "332ddc9974b9530caa7246745749d51a3b42bbb028f41d5c3b06e831cf4b64e7"
+      "sha256": "4bc9af25423294040f48571f65003c9dd7d64759497045a6cbda3ea85aab015f"
     },
     {
       "path": "content/items/definitions/items-08000-08499.json",
@@ -55,19 +55,19 @@
     },
     {
       "path": "content/items/definitions/items-20500-20999.json",
-      "sha256": "3d12f360ac21a4cb8108b37c560ac81fba15c851fdebdda64a84a48d5de53ff5"
+      "sha256": "4dad3ac8fe277b5d80cbf9aa91a3449af5249252472a3557588137b6f373f433"
     },
     {
       "path": "content/items/definitions/items-29500-29999.json",
-      "sha256": "451cd0b317380b978b2c93fe7edfb233b362e20520a9302dc96e50029571dc88"
+      "sha256": "3a0c9e2b54b186cb354241ea83a5880c451eb0f02a8e9b0257c8738c0dbb946a"
     },
     {
       "path": "content/items/definitions/items-31000-31499.json",
-      "sha256": "63910417edbaa8a1e8a5b93834ed7dbc298ab4f55662084527aa286ee949e630"
+      "sha256": "e97b844b84a3ff89bcffa19beeb28da9c3662536b0401a9c505a5a0aedfb2fec"
     },
     {
       "path": "content/items/definitions/items-33500-33999.json",
-      "sha256": "5abc275612e2126e3f9a6fed760af7084706cff5f8e83fba3b286541c5700b7d"
+      "sha256": "113019adf4d6239725de1f5a9a62b663ed3efcbbe4cb4fbacaf6a9b75e6e47cd"
     }
   ],
   "records": [

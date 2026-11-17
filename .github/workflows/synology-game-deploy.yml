@@ -47,8 +47,11 @@ jobs:
           bash deploy/synology-game/test-supervisor-npc.sh
           python3 deploy/synology-game/test_stage_npc_data.py
 
+      # The binaries name their exact source (`<version>+<sha12>`) in --version and every log.
       - name: Build release binaries
         shell: bash
+        env:
+          OTERYN_BUILD_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           rustup toolchain install 1.100.0 --profile minimal
