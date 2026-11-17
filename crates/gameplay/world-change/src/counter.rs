@@ -186,7 +186,7 @@ impl CounterState {
         // or forward access stages. Other counter kinds remain unbound for quests.
         let new_occurrence = match kind {
             CounterKind::HiveBorn => next.stage < self.stage,
-            CounterKind::Deeplings => self.stage == 3 && next.stage == 1,
+            CounterKind::Deeplings => self.stage == 3 && next.stage < 3,
             _ => false,
         };
         if new_occurrence {
@@ -443,8 +443,11 @@ impl CounterState {
                 } else if next.stage == 2 && next.condition {
                     next.stage = 3;
                     next.condition = false;
+                    // Mark new stage-three cycles. An already-open legacy cycle
+                    // retains its original reset outcome.
+                    next.counts[2] = 1;
                 } else if next.stage == 3 && epoch - next.entered_epoch >= 5 {
-                    next.stage = 1;
+                    next.stage = if next.counts[2] == 1 { 2 } else { 1 };
                     next.counts = [0; 3];
                 }
             }
@@ -665,6 +668,28 @@ pub struct SpawnSourceCell {
 #[cfg(test)]
 mod deepling_tests {
     use super::*;
+
+    #[test]
+    fn deeplings_return_to_stage_two_after_five_saves() -> Result<(), CounterError> {
+        let kind = CounterKind::Deeplings;
+        let parameters = Parameters {
+            deepling_points: 1,
+            ..Parameters::default()
+        };
+        let mut state = CounterState::new(kind, 1, false);
+        state = state.credit(kind, Credit::DeeplingGuard(10), &parameters, 0)?;
+        state = state.at_save(kind, 2, false, &parameters, 0)?;
+        state = state.credit(kind, Credit::CoralPathCompleted, &parameters, 0)?;
+        state = state.at_save(kind, 3, false, &parameters, 0)?;
+        assert_eq!(state.stage, 3);
+        state = state.at_save(kind, 7, false, &parameters, 0)?;
+        assert_eq!(state.stage, 3);
+        state = state.at_save(kind, 8, false, &parameters, 0)?;
+        assert_eq!(state.stage, 2);
+        assert_eq!(state.occurrence_generation, 2);
+        assert_eq!(state.at_save(kind, 8, false, &parameters, 0)?, state);
+        Ok(())
+    }
 
     #[test]
     fn deepling_guard_fractions_cross_threshold_only_on_save() -> Result<(), CounterError> {
