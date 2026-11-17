@@ -154,8 +154,7 @@ impl SourceSceneRelocation<'_> {
                 y: to.y,
                 z: i32::from(to.floor),
             };
-            if entry.position.position().floor != to.floor
-                || ground_of(self.cells)((to.x, to.y, i32::from(to.floor))) != Ground::Walkable
+            if ground_of(self.cells)((to.x, to.y, i32::from(to.floor))) != Ground::Walkable
                 || !landable_of(self.cells, true, self.closed)((to.x, to.y, i32::from(to.floor)))
                 || is_teleport(self.cells, cell)
                 || !self

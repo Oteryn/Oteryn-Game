@@ -19,6 +19,9 @@ pub struct SceneEdit {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct SceneRelocation {
+    /// Explicit source-script transport across floors; legacy scenes stay on one floor.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub cross_floor: bool,
     pub from: Vec<Position>,
     pub to: Position,
 }
@@ -99,7 +102,8 @@ pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
                 && (-15..=0).contains(&relocation.to.floor)
                 && !edited.contains(&relocation.to)
                 && relocation.from.iter().all(|position| {
-                    position.floor == relocation.to.floor && edited.contains(position)
+                    (relocation.cross_floor || position.floor == relocation.to.floor)
+                        && edited.contains(position)
                 })
         });
     callback.trigger == Trigger::Use
