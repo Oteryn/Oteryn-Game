@@ -209,11 +209,7 @@ async fn exercise(h: &Harness) -> TestResult {
     talk(&mut owner, &admitted, ghorza, 104, "hi").await?;
     talk(&mut owner, &admitted, ghorza, 105, "water").await?;
     let accepted = talk(&mut owner, &admitted, ghorza, 106, "yes").await?;
-    assert!(
-        accepted
-            .iter()
-            .any(|line| line.contains("take enchanted jar"))
-    );
+    assert!(accepted.iter().any(|line| line == "Here you are."));
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
     )
