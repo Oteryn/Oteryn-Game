@@ -498,7 +498,21 @@ pub(super) async fn apply(
             admission
                 .refresh_level_up_vitals(actor, command.game_session_id)
                 .await;
-            let runtime = admission.runtime.lock().await;
+            let mut runtime = admission.runtime.lock().await;
+            if let Some(callback) = &reward_callback {
+                let guards =
+                    oteryn_gameplay_npc::greeting::orc_king_guards(&callback.key, newly_committed);
+                if !guards.is_empty() {
+                    super::djinn_greetings::spawn_guards(
+                        admission,
+                        &mut runtime,
+                        actor,
+                        command.game_session_id,
+                        &intent,
+                        guards,
+                    );
+                }
+            }
             if newly_committed && let Some(callback) = &reward_callback {
                 super::magic_effects::publish(
                     admission,

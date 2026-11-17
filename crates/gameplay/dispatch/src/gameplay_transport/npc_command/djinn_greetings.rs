@@ -84,3 +84,41 @@ pub(super) async fn soulfire(
     )?;
     states.commit(runtime, actor, session, next).then_some(())
 }
+
+/// The donor tries the King's tile and its eight immediate neighbors.
+pub(super) fn spawn_guards(
+    admission: &super::super::ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &mut ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    intent: &NpcTalkIntent,
+    guards: &[&str],
+) {
+    let Some(npc) = service_context::live_npc(runtime, actor, session, intent.npc_actor) else {
+        return;
+    };
+    for key in guards {
+        for (dx, dy) in [
+            (0, 0),
+            (-1, -1),
+            (0, -1),
+            (1, -1),
+            (-1, 0),
+            (1, 0),
+            (-1, 1),
+            (0, 1),
+            (1, 1),
+        ] {
+            let position = crate::foundation::MovementLocalPosition {
+                x: npc.position.x + dx,
+                y: npc.position.y + dy,
+                floor: npc.position.floor,
+            };
+            if super::super::primal_menace::spawn_creature(admission, runtime, key, position)
+                .is_some()
+            {
+                break;
+            }
+        }
+    }
+}

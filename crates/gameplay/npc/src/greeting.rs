@@ -59,14 +59,53 @@ pub fn soulfire_on_greeting(npc: &str, text: &str) -> Option<(u32, u32, u32)> {
         return None;
     }
     let said = words(text);
-    (said.iter().any(|word| matches!(word.as_str(), "hi" | "hello" | "hail"))
+    (said
+        .iter()
+        .any(|word| matches!(word.as_str(), "hi" | "hello" | "hail"))
         && !contains_words(&said, &words("djanni'hah")))
     .then_some((1_500, 10, 5_000))
+}
+
+/// Crystal's Orc King greets each character with this wave once.
+pub fn orc_king_guards(transition: &str, newly_committed: bool) -> &'static [&'static str] {
+    if !newly_committed || transition != "oteryn:quest-reward/l2-efreet-orc-king-greeting" {
+        return &[];
+    }
+    &[
+        "oteryn:creature.slime",
+        "oteryn:creature.slime",
+        "oteryn:creature.slime",
+        "oteryn:creature.orc_warlord",
+        "oteryn:creature.orc_warlord",
+        "oteryn:creature.orc_leader",
+        "oteryn:creature.orc_leader",
+        "oteryn:creature.orc_leader",
+    ]
 }
 
 #[cfg(test)]
 mod efreet_tests {
     use super::*;
+
+    #[test]
+    fn orc_king_creates_the_source_guard_wave_on_first_greeting() {
+        let greeting = "oteryn:quest-reward/l2-efreet-orc-king-greeting";
+        assert_eq!(
+            orc_king_guards(greeting, true),
+            &[
+                "oteryn:creature.slime",
+                "oteryn:creature.slime",
+                "oteryn:creature.slime",
+                "oteryn:creature.orc_warlord",
+                "oteryn:creature.orc_warlord",
+                "oteryn:creature.orc_leader",
+                "oteryn:creature.orc_leader",
+                "oteryn:creature.orc_leader",
+            ]
+        );
+        assert!(orc_king_guards(greeting, false).is_empty());
+        assert!(orc_king_guards("oteryn:quest-reward/l2-efreet-lamp-issue", true).is_empty());
+    }
 
     #[test]
     fn baa_leal_punishes_only_the_wrong_greeting() {
