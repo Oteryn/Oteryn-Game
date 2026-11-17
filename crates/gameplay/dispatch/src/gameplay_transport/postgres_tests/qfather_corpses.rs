@@ -105,8 +105,9 @@ pub(super) async fn exercise(
         ),
     ] {
         super::questpc7_goblin::stalker_death(owner, &mut killer, creature, at, command).await?;
-        let top_damage: Vec<u8> = sqlx::query_scalar(
-            "SELECT uuid_send(r.corpse_top_damage_character_id)
+        let (top_damage, lifetime): (Vec<u8>, i64) = sqlx::query_as(
+            "SELECT uuid_send(r.corpse_top_damage_character_id),
+                    game_corpse_retirement_deadline(i.item_instance_id)-r.materialized_at
              FROM game_item_mint_receipts r JOIN game_item_instances i USING(item_instance_id)
              WHERE i.definition_production_key=$1 AND r.materialized_at IS NOT NULL",
         )
@@ -115,6 +116,7 @@ pub(super) async fn exercise(
         .await?;
         assert_eq!(top_damage, killer_character, "{creature}");
         assert_ne!(top_damage, id(41), "the user did not kill {creature}");
+        assert_eq!(lifetime, 500_000, "{creature}");
 
         let index = owner
             .active_generation

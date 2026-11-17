@@ -234,6 +234,8 @@ impl FatherCorpseReward {
                        AND i.definition_revision_ref='definition-r1'
                        AND (p.race_key IS NULL OR p.race_key=$6)
                        AND game_item_plain_corpse_source(i.item_instance_id)
+                       AND game_corpse_retirement_deadline(i.item_instance_id)>
+                           floor(extract(epoch FROM statement_timestamp())*1000)::bigint
                      FOR SHARE OF i,g",
                 )
                     .bind(corpse.0.as_slice()).bind(world.as_bytes().as_slice())
