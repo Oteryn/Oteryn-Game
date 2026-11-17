@@ -388,6 +388,38 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
     .bind(key)
     .fetch_one(&h.pool)
     .await?;
+    if (spirit || level <= 24) && outcome.disposition != NpcIntentDisposition::Ok {
+        let sequencer =
+            crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new();
+        let mut slot = sequencer.acquire(fence.character_id).await;
+        let weights = super::engitem_reward_text::Weights(native);
+        let diagnostic = slot
+            .commit_quest_reward(
+                &h.root,
+                &authority,
+                &h.node,
+                fence,
+                crate::durability::quest_state::QuestTransitionRequest {
+                    transition_key: callback.key.clone(),
+                    cause: crate::durability::quest_state::QuestCause::Command(
+                        super::engitem_reward_text::command(17001)?,
+                    ),
+                },
+                Arc::clone(owner.quest_catalogue.as_ref().ok_or("catalogue")?),
+                crate::durability::reward_claim_mint::QuestRewardAdmission {
+                    native,
+                    weights: &weights,
+                    fee_payment: None,
+                    actor_conditions: None,
+                    carried_use: None,
+                    creature_use: None,
+                    peer_use: None,
+                },
+                &owner.premium_coordinator,
+            )
+            .await;
+        return Err(format!("NPC rejected: unknown={}, receipts={receipts}, gold={gold}; durable diagnostic={diagnostic:?}", outcome.unknown).into());
+    }
     if !spirit && level > 24 {
         assert_eq!(outcome.disposition, NpcIntentDisposition::Rejected);
         assert_eq!(gold, 0);
