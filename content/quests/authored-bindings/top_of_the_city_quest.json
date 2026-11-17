@@ -131,9 +131,8 @@
                 {
                   "track": "oteryn:quest-progress/authored/top-of-the-city/stage",
                   "minimum": 2,
-                  "maximum": 4,
-                  "set": 2,
-                  "read_only": true
+                  "maximum": 2,
+                  "set": 2
                 }
               ],
               "premium_required": true,
