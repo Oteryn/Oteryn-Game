@@ -521,6 +521,7 @@ def test_committed_content_carries_tibia_global_corrections() -> None:
     assert pairs("kv.powerring1") == [[3050, 1]]
     assert pairs("kv.fireaxe1") == [[3098, 1], [3085, 1], [3028, 7]]
     assert pairs("kv.fireaxe2") == [[3320, 1]]
+    assert pairs("kv.ghostsilver_lantern_quest") == [[23738, 1]]
     assert pairs("quest.key.id4502") == [[2970, 1], [3031, 33], [3147, 1], [3298, 4], [3384, 1]]
 
 if __name__ == "__main__":

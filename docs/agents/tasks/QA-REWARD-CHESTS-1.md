@@ -30,6 +30,7 @@ to its donor fact (fails closed on donor drift).
 | Alawar's Vault, Key 4502 bag | 23 → 33 gold | Quest rev 683774, Spoiler rev 1029814 |
 | Fire Axe, first chest | bag without the Fire Axe (Pile of Bones only) | Spoiler rev 855030 |
 | Power Ring, first box | gold coin → Power Ring | Quest rev 683946 |
+| Forgotten Knowledge, Ghostsilver Lantern web | unlit 23734 → lit 23738 | Ghostsilver Lantern rev 1148076 |
 
 Checked against the wiki, no change: Mintwallin (small diamond only; rest is
 daily respawn), Elephant Tusk (2x Tusk 3044, rev 683843/1114030), Blood Herb,
@@ -64,3 +65,15 @@ quests whose claims match the wiki totals.
 - `test_reward_claim_authoring.py::test_committed_content_carries_tibia_global_corrections`: red on the old content, green now.
 - PostgreSQL: `qready1_*` (captain 2 salmon), `qa_global_reward_corrections.rs`, `m35_fire_axe_*` and `quest_catalogue_chests` must run on a machine that can build the dispatch tests (the cloud container OOMs at ~14 GB); then refresh `reward-use-proofs/qready1.json` with `qready1_reward_use_proofs.py --log`, run `regenerate_content.py --resolve` and `pin-check`.
 - `test_container_native.py`: 3 failures already exist on `origin/main@e2152d05`; none added.
+
+## Batches 3 and 4
+
+- Batch 3: 22 single-chest quests match the wiki (Adorned UH .. Spike Sword); no change.
+- Batch 4: 206 placements across ~45 multi-chest quests; 100 OK. Fixed: the Ghostsilver Lantern above.
+- Correct item not yet materializable (server/items lane): Giant Smithhammer box 12510 → 3208
+  (Explorer Society/Spoiler rev 1090719), Beregar firewalker boots 9019 → 9018 (rev 1148768),
+  Secret Service poem scroll 5952 → 347 (rev 1115206), Secret Service lottery ticket 5956 → 5957 (rev 1114329).
+- BLOCKED-ENGINE: Kingdom of Kormarak corpse is a daily respawn (Spoiler rev 884223); waits on the daily-reset mechanic.
+- Koshei platinum (100 vs 50): owned by qcx6 (record 78); not changed here.
+- Owner batch: Magic Sword north wand (Yellow Spell Wand), Dark Trails notebook/Shargon chest positions,
+  missing one-time items (Outlaw Camp bag, Shargon chest, Crystal of Focus, Explorer Society books), 53 placements without wiki contents.
