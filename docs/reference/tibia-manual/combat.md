@@ -108,7 +108,7 @@
 - [server] Prey duration: 2 hours of hunting time, only ticking down while actively hunting (not real-time); a fresh list roll or bonus roll resets the timer to 2h.
 - [server] Automatic Bonus Reroll (opt-in toggle): auto-rerolls bonus (and thus extends hunting time by 2h) just before expiry; consumes 1 Prey Wildcard per trigger; auto-disables when Wildcards run out.
 - [server] Lock Prey (opt-in toggle): auto-extends the same prey+bonus by 2h on expiry instead of rerolling; consumes 5 Prey Wildcards per trigger; auto-disables when insufficient Wildcards remain.
-- [server] Prey slots: 3 max. Slot 1 = every character with a vocation (the dialog is closed to a character without one, `NOT_ELIGIBLE`); Slot 2 = free for Premium, purchasable permanently for Free accounts via Store; Slot 3 = purchasable permanently by anyone via Store. Oteryn follows `docs/architecture/reviews/OTERYN_GAME_PREY0_PREY_AND_HUNTING_TASKS_DECISION_2026-09-30.md` §5.1 (`durability/prey/command.rs`: a slot opens only when the vocation is set and not `none`; slots 2 and 3 also need Premium or a permanent claim).
+- [server] Prey slots: 3 max. Slot 1 = every character with a vocation (the dialog is closed to a character without one, `NOT_ELIGIBLE`); Slot 2 = free for Premium, purchasable permanently for Free accounts via Store; Slot 3 = purchasable permanently by anyone via Store. Oteryn follows `docs/architecture/reviews/OTERYN_GAME_PREY0_PREY_AND_HUNTING_TASKS_DECISION_2026-09-30.md` §5.1 (`durability/prey/command.rs`: every slot needs a vocation that is set and not `none`; slot 1 is open with that alone, slot 2 also needs Premium or a permanent claim, and slot 3 needs a permanent claim).
 
 ## 5.3.10 Task Board
 
