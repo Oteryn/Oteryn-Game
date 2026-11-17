@@ -17,3 +17,19 @@ doesn't distinguish compilation from test execution. #3260 records that
 dispatch's lib-test build grew to 17.3 GiB peak RSS at one build job after
 #3056 and adds swap on hosted runners. Local baseline compilation is in
 progress. No culprit test has been identified.
+
+## Hosted job comparison
+
+In run 44162666745 (#3265), shards 1, 3 and 5 have the 45-minute timeout
+annotation, while shards 2 and 4 completed their nextest steps in 12m10s and
+15m17s. Shard 4 timed out in run 44174301267 (#3269), and shards 3, 4
+and 5 timed out in run 44177371114 (#3271). The affected steps had
+already restored the target cache and installed mold.
+
+Several #3263 cancellations in runs 44162049615 and 44165495269 were
+instead annotated "Canceling since a higher priority waiting request for
+merge-gate-3263 exists". These runs cannot establish a test hang.
+
+Governance validation and all 135 agent-tool unit tests passed for this
+notes-only checkpoint. The local baseline is still compiling workspace
+dependencies.
