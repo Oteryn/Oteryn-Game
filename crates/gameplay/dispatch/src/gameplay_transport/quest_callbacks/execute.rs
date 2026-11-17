@@ -1301,21 +1301,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .chat
                     .publish_quest_speech(runtime, actor, session, speech);
             }
-            let mut position = expected.position();
-            position.x += i32::from(spawn.offset_x);
-            position.y += i32::from(spawn.offset_y);
-            if native(position).is_some_and(|tile| {
-                !map.facts
-                    .quest_callback_blocked(map.overlay.base(), tile, false)
-            }) && super::super::arena_match::walkable(self, runtime, position)
-                && runtime.native_summon_cell_free(position)
-                && let Ok(policy) = runtime.companion_policy(&spawn.creature)
-            {
-                let _ = runtime.commit_quest_creature_spawn(&[(
-                    &spawn.creature,
-                    policy.maximum_health,
-                    position,
-                )]);
+            if let QuestCause::Use(command) = cause {
+                let _ = self.spawn_quest_tool_creature(
+                    runtime,
+                    map,
+                    expected.position(),
+                    spawn,
+                    command,
+                );
             }
             if let Some(message) = success_message {
                 self.states.chat.push_quest_feedback(session, &message);
@@ -1674,5 +1667,83 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.states.chat.push_quest_feedback(session, &message);
         }
         UseDisposition::Committed
+    }
+
+    fn spawn_quest_tool_creature(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        map: &BundleMap,
+        player: MovementLocalPosition,
+        spawn: &oteryn_gameplay_quests::quest::world_callbacks::ToolSpawn,
+        command: CommandRef,
+    ) -> Option<()> {
+        use oteryn_gameplay_world::movement::source_placement::{
+            SourcePlacementCell, SourcePlacementPlan,
+        };
+        use oteryn_simulation_determinism::{
+            DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+        };
+        use sha2::{Digest, Sha256};
+
+        let center = MovementLocalPosition {
+            x: player.x.checked_add(i32::from(spawn.offset_x))?,
+            y: player.y.checked_add(i32::from(spawn.offset_y))?,
+            floor: player.floor,
+        };
+        let health = runtime
+            .companion_policy(&spawn.creature)
+            .ok()?
+            .maximum_health;
+        let digest = Sha256::new()
+            .chain_update(command.game_session_id().as_bytes())
+            .chain_update(command.command_id().get().to_be_bytes())
+            .finalize();
+        let mut occurrence = [0; 16];
+        occurrence.copy_from_slice(&digest[..16]);
+        let occurrence = DecisionOccurrenceId::from_bytes(occurrence);
+        let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+        let mut draw_index = 0;
+        // Crystal Map::placeCreature tries the requested tile, then eight shuffled neighbours.
+        let placement = SourcePlacementPlan::prepare(center, false, false, |bound| {
+            let draw =
+                deterministic_decision_u64(&root, occurrence, "quest.tool.spawn", draw_index);
+            draw_index += 1;
+            draw.map_or(bound, |draw| {
+                crate::spell::uniform_draw(draw, 0, i64::from(bound) - 1) as u32
+            })
+        })
+        .ok()?;
+        let position = placement
+            .select(
+                |position| {
+                    let tile = native(position);
+                    let zone = tile.and_then(|tile| map.zone_flags(tile));
+                    let protection_zone = zone.is_some_and(|(_, protection)| protection);
+                    let teleport = tile.is_some_and(|tile| map.floors.teleport(tile).is_some());
+                    let query_add = tile.is_some_and(|tile| {
+                        zone.is_some()
+                            && !protection_zone
+                            && !teleport
+                            && !map.floors.contains(tile)
+                            && !map
+                                .facts
+                                .quest_callback_blocked(map.overlay.base(), tile, false)
+                            && super::super::arena_match::walkable(self, runtime, position)
+                            && runtime.native_summon_cell_free(position)
+                    });
+                    Some(SourcePlacementCell {
+                        exists: zone.is_some(),
+                        query_add,
+                        protection_zone,
+                        teleport,
+                    })
+                },
+                |_, _| Some(true),
+            )
+            .ok()??;
+        runtime
+            .commit_quest_creature_spawn(&[(&spawn.creature, health, position)])
+            .ok()?;
+        Some(())
     }
 }

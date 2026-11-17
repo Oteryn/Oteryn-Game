@@ -42,7 +42,7 @@ fn item_on_map_use_commits_progress_and_spawns_once_without_relocation_postgres(
                 "reversible": false, "passages": [], "offerings": [], "return_on_failure": false,
                 "requires_world_admission": true,
                 "item_on_target": {"item": TOOL, "count": 1, "reusable": true, "selected_instance": true},
-                "storage": [{"track": TRACK, "minimum": 0, "maximum": 0, "set": 1}],
+                "storage": [{"track": TRACK, "minimum": 0, "maximum": 1, "set": 1, "increment": true}],
                 "effects": {"tool_spawn": {"creature": CREATURE, "offset_x": 1, "offset_y": 0}},
                 "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4-12"]
             }))?;
@@ -286,6 +286,52 @@ fn item_on_map_use_commits_progress_and_spawns_once_without_relocation_postgres(
                                 floor: 7,
                             }
                 }));
+            }
+            owner.clock_origin = owner
+                .clock_origin
+                .checked_sub(std::time::Duration::from_secs(2))
+                .ok_or("pace second USE")?;
+            let reply = super::quest_world_callbacks::wire(
+                &owner,
+                &mut admitted,
+                command + 1,
+                COMMAND_TYPE_USE_INTENT,
+                payload,
+            )
+            .await?;
+            assert_eq!(
+                decode_use_result(&reply).map_err(debug)?,
+                UseDisposition::Committed
+            );
+            let state = h
+                .root
+                .read_character_quest_state(&authority, fence.character_id)
+                .await
+                .map_err(debug)?;
+            assert_eq!(state.tracks().get(TRACK), Some(&2));
+            {
+                let runtime = owner.runtime.lock().await;
+                let actors = runtime.positioned_actor_census().map_err(debug)?;
+                let east = MovementLocalPosition {
+                    x: i32::from(start.0) + 1,
+                    y: i32::from(start.1),
+                    floor: 7,
+                };
+                assert_eq!(
+                    actors
+                        .iter()
+                        .filter(|(actor, position, _)| {
+                            let position = position.position();
+                            runtime.matches_live_creature_identity(*actor, CREATURE.as_bytes())
+                                && position.floor == east.floor
+                                && position.x.abs_diff(east.x) <= 1
+                                && position.y.abs_diff(east.y) <= 1
+                                && position != east
+                        })
+                        .count(),
+                    1,
+                    "occupied east tile must use a neighbouring cell"
+                );
             }
             drop(owner);
             drop(authority);
