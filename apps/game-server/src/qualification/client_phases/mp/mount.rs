@@ -17,5 +17,5 @@ pub(super) async fn run(
         mp01_party_pvp::run(core, packets, world, towns),
     )
     .await;
-    verdict::indexed("MP04.full", mp04_market::run(core, packets)).await;
+    verdict::indexed("MP04.full", mp04_market::run(core, packets, world)).await;
 }
