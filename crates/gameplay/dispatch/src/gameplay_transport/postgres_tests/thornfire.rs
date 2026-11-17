@@ -21,7 +21,7 @@ fn thornfire_postgres_server_save_consumes_complete_world_progress_once() -> Tes
 fn scenario(admin: String) -> TestResult {
     run(async |_| {
         reset();
-        let h = Harness::create_with_admission_seed(&admin, "thornfire_save", true, false).await?;
+        let h = Harness::create_with_admission_seed(admin, "thornfire_save", true, false).await?;
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
         let (_controller, pin) =
