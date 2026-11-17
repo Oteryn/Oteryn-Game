@@ -458,8 +458,8 @@ fn layouts_load_beside_the_preferences_and_save_once_settled() -> TestResult {
             std::time::Duration::from_millis(300),
         ))
         .init_resource::<WindowLayouts>()
-        .insert_non_send(owner)
-        .add_systems(Update, persist);
+        .insert_non_send(owner);
+    install(&mut app);
     app.update();
     app.update();
     assert_eq!(*app.world().resource::<WindowLayouts>(), saved);
@@ -483,6 +483,15 @@ fn layouts_load_beside_the_preferences_and_save_once_settled() -> TestResult {
         written.0.get("options").map(|layout| layout.offset),
         Some(Vec2::new(12., 34.))
     );
+    app.world_mut()
+        .resource_mut::<WindowLayouts>()
+        .0
+        .get_mut("options")
+        .ok_or("options")?
+        .offset = Vec2::ZERO;
+    app.world_mut().write_message(AppExit::Success);
+    app.update();
+    assert_eq!(WindowLayouts::load(&path)?.0["options"].offset, Vec2::ZERO);
     std::fs::remove_dir_all(&folder)?;
     Ok(())
 }
@@ -559,7 +568,7 @@ mod stacking {
             pointer::{Location, PointerButton, PointerId},
         },
         prelude::*,
-        ui_widgets::Activate,
+        ui_widgets::ButtonPlugin,
     };
 
     /// What each window's own Escape handler does: close only if the modal fence allows it.
@@ -796,29 +805,179 @@ mod stacking {
         app.update();
     }
 
-    fn entry(app: &mut App, label: &str) -> Result<Entity, String> {
-        app.world_mut()
-            .query::<(Entity, &menu::Entry)>()
-            .iter(app.world())
-            .find_map(|(entity, entry)| {
-                matches!(entry, menu::Entry::Zoom(text, _) | menu::Entry::Reset(text) if *text == label)
-                    .then_some(entity)
+    fn menu_layout(app: &mut App) {
+        use bevy::{
+            app::{HierarchyPropagatePlugin, PropagateSet},
+            camera::{ComputedCameraValues, RenderTargetInfo},
+            text::{FontCx, RemSize},
+            ui::{
+                ComputedUiRenderTargetInfo, ComputedUiTargetCamera, UiSystems, ui_layout_system,
+                ui_surface::UiSurface, update::propagate_ui_target_cameras,
+            },
+        };
+        app.add_plugins((
+            ButtonPlugin,
+            HierarchyPropagatePlugin::<ComputedUiTargetCamera>::new(PostUpdate),
+            HierarchyPropagatePlugin::<ComputedUiRenderTargetInfo>::new(PostUpdate),
+        ))
+        .init_resource::<UiSurface>()
+        .init_resource::<FontCx>()
+        .init_resource::<RemSize>()
+        .configure_sets(
+            PostUpdate,
+            (UiSystems::Prepare, UiSystems::Propagate, UiSystems::Layout).chain(),
+        )
+        .configure_sets(
+            PostUpdate,
+            PropagateSet::<ComputedUiTargetCamera>::default().in_set(UiSystems::Propagate),
+        )
+        .configure_sets(
+            PostUpdate,
+            PropagateSet::<ComputedUiRenderTargetInfo>::default().in_set(UiSystems::Propagate),
+        )
+        .add_systems(
+            PostUpdate,
+            propagate_ui_target_cameras.in_set(UiSystems::Prepare),
+        )
+        .add_systems(PostUpdate, ui_layout_system.in_set(UiSystems::Layout));
+        app.world_mut().spawn((
+            Camera2d,
+            IsDefaultUiCamera,
+            Camera {
+                computed: ComputedCameraValues {
+                    target_info: Some(RenderTargetInfo {
+                        physical_size: UVec2::new(301, 201),
+                        scale_factor: 1.,
+                    }),
+                    ..default()
+                },
+                ..default()
+            },
+        ));
+    }
+
+    fn click_menu_row(app: &mut App, row: usize, label: &str) -> TestResult {
+        let point = Vec2::new(180., 77. + 22. * row as f32);
+        let world = app.world_mut();
+        let (entity, entry) = world
+            .query::<(Entity, &menu::Entry, &ComputedNode, &UiGlobalTransform)>()
+            .iter(world)
+            .find_map(|(entity, entry, node, transform)| {
+                node.contains_point(*transform, point)
+                    .then_some((entity, *entry))
             })
-            .ok_or(format!("{label} entry"))
+            .ok_or("no menu button under pointer")?;
+        assert!(
+            matches!(entry, menu::Entry::Zoom(text, _) | menu::Entry::Reset(text) if text == label)
+        );
+        for child in world
+            .get::<Children>(entity)
+            .into_iter()
+            .flat_map(|children| children.iter())
+        {
+            if world.get::<ResizeGrip>(child).is_some() {
+                assert!(
+                    !world
+                        .get::<ComputedNode>(child)
+                        .ok_or("grip")?
+                        .contains_point(
+                            *world.get::<UiGlobalTransform>(child).ok_or("transform")?,
+                            point
+                        )
+                );
+            }
+        }
+        let mut pointer = pointer();
+        pointer.position = point;
+        world.trigger(PointerPress {
+            entity,
+            pointer: pointer.clone(),
+            button: PointerButton::Primary,
+            hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+            count: 1,
+        });
+        world.flush();
+        world.trigger(PointerClick {
+            entity,
+            pointer,
+            button: PointerButton::Primary,
+            hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+            duration: default(),
+            count: 1,
+        });
+        app.update();
+        Ok(())
+    }
+
+    #[test]
+    fn window_menu_controls_keep_button_geometry() -> TestResult {
+        let mut app = app();
+        app.insert_resource(skins());
+        app.world_mut().spawn((
+            Window {
+                resolution: (301, 201).into(),
+                ..default()
+            },
+            bevy::window::PrimaryWindow,
+        ));
+        let (market, panel) = window(&mut app, "market", 157);
+        show(&mut app, market)?;
+        right_click(&mut app, panel);
+        for node in app
+            .world_mut()
+            .query_filtered::<&Node, With<menu::Entry>>()
+            .iter(app.world())
+        {
+            assert_eq!((node.width, node.height), (px(120.), px(20.)));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn window_menu_fits_bottom_right() -> TestResult {
+        let mut app = app();
+        app.insert_resource(skins());
+        app.world_mut().spawn((
+            Window {
+                resolution: (301, 201).into(),
+                ..default()
+            },
+            bevy::window::PrimaryWindow,
+        ));
+        let (market, panel) = window(&mut app, "market", 157);
+        show(&mut app, market)?;
+        right_click(&mut app, panel);
+        let menu_node = app
+            .world_mut()
+            .query_filtered::<&Node, With<menu::WindowMenu>>()
+            .single(app.world())?;
+        assert_eq!((menu_node.left, menu_node.top), (px(173.), px(63.)));
+        Ok(())
     }
 
     #[test]
     fn the_window_menu_zooms_75_to_200_percent_and_resets_the_layout() -> TestResult {
         let mut app = app();
         app.insert_resource(skins());
+        menu_layout(&mut app);
+        app.world_mut().spawn((
+            Window {
+                resolution: (301, 201).into(),
+                ..default()
+            },
+            bevy::window::PrimaryWindow,
+        ));
         let (market, panel) = window(&mut app, "market", 157);
         show(&mut app, market)?;
 
         right_click(&mut app, panel);
-        let labels: Vec<&str> = app
+        let children = app
             .world_mut()
-            .query::<&menu::Entry>()
-            .iter(app.world())
+            .query_filtered::<&Children, With<menu::WindowMenu>>()
+            .single(app.world())?;
+        let labels: Vec<&str> = children
+            .iter()
+            .filter_map(|child| app.world().get::<menu::Entry>(child))
             .map(|entry| match entry {
                 menu::Entry::Zoom(label, _) | menu::Entry::Reset(label) => *label,
             })
@@ -841,7 +1000,7 @@ mod stacking {
                 .get("market")
                 .map(|layout| layout.zoom)
         };
-        for (label, value) in menu::ZOOMS {
+        for (row, (label, value)) in menu::ZOOMS.into_iter().enumerate() {
             if !app
                 .world_mut()
                 .query::<&menu::WindowMenu>()
@@ -850,9 +1009,7 @@ mod stacking {
             {
                 right_click(&mut app, panel);
             }
-            let button = entry(&mut app, label)?;
-            app.world_mut().trigger(Activate { entity: button });
-            app.update();
+            click_menu_row(&mut app, row, label)?;
             assert_eq!(zoom(&app), Some(value), "{label}");
             assert_eq!(
                 app.world_mut()
@@ -865,9 +1022,7 @@ mod stacking {
         }
 
         right_click(&mut app, panel);
-        let reset = entry(&mut app, menu::RESET)?;
-        app.world_mut().trigger(Activate { entity: reset });
-        app.update();
+        click_menu_row(&mut app, menu::ZOOMS.len(), menu::RESET)?;
         assert_eq!(zoom(&app), Some(1.));
 
         right_click(&mut app, panel);
@@ -963,4 +1118,16 @@ mod stacking {
         assert!(!open(&app, prey));
         Ok(())
     }
+}
+
+#[test]
+fn prey_auto_height_fits_remaining_width() -> TestResult {
+    let mut node = Node {
+        left: percent(8.),
+        ..default()
+    };
+    layout("prey")?.apply(&mut node, Some(Vec2::new(800., 600.)));
+    assert_eq!(node.width, px(736.));
+    assert_eq!(node.height, Val::Auto);
+    Ok(())
 }

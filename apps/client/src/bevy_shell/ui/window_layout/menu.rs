@@ -30,6 +30,9 @@ pub(super) enum Entry {
     Reset(&'static str),
 }
 
+#[derive(Component)]
+struct MenuTarget(&'static str);
+
 /// A press on one of these acts on the control, not on the window behind it.
 type Controls<'w, 's> = Query<'w, 's, (), Or<(With<Button>, With<TextInput>, With<Checkbox>)>>;
 
@@ -43,6 +46,7 @@ pub(in crate::bevy_shell) fn open(
     controls: Controls,
     menus: Query<Entity, With<WindowMenu>>,
     skins: Option<Res<Skins>>,
+    screens: Query<&Window, With<PrimaryWindow>>,
     scale: Option<Res<UiScale>>,
 ) {
     if event.entity != event.original_event_target() || event.button != PointerButton::Secondary {
@@ -67,7 +71,15 @@ pub(in crate::bevy_shell) fn open(
     for menu in &menus {
         commands.entity(menu).despawn();
     }
-    let at = event.pointer.position / scale.map_or(1., |scale| scale.0);
+    let mut at = event.pointer.position / scale.as_deref().map_or(1., |scale| scale.0);
+    const BUTTON_WIDTH: f32 = 120.;
+    const PADDING: f32 = 4.;
+    const GAP: f32 = 2.;
+    if let Some(screen) = viewport(&screens, scale.as_deref()) {
+        let rows = (ZOOMS.len() + 1) as f32;
+        let size = Vec2::new(BUTTON_WIDTH, rows * 20. + (rows - 1.) * GAP) + 2. * PADDING;
+        at = at.clamp(Vec2::ZERO, (screen - size).max(Vec2::ZERO));
+    }
     let menu = commands
         .spawn((
             WindowMenu,
@@ -78,9 +90,9 @@ pub(in crate::bevy_shell) fn open(
                 position_type: PositionType::Absolute,
                 left: px(at.x),
                 top: px(at.y),
-                padding: px(4.).all(),
+                padding: px(PADDING).all(),
                 flex_direction: FlexDirection::Column,
-                row_gap: px(2.),
+                row_gap: px(GAP),
                 ..default()
             },
         ))
@@ -95,9 +107,9 @@ pub(in crate::bevy_shell) fn open(
         };
         let button = commands
             .spawn((
-                source::button(skins.buttons.clone(), 120.),
+                source::button(skins.buttons.clone(), BUTTON_WIDTH),
                 entry,
-                WindowId(window),
+                MenuTarget(window),
                 ChildOf(menu),
             ))
             .observe(choose)
@@ -113,7 +125,7 @@ pub(in crate::bevy_shell) fn open(
 fn choose(
     event: On<Activate>,
     mut commands: Commands,
-    entries: Query<(&Entry, &WindowId)>,
+    entries: Query<(&Entry, &MenuTarget)>,
     menus: Query<Entity, With<WindowMenu>>,
     screens: Query<&Window, With<PrimaryWindow>>,
     scale: Option<Res<UiScale>>,

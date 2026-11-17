@@ -26,6 +26,7 @@ pub(in crate::bevy_shell) fn install(app: &mut App) {
         .add_observer(menu::open)
         .add_observer(menu::dismiss)
         .add_systems(Update, (zoom, persist))
+        .add_systems(Last, flush_on_exit.run_if(on_message::<AppExit>))
         .add_systems(
             PostUpdate,
             (
@@ -158,8 +159,21 @@ impl Layout {
     }
     /// The minimum never exceeds a known screen, so a window always fits on it.
     pub(in crate::bevy_shell) fn apply(&self, node: &mut Node, viewport: Option<Vec2>) {
+        let viewport = viewport.map(|mut screen| {
+            if self.size.is_none() {
+                let inset = |value| match value {
+                    Val::Percent(p) => screen.x * p / 100.,
+                    Val::Px(x) => x,
+                    _ => 0.,
+                };
+                screen.x = (screen.x - inset(node.left) - inset(node.right)).max(1.);
+            }
+            screen
+        });
         let min = viewport.map_or(self.min(), |viewport| self.min().min(viewport));
-        node.width = px(self.width());
+        node.width = px(viewport
+            .filter(|_| self.size.is_none())
+            .map_or(self.width(), |screen| self.width().min(screen.x)));
         node.height = self.size.map_or(Val::Auto, |size| px(size.y));
         node.min_width = px(min.x);
         node.min_height = px(min.y);
@@ -474,6 +488,18 @@ pub(in crate::bevy_shell) fn persist(
     }
 }
 
+/// Project has collected the final drag offset by the time Last runs.
+fn flush_on_exit(
+    owner: Option<NonSend<crate::bevy_shell::owner::HostOwner>>,
+    layouts: Res<WindowLayouts>,
+) {
+    if let Some(path) = owner.and_then(|owner| owner.window_layouts_path())
+        && let Err(error) = layouts.save(&path)
+    {
+        leprintln!("Could not save window layout: {error}", error = error);
+    }
+}
+
 /// Clamps every window to the logical screen and projects sizes, position and zoom.
 #[allow(clippy::too_many_arguments)]
 pub(in crate::bevy_shell) fn project(
@@ -489,8 +515,9 @@ pub(in crate::bevy_shell) fn project(
     ids: Query<&WindowId>,
 ) {
     let viewport = viewport(&screens, scale.as_deref());
+    let screen_changed = viewport != *seen;
     if let Some(viewport) = viewport
-        && *seen != Some(viewport)
+        && screen_changed
     {
         *seen = Some(viewport);
         let mut next = layouts.0.clone();
@@ -521,7 +548,7 @@ pub(in crate::bevy_shell) fn project(
                 transform.translation = Val2::px(layout.offset.x, layout.offset.y);
             }
         }
-        if changed || id.is_added() {
+        if changed || screen_changed || id.is_added() {
             layout.apply(&mut node, *seen);
         }
     }
