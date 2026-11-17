@@ -104,6 +104,13 @@
           "minimum": -1,
           "maximum": 0,
           "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/the_feared_hugo",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": 1,
+          "at_least": true
         }
       ],
       "take": [],
@@ -114,7 +121,8 @@
         "To learn about Hugo, ask Zoltan, then Padreia and Lubo. Seek the prisoner who studies mathemagics before you climb the tower."
       ],
       "sources": [
-        "content/quests/authoring/paradox-tower.md"
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/oldrak.lua:164-168"
       ]
     },
     {
@@ -134,6 +142,13 @@
           "minimum": 1,
           "maximum": 1,
           "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/the_feared_hugo",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": 2,
+          "at_least": true
         }
       ],
       "take": [],
@@ -145,7 +160,8 @@
       ],
       "sources": [
         "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/zoltan.lua:65",
-        "content/quests/authoring/paradox-tower.md"
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zoltan.lua:66-68"
       ]
     },
     {
@@ -165,6 +181,13 @@
           "minimum": 2,
           "maximum": 2,
           "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/the_feared_hugo",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": 3,
+          "at_least": true
         }
       ],
       "take": [],
@@ -176,7 +199,8 @@
       ],
       "sources": [
         "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/padreia.lua:116",
-        "content/quests/authoring/paradox-tower.md"
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/padreia.lua:117-119"
       ]
     },
     {
@@ -196,6 +220,13 @@
           "minimum": 3,
           "maximum": 3,
           "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/the_feared_hugo",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": 4,
+          "at_least": true
         }
       ],
       "take": [],
@@ -207,7 +238,8 @@
       ],
       "sources": [
         "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lubo.lua:136",
-        "content/quests/authoring/paradox-tower.md"
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lubo.lua:137-139"
       ]
     },
     {
@@ -227,6 +259,27 @@
           "minimum": 4,
           "maximum": 4,
           "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": 1,
+          "at_least": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/the_feared_hugo",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": 4,
+          "at_least": true
+        },
+        {
+          "track": "oteryn:quest-progress/l6/paradox/source-synced",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1,
+          "at_least": true
         }
       ],
       "take": [],
@@ -238,6 +291,59 @@
       ],
       "sources": [
         "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_prisoner.lua:125",
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_prisoner.lua:126-128"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-paradox-source-catch-up",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "math"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "minimum_level": 30,
+      "requires_premium": true,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/paradox/story",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/l6/paradox/source-synced",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/the_feared_hugo",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": 4,
+          "at_least": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Remember your lesson: one plus one is one."
+      ],
+      "sources": [
+        "OTERYN_AUTHORED_COMPATIBILITY: preserve the trusted completed personal lesson while restoring the source Riddler prerequisites once.",
         "content/quests/authoring/paradox-tower.md"
       ]
     }

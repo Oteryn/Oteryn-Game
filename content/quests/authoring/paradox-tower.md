@@ -129,3 +129,29 @@ Riddler identity already exists; its source center is32479,31901,z2. The native
 success destination is plain ground409 with no house. Generic callback movement
 must preflight the actual landing and recover an interrupted committed command;
 no additional achievement is granted at the Riddler.
+
+The five selected contact callbacks also write the source tracks consumed by the
+admitted Riddler programme: TheFearedHugo advances1 through4 in contact order and
+the prisoner's lesson sets Mathemagics1. These writes share each existing fenced
+dialogue receipt with its selected story progress. Monotonic source writes preserve
+higher source progress and permit pre-existing personal stages with absent source
+tracks; the final lesson also ensures Hugo4 for a returning stage4 character.
+The mirrored milestone values follow pinned Crystal201189f
+`oldrak.lua:164-168`, `zoltan.lua:66-68`, `padreia.lua:117-119`,
+`lubo.lua:137-139` and `a_prisoner.lua:126-128`; the selected contact keywords,
+requirements and achievement remain as authored above. This bridges the selected
+story to the source consumer without asserting full Global quest parity.
+
+`l6_paradox_story` PostgreSQL cases check the source outputs after real contact
+dispatch, including refused order and replay, then pass the stored prerequisites
+through the production Riddler planner. This does not prove a continuous physical
+journey to the Riddler, reward selection or a node-boot E2E walk. Already-recorded
+selected contact receipts are retained. A once-only `math` reminder at the prisoner
+repairs the source prerequisites for a trusted completed personal lesson (story5),
+without another achievement or value grant. This is an Oteryn compatibility binding,
+not a claim about donor dialogue. The internal `source-synced` marker is set by both
+the final lesson and this repair; fresh repeated lessons therefore create no repair
+receipt. The repair preserves later source progress, including Mathemagics2.
+Earlier personal stages cannot use it to skip the ordered lesson. Legacy cases
+recreate the missing-track shape under the current catalogue; they do not qualify
+admission from a different predecessor definition hash.
