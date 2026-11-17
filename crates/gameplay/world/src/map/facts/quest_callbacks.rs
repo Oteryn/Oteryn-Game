@@ -982,6 +982,17 @@ impl BundleFacts {
         if appearance == 26100 {
             after.pickupable = false;
         }
+        self.transform_movement_item_facts(key, after)
+    }
+
+    /// Transform one base placement to exact captured facts. A restore names the
+    /// original placement's own facts, so an appearance shared by several
+    /// palette entries stays restorable.
+    pub fn transform_movement_item_facts(&self, key: u64, after: EntryFacts) -> bool {
+        if key >> 62 == 2 {
+            return false;
+        }
+        let appearance = after.appearance_id;
         // These source-published states have no inventory Item identity. Their
         // native collision must change in the same existing map callback commit
         // as their visible state (Bakragore's four flame pairs).

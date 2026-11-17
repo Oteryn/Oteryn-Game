@@ -150,7 +150,7 @@ pub(in crate::gameplay_transport) fn apply(
         if scene::current_ground(room, at).is_some_and(|ground| ground.appearance_id == 409) {
             if !map
                 .facts
-                .transform_movement_item(original.key, original.appearance_id)
+                .transform_movement_item_facts(original.key, original.facts)
             {
                 return Err(());
             }

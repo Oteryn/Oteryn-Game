@@ -5,7 +5,7 @@ use crate::map::boot::BundleCollisionIndexExt;
 use crate::map::{
     boot::BundleMap,
     overlay::TilePos,
-    view::{ComposedTile, EntrySource},
+    view::{ComposedTile, EntryFacts, EntrySource},
 };
 
 pub(super) fn source_map(room: &QualifiedNativeEntryRoom) -> Option<&BundleMap> {
@@ -39,6 +39,8 @@ pub(super) struct SourceGround {
     pub position: TilePos,
     pub key: u64,
     pub appearance_id: u16,
+    /// The exact current facts, so a restore never resolves a shared appearance.
+    pub facts: EntryFacts,
 }
 pub(super) fn current_ground(
     room: &QualifiedNativeEntryRoom,
@@ -61,6 +63,7 @@ pub(super) fn current_ground(
         position: tile.pos,
         key: placement_key,
         appearance_id: entry.facts.appearance_id,
+        facts: entry.facts,
     })
 }
 pub(super) fn emit_effect(
