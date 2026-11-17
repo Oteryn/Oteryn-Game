@@ -19,7 +19,7 @@ class CanonicalVariantTests(unittest.TestCase):
         cls.schema = variants.validator(cls.root)
 
     def test_all_actual_variants_have_real_canonical_rewards_and_native_block(self):
-        self.assertEqual(len(self.records), 105)
+        self.assertEqual(len(self.records), 104)
         for row in self.records:
             d = row['definition']; self.schema.validate(d)
             self.assertNotEqual(d['readiness'], 'ready')
@@ -31,12 +31,12 @@ class CanonicalVariantTests(unittest.TestCase):
                         self.assertTrue(q['item']['key'].startswith('oteryn:item.tibia.i'))
                         self.assertEqual(q['item'], self.items[q['item']['key']]['identity'])
 
-    def test_plain_231_definition_records_remain_exact_and_readiness_228_3(self):
+    def test_plain_232_definition_records_remain_exact_and_readiness_229_3(self):
         outputs = plain.generate(); index = json.loads(outputs[plain.INDEX_PATH])
-        self.assertEqual(index['plain_record_count'], 231)
+        self.assertEqual(index['plain_record_count'], 232)
         self.assertEqual(index['native_authored_records'], 9)
         self.assertEqual(index['record_count'] - index['native_authored_records'], 336)
-        self.assertEqual(index['readiness']['ready'] - index['native_authored_records'], 228)
+        self.assertEqual(index['readiness']['ready'] - index['native_authored_records'], 229)
         self.assertEqual(index['readiness']['waiting_item_semantics'], 3)
         for path in index['shards'][:3]:
             self.assertEqual(outputs[path], (self.root / path).read_text())
@@ -163,10 +163,10 @@ class CanonicalVariantTests(unittest.TestCase):
         errors = variants.native_lowering_errors(self.records)
         # Keep all immutable source dispositions; only complete qualified
         # container/leaf recipes cross the native boundary.
-        self.assertEqual(sum('native_contents' in r['definition'] for r in self.records), 78)
+        self.assertEqual(sum('native_contents' in r['definition'] for r in self.records), 77)
         self.assertEqual(len(errors), 27)
         # Combined ITEMHOLD-Q and QUESTPC4 admissions retain the same source witnesses.
-        self.assertEqual(len(self.records), 105)
+        self.assertEqual(len(self.records), 104)
         admitted = {r['definition']['identity']['key']: r['definition']['native_contents']
                     for r in self.records if 'native_contents' in r['definition']}
         for key, uid, root, items in (

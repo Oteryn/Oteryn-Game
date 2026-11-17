@@ -487,7 +487,7 @@ def test_m35_final_loot_sets_exclude_access_keys_and_components() -> None:
 def test_committed_content_is_valid() -> None:
     assert rca.committed_errors() == []
     index = json.loads((rca.ROOT / rca.INDEX_PATH).read_text(encoding="utf-8"))
-    assert index.get("plain_record_count", index["record_count"]) == 231
+    assert index.get("plain_record_count", index["record_count"]) == 232
     records = [r["definition"] for p in index["shards"]
                for r in json.loads((rca.ROOT / p).read_text())["records"]]
     assert index["readiness"] == dict(Counter(r["readiness"] for r in records))
