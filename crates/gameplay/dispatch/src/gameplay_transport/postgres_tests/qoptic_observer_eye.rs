@@ -108,13 +108,21 @@ fn qoptic_observer_eye_wire_step_moves_only_the_paired_player() -> TestResult {
         deps.initialize_player(&owner, partner, partner_session)
             .await;
         let mut admitted = deps.admitted;
-        for (command, expected_partner_y) in [(1, 32907), (2, 32908), (3, 32908)] {
+        for (command, direction, expected_partner_y) in [
+            (1, StepDirection::South, 32907),
+            (2, StepDirection::South, 32908),
+            (3, StepDirection::South, 32908),
+            // Re-entering the topaz alone must not reuse the old partner.
+            (4, StepDirection::North, 32908),
+            (5, StepDirection::North, 32908),
+            (6, StepDirection::South, 32908),
+        ] {
             let result = super::quest_world_callbacks::wire(
                 &owner,
                 &mut admitted,
                 command,
                 COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-                encode_step_intent(StepDirection::South),
+                encode_step_intent(direction),
             )
             .await?;
             assert_eq!(
@@ -134,6 +142,6 @@ fn qoptic_observer_eye_wire_step_moves_only_the_paired_player() -> TestResult {
                 },
             );
         }
-        Ok(())
+        h.cleanup().await
     })
 }
