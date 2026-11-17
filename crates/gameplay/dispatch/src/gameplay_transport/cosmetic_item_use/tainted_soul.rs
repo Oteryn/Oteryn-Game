@@ -157,18 +157,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
 #[cfg(test)]
 mod tests {
-    use super::redemption_timing;
+    use super::{OWNER_TURN, redemption_timing};
+    use oteryn_gameplay_quests::quest::reward_callbacks::{self, StateMutation, StateOperation};
     use std::time::Duration;
 
     #[test]
-    fn tainted_soul_redemption_bounds_actor_lifetimes_with_or_without_room() {
-        let turn = Duration::from_millis(200);
-        let blocked = redemption_timing(turn, false);
-        assert_eq!(blocked.tainted_remove_after, turn);
+    fn tainted_soul_redemption_counts_without_room_and_bounds_actor_lifetimes() -> Result<(), String>
+    {
+        let callback = reward_callbacks::load()?
+            .into_iter()
+            .find(|callback| callback.key == reward_callbacks::TAINTED_SOUL_REDEMPTION)
+            .ok_or("redemption callback")?;
+        assert!(matches!(
+            callback.state_ops.as_slice(),
+            [StateOperation {
+                effect: StateMutation::Add { value: 1 },
+                ..
+            }]
+        ));
+
+        let blocked = redemption_timing(OWNER_TURN, false);
+        assert_eq!(blocked.tainted_remove_after, OWNER_TURN);
         assert_eq!(blocked.redeemed_remove_after, None);
 
-        let open = redemption_timing(turn, true);
-        assert_eq!(open.tainted_remove_after, turn);
+        let open = redemption_timing(OWNER_TURN, true);
+        assert_eq!(open.tainted_remove_after, OWNER_TURN);
         assert_eq!(open.redeemed_remove_after, Some(Duration::from_secs(30)));
+        Ok(())
     }
 }
