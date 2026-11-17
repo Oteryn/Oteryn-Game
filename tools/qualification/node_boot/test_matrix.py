@@ -65,7 +65,7 @@ class CoverageTests(unittest.TestCase):
         rows = [s for s in shards if s["env"].get("NODE_BOOT_E2E_ONLY") == "rows"]
         covered = [i for s in rows for i in selected_rows(s, self.indices)]
         self.assertEqual(sorted(covered), [i for i in self.indices if start <= i < start + length])
-        self.assertEqual(len(shards), 7)
+        self.assertEqual(len(shards), 8)
 
     def test_reference_is_one_unchanged_machine(self):
         self.assertEqual(matrix.plan("reference"), [matrix.shard(
@@ -132,7 +132,7 @@ class KnobTests(unittest.TestCase):
         self.assertIn(f"readonly GAME_PLATFORM_SHA={portal['platform_ref']}\n", lifecycle)
 
     def test_export_env_writes_only_validated_lines(self):
-        text = matrix.export_env(matrix.plan("pr")[4])
+        text = matrix.export_env(next(s for s in matrix.plan("pr") if s["name"] == "rows-000-005"))
         self.assertEqual(text, "SHARD_NAME=rows-000-005\nSHARD_ENTRY=node_boot\nSHARD_WORLD=1\n"
                                "NODE_BOOT_E2E_ONLY=rows\nNODE_BOOT_SKIP_BASIC=1\nOTERYN_E2E_ROW_BATCH=0:5\n")
 
@@ -233,6 +233,26 @@ class EvidenceTests(unittest.TestCase):
             self.assertEqual(matrix.world_problems(result, "rows", "207:1"), [])
             result["incomplete"] = True
             self.assertEqual(matrix.world_problems(result, "rows", "207:1"), ["E2EF1_INCOMPLETE"])
+
+    def test_skipped_indexed_journey_fails_coverage(self):
+        result = dict(groups=[("rows_early", 1), ("rows_late", 0)], incomplete=False,
+                      scenarios=[dict(id="I13.client", status="SKIPPED")])
+        self.assertTrue(matrix.world_problems(result, "rows", "124:1"))
+
+    def test_sweep_requires_the_five_reported_checks_per_species(self):
+        rows = [dict(id=f"CS.rat.{check}", status="PASS")
+                for check in ("spawn", "kill", "xp", "corpse", "loot")]
+        result = dict(groups=[("creature_sweep", 5)], incomplete=False, scenarios=rows, creature_batches=[1])
+        self.assertEqual(matrix.world_problems(result, "creature_sweep", "0:15"), [])
+        rows.pop()
+        result["groups"] = [("creature_sweep", 4)]
+        self.assertTrue(matrix.world_problems(result, "creature_sweep", "0:15"))
+
+    def test_hosted_sweep_has_a_separate_fixture(self):
+        for mode in ("pr", "full"):
+            sweep = [shard["env"]["NODE_BOOT_E2E_ONLY"] for shard in matrix.plan(mode)
+                     if "creature_sweep" in shard["env"].get("NODE_BOOT_E2E_ONLY", "")]
+            self.assertEqual(sweep, ["creature_sweep"])
 
     def test_marker_without_a_completed_basic_or_spell_test_is_not_a_pass(self):
         with tempfile.TemporaryDirectory() as tmp:

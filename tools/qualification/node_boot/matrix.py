@@ -189,19 +189,15 @@ def pinned_sha(root: Path, relative: Path, variable: str) -> str:
 
 
 def group_partition(groups: list[str]) -> list[list[str]]:
-    """Core-like groups | f4..f6 | f7 and later, in registry order.
-
-    These are the combinations the single-machine run already executes
-    together; a group gets its own shard only through the custom set.
-    """
-    journey = [g for g in groups if g != "rows"]
+    """Keep the sweep off the fixtures used by the core and multiplayer journeys."""
+    journey = [g for g in groups if g not in ("rows", "creature_sweep")]
     numbered = {g: int(m[1]) for g in journey if (m := re.fullmatch(r"f(\d+)[a-z]*", g))}
     parts = [
         [g for g in journey if g not in numbered],
         [g for g in journey if g in numbered and numbered[g] < 7],
         [g for g in journey if g in numbered and numbered[g] >= 7],
     ]
-    return [part for part in parts if part]
+    return [part for part in parts if part] + ([["creature_sweep"]] if "creature_sweep" in groups else [])
 
 
 def row_batches(indices: list[int], start: int, end: int | None, size: int) -> list[tuple[int, int]]:
@@ -408,9 +404,20 @@ def world_problems(result: dict, groups: str, batch: str) -> list[str]:
     duplicates = sorted(row for row, count in scenarios.items() if count > 1)
     if duplicates:
         problems.append(f"duplicate World row verdicts: {', '.join(duplicates)}")
+    skipped = sorted(row["id"] for row in result["scenarios"]
+                     if row["id"] in expected_rows and row["status"] == "SKIPPED")
+    if skipped:
+        problems.append(f"World journeys skipped: {', '.join(skipped)}")
     if "creature_sweep" in expected_groups:
-        creature_count = sum(sid.startswith("CS.") and sid.endswith(".full") for sid in scenarios)
-        if creature_count == 0 or result.get("creature_batches") != [creature_count]:
+        checks = {}
+        for sid in scenarios:
+            if sid.startswith("CS."):
+                species, _, check = sid.rpartition(".")
+                if check != "full":
+                    checks.setdefault(species, set()).add(check)
+        required = {"spawn", "kill", "xp", "corpse", "loot"}
+        if (not checks or result.get("creature_batches") != [len(checks)]
+                or any(steps != required for steps in checks.values())):
             problems.append("creature sweep verdicts disagree with selected species")
     if sum(count for _, count in evidence) != sum(scenarios.values()):
         problems.append("World scenario count disagrees with completed groups")

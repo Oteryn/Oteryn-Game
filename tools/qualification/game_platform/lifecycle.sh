@@ -76,9 +76,9 @@ game_platform_start() {
   # The harness intentionally forwards only test.env names. A private exec-only
   # launcher supplies identity/OAuth configuration absent from that whitelist;
   # every migrate/seed/serve/worker/gateway invocation is the real built binary.
-  cargo build --locked --manifest-path "$PLATFORM_SOURCE/portal-rs/Cargo.toml" -p oteryn-portal > "$WORK/portal-build.log" 2>&1 \
+  run_interruptible timeout --foreground --kill-after=5s 3600s cargo build --locked --manifest-path "$PLATFORM_SOURCE/portal-rs/Cargo.toml" -p oteryn-portal > "$WORK/portal-build.log" 2>&1 \
     || game_platform_fail platform binary_build_failed
-  cargo metadata --manifest-path "$PLATFORM_SOURCE/portal-rs/Cargo.toml" --no-deps --format-version 1 > "$WORK/portal-meta.json"
+  run_interruptible timeout --foreground --kill-after=5s 120s cargo metadata --manifest-path "$PLATFORM_SOURCE/portal-rs/Cargo.toml" --no-deps --format-version 1 > "$WORK/portal-meta.json"
   local prepare_code=0
   python3 "$GAME_SOURCE/tools/qualification/game_platform/prepare.py" "$WORK" "$ACCOUNT_ID" "$SECOND_ACCOUNT_ID" \
     "$WORLD_ID" "$CHANNEL_ID" "$FRESH_PUBLIC_HEX" "$RECOVERY_PUBLIC_HEX" "$FRESH_KEY_ID" "$RECOVERY_KEY_ID" \
@@ -123,7 +123,7 @@ game_platform_identity() {
   result=NODE_BOOT_IDENTITY_ONLY
   ACTIVE_STAGE=web_identity
   # Compile before the node's bounded assignment wait and journey budget begin.
-  cargo test --locked -p oteryn-security-auth-tests --test web_identity_pkce_isolation \
+  run_interruptible timeout --foreground --kill-after=5s 3600s cargo test --locked -p oteryn-security-auth-tests --test web_identity_pkce_isolation \
     --test native_ticket_and_gateway_fail_closed --test native_device_rotation_replay --no-run \
     > "$WORK/identity-build.log" 2>&1 || game_platform_fail web_identity driver_build_failed
   stage operator_setup -- operator_setup
@@ -135,10 +135,10 @@ game_platform_identity() {
   evidence "game_platform_provenance game=$(git rev-parse HEAD) platform=$GAME_PLATFORM_SHA game_pg=18.6 platform_pg=18.6 bundle=$WORLD_DIGEST"
   GAME_PLATFORM_INPUT="$WORK/identity.json" GAME_PLATFORM_REPORT="$WORK/portal-report.json" \
     GAME_PLATFORM_GAME_DATABASE_URL="$ADMIN_URL" \
-    timeout --kill-after=1s 60s cargo test --locked -p oteryn-security-auth-tests --test web_identity_pkce_isolation \
+    run_interruptible timeout --foreground --kill-after=1s 60s cargo test --locked -p oteryn-security-auth-tests --test web_identity_pkce_isolation \
       web_identity_pkce_isolation -- --exact --nocapture > "$WORK/identity.log" 2>&1 \
     || game_platform_fail web_identity journey_assertion_failed
-  kill -0 "$NODE_PID" 2>/dev/null || game_platform_fail game node_exited_during_identity
+  signal_node_process 0 "$NODE_PROCESS_DIR" 2>/dev/null || game_platform_fail game node_exited_during_identity
   grep -Fx 'NODE_BOOT_EVIDENCE flow=web_identity result=pass account_isolation=1' "$WORK/identity.log" \
     || game_platform_fail web_identity evidence_missing
   local target budget
@@ -148,10 +148,10 @@ game_platform_identity() {
     [[ "$target" != native_device_rotation_replay ]] || budget=120
     GAME_PLATFORM_INPUT="$WORK/identity.json" GAME_PLATFORM_REPORT="$WORK/portal-report.json" \
       GAME_PLATFORM_GAME_DATABASE_URL="$ADMIN_URL" LOCALAPPDATA="$WORK/native-client" \
-      timeout --kill-after=1s "${budget}s" cargo test --locked -p oteryn-security-auth-tests --test "$target" \
+      run_interruptible timeout --foreground --kill-after=1s "${budget}s" cargo test --locked -p oteryn-security-auth-tests --test "$target" \
         "$target" -- --exact --nocapture > "$WORK/$target.log" 2>&1 \
       || game_platform_fail "$target" journey_assertion_failed
-    kill -0 "$NODE_PID" 2>/dev/null || game_platform_fail game node_exited_during_native
+    signal_node_process 0 "$NODE_PROCESS_DIR" 2>/dev/null || game_platform_fail game node_exited_during_native
     if [[ "$target" == native_ticket_and_gateway_fail_closed ]]; then
       grep -Fx 'NODE_BOOT_EVIDENCE flow=native_ticket_gateway result=fail_closed game_admissions=0' "$WORK/$target.log" \
         || game_platform_fail "$target" evidence_missing
@@ -171,9 +171,13 @@ game_platform_identity() {
   ACTIVE_STAGE=character_bootstrap
   python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap "$WORK" "$SECOND_ACCOUNT_ID" "$WORLD_ID" "${INTENT_OPERATIONS[1]}" "${INTERPRETATION[@]}" \
     || game_platform_fail character_bootstrap intent_issue_failed
-  ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "${INTENT_OPERATIONS[1]}" \
+  local first receipt_sql
+  first="$(ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "${INTENT_OPERATIONS[1]}")" \
     || game_platform_fail character_bootstrap operator_refused
-  ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "${INTENT_OPERATIONS[1]}" \
+  [[ "$first" == 'character_bootstrap=committed' ]] || game_platform_fail character_bootstrap unexpected_outcome
+  receipt_sql="SELECT row_to_json(r) FROM game_character_operation_receipts r WHERE operation_id='${INTENT_OPERATIONS[1]}' AND account_id='$SECOND_ACCOUNT_ID'"
+  assert_operator_replay oteryn_node_boot "$receipt_sql" "$first" \
+    ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "${INTENT_OPERATIONS[1]}" \
     || game_platform_fail character_bootstrap replay_refused
   local character
   character="$(echo "SELECT character_id FROM game_character_operation_receipts WHERE operation_id='${INTENT_OPERATIONS[1]}' AND account_id='$SECOND_ACCOUNT_ID'" | psql_admin oteryn_node_boot)"
@@ -183,7 +187,7 @@ game_platform_identity() {
   GAME_PLATFORM_INPUT="$WORK/identity.json" GAME_PLATFORM_REPORT="$WORK/portal-report.json" \
     GAME_PLATFORM_GAME_DATABASE_URL="$ADMIN_URL" GAME_PLATFORM_CHARACTER_ID="$character" \
     GAME_PLATFORM_GAMEPLAY_CERT="$WP5_PKI/gameplay.crt" \
-    timeout --kill-after=1s 60s cargo test --locked -p oteryn-security-auth-tests --test native_ticket_and_gateway_fail_closed \
+    run_interruptible timeout --foreground --kill-after=1s 60s cargo test --locked -p oteryn-security-auth-tests --test native_ticket_and_gateway_fail_closed \
       native_ticket_gateway_admits -- --exact --nocapture > "$WORK/native_ticket_gateway_admits.log" 2>&1 \
     || game_platform_fail native_ticket_gateway_admits journey_assertion_failed
   signal_node_process 0 "$process_directory" 2>/dev/null || game_platform_fail game node_exited_during_admission

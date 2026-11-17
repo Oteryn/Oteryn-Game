@@ -141,7 +141,7 @@ class ReuseTests(unittest.TestCase):
             set -Eeuo pipefail
             REUSE_STATE={temp}/state.env
             BASE={temp}/base; mkdir -p "$BASE"
-            SERVICE_USER=fixture; WP5_PROJECT=fixture; PG_CONTAINER_ID=fixture-container
+            SERVICE_USER=fixture; WP5_PROJECT=fixture; PG_CONTAINER_ID=fixture-container; COMPOSE_OWNER=0123456789abcdef0123456789abcdef
             NODE_PROCESS_DIR={temp}/kept/node-process.1
             NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0; STACK_KEPT=0
             WORK={temp}/kept; node_log="$WORK/node.log"; failed_node_log="$WORK/failed-node.log"
@@ -196,10 +196,11 @@ class ReuseTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             child = Path(temp, 'tools/qualification/node_boot/run.sh')
             child.parent.mkdir(parents=True)
-            child.write_text("trap 'exit 143' TERM\necho ready\nfor i in {1..10}; do sleep 1; done\n")
+            child.write_text("trap 'sleep 0.3; echo cleanup-complete; exit 143' TERM\necho ready\nfor i in {1..10}; do sleep 1; done\n")
             script = '''
                 set -Eeuo pipefail
                 NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0; NODE_BOOT_KEEP_STACK=0; NODE_BOOT_REUSE_STACK=0
+                sleep() { SECONDS=$((SECONDS + 51)); }
             ''' + recursion
             proc = subprocess.Popen(['bash', '-c', script], env=dict(os.environ, GAME_SOURCE=temp),
                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, start_new_session=True)
@@ -207,8 +208,9 @@ class ReuseTests(unittest.TestCase):
                 self.assertTrue(select.select([proc.stdout], [], [], 5)[0])
                 self.assertEqual(proc.stdout.readline().strip(), 'ready')
                 proc.send_signal(signal.SIGTERM)
-                proc.communicate(timeout=5)
+                output, _ = proc.communicate(timeout=5)
                 self.assertEqual(proc.returncode, 143)
+                self.assertIn("cleanup-complete", output)
             finally:
                 try:
                     os.killpg(proc.pid, signal.SIGKILL)
@@ -289,13 +291,41 @@ class SeamPassThroughTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(result.stdout.strip(), 'all')
 
+    def test_hosted_world_supplies_a_private_capture_directory(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fake = Path(temp, 'cargo')
+            fake.write_text('#!/bin/sh\nprintf "%s\\n" "${E2E_ALL_CAPTURE_DIR-unset}"\n')
+            fake.chmod(0o755)
+            setup = f'''
+                set -Eeuo pipefail
+                export PATH={temp}:$PATH
+                unset E2E_ALL_CAPTURE_DIR
+                WORLD_CAPTURE_DIR={temp}/captures; export OTERYN_E2E_ROW_BATCH=200:10
+                sleep() {{ :; }}
+                NODE_BOOT_SPELLS=0; NODE_BOOT_WORLD=1; NODE_BOOT_LIFECYCLE=game_platform
+                NODE_GAMEPLAY_ENV=(); NODE_CLOCK_FEATURES=(); NODE_SPAWN_FEATURES=()
+                BASE=/srv/x; WP5_PKI=/x; ADMIN_URL=u; WORLD_ID=w; CHANNEL_ID=c; WP5_PORT=1
+                ACCOUNT_ID=a; SECOND_ACCOUNT_ID=b; PACKET_ACCOUNT_ID=p; SECOND_PACKET_ACCOUNT_ID=q
+                FRESH_KEY_ID=f; FRESH_SEED_HEX=s; RECOVERY_KEY_ID=r; RECOVERY_SEED_HEX=t; MAP_REVISION=m
+            '''
+            result = bash(setup + function('seam_stages') + '\nseam_stages\n')
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.strip(), f'{temp}/captures')
+
     def test_install_reads_cargo_target_directory(self):
-        target_assignment = re.search(r'^TARGET=.*$', RUN_TEXT, re.M).group(0)
-        script = """set -Eeuo pipefail
-            GAME_SOURCE=/checkout
-            cargo() { printf '%s\\n' '{"target_directory":"/cargo/shared output"}'; }
-        """
-        result = bash(script + target_assignment + '\nprintf "%s\\n" "$TARGET"')
+        target_assignment = re.search(r'(?m)^TARGET=.*$', RUN_TEXT).group(0)
+        metadata = re.search(r'(?m)^run_interruptible .* cargo .* metadata .*$', RUN_TEXT)
+        with tempfile.TemporaryDirectory() as temp:
+            fake = Path(temp, 'cargo')
+            fake.write_text("""#!/bin/sh
+printf '%s\n' '{"target_directory":"/cargo/shared output"}'
+""")
+            fake.chmod(0o755)
+            setup = 'set -Eeuo pipefail\nGAME_SOURCE=/checkout\nrun_interruptible() { "$@"; }\n'
+            script = setup + (metadata.group(0) + '\n' if metadata else '') + target_assignment
+            result = bash(script + '\nprintf "%s\n" "$TARGET"', {
+                'WORK': temp, 'PATH': f'{temp}:{os.environ["PATH"]}',
+            })
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), '/cargo/shared output/debug')
 
@@ -317,6 +347,129 @@ class SeamPassThroughTests(unittest.TestCase):
             result = bash(script)
             self.assertEqual(result.stdout, 'NODE_BOOT_E2E_ONLY=f6,core\nNODE_BOOT_NO_PROGRESS_S=75\n',
                              result.stderr)
+
+
+class RoundTwoCallerTests(unittest.TestCase):
+    def test_platform_identity_uses_privileged_process_identity(self):
+        lifecycle = (HERE.parent / 'game_platform/lifecycle.sh').read_text()
+        for phase in ('identity', 'native'):
+            line = next(line for line in lifecycle.splitlines() if f'node_exited_during_{phase}' in line)
+            self.assertIn('signal_node_process 0 "$NODE_PROCESS_DIR"', line)
+
+    def test_platform_bootstrap_checks_the_complete_receipt(self):
+        lifecycle = Path(os.environ.get('NODE_BOOT_PLATFORM_LIFECYCLE',
+                                        HERE.parent / 'game_platform/lifecycle.sh')).read_text()
+        bootstrap = lifecycle.split('  ACTIVE_STAGE=character_bootstrap\n')[1].split('  local character\n')[0]
+        with tempfile.TemporaryDirectory() as temp:
+            script = r"""
+                set -Eeuo pipefail
+                GAME_SOURCE=. BASE=. SECOND_ACCOUNT_ID=account WORLD_ID=world
+                INTENT_OPERATIONS=(first second) INTERPRETATION=()
+                python3() { :; }
+                ops() {
+                    if [[ -f "$WORK/receipt" ]]; then
+                        echo altered > "$WORK/receipt"
+                    else
+                        echo original > "$WORK/receipt"
+                    fi
+                    echo character_bootstrap=committed
+                }
+                psql_admin() { cat "$WORK/receipt"; }
+                fail() { return 1; }
+                game_platform_fail() { echo "$*"; exit 1; }
+            """
+            result = bash(script + function('assert_operator_replay') + '\nbootstrap_fixture() {\n'
+                          + bootstrap + '}\nbootstrap_fixture', {'WORK': temp})
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            self.assertIn('character_bootstrap replay_refused', result.stdout, result.stderr)
+
+    def test_setup_waits_are_interruptible(self):
+        for action in ('build', 'test'):
+            line = next(line for line in RUN_TEXT.splitlines() if f'cargo +1.100.0 {action} --locked' in line)
+            self.assertTrue(line.startswith('run_interruptible '), line)
+        self.assertIn('run_interruptible compose up ', RUN_TEXT)
+
+    def test_entry_term_interrupts_setup_and_stage_diagnostics(self):
+        with tempfile.TemporaryDirectory() as temp:
+            for phase in ('setup', 'dump'):
+                with self.subTest(phase=phase):
+                    setup = r"""
+                        set -Eeuo pipefail
+                        PG_SAMPLER_PID=fixture PG_OBS=$WORK
+                        node_log=$WORK/node.log failed_node_log=$WORK/failed.log VARS=$WORK/vars
+                        : > "$node_log"; : > "$VARS"
+                        ACTIVE_STAGE=setup NODE_BOOT_WORLD=0 NODE_BOOT_SPELLS=0
+                        declare -A STATUS=(); ORDER=()
+                        evidence() { echo "$*"; }
+                        stop_runtime_diagnostics() { :; }
+                        blocked() { echo blocked; command sleep 3; }
+                        pg_observe() { blocked; }
+                    """
+                    functions = ('interrupted', 'pg_observability_dump', 'stage')
+                    helper = function('run_interruptible')
+                    invocation = ('run_interruptible blocked' if 'set -m' in helper else 'blocked') if phase == 'setup' else 'stage sample -- true'
+                    script = setup + '\n'.join(map(function, functions)) + '\n' + helper
+                    script += "\ntrap 'interrupted TERM 143' TERM\n" + invocation
+                    with subprocess.Popen(['bash', '-c', script], env=dict(os.environ, WORK=temp),
+                                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                          text=True, start_new_session=True) as proc:
+                        try:
+                            deadline = time.monotonic() + 4
+                            while proc.stdout.readline().strip() != 'blocked':
+                                self.assertLess(time.monotonic(), deadline)
+                            proc.send_signal(signal.SIGTERM)
+                            output, _ = proc.communicate(timeout=1.5)
+                            self.assertEqual(proc.returncode, 143, output)
+                        finally:
+                            if proc.poll() is None:
+                                os.killpg(proc.pid, signal.SIGKILL)
+
+    def test_basic_parent_waits_for_cleanup_to_finish(self):
+        recursion = section('# A kept or reused stack is one topology', 'if [[ "$NODE_BOOT_SPELLS" == 1 ]];')
+        self.assertIn('wait "$basic_pid"', recursion)
+        self.assertNotIn('kill -KILL', recursion)
+
+    def test_compose_cleanup_targets_owned_resources_only(self):
+        cleanup = function('cleanup')
+        self.assertIn('cleanup_owned_compose', cleanup)
+        self.assertNotIn('compose down', cleanup)
+
+    def test_compose_replacement_with_same_project_is_preserved(self):
+        with tempfile.TemporaryDirectory() as temp:
+            docker = Path(temp, 'docker')
+            docker.write_text(r"""#!/bin/bash
+case "$2" in
+  ls)
+    if [[ "$*" == *"label=org.oteryn.node-boot.owner=$COMPOSE_OWNER"* ]]; then
+      [[ "$1" != container ]] || echo retained-id
+    else
+      echo replacement-id
+    fi
+    ;;
+  rm) printf '%s\n' "${@: -1}" >> "$AUDIT" ;;
+esac
+""")
+            docker.chmod(0o755)
+            script = r"""
+                set -Eeuo pipefail
+                WP5_PROJECT=fixture PG_CONTAINER=fixture SERVICE_USER=fixture NODE_PID=""
+                export COMPOSE_OWNER=0123456789abcdef0123456789abcdef
+                COMPOSE_OWNED=1 STACK_KEPT=0 ACTIVE_STAGE=setup NODE_BOOT_WORLD=1 NODE_BOOT_SPELLS=0
+                result=NODE_BOOT_FAIL REUSE_STATE=""
+                BASE=$WORK/base
+                stop_runtime_diagnostics() { :; }
+                stop_pg_sampler() { :; }
+                evidence() { :; }
+                sudo() { :; }
+                compose() { echo replacement-id >> "$AUDIT"; }
+            """
+            result = bash(script + '\n'.join(map(function, ('cleanup_owned_compose', 'cleanup')))
+                          + '\ntrap cleanup EXIT\nexit 1', {
+                              'WORK': str(Path(temp, 'scratch')), 'AUDIT': str(Path(temp, 'removed')),
+                              'PATH': f'{temp}:{os.environ["PATH"]}',
+                          })
+            self.assertEqual(result.returncode, 1)
+            self.assertEqual(Path(temp, 'removed').read_text().splitlines(), ['retained-id'])
 
 
 class StageDumpTests(unittest.TestCase):
@@ -348,6 +501,12 @@ class StageDumpTests(unittest.TestCase):
         started = time.monotonic()
         self.assertIn('status=FAIL(exit 124)', self.run_stage('stall', setup))
         self.assertLess(time.monotonic() - started, 4)
+
+    def test_stage_deadline_includes_pg_dump(self):
+        setup = "NODE_BOOT_STAGE_TIMEOUT_SECONDS=1; pg_observe() { trap '' TERM; command sleep 4; }"
+        started = time.monotonic()
+        self.assertIn('status=FAIL(exit 124)', self.run_stage('true', setup))
+        self.assertLess(time.monotonic() - started, 3)
 
     def test_zero_selected_libtest_cases_fail_both_qualification_stages(self):
         setup = '''
@@ -705,7 +864,7 @@ class PgObserveTests(unittest.TestCase):
                         '-c log_parameter_max_length=0', '-c shared_preload_libraries=pg_stat_statements',
                         '-c "log_line_prefix=%m [%p] %u "'):
             self.assertIn(setting, RUN_TEXT)
-        self.assertIn('echo "CREATE EXTENSION pg_stat_statements" | psql_admin postgres', RUN_TEXT)
+        self.assertIn('run_interruptible psql_admin postgres <<< "CREATE EXTENSION pg_stat_statements"', RUN_TEXT)
         self.assertIn('cp -R "$PG_OBS" "$NODE_BOOT_FAILURE_LOG_DIR/postgres-world', RUN_TEXT)
 
 
