@@ -5,7 +5,12 @@
 //! carried rope), prints it, walks it with STEP and USE commands only, USEs the chest and must
 //! then carry the exact reward item. A refused door (the level-35 door before Noble Armor for a
 //! lower character), a refused floor change or a missing route is the row's FAIL with that
-//! exact refusal; nothing is skipped or provisioned around.
+//! exact refusal; nothing is skipped or provisioned around. A refused door is first banned and
+//! the route replanned; the row fails only when no other way remains.
+//!
+//! Before connecting, each row also plans from the start town and prints that route (or why none
+//! was found), so the evidence shows the whole multi-floor way from Thais to the chest. Rows run
+//! nearest-first: Noble Armor, then Dark Armor, then the Double Hero chests.
 use super::*;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use std::sync::OnceLock;
@@ -43,11 +48,11 @@ const fn chest(
 
 #[rustfmt::skip]
 pub(super) const CHESTS: [Chest; 5] = [
-    chest("Q01a", "dark_armor", (33178, 31870, 12), 6028, 3383, 1, 0xf1),
-    chest("Q01b", "double_hero", (33109, 31679, 13), 6032, 3039, 1, 0xf2),
-    chest("Q01c", "double_hero", (33110, 31679, 13), 6033, 3093, 0, 0xf3),
-    chest("Q01d", "noble_armor", (32451, 32048, 8), 6132, 3380, 1, 0xf4),
-    chest("Q01e", "noble_armor", (32455, 32048, 8), 6133, 3385, 0, 0xf5),
+    chest("Q01a", "noble_armor", (32451, 32048, 8), 6132, 3380, 1, 0xf1),
+    chest("Q01b", "noble_armor", (32455, 32048, 8), 6133, 3385, 0, 0xf2),
+    chest("Q01c", "dark_armor", (33178, 31870, 12), 6028, 3383, 1, 0xf3),
+    chest("Q01d", "double_hero", (33109, 31679, 13), 6032, 3039, 1, 0xf4),
+    chest("Q01e", "double_hero", (33110, 31679, 13), 6033, 3093, 0, 0xf5),
 ];
 
 static PLANNER: OnceLock<travel::Planner<'static>> = OnceLock::new();
@@ -98,10 +103,33 @@ async fn journey(clients: &SeamClients<'_>, chest: &Chest) -> TestResult {
         .into());
     }
     let reference = provisioning::item_reference(&provisioning::item_index()?, chest.item)?;
+    from_town(planner, chest, &label);
     let mut client = connect_character(clients, chest.tag, chest.character).await?;
     let result = claim(&mut client, planner, chest, &label, ordinal, reference).await;
     let _ = client.session_mut().logout().await;
     result
+}
+
+/// Evidence only: the route a fresh character would take from the start town, without a rope.
+fn from_town(planner: &travel::Planner<'_>, chest: &Chest, label: &str) {
+    verdict::Harness::global().progress("walk");
+    let goal = travel::beside(chest.at);
+    let planned = planner.plan(TOWN, chest.at, &goal, false, &travel::Passages::default());
+    verdict::Harness::global().progress("walk");
+    match planned {
+        Ok(route) => {
+            evidence(&format!(
+                "TRAVEL_ROUTE {label} from-town {TOWN:?} actions={}",
+                route.len()
+            ));
+            for line in planner.describe(TOWN, &route) {
+                evidence(&format!("TRAVEL_ROUTE {label} from-town {line}"));
+            }
+        }
+        Err(reason) => evidence(&format!(
+            "TRAVEL_ROUTE {label} from-town {TOWN:?} unreached: {reason}"
+        )),
+    }
 }
 
 /// Walk to the chest, USE it and require the reward item in the backpack.
@@ -113,7 +141,16 @@ async fn claim(
     ordinal: u8,
     reference: std::num::NonZeroU32,
 ) -> TestResult {
-    travel::travel_to(client, planner, label, chest.at, &travel::beside(chest.at)).await?;
+    let mut passages = travel::Passages::default();
+    travel::travel_to(
+        client,
+        planner,
+        label,
+        chest.at,
+        &travel::beside(chest.at),
+        &mut passages,
+    )
+    .await?;
     let before = carried(client, reference);
     let placement = planner.placement(chest.at, ordinal)?;
     let reply = travel::use_map_object(client, &placement).await?;

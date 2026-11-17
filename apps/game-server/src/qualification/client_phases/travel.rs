@@ -9,13 +9,17 @@
 //!   on the first free tile in the server's order (`crates/gameplay/world/src/map/floor/rope.rs`,
 //!   `OFFSETS`).
 //!
-//! Levers are not planned: no bundle fact maps a lever to the passage its quest callback opens.
-//! A caller that needs one walks next to it with `travel_to` and sends `use_map_object` first.
+//! A refused door USE (a level door below its level, a quest or key door) bans that door and
+//! replans; only when no other route remains does the journey fail, naming every refusal.
+//!
+//! Levers: no bundle fact maps a lever to the passage its quest callback opens, and the row's
+//! world copy never sees that callback, so a lever cannot be discovered by the search. A scenario
+//! that knows its lever from the quest source calls `pull_lever` with the tiles it opens.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use std::cmp::Reverse;
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::{BinaryHeap, HashMap, HashSet};
 
 const DIRECTIONS: [StepDirection; 4] = [
     StepDirection::North,
@@ -43,8 +47,12 @@ const ROPE_ITEM: u32 = 3003;
 /// Tiles around the start-to-target box that a detour may use.
 const MARGIN: u16 = 160;
 /// The search gives up after this many settled tiles instead of exhausting memory.
-const SEARCH_LIMIT: usize = 6_000_000;
-const MAX_REPLANS: usize = 8;
+const SEARCH_LIMIT: usize = 2_000_000;
+const MAX_REPLANS: usize = 12;
+const STEP_COST: u32 = 10;
+/// A closed door costs a USE and may be refused, so an open way round is preferred.
+const DOOR_COST: u32 = 40;
+const CLIMB_COST: u32 = 20;
 
 /// One player action of a route.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -52,6 +60,19 @@ pub(super) enum Leg {
     Step(StepDirection),
     Ladder { at: TilePos, ordinal: u8 },
     Rope { at: TilePos, ordinal: u8 },
+}
+
+/// Passage state learned during play: tiles a pulled lever opened, doors whose USE was refused.
+#[derive(Default)]
+pub(super) struct Passages {
+    pub(super) open: HashSet<TilePos>,
+    pub(super) refused: HashSet<TilePos>,
+}
+
+/// What one route action did.
+enum Acted {
+    At(TilePos),
+    DoorRefused(TilePos, String),
 }
 
 pub(super) struct Planner<'a> {
@@ -134,17 +155,26 @@ impl<'a> Planner<'a> {
         Ok(planner)
     }
 
-    fn walkable(&self, at: TilePos, through_doors: bool) -> bool {
+    fn walkable(&self, at: TilePos, through_doors: bool, passages: &Passages) -> bool {
         self.world
             .base()
             .tile(at.x, at.y, at.floor)
             .is_some_and(|tile| tile.walkable())
-            && (self.world.enterable(at) || (through_doors && self.doors.contains_key(&at)))
+            && (self.world.enterable(at)
+                || passages.open.contains(&at)
+                || (through_doors
+                    && self.doors.contains_key(&at)
+                    && !passages.refused.contains(&at)))
     }
 
     /// The production floor resolver, with every door tile enterable: the walker opens a closed
     /// door with USE before it steps, as a player does.
-    pub(super) fn step(&self, from: TilePos, direction: StepDirection) -> Option<TilePos> {
+    pub(super) fn step(
+        &self,
+        from: TilePos,
+        direction: StepDirection,
+        passages: &Passages,
+    ) -> Option<TilePos> {
         use crate::map::floor::{Ground, resolve_landing};
         use crate::movement::CardinalStep;
         let direction = match direction {
@@ -165,7 +195,7 @@ impl<'a> Planner<'a> {
             })
         };
         let ground = |cell| match position(cell) {
-            Some(pos) if self.walkable(pos, true) => Ground::Walkable,
+            Some(pos) if self.walkable(pos, true, passages) => Ground::Walkable,
             Some(pos) if self.world.base().tile(pos.x, pos.y, pos.floor).is_some() => {
                 Ground::Blocked
             }
@@ -183,14 +213,24 @@ impl<'a> Planner<'a> {
     }
 
     /// Ladder and rope landing: one floor up, the first walkable tile in `OFFSETS` order.
-    fn climb(&self, spot: TilePos) -> Option<TilePos> {
-        first_landing(spot, |at| self.walkable(at, false))
+    fn climb(&self, spot: TilePos, passages: &Passages) -> Option<TilePos> {
+        first_landing(spot, |at| self.walkable(at, false, passages))
     }
 
-    fn edges(&self, at: TilePos, rope: bool, out: &mut Vec<(Leg, TilePos)>) {
+    fn edges(
+        &self,
+        at: TilePos,
+        rope: bool,
+        passages: &Passages,
+        out: &mut Vec<(Leg, TilePos, u32)>,
+    ) {
         for direction in DIRECTIONS {
-            if let Some(next) = self.step(at, direction) {
-                out.push((Leg::Step(direction), next));
+            if let Some(next) = self.step(at, direction, passages) {
+                let closed = neighbour(at, direction).is_some_and(|entered| {
+                    self.doors.contains_key(&entered) && !self.world.enterable(entered)
+                });
+                let cost = if closed { DOOR_COST } else { STEP_COST };
+                out.push((Leg::Step(direction), next, cost));
             }
         }
         for dy in -1..=1 {
@@ -201,15 +241,15 @@ impl<'a> Planner<'a> {
                 };
                 let spot = TilePos { x, y, ..at };
                 if let Some(&ordinal) = self.ladders.get(&spot)
-                    && let Some(next) = self.climb(spot)
+                    && let Some(next) = self.climb(spot, passages)
                 {
-                    out.push((Leg::Ladder { at: spot, ordinal }, next));
+                    out.push((Leg::Ladder { at: spot, ordinal }, next, CLIMB_COST));
                 }
                 if rope
                     && let Some(&ordinal) = self.ropes.get(&spot)
-                    && let Some(next) = self.climb(spot)
+                    && let Some(next) = self.climb(spot, passages)
                 {
-                    out.push((Leg::Rope { at: spot, ordinal }, next));
+                    out.push((Leg::Rope { at: spot, ordinal }, next, CLIMB_COST));
                 }
             }
         }
@@ -217,13 +257,15 @@ impl<'a> Planner<'a> {
 
     /// A route of player actions from `from` to a tile satisfying `goal`, searched inside the
     /// start-to-`target` box plus `MARGIN`. Weighted toward `target`, so not always the shortest.
+    /// The error names why the search ended and the tile nearest `target` it reached.
     pub(super) fn plan(
         &self,
         from: TilePos,
         target: TilePos,
         goal: &dyn Fn(TilePos) -> bool,
         rope: bool,
-    ) -> Option<Vec<(Leg, TilePos)>> {
+        passages: &Passages,
+    ) -> Result<Vec<(Leg, TilePos)>, String> {
         let (low_x, high_x) = (
             from.x.min(target.x).saturating_sub(MARGIN),
             from.x.max(target.x).saturating_add(MARGIN),
@@ -241,8 +283,8 @@ impl<'a> Planner<'a> {
                     + u32::from(at.floor.abs_diff(target.floor)))
             },
             |at, out| {
-                self.edges(at, rope, out);
-                out.retain(|(_, next)| {
+                self.edges(at, rope, passages, out);
+                out.retain(|(_, next, _)| {
                     (low_x..=high_x).contains(&next.x) && (low_y..=high_y).contains(&next.y)
                 });
             },
@@ -281,40 +323,49 @@ fn first_landing(spot: TilePos, free: impl Fn(TilePos) -> bool) -> Option<TilePo
     })
 }
 
-/// Weighted A* over player actions; every action costs one step.
+/// Weighted A* over player actions, each with its own cost.
 fn search<E: Copy>(
     from: TilePos,
     goal: &dyn Fn(TilePos) -> bool,
     estimate: impl Fn(TilePos) -> u32,
-    mut edges: impl FnMut(TilePos, &mut Vec<(E, TilePos)>),
+    mut edges: impl FnMut(TilePos, &mut Vec<(E, TilePos, u32)>),
     limit: usize,
-) -> Option<Vec<(E, TilePos)>> {
+) -> Result<Vec<(E, TilePos)>, String> {
     let mut open = BinaryHeap::from([Reverse((estimate(from), 0u32, from))]);
     let mut costs = HashMap::from([(from, 0u32)]);
     let mut parents: HashMap<TilePos, (TilePos, E)> = HashMap::new();
     let mut buffer = Vec::new();
+    let mut closest = (estimate(from), from);
+    let mut settled = 0usize;
     while let Some(Reverse((_, cost, at))) = open.pop() {
         if costs.get(&at) != Some(&cost) {
             continue;
         }
+        settled += 1;
+        closest = closest.min((estimate(at), at));
         if goal(at) {
             let mut path = Vec::new();
             let mut cursor = at;
             while cursor != from {
-                let &(previous, edge) = parents.get(&cursor)?;
+                let &(previous, edge) = parents
+                    .get(&cursor)
+                    .ok_or("route reconstruction lost a parent")?;
                 path.push((edge, cursor));
                 cursor = previous;
             }
             path.reverse();
-            return Some(path);
+            return Ok(path);
         }
         if costs.len() > limit {
-            return None;
+            return Err(format!(
+                "search limit of {limit} tiles hit after {settled} settled; closest tile reached {}",
+                show(closest.1)
+            ));
         }
         buffer.clear();
         edges(at, &mut buffer);
-        for &(edge, next) in &buffer {
-            let candidate = cost.saturating_add(10);
+        for &(edge, next, step) in &buffer {
+            let candidate = cost.saturating_add(step);
             if costs.get(&next).is_none_or(|&old| candidate < old) {
                 costs.insert(next, candidate);
                 parents.insert(next, (at, edge));
@@ -326,7 +377,10 @@ fn search<E: Copy>(
             }
         }
     }
-    None
+    Err(format!(
+        "every reachable tile of the search box exhausted ({settled} settled); closest tile reached {}",
+        show(closest.1)
+    ))
 }
 
 fn show(at: TilePos) -> String {
@@ -454,7 +508,7 @@ impl Planner<'_> {
         label: &str,
         at: TilePos,
         leg: Leg,
-    ) -> TestResult<TilePos> {
+    ) -> TestResult<Acted> {
         match leg {
             Leg::Step(direction) => {
                 let (mut disposition, mut detail) = paced_step(client, direction).await?;
@@ -474,11 +528,13 @@ impl Planner<'_> {
                         let level = (action > 1000)
                             .then(|| format!(" (level door, requires level {})", action - 1000))
                             .unwrap_or_default();
-                        return Err(format!(
-                            "{label} door {} action={action} USE refused: {reply:?}{level}",
-                            show(entered)
-                        )
-                        .into());
+                        return Ok(Acted::DoorRefused(
+                            entered,
+                            format!(
+                                "door {} action={action} USE refused: {reply:?}{level}",
+                                show(entered)
+                            ),
+                        ));
                     }
                     (disposition, detail) = paced_step(client, direction).await?;
                 }
@@ -536,7 +592,7 @@ impl Planner<'_> {
         }
         client.take_events();
         verdict::Harness::global().progress("walk");
-        tile(client.world_spatial().actor_position)
+        Ok(Acted::At(tile(client.world_spatial().actor_position)?))
     }
 
     async fn use_rope(
@@ -592,29 +648,36 @@ fn carries(client: &DevClientSession, item: u32) -> TestResult<bool> {
 }
 
 /// Reach a tile satisfying `goal` near `target` by real STEP and USE commands only. The route is
-/// printed before it is walked; a divergent landing (an occupied ladder landing) replans from
-/// where the server put the character.
+/// printed before it is walked. A divergent landing (an occupied ladder landing) replans from
+/// where the server put the character; a refused door is banned and the route replanned.
 pub(super) async fn travel_to(
     client: &mut DevClientSession,
     planner: &Planner<'_>,
     label: &str,
     target: TilePos,
     goal: &dyn Fn(TilePos) -> bool,
+    passages: &mut Passages,
 ) -> TestResult {
     let rope = carries(client, ROPE_ITEM)?;
+    let mut refusals = Vec::new();
     for attempt in 0..=MAX_REPLANS {
         let from = tile(client.world_spatial().actor_position)?;
         if goal(from) {
             return Ok(());
         }
-        let route = planner.plan(from, target, goal, rope).ok_or_else(|| {
-            format!(
-                "{label} no route by step, door, stairs, hole, ladder{} from {} to {}",
-                if rope { " or rope" } else { "" },
-                show(from),
-                show(target)
-            )
-        })?;
+        verdict::Harness::global().progress("walk");
+        let route = planner
+            .plan(from, target, goal, rope, passages)
+            .map_err(|reason| {
+                format!(
+                    "{label} no route by step, door, stairs, hole, ladder{} from {} to {}: {reason}; refused on the way: [{}]",
+                    if rope { " or rope" } else { "" },
+                    show(from),
+                    show(target),
+                    refusals.join("; ")
+                )
+            })?;
+        verdict::Harness::global().progress("walk");
         evidence(&format!(
             "TRAVEL_ROUTE {label} attempt={attempt} from={} to={} actions={}",
             show(from),
@@ -627,23 +690,62 @@ pub(super) async fn travel_to(
         let mut at = from;
         let mut diverged = false;
         for &(leg, expected) in &route {
-            let landed = planner.execute(client, label, at, leg).await?;
-            if landed != expected {
-                evidence(&format!(
-                    "TRAVEL_REPLAN {label} leg={leg:?} expected={} landed={}",
-                    show(expected),
-                    show(landed)
-                ));
-                diverged = true;
-                break;
+            match planner.execute(client, label, at, leg).await? {
+                Acted::At(landed) if landed == expected => at = landed,
+                Acted::At(landed) => {
+                    evidence(&format!(
+                        "TRAVEL_REPLAN {label} leg={leg:?} expected={} landed={}",
+                        show(expected),
+                        show(landed)
+                    ));
+                    diverged = true;
+                    break;
+                }
+                Acted::DoorRefused(door, reason) => {
+                    evidence(&format!("TRAVEL_REPLAN {label} {reason}"));
+                    refusals.push(reason);
+                    passages.refused.insert(door);
+                    diverged = true;
+                    break;
+                }
             }
-            at = landed;
         }
         if !diverged {
             return Ok(());
         }
     }
-    Err(format!("{label} route still diverged after {MAX_REPLANS} replans").into())
+    Err(format!(
+        "{label} route still diverged after {MAX_REPLANS} replans; refused on the way: [{}]",
+        refusals.join("; ")
+    )
+    .into())
+}
+
+/// Walk next to a lever the quest source names, pull it with USE and treat `opens` as passable
+/// from then on, as a player who saw the wall move would.
+#[expect(
+    dead_code,
+    reason = "scenario-facing: no current Q01 chest is behind a lever; quest rows with one call it"
+)]
+pub(super) async fn pull_lever(
+    client: &mut DevClientSession,
+    planner: &Planner<'_>,
+    label: &str,
+    (lever, ordinal): (TilePos, u8),
+    opens: &[TilePos],
+    passages: &mut Passages,
+) -> TestResult {
+    travel_to(client, planner, label, lever, &beside(lever), passages).await?;
+    let reply = use_map_object(client, &planner.placement(lever, ordinal)?).await?;
+    evidence(&format!(
+        "TRAVEL_LEVER {label} lever={} use={reply:?}",
+        show(lever)
+    ));
+    if reply != UseDisposition::Committed {
+        return Err(format!("{label} lever USE at {} refused: {reply:?}", show(lever)).into());
+    }
+    passages.open.extend(opens.iter().copied());
+    Ok(())
 }
 
 /// Next to `at` on its floor (Chebyshev distance at most one), where USE reaches an object.
