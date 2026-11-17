@@ -38,3 +38,10 @@ The cold local baseline reached the client dependency build after more than
 12 minutes, with no test launched and no cgroup OOM events. Peak cgroup
 memory was 12,035,960,832 bytes so far. This is local compilation time and
 cannot be compared directly with the hosted warm-cache step duration.
+
+The earlier five-shard change (#3251) reported 3,575 of 4,621 tests passing
+before a three-shard timeout on #3056, with no test failures at cutoff.
+Its reported fixed setup/build cost was about 19 minutes. That earlier run
+establishes that aggregate execution has exhausted this lane's budget
+before, but does not explain the later 45-minute cancellations on its own.
+The exact-base local run has reached dispatch and game-server compilation.
