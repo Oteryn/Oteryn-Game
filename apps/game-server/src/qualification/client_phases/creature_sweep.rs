@@ -56,6 +56,31 @@ const CORE_CHARACTER: usize = 0;
 const FULL_STAMINA_MINUTES: i32 = 2520;
 const VISIBLE_SECONDS: u64 = 30;
 const KILL_SECONDS: u64 = 150;
+/// Long sweep (`OTERYN_E2E_SWEEP_LONG_SECONDS=<n>`): only the species over the normal
+/// `KILL_SECONDS` budget run, each with `n` seconds to kill; the rest belong to the normal sweep.
+const LONG_VARIABLE: &str = "OTERYN_E2E_SWEEP_LONG_SECONDS";
+
+fn long_seconds() -> TestResult<Option<u64>> {
+    match std::env::var(LONG_VARIABLE) {
+        Ok(text) => {
+            let seconds: u64 = text
+                .trim()
+                .parse()
+                .map_err(|error| format!("{LONG_VARIABLE}={text:?}: {error}"))?;
+            if seconds <= KILL_SECONDS {
+                return Err(format!("{LONG_VARIABLE} must exceed {KILL_SECONDS}").into());
+            }
+            Ok(Some(seconds))
+        }
+        Err(std::env::VarError::NotPresent) => Ok(None),
+        Err(error) => Err(format!("{LONG_VARIABLE}: {error}").into()),
+    }
+}
+
+/// Seconds a species has to die: `KILL_SECONDS`, or the long-sweep value.
+fn kill_seconds() -> u64 {
+    long_seconds().ok().flatten().unwrap_or(KILL_SECONDS)
+}
 const HEALTH_WAIT_SECONDS: u64 = 60;
 
 /// `start:len` with plain decimal numbers and `len > 0`; `None` runs the default slice.
@@ -217,7 +242,11 @@ struct Species {
 
 /// Authored health a kill within `KILL_SECONDS` may be expected to fit at `dps`.
 fn budget(dps: f64) -> u64 {
-    (dps * KILL_SECONDS as f64 * BUDGET_PERCENT / 100.0).floor() as u64
+    budget_for(dps, KILL_SECONDS)
+}
+
+fn budget_for(dps: f64, seconds: u64) -> u64 {
+    (dps * seconds as f64 * BUDGET_PERCENT / 100.0).floor() as u64
 }
 
 fn read_shards(directory: &Path, prefix: &str) -> TestResult<Vec<serde_json::Value>> {
@@ -459,15 +488,21 @@ pub(super) async fn run(
         "creature_sweep calibration key={CALIBRATION_KEY} hp={health} seconds={:.3} dps={dps:.2} budget_seconds={KILL_SECONDS} budget_percent={BUDGET_PERCENT}",
         health as f64 / dps
     ));
+    let long = long_seconds()?;
     for key in &keys[start..end] {
         if key.as_str() == CALIBRATION_KEY {
             continue;
         }
         let species = species_of(key, &definitions, &tables, Some(dps));
         let hp = species.definition.as_ref().map_or(0, |found| found.health);
-        if hp > budget(dps) {
+        if long.is_some() && hp <= budget(dps) {
+            // Within the normal budget: the normal sweep owns this species' rows.
+            continue;
+        }
+        let limit = budget_for(dps, long.unwrap_or(KILL_SECONDS));
+        if hp > limit {
             let mut rows = Rows::new(&species.short);
-            let detail = format!("not_attempted:hp_{hp}>budget_{};dps_{dps:.2}", budget(dps));
+            let detail = format!("not_attempted:hp_{hp}>budget_{limit};dps_{dps:.2}");
             for step in STEPS {
                 rows.emit(step, "SKIPPED", &detail, None);
             }
@@ -882,7 +917,7 @@ async fn hunt(
         ));
     }
     let combat_started = tokio::time::Instant::now();
-    let kill_deadline = combat_started + Duration::from_secs(KILL_SECONDS);
+    let kill_deadline = combat_started + Duration::from_secs(kill_seconds());
     let mut died = false;
     let gone = loop {
         client
@@ -939,7 +974,8 @@ async fn hunt(
             "kill",
             "deadline",
             format!(
-                "no death within {KILL_SECONDS}s;damage_observed={damaged};health_percent={last_health};last_position={last_position:?};player={player:?};vitals={:?}",
+                "no death within {}s;damage_observed={damaged};health_percent={last_health};last_position={last_position:?};player={player:?};vitals={:?}",
+                kill_seconds(),
                 client.actor_vitals()
             ),
         ));
