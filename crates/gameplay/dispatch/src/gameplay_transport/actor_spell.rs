@@ -40,6 +40,7 @@ pub use crate::monster_combat_lane::native_invisibility::{SelfInvisibleSource, S
 
 #[path = "actor_movement.rs"]
 mod actor_movement;
+pub(super) use actor_movement::advance_platforms as advance_observer_eye_platforms;
 #[path = "familiar_cast.rs"]
 mod familiar_cast;
 #[path = "actor_spell/house_admission.rs"]

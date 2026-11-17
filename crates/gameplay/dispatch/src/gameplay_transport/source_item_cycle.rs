@@ -6,6 +6,16 @@ use std::pin::pin;
 use std::task::Poll;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn advance_observer_eye_platforms(
+        &self,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        map: &crate::map::boot::BundleMap,
+        now: u64,
+    ) {
+        let mut states = self.states.spell_states.lock().await;
+        super::actor_spell::advance_observer_eye_platforms(runtime, &mut states, map, now);
+    }
+
     pub(super) async fn run_source_owner_cycles(
         &self,
         shutdown: &oteryn_foundation::CancellationToken,
@@ -102,7 +112,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return;
                 }
                 if let Some(map) = self.bundle_map() {
-                    map.facts.expire_movement_items(self.owner_now().get());
+                    let now = self.owner_now().get();
+                    map.facts.expire_movement_items(now);
+                    let mut states = self.states.spell_states.lock().await;
+                    super::actor_spell::advance_observer_eye_platforms(
+                        &runtime,
+                        &mut states,
+                        map,
+                        now,
+                    );
                 }
                 if let Ok(mut gate) = self.states.world_gate.lock() {
                     gate.begin_turn();

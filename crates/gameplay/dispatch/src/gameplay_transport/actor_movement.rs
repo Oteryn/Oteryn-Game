@@ -10,6 +10,7 @@ mod observer_eye;
 #[path = "postgres_tests/qoptic_observer_eye/rule.rs"]
 mod observer_eye_tests;
 pub(super) use observer_eye::ObserverEyePair;
+pub(in crate::gameplay_transport) use observer_eye::advance_platforms;
 
 use super::ChannelSpellStates;
 use crate::content::{LogicalCell, NativeEntryMovementCells};

@@ -40,11 +40,7 @@ fn qoptic_observer_eye_dispatch_moves_only_the_paired_player() -> TestResult {
             .await
             .map_err(debug)?;
         let fixture = Dependencies::new()?;
-        let world = crate::map::spell_tiles::tests::movement_arena::rectangle(
-            (32775, 32907),
-            (32785, 32918),
-            -14,
-        );
+        let world = platform_world(fixture.admitted.world_id, fixture.admitted.channel_id)?;
         let cells = world
             .movement_cells(fixture.room.movement_cells())
             .map_err(debug)?;
@@ -130,6 +126,39 @@ fn qoptic_observer_eye_dispatch_moves_only_the_paired_player() -> TestResult {
                 .paced_step(deps.actor, deps.admitted.game_session_id, direction)
                 .await;
             assert_eq!(result.disposition, StepDisposition::Moved);
+            if command == 1 {
+                let map = owner.bundle_map().ok_or("platform bundle")?;
+                let position = crate::map::overlay::TilePos {
+                    x: 32775,
+                    y: 32908,
+                    floor: -14,
+                };
+                let last_item = || -> TestResult<u16> {
+                    Ok(
+                        crate::map::view::compose_tile(&map.overlay, &map.facts, position)
+                            .map_err(debug)?
+                            .and_then(|tile| {
+                                tile.entries.last().map(|item| item.facts.appearance_id)
+                            })
+                            .ok_or("fixture platform")?,
+                    )
+                };
+                let now = owner.owner_now().get();
+                let runtime = deps.runtime.lock().await;
+                assert_eq!(last_item()?, 24912);
+                owner
+                    .advance_observer_eye_platforms(&runtime, map, now)
+                    .await;
+                assert_eq!(last_item()?, 24912);
+                owner
+                    .advance_observer_eye_platforms(&runtime, map, now + 2_000_000)
+                    .await;
+                assert_eq!(last_item()?, 24889);
+                owner
+                    .advance_observer_eye_platforms(&runtime, map, now + 2_000_000)
+                    .await;
+                assert_eq!(last_item()?, 24889);
+            }
             let runtime = deps.runtime.lock().await;
             assert_eq!(
                 runtime
@@ -160,4 +189,96 @@ fn qoptic_observer_eye_dispatch_moves_only_the_paired_player() -> TestResult {
         drop(seal);
         h.cleanup().await
     })
+}
+
+fn platform_world(
+    world: crate::foundation::WorldId,
+    channel: crate::foundation::ChannelId,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    use crate::map::{boot, overlay::TilePos};
+    use oteryn_world_bundle::{
+        bundle,
+        sector::{Attrs, Item, Tile},
+        writer,
+    };
+    let (bytes, mut pins) = boot::tests::bundle();
+    let mut data = bundle::read(&bytes).map_err(debug)?;
+    data.manifest.world = writer::Extent {
+        min_x: 32775,
+        max_x: 32786,
+        min_y: 32904,
+        max_y: 32919,
+        floors: vec![-14],
+    };
+    data.manifest.palette.truncate(1);
+    data.manifest.palette[0].key = "oteryn:item.tibia.i100".into();
+    for (index, id) in [24912, 24889, 24898, 24899].into_iter().enumerate() {
+        data.manifest.palette.push(writer::PaletteEntry {
+            key: format!("oteryn:item.tibia.i{id}"),
+            family: writer::Family::Item,
+            id: u32::try_from(index)? + 1,
+            terrain: None,
+        });
+    }
+    let tiles = (32904..=32918)
+        .flat_map(|y| {
+            (32775..=32785).map(move |x| {
+                let mut items = vec![Item {
+                    palette: 0,
+                    depth: 0,
+                    attrs: Attrs::default(),
+                }];
+                if x == 32775 && (32908..=32911).contains(&y) {
+                    items.push(Item {
+                        palette: u32::from(y - 32907),
+                        depth: 0,
+                        attrs: Attrs::default(),
+                    });
+                }
+                Tile {
+                    x,
+                    y,
+                    flags: 0,
+                    house: 0,
+                    zones: vec![],
+                    items,
+                }
+            })
+        })
+        .collect();
+    data.sectors = vec![writer::Sector {
+        floor: -14,
+        sx: 32775 / 32,
+        sy: 32904 / 32,
+        tiles,
+    }];
+    let bytes = writer::write(&data.manifest, &data.sectors, &data.spawns).map_err(debug)?;
+    pins.digest = bundle::read(&bytes).map_err(debug)?.digest;
+    let base = crate::map::load(&bytes, &pins).map_err(debug)?;
+    boot::boot(
+        &bytes,
+        &boot::BootPins {
+            bundle: pins,
+            map_revision: crate::map::overlay::map_revision(&base),
+            start: TilePos {
+                x: 32782,
+                y: 32912,
+                floor: -14,
+            },
+        },
+        world,
+        channel,
+        |key| {
+            let id = key.rsplit_once(".i")?.1.parse::<u32>().ok()?;
+            Some(boot::ItemDefinition {
+                reference: std::num::NonZeroU32::new(id + 1)?,
+                solid: Some(false),
+                blocks_projectile: false,
+                pickupable: false,
+                door: false,
+            })
+        },
+    )
+    .map_err(debug)
+    .map_err(Into::into)
 }

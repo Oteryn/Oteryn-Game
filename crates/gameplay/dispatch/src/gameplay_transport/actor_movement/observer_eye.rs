@@ -31,6 +31,9 @@ pub(super) fn mirrored_direction(
 }
 
 const ATTEMPT_MICROS: u64 = 300_000_000;
+const PLATFORM_INTERVAL_MICROS: u64 = 2_000_000;
+// These are the four platform appearances qualified by the shipped World.
+const PLATFORM_PHASES: [u16; 4] = [24912, 24889, 24898, 24899];
 
 type Player = (ExactActorRef, GameSessionId);
 
@@ -39,6 +42,7 @@ pub(in crate::gameplay_transport) struct ObserverEyePair {
     controller: Player,
     partner: Player,
     expires: u64,
+    next_platform_cycle: u64,
 }
 
 fn on_tile(cell: MovementLocalPosition, tile: (i32, i32)) -> bool {
@@ -47,6 +51,56 @@ fn on_tile(cell: MovementLocalPosition, tile: (i32, i32)) -> bool {
 
 fn on_ornament(cell: MovementLocalPosition) -> bool {
     cell.floor == bindings::FLOOR && bindings::CONTROLS.binary_search(&(cell.x, cell.y)).is_ok()
+}
+
+fn platform_at(map: &crate::map::boot::BundleMap, at: MovementLocalPosition) -> Option<(u64, u16)> {
+    let pos = crate::gameplay_transport::soul_war_scene::wire_position(at)?;
+    let tile = crate::map::view::compose_tile(&map.overlay, &map.facts, pos).ok()??;
+    tile.entries.into_iter().find_map(|entry| {
+        let crate::map::view::EntrySource::Base { placement_key, .. } = entry.source else {
+            return None;
+        };
+        let appearance = entry.facts.appearance_id;
+        PLATFORM_PHASES
+            .contains(&appearance)
+            .then_some((placement_key, appearance))
+    })
+}
+
+pub(in crate::gameplay_transport) fn advance_platforms(
+    runtime: &ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    map: &crate::map::boot::BundleMap,
+    now_us: u64,
+) {
+    let Some(pair) = current_pair(runtime, states, now_us) else {
+        return;
+    };
+    let Some(late) = now_us.checked_sub(pair.next_platform_cycle) else {
+        return;
+    };
+    let rounds = 1 + late / PLATFORM_INTERVAL_MICROS;
+    let advance = (rounds % PLATFORM_PHASES.len() as u64) as usize;
+    if advance != 0 {
+        for &(x, y) in bindings::WEST_FIELD {
+            let at = MovementLocalPosition {
+                x,
+                y,
+                floor: bindings::FLOOR,
+            };
+            if let Some((key, appearance)) = platform_at(map, at)
+                && let Some(phase) = PLATFORM_PHASES.iter().position(|&id| id == appearance)
+            {
+                let after = PLATFORM_PHASES[(phase + advance) % PLATFORM_PHASES.len()];
+                map.facts.transform_movement_item(key, after);
+            }
+        }
+    }
+    states.observer_eye_pair = Some(ObserverEyePair {
+        next_platform_cycle: now_us
+            .saturating_add(PLATFORM_INTERVAL_MICROS - late % PLATFORM_INTERVAL_MICROS),
+        ..pair
+    });
 }
 
 fn platform_field(cell: MovementLocalPosition) -> bool {
@@ -111,6 +165,7 @@ fn pair_on_pads(
         controller: player_on_pad(bindings::TOPAZ)?,
         partner: player_on_pad(bindings::EMERALD)?,
         expires: now_us.checked_add(ATTEMPT_MICROS)?,
+        next_platform_cycle: now_us.checked_add(PLATFORM_INTERVAL_MICROS)?,
     })
 }
 
