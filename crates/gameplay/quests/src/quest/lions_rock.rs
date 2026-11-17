@@ -47,6 +47,7 @@ pub(crate) fn callbacks() -> Vec<Callback> {
         callback.quest = QUEST.into();
         callback.selector = Selector {
         position_aliases: Vec::new(),
+        area: None,
         ordinal: None,
             native: Some(NativeSelector { position:Position{x,y,floor:-8},ordinal,appearance }),
             position: Some(Position{x,y,floor:-8}), unique:None,action:None,appearance:Some(appearance),

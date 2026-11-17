@@ -33,6 +33,7 @@ pub(crate) fn uneasy_crystal() -> Callback {
         trigger: Trigger::Use,
         selector: Selector {
         position_aliases: Vec::new(),
+        area: None,
         ordinal: None,
             // The retained B3 counterpart has no legacy action attribute.
             native: Some(NativeSelector {
@@ -124,6 +125,7 @@ pub(crate) fn lions_amphora() -> Vec<Callback> {
             callback.requires_world_admission = true;
             callback.selector = Selector {
         position_aliases: Vec::new(),
+        area: None,
         ordinal: None,
                 native: Some(NativeSelector { position: Position { x, y, floor: -9 }, ordinal: 0, appearance }),
                 position: None, unique: None, action: None, appearance: Some(appearance),
@@ -168,6 +170,7 @@ pub(crate) fn lions_flowers() -> Vec<Callback> {
         callback.requires_world_admission = true;
         callback.selector = Selector {
         position_aliases: Vec::new(),
+        area: None,
         ordinal: None,
             native: Some(NativeSelector { position: Position { x,y,floor }, ordinal, appearance: 21388 }),
             position: None, unique: None, action: None, appearance: Some(21388),

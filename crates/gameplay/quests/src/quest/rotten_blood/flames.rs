@@ -84,6 +84,7 @@ pub(crate) fn callbacks() -> Vec<Callback> {
         key:source.key.into(), quest:QUEST.into(), trigger:Trigger::Use,
         selector:Selector {
         position_aliases: Vec::new(),
+        area: None,
         ordinal: None, native: None, position:None, unique:None, action:None, appearance:Some(source.inactive) },
         // Fixed optional source targets are resolved by the sealed current World
         // caller. They are neither a portable Item nor the clicked object's lever.

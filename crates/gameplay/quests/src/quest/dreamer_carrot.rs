@@ -17,6 +17,7 @@ pub(crate) fn callback() -> Callback {
     callback.trigger = Trigger::StepIn;
     callback.selector = Selector {
         position_aliases: Vec::new(),
+        area: None,
         ordinal: None,
         native: None,
         position: None,

@@ -75,6 +75,8 @@ mod scripted_teleport_tests;
 #[cfg(test)]
 mod selected_tool_tests;
 #[cfg(test)]
+mod selector_area_tests;
+#[cfg(test)]
 mod solid_repair_tests;
 mod solid_repairs;
 mod state_operations;
@@ -92,6 +94,7 @@ pub use ground_stack::{
 };
 
 mod scene;
+mod selector_area;
 pub use scene::{SceneEdit, SceneEdits, SceneEvacuation, SceneRelocation};
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -118,7 +121,12 @@ pub struct Selector {
     /// Exact plain-base counterpart; legacy selectors remain an alternative.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub native: Option<NativeSelector>,
+    /// Bounded STEP area sharing the canonical `position` identity.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub area: Option<SelectorArea>,
 }
+
+pub use selector_area::SelectorArea;
 
 impl Selector {
     #[must_use]
@@ -127,7 +135,14 @@ impl Selector {
             return false;
         }
         match self.position {
-            Some(primary) => primary == position || self.position_aliases.contains(&position),
+            Some(primary) => {
+                primary == position
+                    || self.position_aliases.contains(&position)
+                    || self
+                        .area
+                        .as_ref()
+                        .is_some_and(|area| area.contains(position))
+            }
             None => self.position_aliases.is_empty(),
         }
     }
@@ -953,6 +968,20 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                 && (selector.position.is_none()
                     || callback.trigger == Trigger::Use
                     || callback.native_rule.is_some()))
+            || selector.area.as_ref().is_some_and(|area| {
+                // A bounded STEP region keeps one canonical identity, inside it.
+                !area.valid()
+                    || callback.trigger != Trigger::StepIn
+                    || callback.actor_kind != ActorKind::Player
+                    || callback.native_rule.is_some()
+                    || !selector.position.is_some_and(|p| area.contains(p))
+                    || !selector.position_aliases.is_empty()
+                    || selector.ordinal.is_some()
+                    || selector.unique.is_some()
+                    || selector.action.is_some()
+                    || selector.appearance.is_some()
+                    || selector.native.is_some()
+            })
             || (selector.ordinal.is_some() && selector.position.is_none())
             || (callback.trigger != Trigger::Use
                 && selector.ordinal.is_some_and(|ordinal| ordinal != 0))
