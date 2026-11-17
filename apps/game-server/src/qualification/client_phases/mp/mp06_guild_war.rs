@@ -174,7 +174,9 @@ pub(super) async fn run(
                 .chat(&ChatIntent::Guild { text: text.clone() })
                 .await?;
             if reply.disposition != ChatDisposition::Ok {
-                return Err(format!("guild chat reply={reply:?}").into());
+                // Members are bound at admission and checked per line (guild_chat/dequeue.rs:65);
+                // ChatUnavailable is the unconfigured World relay (guild_chat/sender_gate.rs:74).
+                return Err(format!("guild chat reply={reply:?};relay:crates/gameplay/dispatch/src/gameplay_transport/chat_relay.rs:124;depends on mp07 run.sh chat relay fix").into());
             }
             let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
             loop {
@@ -235,12 +237,14 @@ pub(super) async fn run(
     check("relog-membership", result, &mut failures);
     let result = async {
         let (a, c) = guilds.ok_or_else(|| format!("guild dependency reply={dependency:?}"))?;
+        // Crystal war.lua:188-190 allows 24 hours; the server minimum is seven days
+        // (social-rules/src/guild.rs:7, migration 0232 CHECK), so the war uses seven days.
         let declared = war(
             &mut participants[0],
             w::GuildWarIntent::Declare {
                 opponent: c,
                 frag_limit: 1000,
-                duration_days: 1,
+                duration_days: 7,
             },
         )
         .await?;
@@ -249,17 +253,20 @@ pub(super) async fn run(
             w::GuildWarIntent::Accept { war: declared.war },
         )
         .await?;
+        if accepted.war != declared.war {
+            return Err(format!("declared={declared:?} accepted={accepted:?}").into());
+        }
         Ok(format!(
-            "guild={a:?} declared={declared:?} accepted={accepted:?}"
+            "guild={a:?} declared={declared:?} accepted={accepted:?}; parity gap: 7-day server minimum vs Crystal 24 hours"
         ))
     }
     .await;
     let war_reply = format!("{result:?}");
     check("declare-accept", result, &mut failures);
     for case in ["war-kill-frags-skull", "relog-war-state"] {
-        check(case, Err(format!("war reply={war_reply}; Crystal 24-hour war prerequisite cannot be established under server minimum seven days:crates/gameplay/social-rules/src/guild.rs:7; no player war-state/frag query:crates/protocol-oteryn/src/guild_war.rs:11-25").into()), &mut failures);
+        check(case, Err(format!("SERVER_GAP war reply={war_reply}; no player war-state/frag query on the wire:crates/protocol-oteryn/src/guild_war.rs:11-25; frags are durable only:crates/gameplay/durability/src/durability/guild_war.rs:123-127").into()), &mut failures);
     }
-    check("visibility-emblems", Err(format!("war reply={war_reply}; missing guild/war emblem fields:crates/protocol-oteryn/src/world_spatial_entities.rs:63-68; Crystal war.lua:3-39 requires ally/enemy updates").into()), &mut failures);
+    check("visibility-emblems", Err(format!("SERVER_GAP war reply={war_reply}; missing guild/war emblem fields:crates/protocol-oteryn/src/world_spatial_entities.rs:63-68; Crystal war.lua:3-39 requires ally/enemy updates").into()), &mut failures);
     let result = async {
         let (guild, _) = guilds.ok_or_else(|| format!("guild dependency reply={dependency:?}"))?;
         let summary = own(&mut participants[0])
@@ -309,8 +316,12 @@ pub(super) async fn run(
     }
     .await;
     check("leave", result, &mut failures);
+    // Disband commits and pays out inline (guild_bank.rs:125-135); member and leader cleanup run only
+    // in the guild World pass, one step per Guild every 60 s (node/guild_scheduler.rs:37,
+    // social/src/guild/disband.rs:30-34), and its cursor can defer a Guild by one more pass
+    // (social/src/guild.rs:27-43). Both founders disband first so one pass covers both Guilds.
     let mut disband_errors = Vec::new();
-    let mut disband_replies = Vec::new();
+    let mut disbanding = Vec::new();
     for index in [0, 2] {
         let result: TestResult<String> = async {
             use oteryn_protocol_oteryn::guild_bank as bank;
@@ -322,14 +333,43 @@ pub(super) async fn run(
             if reply.status != CommandStatus::Accepted { return Err(format!("Disband reply={reply:?};source:crates/gameplay/dispatch/src/gameplay_transport/guild_bank.rs:86").into()); }
             let result = bank::decode_guild_bank_reply(&reply.payload).map_err(|e| format!("reply={reply:?} decode={e:?}"))?;
             if result.code != 1 { return Err(format!("Disband reply={result:?}").into()); }
-            let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+            Ok(format!("founder {index} Disband={result:?}"))
+        }.await;
+        match result {
+            Ok(reply) => disbanding.push((index, reply)),
+            Err(error) => disband_errors.push(error.to_string()),
+        }
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(3 * 60 + 30);
+    verdict::Harness::global().bounded_wait(deadline, "MP06-disband-cleanup");
+    let mut disband_replies = Vec::new();
+    for (index, disbanded) in disbanding {
+        let result: TestResult<String> = async {
+            let mut last = String::from("none");
             loop {
-                let view = own(&mut participants[index]).await?;
-                if view.is_none() { break; }
-                if tokio::time::Instant::now() >= deadline { return Err(format!("Disband cleanup deadline; reply={result:?} Own={view:?}").into()); }
-                bots::pump(&mut participants).await?;
+                let payload = g::encode_guild_query(&g::GuildQuery::Own).map_err(|e| format!("{e:?}"))?;
+                let reply = participants[index].client()?.session_mut().gated_command(g::CAPABILITY_GUILD_V1, g::COMMAND_TYPE_GUILD_QUERY, &payload).await?;
+                // An empty Rejected Own is the busy durable holder (guild/query.rs:22,
+                // guild_intent.rs:234-238) while the World pass runs; poll again.
+                if reply.status == CommandStatus::Accepted {
+                    match g::decode_guild_query_result(&reply.payload).map_err(|e| format!("reply={reply:?} decode={e:?}"))? {
+                        g::GuildQueryResult::Own(None) => break,
+                        other => last = format!("{other:?}"),
+                    }
+                } else if reply.status == CommandStatus::Rejected && reply.payload.is_empty() {
+                    last = format!("{reply:?}");
+                } else {
+                    return Err(format!("{disbanded}; Own reply={reply:?}").into());
+                }
+                if tokio::time::Instant::now() >= deadline {
+                    return Err(format!("Disband cleanup deadline; {disbanded}; last Own={last};scheduler:apps/game-server/src/node/guild_scheduler.rs:37").into());
+                }
+                let next = tokio::time::Instant::now() + Duration::from_secs(1);
+                while tokio::time::Instant::now() < next {
+                    bots::pump(&mut participants).await?;
+                }
             }
-            Ok(format!("founder {index} Disband={result:?}; Own=None"))
+            Ok(format!("{disbanded}; Own=None"))
         }.await;
         match result {
             Ok(reply) => disband_replies.push(reply),
