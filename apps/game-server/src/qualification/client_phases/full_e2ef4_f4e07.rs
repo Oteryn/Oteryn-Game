@@ -314,6 +314,19 @@ pub(super) async fn storage(
     }
 }
 
+fn deposited_ordinal(previous: &BTreeSet<u64>, ordinals: impl Iterator<Item = u64>) -> Option<u64> {
+    let mut new = ordinals.filter(|ordinal| !previous.contains(ordinal));
+    let ordinal = new.next()?;
+    new.next().is_none().then_some(ordinal)
+}
+
+fn stash_units(rows: &[oteryn_protocol_oteryn::stash::StashRow], key: &str, revision: &str) -> u64 {
+    rows.iter()
+        .filter(|row| row.definition_key == key && row.definition_revision == revision)
+        .map(|row| u64::from(row.quantity))
+        .sum()
+}
+
 async fn storage_journey(
     row: &mut Row,
     client: &mut DevClientSession,
@@ -362,8 +375,9 @@ async fn storage_journey(
             let browse = depot_call(client, None, depot::DepotAction::Browse).await?;
             browse.town.ok_or("depot browse named no town")?
         };
-        let held_before = depot_call(client, Some(town), depot::DepotAction::Browse)
-            .await?
+        let initial = depot_call(client, Some(town), depot::DepotAction::Browse).await?;
+        let previous: BTreeSet<_> = initial.entries.iter().map(|entry| entry.ordinal).collect();
+        let held_before = initial
             .entries
             .iter()
             .filter(|e| e.definition == leaf.item_definition_ref.get())
@@ -397,12 +411,18 @@ async fn storage_journey(
             )
             .into());
         }
-        let ordinal = listing
-            .entries
-            .iter()
-            .find(|e| e.definition == leaf.item_definition_ref.get())
-            .map(|e| e.ordinal)
-            .ok_or("deposited entry absent from the depot listing")?;
+        let ordinal = deposited_ordinal(
+            &previous,
+            listing
+                .entries
+                .iter()
+                .filter(|entry| {
+                    entry.definition == leaf.item_definition_ref.get()
+                        && entry.count == leaf.count.get()
+                })
+                .map(|entry| entry.ordinal),
+        )
+        .ok_or("unique deposited entry absent from the depot listing")?;
         let moved = depot_call(client, Some(town), depot::DepotAction::Withdraw(ordinal)).await?;
         if moved.outcome != depot::DepotOutcome::Moved {
             return Err(format!("depot withdraw refused: {moved:?}").into());
@@ -415,7 +435,14 @@ async fn storage_journey(
             .filter(|e| e.definition == leaf.item_definition_ref.get())
             .map(|e| u64::from(e.count))
             .sum::<u64>();
-        if held_end != held_before {
+        if held_end != held_before
+            || after
+                .entries
+                .iter()
+                .map(|entry| entry.ordinal)
+                .collect::<BTreeSet<_>>()
+                != previous
+        {
             return Err(format!(
                 "depot still holds {held_end} after the withdraw; started with {held_before}"
             )
@@ -445,7 +472,8 @@ async fn storage_journey(
         .copied()
         .ok_or("no carried stack of at least two units for chosen-count withdrawal")?;
     let carried = inventory_units(client)?;
-    let before: u64 = panel.rows.iter().map(|r| u64::from(r.quantity)).sum();
+    let original_rows = panel.rows.clone();
+    let before: u64 = original_rows.iter().map(|r| u64::from(r.quantity)).sum();
     let command =
         ui::request(&mut panel, ui::Intent::Stow(item.handle)).ok_or("stash stow input")?;
     let reply = runtime::send(client.session_mut(), &command).await?;
@@ -462,7 +490,6 @@ async fn storage_journey(
     if after != before + u64::from(item.count.get()) {
         return Err("stash count delta differs from stowed quantity".into());
     }
-    row.pass("stow", "stash-total-increased-by-exact-stack");
     let definitions = provisioning::item_index()?;
     let selected = panel
         .rows
@@ -472,6 +499,14 @@ async fn storage_journey(
                 == Some(item.item_definition_ref)
         })
         .ok_or("stowed definition absent from stash page")?;
+    let key = panel.rows[selected].definition_key.clone();
+    let revision = panel.rows[selected].definition_revision.clone();
+    let selected_before = stash_units(&original_rows, &key, &revision);
+    let selected_after = stash_units(&panel.rows, &key, &revision);
+    if selected_after != selected_before + u64::from(item.count.get()) {
+        return Err("selected stash definition did not gain the stowed stack".into());
+    }
+    row.pass("stow", "stash-definition-increased-by-exact-stack");
     let command = ui::request(
         &mut panel,
         ui::Intent::Withdraw {
@@ -495,6 +530,7 @@ async fn storage_journey(
         .map(|r| u64::from(r.quantity))
         .sum::<u64>()
         != after - 1
+        || stash_units(&panel.rows, &key, &revision) != selected_after - 1
     {
         return Err("chosen one-unit withdrawal changed the wrong stash quantity".into());
     }
@@ -513,7 +549,12 @@ async fn storage_journey(
     let stash_before: BTreeMap<_, _> = panel
         .rows
         .iter()
-        .map(|r| (r.definition_key.clone(), r.quantity))
+        .map(|r| {
+            (
+                (r.definition_key.clone(), r.definition_revision.clone()),
+                r.quantity,
+            )
+        })
         .collect();
     relog(client, clients).await?;
     if inventory_units(client)? != expected {
@@ -526,7 +567,12 @@ async fn storage_journey(
     let stash_after: BTreeMap<_, _> = panel
         .rows
         .iter()
-        .map(|r| (r.definition_key.clone(), r.quantity))
+        .map(|r| {
+            (
+                (r.definition_key.clone(), r.definition_revision.clone()),
+                r.quantity,
+            )
+        })
         .collect();
     if reply.reply.outcome != ui::stash::StashOutcome::Opened || stash_after != stash_before {
         return Err("fresh-session stash differs from committed withdrawal".into());
@@ -541,4 +587,50 @@ async fn storage_journey(
         "fresh-admission-inventory-and-stash-quantities-retained",
     );
     Ok(())
+}
+
+#[cfg(test)]
+mod depot_tests {
+    use super::*;
+
+    #[test]
+    fn depot_withdraws_new_ordinal_even_with_an_identical_existing_lot() {
+        assert_eq!(
+            deposited_ordinal(&BTreeSet::from([7]), [7, 8].into_iter()),
+            Some(8)
+        );
+        assert_eq!(
+            deposited_ordinal(&BTreeSet::from([7]), [7, 8, 9].into_iter()),
+            None
+        );
+    }
+}
+
+#[cfg(test)]
+mod stash_tests {
+    use super::stash_units;
+    use oteryn_protocol_oteryn::stash::StashRow;
+
+    #[test]
+    fn stash_custody_excludes_other_definitions_and_revisions() {
+        let row = |key: &str, revision: &str, quantity| StashRow {
+            handle: [1; 16],
+            definition_key: key.to_owned(),
+            definition_revision: revision.to_owned(),
+            quantity,
+            migration_required: false,
+        };
+        let before = [
+            row("arrow", "r1", 4),
+            row("bolt", "r1", 3),
+            row("arrow", "r2", 2),
+        ];
+        let wrong_stow = [
+            row("arrow", "r1", 4),
+            row("bolt", "r1", 6),
+            row("arrow", "r2", 2),
+        ];
+        assert_eq!(stash_units(&before, "arrow", "r1"), 4);
+        assert_eq!(stash_units(&wrong_stow, "arrow", "r1"), 4);
+    }
 }

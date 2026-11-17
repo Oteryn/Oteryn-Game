@@ -1,6 +1,4 @@
 {
-    #[path = "full_e2ef4.rs"]
-    mod full_e2ef4;
     // Run before profile_journey provisions Character 0 through the root fixture.
     // Both peers here must retain their ordinary Platform-created starter state.
     let economy_social: TestResult = async {

@@ -235,6 +235,51 @@ async fn daily_wall(
     }
 }
 
+fn daily_save_needed(wall: oteryn_protocol_oteryn::daily_reward::DailyRewardWall) -> bool {
+    wall.claimed && !wall.claim_enabled
+}
+
+// Node boot owns this disposable World. Publish only the next daily reset
+// window; all character claims and reward delivery still run through the player.
+async fn next_daily_save(clients: &SeamClients<'_>) -> TestResult {
+    use sqlx::Connection as _;
+    required("NODE_BOOT_CONTROL_SOCKET")?;
+    tokio::time::timeout(Duration::from_secs(10), async {
+        let mut conn = sqlx::PgConnection::connect(clients.url).await?;
+        let advanced = sqlx::query(
+            "WITH previous AS (               SELECT world_id,reset_epoch,reset_day FROM game_world_reset_history                WHERE world_id=encode($1,'hex')::uuid ORDER BY reset_epoch DESC LIMIT 1             ), next AS (               SELECT world_id,reset_epoch+1 AS epoch,reset_day+1 AS day,                floor(extract(epoch FROM (((DATE '1970-01-01' + (reset_day+1)::integer)::timestamp                  + interval '6 hours') AT TIME ZONE 'Europe/Berlin'))*1000)::bigint AS at                FROM previous             ) INSERT INTO game_world_reset_history                (world_id,reset_epoch,reset_day,reset_at_unix_ms,committed_at_unix_ms)                SELECT world_id,epoch,day,at,at FROM next"
+        ).bind(clients.world.as_slice()).execute(&mut conn).await?;
+        if advanced.rows_affected() != 1 {
+            return Err("P10 fixture has no committed daily reset window to advance".into());
+        }
+        Ok(())
+    }).await?
+}
+
+fn claimed_bounty_reward(before: u64, after: u64) -> bool {
+    before.checked_add(1) == Some(after)
+}
+
+async fn bounty_reward_balance(client: &mut DevClientSession) -> TestResult<u64> {
+    use oteryn_protocol_oteryn::task_board as board;
+    let payload = board::full::encode_request(&board::full::Request::query())
+        .map_err(|e| format!("P10 bounty balance request: {e:?}"))?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            board::CAPABILITY_TASK_BOARD_V1,
+            board::COMMAND_TYPE_TASK_BOARD,
+            &payload,
+        )
+        .await?;
+    let board = board::full::decode_reply(&reply.payload)
+        .map_err(|e| format!("P10 bounty balance reply: {e:?}"))?;
+    if reply.status != CommandStatus::Accepted || board.refusal != 0 {
+        return Err(format!("P10 bounty balance refused: {reply:?}").into());
+    }
+    Ok(board.bounty.rerolls)
+}
+
 async fn daily_claim(client: &mut DevClientSession, disposition: u8) -> TestResult {
     use oteryn_dev_client::client_runtime::daily_reward::{
         DailyRewardCommand, DailyRewardReply, send,
@@ -532,9 +577,17 @@ async fn resting_bonuses(
     use oteryn_protocol_oteryn::world_object::UseDisposition;
     let mut client = connect_world(clients, 0xf2).await?;
     let result: TestResult<Option<&'static str>> = async {
-        let initial = daily_wall(&mut client).await?;
+        let mut initial = daily_wall(&mut client).await?;
+        if daily_save_needed(initial) {
+            next_daily_save(clients).await?;
+            let fresh = daily_wall(&mut client).await?;
+            if fresh.claimed || fresh.streak != initial.streak {
+                return Err(format!("P10 restart did not retain streak into a fresh window: {initial:?}->{fresh:?}").into());
+            }
+            initial = fresh;
+        }
         if initial.claimed || initial.claim_enabled {
-            return Err(format!("P10 fresh-day prerequisite blocked: expected an unclaimed, unopened wall on this fresh GameSession; observed={initial:?}").into());
+            return Err(format!("P10 needs an unopened daily wall: {initial:?}").into());
         }
         let held = custody(client.inventory().ok_or("P10 initial custody missing")?);
         daily_claim(&mut client, 4).await?;
@@ -553,25 +606,57 @@ async fn resting_bonuses(
         if !ready.claim_enabled || ready.claimed || ready.streak != initial.streak || ready.lane_day != initial.lane_day {
             return Err(format!("P10 shrine USE failed to open current daily claim: {ready:?}").into());
         }
+        let bounty_before = bounty_reward_balance(&mut client).await?;
         daily_claim(&mut client, 1).await?;
-        let claimed = daily_wall(&mut client).await?;
+        let mut claimed = daily_wall(&mut client).await?;
         if !claimed.claimed || claimed.claim_enabled || claimed.streak != initial.streak.saturating_add(1).min(100_000) {
             return Err(format!("P10 real daily claim did not advance consecutive streak once: {initial:?}->{claimed:?}").into());
         }
-        row.pass("shrine-open-and-claim", claimed);
+        let bounty_after = bounty_reward_balance(&mut client).await?;
+        if !claimed_bounty_reward(bounty_before, bounty_after) {
+            return Err(format!("P10 claim did not credit the authored bounty reroll token: {bounty_before}->{bounty_after}").into());
+        }
+        row.pass("shrine-open-and-claim", (claimed, bounty_after));
         let awarded = custody(client.inventory().ok_or("P10 reward custody missing")?);
         daily_claim(&mut client, 2).await?;
-        if daily_wall(&mut client).await? != claimed || custody(client.inventory().ok_or("P10 duplicate custody missing")?) != awarded {
+        if daily_wall(&mut client).await? != claimed || bounty_reward_balance(&mut client).await? != bounty_after || custody(client.inventory().ok_or("P10 duplicate custody missing")?) != awarded {
             return Err("P10 duplicate claim changed daily state or item custody".into());
         }
         row.pass("duplicate-claim-refused", claimed);
         relog(&mut client, clients, 0xf3).await?;
-        if daily_wall(&mut client).await? != claimed || custody(client.inventory().ok_or("P10 saved reward custody missing")?) != awarded {
+        if daily_wall(&mut client).await? != claimed || bounty_reward_balance(&mut client).await? != bounty_after || custody(client.inventory().ok_or("P10 saved reward custody missing")?) != awarded {
             return Err("P10 daily claim/streak/custody did not persist through fresh admission".into());
         }
         row.pass("relog-daily-streak", claimed);
-        if claimed.streak < 7 {
-            return Err(format!("P10 seven-day streak prerequisite blocked: native claimed wall streak={} lane_day={} claimed={}; HP/mana unlock at 2/3, Premium stamina at 4, doubled HP/mana at 5/6 and soul at 7. Real player route permits one claim per committed World server-save epoch; {} further consecutive daily claims are required. This bounded run cannot advance server time/epochs or mint a streak", claimed.streak, claimed.lane_day, claimed.claimed, 7 - claimed.streak).into());
+        for _ in claimed.streak..7 {
+            if !daily_save_needed(claimed) {
+                return Err(format!("P10 prior claim is not settled: {claimed:?}").into());
+            }
+            next_daily_save(clients).await?;
+            let fresh = daily_wall(&mut client).await?;
+            if fresh.claimed || fresh.claim_enabled || fresh.streak != claimed.streak {
+                return Err(format!("P10 next daily window failed to retain streak: {claimed:?}->{fresh:?}").into());
+            }
+            let opened = client.session_mut().use_object(b"oteryn:placement/daily-reward-shrine", 0).await?;
+            if opened.disposition != UseDisposition::Committed || !daily_wall(&mut client).await?.claim_enabled {
+                return Err(format!("P10 next shrine window refused: {opened:?}").into());
+            }
+            let bounty_before = bounty_reward_balance(&mut client).await?;
+            daily_claim(&mut client, 1).await?;
+            let after = daily_wall(&mut client).await?;
+            if !after.claimed || after.claim_enabled || after.streak != fresh.streak + 1
+                || !claimed_bounty_reward(bounty_before, bounty_reward_balance(&mut client).await?)
+            {
+                return Err(format!("P10 next daily claim did not advance exact streak/reward: {fresh:?}->{after:?}").into());
+            }
+            relog(&mut client, clients, 0xf3).await?;
+            if daily_wall(&mut client).await? != after
+                || !claimed_bounty_reward(bounty_before, bounty_reward_balance(&mut client).await?)
+            {
+                return Err("P10 next daily reward or streak was lost at fresh admission".into());
+            }
+            claimed = after;
+            verdict::Harness::global().progress("resting-daily-claim");
         }
         row.pass("earned-seven-day-streak", claimed);
         resting_deficits(&mut client, clients, world, spawns, outside).await?;
@@ -593,6 +678,7 @@ async fn resting_bonuses(
         let mut soul = false;
         let started = tokio::time::Instant::now();
         let deadline = started + Duration::from_secs(390);
+        verdict::Harness::global().bounded_wait(deadline, "resting-stamina-observation");
         let mut next_stamina_read = started;
         let mut stamina = stamina_before;
         let stamina_after = loop {
@@ -670,6 +756,7 @@ async fn resting_bonuses(
         let mut next_stamina_read = tokio::time::Instant::now();
         let mut observed_stamina = outside_stamina;
         let until = tokio::time::Instant::now() + Duration::from_secs(370);
+        verdict::Harness::global().bounded_wait(until, "outside-resting-comparison");
         while tokio::time::Instant::now() < until {
             client.service_liveness(Duration::from_millis(100)).await?;
             for event in client.take_events() {
@@ -712,6 +799,7 @@ async fn resting_bonuses(
         let started = resting_reentry(&mut client, world, inside).await?;
         let interval = if promoted { 15 } else { 120 };
         let deadline = tokio::time::Instant::now() + Duration::from_secs(interval + 10);
+        verdict::Harness::global().bounded_wait(deadline, "resting-reentry-observation");
         loop {
             client.service_liveness(Duration::from_millis(50)).await?;
             client.take_events();
@@ -1513,7 +1601,7 @@ async fn return_and_release(client: &mut DevClientSession, world: &BundleWorld) 
 }
 
 /// Real kills and corpse loot fund the prerequisites; no fixture or bank read is used.
-async fn earn_death_prerequisites(
+pub(super) async fn earn_death_prerequisites(
     client: &mut DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
@@ -1550,6 +1638,7 @@ async fn earn_death_prerequisites(
         travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await
             .map_err(|error| format!("player prerequisite blocked: required level={level} carried_gold={gold}, observed XP={} level={} carried_gold={money}; rat route: {error}", build.0, build.1))?;
         client_hunt::hunt(client).await.map_err(|error| format!("player prerequisite blocked: real rat kill/loot: {error}; required level={level} carried_gold={gold}; before XP={} level={} carried_gold={money}", build.0, build.1))?;
+        verdict::Harness::global().progress("player-prerequisite-hunt");
     }
 }
 
@@ -1990,6 +2079,10 @@ async fn buy_amulet(
     Ok(())
 }
 
+fn new_ground_instance(previous: &BTreeSet<[u8; 16]>, candidate: [u8; 16]) -> bool {
+    !previous.contains(&candidate)
+}
+
 async fn item_loss(
     row: &mut Row,
     clients: &SeamClients<'_>,
@@ -2045,8 +2138,16 @@ async fn item_loss(
         let original = inventory.main_backpack.ok_or("unprotected death requires a real main backpack")?;
         if inventory.entries.is_empty() { return Err("unprotected death requires actual earned loot in backpack".into()); }
         row.pass("unprotected-bag-and-contents", &inventory);
+        travel_to_spawn(&mut client, world, spawns, "oteryn:creature.poison_spider").await?;
+        let at = client.world_spatial().actor_position;
+        let ground_before: BTreeSet<_> = client.world_entities().ok_or("pre-death ground visibility absent")?
+            .iter().filter(|entry| entry.position == at && entry.kind == oteryn_dev_client::EntityKind::GroundItem)
+            .map(|entry| entry.entity.identity).collect();
         let (encounter, _, _) = observed_death(&mut client, world, spawns).await?;
-        let after = wait_inventory(&mut client, |view| view.main_backpack.is_none_or(|bag| bag.handle != original.handle) && view.entries.is_empty(),
+        if encounter != at {
+            return Err("unprotected death moved outside the observed ground baseline".into());
+        }
+        let after = wait_inventory(&mut client, |view| view.main_backpack.is_none() && view.entries.is_empty(),
             "unprotected death did not remove the original backpack and its contents").await?;
         row.pass("unprotected-death-loss", &after);
         let saved = custody(&after);
@@ -2058,8 +2159,23 @@ async fn item_loss(
             .ok_or("no real return route to death ground")?;
         walk(&mut client, world, &path).await?;
         let ground = ground_entries(&mut client, encounter).await?;
-        let bag = ground.iter().find(|entry| entry.item_definition_ref == original.item_definition_ref && entry.count == original.count && entry.sub_type == original.sub_type)
-            .ok_or("lost original backpack not observed in native ground view")?;
+        let visible = client.world_entities().ok_or("returned death ground visibility absent")?;
+        let mut bags = ground.iter().filter(|entry| {
+            entry.item_definition_ref == original.item_definition_ref
+                && entry.count == original.count && entry.sub_type == original.sub_type
+                && visible.iter().any(|entity| {
+                    entity.position == encounter && new_ground_instance(&ground_before, entity.entity.identity)
+                        && entity.kind == oteryn_dev_client::EntityKind::GroundItem
+                        && matches!(entity.detail,
+                            oteryn_dev_client::EntityDetail::Object { item_handle: Some(handle), .. }
+                            | oteryn_dev_client::EntityDetail::ObjectWithAppearance { item_handle: Some(handle), .. }
+                            if handle == entry.handle)
+                })
+        });
+        let bag = bags.next().ok_or("fresh lost backpack instance absent from ground view")?;
+        if bags.next().is_some() {
+            return Err("death ground contains multiple new matching backpack instances".into());
+        }
         use oteryn_protocol_oteryn::container_tree as tree;
         let payload = tree::encode_container_view_intent(&tree::ContainerViewIntent::Open { handle: bag.handle, replace_view: None }).map_err(|error| format!("lost bag open: {error:?}"))?;
         let reply = client.session_mut().gated_command(tree::CAPABILITY_CONTAINER_TREE_V1, tree::COMMAND_TYPE_CONTAINER_VIEW_INTENT, &payload).await?;
@@ -2578,25 +2694,11 @@ async fn adventurer_journey(
         }
         let held = blessings(&mut victim).await?;
         let owned = custody(victim.inventory().ok_or("Adventurer inventory missing")?);
-        let mut attacker = connect_world(clients, tag + 1).await?;
-        let mut earning_cancelled = false;
+        let mut attacker = full_e2ef5::with_observer_liveness(&mut victim, connect_world(clients, tag + 1)).await?;
         let fight: TestResult = async {
-            {
-                let earning = earn_death_prerequisites(&mut attacker, world, spawns, 8, 0);
-                tokio::pin!(earning);
-                loop {
-                    match tokio::time::timeout(Duration::from_millis(100), earning.as_mut()).await {
-                        Ok(result) => { result?; break; }
-                        Err(_) => {
-                            if let Err(error) = victim.service_liveness(Duration::from_millis(1)).await {
-                                earning_cancelled = true;
-                                return Err(error.into());
-                            }
-                            victim.take_events();
-                        }
-                    }
-                }
-            }
+            full_e2ef5::with_observer_liveness(&mut victim,
+                earn_death_prerequisites(&mut attacker, world, spawns, 8, 0)
+            ).await?;
             row.pass("adventurer-earned-prerequisites", (build, progress(&mut attacker).await?, &held));
             let (before, after) = observed_pvp_death(&mut victim, &mut attacker, world, spawns).await?;
             if before != build || after != build || blessings(&mut victim).await? != held {
@@ -2609,17 +2711,15 @@ async fn adventurer_journey(
             row.pass("adventurer-relog", (&held, &owned));
             Ok(())
         }.await;
-        if earning_cancelled {
-            // The observer error dropped a pending attacker exchange. Close its
-            // connection without sending cleanup on an uncertain reply/frame.
-            drop(attacker);
-            return fight;
-        }
-        let cleanup = release_fighter(&mut attacker).await;
+        let cleanup = full_e2ef5::with_observer_liveness(&mut victim, release_fighter(&mut attacker)).await;
         fight.and(cleanup)
     }.await;
     let cleanup = return_and_release(&mut victim, world).await;
     result.and(cleanup)
+}
+
+fn twist_purchase_needed(held: &[String]) -> bool {
+    held.iter().all(|key| key != TWIST.2)
 }
 
 async fn blessing_death(
@@ -2642,7 +2742,9 @@ async fn blessing_death(
             }
         }
         buy_blessing(&mut client, world, spawns, npcs, WISDOM).await?;
-        buy_blessing(&mut client, world, spawns, npcs, TWIST).await?;
+        if twist_purchase_needed(&blessings(&mut client).await?) {
+            buy_blessing(&mut client, world, spawns, npcs, TWIST).await?;
+        }
         let both = held_with(&[], &[WISDOM.2, TWIST.2]);
         if blessings(&mut client).await? != both { return Err("regular/Twist ownership baseline differs".into()); }
         row.pass("regular-and-twist-purchased", &both);
@@ -2655,9 +2757,12 @@ async fn blessing_death(
         saved_blessings(&mut client, clients, 1, 0xa4, &twist, after).await?;
         row.pass("pve-relog", (&twist, after));
         buy_blessing(&mut client, world, spawns, npcs, WISDOM).await?;
-        let mut attacker = connect_character(clients, 0xa5, 0).await?;
+        let mut attacker = full_e2ef5::with_observer_liveness(&mut client, connect_character(clients, 0xa5, 0)).await?;
         let fight: TestResult = async {
-            earn_death_prerequisites(&mut attacker, world, spawns, 8, 0).await?;
+            full_e2ef5::with_observer_liveness(
+                &mut client,
+                earn_death_prerequisites(&mut attacker, world, spawns, 8, 0),
+            ).await?;
             let (before, after) = observed_pvp_death(&mut client, &mut attacker, world, spawns).await?;
             let regular = vec![WISDOM.2.to_owned()];
             if after.0 >= before.0 || blessings(&mut client).await? != regular {
@@ -2668,7 +2773,7 @@ async fn blessing_death(
             row.pass("twist-relog", (&regular, after));
             Ok(())
         }.await;
-        let cleanup = release_fighter(&mut attacker).await;
+        let cleanup = full_e2ef5::with_observer_liveness(&mut client, release_fighter(&mut attacker)).await;
         fight.and(cleanup)
     }.await;
     let cleanup = return_and_release(&mut client, world).await;
@@ -2703,7 +2808,9 @@ async fn blessing_services(
         }
         row.pass("decline-and-unquoted-confirmation-unchanged", &baseline);
         for service in PILGRIMAGE.iter().copied().chain(std::iter::once(TWIST)) {
-            buy_blessing(&mut client, world, spawns, npcs, service).await?;
+            if service != TWIST || twist_purchase_needed(&baseline) {
+                buy_blessing(&mut client, world, spawns, npcs, service).await?;
+            }
             duplicate_blessing(&mut client, world, npcs, service).await?;
         }
         let expected = held_with(&[], &PILGRIMAGE.iter().map(|service| service.2).chain(std::iter::once(TWIST.2)).collect::<Vec<_>>());
@@ -2950,5 +3057,62 @@ mod tests {
         }
         assert!(!unknown.complete());
         assert!(!Row::new("C19a", &[]).complete());
+    }
+}
+
+#[cfg(test)]
+mod daily_custody_tests {
+    use super::*;
+
+    #[test]
+    fn a_claim_receipt_without_authored_credit_does_not_qualify() {
+        assert!(!claimed_bounty_reward(3, 3));
+        assert!(claimed_bounty_reward(3, 4));
+        assert!(!claimed_bounty_reward(3, 5));
+    }
+}
+
+#[cfg(test)]
+mod twist_tests {
+    use super::*;
+
+    #[test]
+    fn retained_twist_survives_pve_without_being_bought_twice() {
+        assert!(twist_purchase_needed(&[]));
+        assert!(twist_purchase_needed(&[WISDOM.2.to_owned()]));
+        assert!(!twist_purchase_needed(&[TWIST.2.to_owned()]));
+    }
+}
+
+#[cfg(test)]
+mod daily_resume_tests {
+    use super::*;
+
+    #[test]
+    fn partial_streak_or_same_day_restart_can_reach_a_new_claim() {
+        use oteryn_protocol_oteryn::daily_reward::DailyRewardWall;
+        let wall = |claimed, streak| DailyRewardWall {
+            claimed,
+            streak,
+            lane_day: 1,
+            jokers: 0,
+            claim_enabled: false,
+        };
+        assert!(daily_save_needed(wall(true, 1)));
+        assert!(daily_save_needed(wall(true, 6)));
+        assert!(daily_save_needed(wall(true, 7)));
+        assert!(!daily_save_needed(wall(false, 0)));
+    }
+}
+
+#[cfg(test)]
+mod ground_identity_tests {
+    use super::*;
+
+    #[test]
+    fn recovery_does_not_take_a_bag_already_on_the_death_tile() {
+        let before = BTreeSet::from([[1; 16]]);
+        assert!(!new_ground_instance(&before, [1; 16]));
+        assert!(new_ground_instance(&before, [2; 16]));
     }
 }

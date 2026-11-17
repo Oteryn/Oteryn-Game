@@ -141,7 +141,7 @@ pub(super) async fn run(
         }};
     }
     row!(600, "E01", E01, shop, clients, world, npcs);
-    row!(180, "E03", E03, coins, clients);
+    row!(180, "E03", E03, coins, clients, world, npcs);
     row!(240, "E04", E04, trade, clients, world);
     row!(1200, "E05", E05, market, clients, world);
     row!(240, "E07", E07, storage, clients, world);
@@ -565,6 +565,10 @@ async fn shop(
     result
 }
 
+fn sell_all_matches(present: u64, sold: u64, credited: u64, unit_price: u32) -> bool {
+    present != 0 && sold == present && credited == present * u64::from(unit_price)
+}
+
 async fn shop_journey(
     row: &mut Row,
     client: &mut DevClientSession,
@@ -634,7 +638,7 @@ async fn shop_journey(
         .enumerate()
         .find(|(_, o)| {
             o.side == wire::NpcTradeSide::Sell
-                && carried.get(&o.item_definition_ref).copied().unwrap_or(0) >= 1
+                && carried.get(&o.item_definition_ref).copied().unwrap_or(0) >= u64::from(o.count)
         })
         .ok_or_else(|| {
             format!(
@@ -662,7 +666,7 @@ async fn shop_journey(
     let sold = expected_items
         .get_mut(&offer.item_definition_ref)
         .ok_or("sold definition not carried")?;
-    *sold -= 1;
+    *sold -= u64::from(offer.count);
     if *sold == 0 {
         expected_items.remove(&offer.item_definition_ref);
     }
@@ -682,6 +686,7 @@ async fn shop_journey(
         .enumerate()
         .find(|(_, o)| {
             o.side == wire::NpcTradeSide::Sell
+                && o.count == 1
                 && carried.get(&o.item_definition_ref).copied().unwrap_or(0) >= 1
         })
         .ok_or_else(|| {
@@ -708,11 +713,16 @@ async fn shop_journey(
         return Err(format!("SELL_ALL refused by Sam: {:?}", outcome.disposition).into());
     }
     let sold_units = u64::from(outcome.sold_units);
-    let present = before.get(&offer.item_definition_ref).copied().unwrap_or(0);
-    if sold_units == 0
-        || sold_units > present
-        || outcome.total_gold_units != sold_units * u64::from(offer.unit_price)
-    {
+    let present = carried
+        .get(&offer.item_definition_ref)
+        .copied()
+        .unwrap_or(0);
+    if !sell_all_matches(
+        present,
+        sold_units,
+        outcome.total_gold_units,
+        offer.unit_price,
+    ) {
         return Err(format!(
             "SELL_ALL result disagrees with the quote: sold={sold_units} present={present} gold={} unit_price={}",
             outcome.total_gold_units, offer.unit_price
@@ -720,7 +730,12 @@ async fn shop_journey(
         .into());
     }
     let mut expected_items = non_coin(&before, &refs);
-    let left = present - sold_units;
+    let left = expected_items
+        .get(&offer.item_definition_ref)
+        .copied()
+        .unwrap_or(0)
+        .checked_sub(sold_units)
+        .ok_or("SELL_ALL custody underflow")?;
     if left == 0 {
         expected_items.remove(&offer.item_definition_ref);
     } else {
@@ -765,7 +780,7 @@ async fn shop_journey(
         return Err(format!("buy refused by Sam: {disposition:?}").into());
     }
     let mut expected_items = non_coin(&before, &refs);
-    *expected_items.entry(offer.item_definition_ref).or_default() += 1;
+    *expected_items.entry(offer.item_definition_ref).or_default() += u64::from(offer.count);
     let expected_wealth = funds - u64::from(offer.unit_price);
     settle(client, "buy", |now| {
         non_coin(now, &refs) == expected_items && wealth(now, &refs) == expected_wealth
@@ -886,34 +901,294 @@ async fn shop_journey(
     .await
 }
 
+type CoinStep = (&'static str, usize, fn(u32) -> bool, usize, u64, usize, u64);
+
+fn coin_steps() -> [CoinStep; 4] {
+    // (action, coin used, input quantity filter, coin stack spent, coin stack gained, gained)
+    [
+        ("gold-up", 0, |q| q == 100, 0, 100, 1, 1),
+        ("platinum-down", 1, |q| q != 100, 1, 1, 0, 100),
+        ("crystal-down", 2, |_| true, 2, 1, 1, 100),
+        ("platinum-up", 1, |q| q == 100, 1, 100, 2, 1),
+    ]
+}
+
+fn converter_charge_matches(before: i64, after: Option<i64>, retirement: bool) -> bool {
+    if retirement {
+        before == 1 && after.is_none()
+    } else {
+        before > 0 && before.checked_sub(1) == after
+    }
+}
+
+fn yell_matrix_matches(
+    refused: oteryn_dev_client::ChatDisposition,
+    accepted: oteryn_dev_client::ChatDisposition,
+) -> bool {
+    use oteryn_dev_client::ChatDisposition;
+    refused == ChatDisposition::LevelTooLow && accepted == ChatDisposition::Ok
+}
+
+fn carried_coin(
+    client: &DevClientSession,
+    definition: std::num::NonZeroU32,
+    pick: fn(u32) -> bool,
+) -> Option<oteryn_dev_client::ItemEntry> {
+    client
+        .inventory()?
+        .entries
+        .iter()
+        .find(|item| item.item_definition_ref == definition && pick(item.count.get()))
+        .copied()
+}
+
+async fn withdraw_denominations(
+    row: &mut Row,
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+    refs: &[std::num::NonZeroU32; 3],
+    withdrawals: &[u64],
+) -> TestResult {
+    let (npc, mut banker, bank) = find_banker(row, client, world, npcs).await?;
+    let amount: u64 = withdrawals.iter().sum();
+    if full_gold::coin_value(client)? < amount.saturating_sub(bank) {
+        let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+        let meta = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+        full_gold::earn(
+            client,
+            world,
+            &meta.spawns,
+            "E03",
+            amount.saturating_sub(bank),
+        )
+        .await?;
+        banker = approach_npc(client, world, npc).await?;
+        speak(client, banker, "hi").await?;
+    }
+    let inventory = inventory_units(client)?;
+    let carried = wealth(&inventory, refs);
+    if carried > 0 {
+        bank_exchange(
+            client,
+            banker,
+            "deposit all",
+            &format!("Do you want to deposit {carried} gold?"),
+            &format!("You have deposited {carried} gold."),
+        )
+        .await?;
+    }
+    for value in withdrawals {
+        bank_exchange(
+            client,
+            banker,
+            &format!("withdraw {value} gold"),
+            &format!("Do you want to withdraw {value} gold?"),
+            &format!("You have withdrawn {value} gold."),
+        )
+        .await?;
+    }
+    settle(client, "denomination-funding", |now| {
+        wealth(now, refs) == amount && non_coin(now, refs) == non_coin(&inventory, refs)
+    })
+    .await?;
+    let observed = bank_balance(client, banker).await?;
+    if bank
+        .checked_add(carried)
+        .and_then(|total| total.checked_sub(amount))
+        != Some(observed)
+    {
+        return Err("E03 denomination funding bank debit did not match carried custody".into());
+    }
+    Ok(())
+}
+
+type ConverterState = BTreeMap<Vec<u8>, (String, i64)>;
+
+async fn converter_state(clients: &SeamClients<'_>) -> TestResult<ConverterState> {
+    use sqlx::Connection as _;
+    tokio::time::timeout(Duration::from_secs(5), async {
+        let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+        let rows: Vec<(Vec<u8>, String, i64)> = sqlx::query_as(
+            "SELECT uuid_send(i.item_instance_id),i.definition_production_key,COALESCE(t.charges,500)::bigint              FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id)              LEFT JOIN game_item_timed_states t USING(item_instance_id)              WHERE e.character_id=encode($1,'hex')::uuid AND e.world_id=encode($2,'hex')::uuid              AND i.lifecycle=1 AND i.definition_production_key IN              ('oteryn:item.tibia.i23722','oteryn:item.tibia.i25719','oteryn:item.tibia.i28525','oteryn:item.tibia.i28526')"
+        ).bind(clients.characters[1].as_slice()).bind(clients.world.as_slice())
+            .fetch_all(&mut connection).await?;
+        Ok(rows.into_iter().map(|(id,key,charges)| (id,(key,charges))).collect())
+    }).await?
+}
+
+async fn converter_checks(
+    row: &mut Row,
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    refs: &[std::num::NonZeroU32; 3],
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+    let defs = provisioning::item_index()?;
+    let temporary = provisioning::item_reference(&defs, 25719)?;
+    let initial = converter_state(clients).await?;
+    let mut converters = initial
+        .iter()
+        .filter(|(_, (key, _))| key == "oteryn:item.tibia.i25719");
+    let (id, &(_, mut charges)) = converters
+        .next()
+        .ok_or("E03 temporary converter is absent from observed custody")?;
+    if converters.next().is_some() {
+        return Err("E03 needs one distinguishable temporary converter".into());
+    }
+    let mut proved_charge = false;
+    loop {
+        let tool = carried_coin(client, temporary, |_| true)
+            .ok_or("E03 temporary converter handle absent")?;
+        let before = coin_counts(&inventory_units(client)?, refs);
+        let (target, expected) = if let Some(item) = carried_coin(client, refs[0], |q| q == 100) {
+            (item, [before[0] - 100, before[1] + 1, before[2]])
+        } else {
+            let item = carried_coin(client, refs[1], |q| q < 100)
+                .ok_or("E03 converter needs a 100 gold or sub-100 platinum stack")?;
+            (item, [before[0] + 100, before[1] - 1, before[2]])
+        };
+        full_e2ef7::use_on(client, tool.handle, target.handle).await?;
+        settle(client, "converter-coin-delta", |now| {
+            coin_counts(now, refs) == expected
+        })
+        .await?;
+        let after = converter_state(clients).await?;
+        let remaining = after.get(id).map(|(_, charges)| *charges);
+        if !converter_charge_matches(charges, remaining, charges == 1) {
+            return Err(
+                format!("E03 converter charge custody mismatch: {charges}->{remaining:?}").into(),
+            );
+        }
+        if let Some(remaining) = remaining {
+            if !proved_charge {
+                row.pass(
+                    "converter-charge",
+                    format!("exact-one-charge:{charges}->{remaining}"),
+                );
+                proved_charge = true;
+            }
+            charges = remaining;
+        } else {
+            if carried_coin(client, temporary, |_| true).is_some() {
+                return Err("E03 spent temporary converter retained a carried handle".into());
+            }
+            if !proved_charge {
+                row.pass("converter-charge", "one-charge-consumed-by-last-conversion");
+            }
+            row.pass(
+                "converter-retirement",
+                "last-charge-consumed-and-converter-removed",
+            );
+            break;
+        }
+        beat(row);
+    }
+    let inactive = provisioning::item_reference(&defs, 28525)?;
+    let active = provisioning::item_reference(&defs, 28526)?;
+    // Install a full gold stack while inactive, so the next tick has an exact input.
+    if carried_coin(client, refs[0], |q| q == 100).is_none() {
+        let coins = carried_coin(client, refs[1], |q| q < 100)
+            .ok_or("E03 magic converter setup needs a platinum unit for gold change")?;
+        let before = coin_counts(&inventory_units(client)?, refs);
+        let changed = client.use_item(coins.handle).await?;
+        if changed.disposition != UseDisposition::Committed {
+            return Err(
+                format!("E03 magic-converter input preparation refused: {changed:?}").into(),
+            );
+        }
+        settle(client, "magic-input", |now| {
+            coin_counts(now, refs) == [before[0] + 100, before[1] - 1, before[2]]
+        })
+        .await?;
+    }
+    let tool =
+        carried_coin(client, inactive, |_| true).ok_or("E03 inactive magic converter missing")?;
+    let durable = converter_state(clients).await?;
+    let mut candidates = durable
+        .iter()
+        .filter(|(_, (key, _))| key == "oteryn:item.tibia.i28525");
+    let (id, (_, before_charges)) = candidates
+        .next()
+        .ok_or("E03 inactive magic converter custody absent")?;
+    if *before_charges < 2 || candidates.next().is_some() {
+        return Err("E03 needs one magic converter with at least two charges".into());
+    }
+    let before = coin_counts(&inventory_units(client)?, refs);
+    let toggled = client.use_item(tool.handle).await?;
+    if toggled.disposition != UseDisposition::Committed {
+        return Err(format!("E03 magic converter activation refused: {toggled:?}").into());
+    }
+    settle(client, "magic-active", |now| {
+        now.get(&active.get()) == Some(&1)
+    })
+    .await?;
+    row.pass("magic-toggle", "ordinary-use-switched-exact-magic-form-on");
+    let expected = [before[0] - 100, before[1] + 1, before[2]];
+    settle(client, "magic-tick", |now| {
+        coin_counts(now, refs) == expected
+    })
+    .await?;
+    let after = converter_state(clients).await?;
+    if !after.get(id).is_some_and(|(key, charges)| {
+        key == "oteryn:item.tibia.i28526"
+            && converter_charge_matches(*before_charges, Some(*charges), false)
+    }) {
+        return Err(
+            "E03 magic tick did not consume exactly one charge of the activated instance".into(),
+        );
+    }
+    row.pass("magic-tick", "automatic-coin-upgrade-spent-one-charge");
+    let current =
+        carried_coin(client, active, |_| true).ok_or("E03 active converter handle absent")?;
+    let off = client.use_item(current.handle).await?;
+    if off.disposition != UseDisposition::Committed {
+        return Err(format!("E03 magic converter deactivation refused: {off:?}").into());
+    }
+    settle(client, "magic-off", |now| {
+        now.get(&inactive.get()) == Some(&1)
+            && !now.contains_key(&active.get())
+            && coin_counts(now, refs) == expected
+    })
+    .await?;
+    let off_state = converter_state(clients).await?;
+    if !off_state.get(id).is_some_and(|(key, charges)| {
+        key == "oteryn:item.tibia.i28525"
+            && converter_charge_matches(*before_charges, Some(*charges), false)
+    }) {
+        return Err("E03 deactivation changed magic converter charges or instance".into());
+    }
+    Ok(())
+}
+
 async fn coins(
     row: &mut Row,
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_object::UseDisposition;
     let refs = coin_refs()?;
     let mut failures: Vec<String> = Vec::new();
-    // (action, coin used, input quantity filter, coin stack spent, coin stack gained, gained)
-    type Pick = fn(u32) -> bool;
-    let steps: [(&'static str, usize, Pick, usize, u64, usize, u64); 4] = [
-        ("gold-up", 0, |q| q >= 100, 0, 100, 1, 1),
-        ("platinum-down", 1, |q| q != 100, 1, 1, 0, 100),
-        ("platinum-up", 1, |q| q == 100, 1, 100, 2, 1),
-        ("crystal-down", 2, |_| true, 2, 1, 1, 100),
-    ];
-    for (action, used, pick, spend, spent, gain, gained) in steps {
+    for (action, used, pick, spend, spent, gain, gained) in coin_steps() {
+        if carried_coin(client, refs[used], pick).is_none() {
+            let funding: &[u64] = match action {
+                "gold-up" => &[99, 1],
+                "platinum-down" => &[100],
+                "crystal-down" => &[10_000],
+                _ => &[],
+            };
+            if !funding.is_empty()
+                && let Err(error) =
+                    withdraw_denominations(row, client, world, npcs, &refs, funding).await
+            {
+                failures.push(format!("{action}: denomination funding failed: {error}"));
+            }
+        }
         let units = inventory_units(client)?;
         let before = coin_counts(&units, &refs);
-        let item = client
-            .inventory()
-            .and_then(|inventory| {
-                inventory
-                    .entries
-                    .iter()
-                    .find(|i| i.item_definition_ref == refs[used] && pick(i.count.get()))
-            })
-            .copied();
+        let item = carried_coin(client, refs[used], pick);
         let Some(item) = item else {
             failures.push(format!(
                 "{action}: no eligible stack carried (coins gold/platinum/crystal={before:?}); coins can only come from real sales, loot and bank withdrawals"
@@ -934,41 +1209,72 @@ async fn coins(
         }
         beat(row);
     }
-    // Converter items have no player acquisition path in the town fixture; absent items fail
-    // with the precondition, never with a synthetic grant.
-    let definitions = provisioning::item_index()?;
-    let mut converters = Vec::new();
-    for id in [23722, 25719, 28525, 28526] {
-        let reference = provisioning::item_reference(&definitions, id)?;
-        converters.push((
-            id,
-            client
-                .inventory()
-                .is_some_and(|i| i.entries.iter().any(|e| e.item_definition_ref == reference)),
-        ));
+    if let Err(error) = converter_checks(row, client, clients, &refs).await {
+        failures.push(error.to_string());
     }
-    if converters.iter().all(|(_, carried)| !carried) {
-        failures.push(format!(
-            "converter-charge/converter-retirement/magic-toggle/magic-tick: no coin converter is carried ({converters:?}) and no town NPC offers one for earned gold"
-        ));
-    } else {
-        failures.push(format!(
-            "converter-charge/converter-retirement/magic-toggle/magic-tick: converters carried {converters:?} but their charge and tick assertions are not authored"
-        ));
-    }
+    let charges = converter_state(clients).await?;
     let carried = inventory_units(client)?;
     relog(client, clients).await?;
-    if inventory_units(client)? != carried {
+    if inventory_units(client)? != carried || converter_state(clients).await? != charges {
         failures.push(format!(
             "relog-coins-charges: carried custody changed across fresh admission: before={carried:?} after={:?}",
             inventory_units(client)?
         ));
+    } else if row.passed.contains("converter-charge") && row.passed.contains("magic-tick") {
+        row.pass(
+            "relog-coins-charges",
+            "fresh-admission-retained-coin-and-converter-charge-custody",
+        );
     }
     if failures.is_empty() {
         Ok(())
     } else {
         Err(failures.join(" | ").into())
     }
+}
+
+fn race_custody_matches(
+    outcome: oteryn_protocol_oteryn::player_trade::ResultCode,
+    unchanged: bool,
+    swapped: bool,
+    closed: bool,
+) -> bool {
+    use oteryn_protocol_oteryn::player_trade::ResultCode::*;
+    closed
+        && match outcome {
+            Completed => swapped && !unchanged,
+            Cancelled | Stale => unchanged && !swapped,
+            _ => false,
+        }
+}
+
+fn distinguishable_lots(a: (u32, u64), b: (u32, u64)) -> bool {
+    a != b
+}
+
+fn distinct_trade_items(
+    giver: &DevClientSession,
+    recipient: &DevClientSession,
+) -> TestResult<(oteryn_dev_client::ItemEntry, oteryn_dev_client::ItemEntry)> {
+    let mine = &giver
+        .inventory()
+        .ok_or("trade giver inventory absent")?
+        .entries;
+    let theirs = &recipient
+        .inventory()
+        .ok_or("trade recipient inventory absent")?
+        .entries;
+    for a in mine {
+        if let Some(b) = theirs.iter().find(|b| {
+            distinguishable_lots(
+                (a.item_definition_ref.get(), u64::from(a.count.get())),
+                (b.item_definition_ref.get(), u64::from(b.count.get())),
+            )
+        }) {
+            return Ok((*a, *b));
+        }
+    }
+    Err("trade needs observably distinct carried lots".into())
 }
 
 async fn trade(
@@ -1034,19 +1340,9 @@ async fn trade(
             return Err("active trade cancellation did not close escrow".into());
         }
         row.pass("cancel", "active-offer-closed");
-        // The cancelled round invalidated the first handle; read the leaf again.
-        let item = client
-            .inventory()
-            .and_then(|i| i.entries.first())
-            .copied()
-            .ok_or("no direct-backpack leaf left for the second round")?;
+        let (item, peer_item) = distinct_trade_items(client, &peer)?;
         let mine = inventory_units(client)?;
         let theirs = inventory_units(&peer)?;
-        let peer_item = peer
-            .inventory()
-            .and_then(|i| i.entries.first())
-            .copied()
-            .ok_or("peer has no direct-backpack leaf to counter-offer")?;
         // Round two: both players offer, both accept, custody swaps exactly.
         let offer = runtime::PlayerTradeCommand::new(runtime::player_trade::Intent::Offer {
             partner: own(&peer)?,
@@ -1093,20 +1389,16 @@ async fn trade(
         let peer_after = swap(&theirs, b.0, a.0, b.1, a.1);
         while_serving(&mut peer, settle(client, "trade-accept", |now| *now == client_after)).await?;
         while_serving(client, settle(&mut peer, "trade-accept-peer", |now| *now == peer_after)).await?;
+        if [(&*client, item.handle), (&peer, peer_item.handle)].iter().any(|(participant, handle)| {
+            participant.inventory().is_none_or(|inventory| inventory.entries.iter()
+                .any(|entry| entry.handle == *handle))
+        }) {
+            return Err("completed trade retained an offered instance with its previous owner".into());
+        }
         row.pass("accept", "both-accepts-swapped-custody-exactly");
         beat(row);
-        // Round three: the owner logs out while the partner accepts; the trade can never
-        // complete without the owner's own accept, so custody is unchanged on both sides.
-        let item = client
-            .inventory()
-            .and_then(|i| i.entries.first())
-            .copied()
-            .ok_or("no leaf for the logout race")?;
-        let peer_item = peer
-            .inventory()
-            .and_then(|i| i.entries.first())
-            .copied()
-            .ok_or("peer has no leaf for the logout race")?;
+        // Round three races the final accept against owner logout.
+        let (item, peer_item) = distinct_trade_items(client, &peer)?;
         let before_client = inventory_units(client)?;
         let before_peer = inventory_units(&peer)?;
         let offer = runtime::PlayerTradeCommand::new(runtime::player_trade::Intent::Offer {
@@ -1124,7 +1416,12 @@ async fn trade(
             item: peer_item.handle.get(),
         })
         .ok_or("race counter encoding")?;
-        while_serving(client, runtime::send(peer.session_mut(), &counter)).await?;
+        let counter = while_serving(client, runtime::send(peer.session_mut(), &counter)).await?;
+        if counter.state.trade_id != Some(id)
+            || !matches!(counter.result, runtime::player_trade::ResultCode::Offered | runtime::player_trade::ResultCode::Accepted)
+        {
+            return Err(format!("race counter-offer did not enter the offered trade: {counter:?}").into());
+        }
         let accept = runtime::PlayerTradeCommand::new(runtime::player_trade::Intent::Accept {
             trade_id: id,
         })
@@ -1150,8 +1447,7 @@ async fn trade(
         if logout_result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Err(format!("race logout refused: {logout_text}; attempts={attempts}; busy_timed_out={busy_timed_out}; peer accept={:?}", accepted.map(|r| r.result)).into());
         }
-        accepted?;
-        row.pass("logout-race", "partner-accept-raced-owner-logout-without-error");
+        let outcome = accepted?.result;
         *client = while_serving(&mut peer, connect_character(clients, 0x85, 1)).await?;
         let a = (item.item_definition_ref.get(), u64::from(item.count.get()));
         let b = (peer_item.item_definition_ref.get(), u64::from(peer_item.count.get()));
@@ -1168,6 +1464,25 @@ async fn trade(
             (&before_peer, "cancelled-unchanged")
         };
         while_serving(client, settle(&mut peer, "race-peer", |now| now == expected_peer)).await?;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        let closed = loop {
+            let state = peer.session_mut().player_trade_state();
+            if state.as_ref().is_some_and(|state| {
+                state.trade_id == Some(id) && state.phase == 4
+                    && if completed { state.reason == 1 } else { matches!(state.reason, 2 | 4) }
+            }) {
+                break true;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                break false;
+            }
+            while_serving(client, peer.service_liveness(Duration::from_millis(20))).await?;
+            peer.take_events();
+        };
+        if !race_custody_matches(outcome, !completed, completed, closed) {
+            return Err(format!("race disposition/custody mismatch: {outcome:?} {side}; closed={closed}").into());
+        }
+        row.pass("logout-race", "partner-accept-and-logout-resolved-the-same-trade");
         row.pass(
             "relog-custody",
             format!("fresh-admission-custody-exactly-{side}-on-both-sides"),
@@ -1280,21 +1595,31 @@ async fn logout(
     logout_idle(row, client, clients, world, failures).await
 }
 
+fn saved_logout_position(start: TilePos, saved: TilePos, restored: TilePos) -> bool {
+    saved != start && saved == restored
+}
+
 async fn logout_peer_checks(
     row: &mut Row,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult<Vec<String>> {
     let mut peer = connect_character(clients, 0x83, 0).await?;
-    let position = peer.world_spatial().actor_position;
-    if !world
-        .base()
-        .tile(tile(position)?.x, tile(position)?.y, tile(position)?.floor)
-        .is_some_and(|t| t.protection_zone())
-    {
+    let start = tile(peer.world_spatial().actor_position)?;
+    let path = route(world, start, |at| {
+        at != start
+            && at != TOWN
+            && world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| tile.protection_zone())
+    });
+    let Some(path) = path else {
         let (_, cleanup, attempts, busy_timed_out) = super::logout_retrying_busy(&mut peer).await?;
-        return Err(format!("logout peer is not on authored PZ tile: cleanup={cleanup}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
-    }
+        return Err(format!("logout peer has no reachable distinct authored PZ tile: cleanup={cleanup}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+    };
+    walk(&mut peer, world, &path).await?;
+    let position = tile(peer.world_spatial().actor_position)?;
     let session = peer.join_snapshot().game_session_id;
     let (result, logout, attempts, busy_timed_out) = super::logout_retrying_busy(&mut peer).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
@@ -1306,8 +1631,9 @@ async fn logout_peer_checks(
     row.pass("pz-logout", "authored-PZ-native-logout-accepted");
     drop(peer);
     let mut peer = connect_character(clients, 0x84, 0).await?;
-    let retained = peer.world_spatial().actor_position == position
-        && peer.join_snapshot().game_session_id != session;
+    let retained =
+        saved_logout_position(start, position, tile(peer.world_spatial().actor_position)?)
+            && peer.join_snapshot().game_session_id != session;
     let (cleanup_result, cleanup, attempts, busy_timed_out) =
         super::logout_retrying_busy(&mut peer).await?;
     if !retained || cleanup_result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
@@ -1449,6 +1775,48 @@ async fn logout_peer_checks(
     Ok(failures)
 }
 
+fn idle_removal_evidence(
+    warned: Option<Duration>,
+    removed: Duration,
+    admission: Duration,
+    eof: bool,
+    released: bool,
+) -> bool {
+    eof && released
+        && warned.is_some_and(|at| {
+            (Duration::from_secs(900)..=admission + Duration::from_secs(910)).contains(&at)
+        })
+        && (Duration::from_secs(960)..=admission + Duration::from_secs(980)).contains(&removed)
+}
+
+fn idle_transport_closed(error: &oteryn_dev_client::DevClientError) -> bool {
+    use oteryn_dev_client::{DevClientError, SessionError};
+    match error {
+        DevClientError::Context { source, .. } => idle_transport_closed(source),
+        DevClientError::Session(SessionError::Io(error)) => {
+            error.kind() == std::io::ErrorKind::UnexpectedEof
+        }
+        _ => false,
+    }
+}
+
+async fn idle_session_released(
+    clients: &SeamClients<'_>,
+    session: oteryn_protocol_oteryn::GameSessionId,
+) -> TestResult<bool> {
+    use sqlx::Connection as _;
+    tokio::time::timeout(Duration::from_secs(5), async {
+        let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+        let released = sqlx::query_scalar::<_, bool>(
+            "SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions              WHERE game_session_id=encode($1,'hex')::uuid AND session_state=3              AND control_loss_epoch IS NULL)"
+        )
+        .bind(session.as_bytes().as_slice())
+        .fetch_one(&mut connection)
+        .await?;
+        Ok(released)
+    }).await?
+}
+
 async fn logout_idle(
     row: &mut Row,
     client: &mut DevClientSession,
@@ -1460,7 +1828,9 @@ async fn logout_idle(
     // removal at 16), so this is a real wait. The peer stays silent; the main client acts once
     // at 14 minutes and must not be warned at 15.
     let idle: TestResult = async {
+        let admission_started = tokio::time::Instant::now();
         let mut silent = while_serving(client, connect_character(clients, 0x8c, 0)).await?;
+        let admission = admission_started.elapsed();
         let silent_session = silent.join_snapshot().game_session_id;
         let start = tokio::time::Instant::now();
         let mut warned_at = None;
@@ -1488,6 +1858,12 @@ async fn logout_idle(
                 client.service_liveness(Duration::from_secs(1)),
             );
             client_liveness?;
+            if notices(client)
+                .iter()
+                .any(|t| t.starts_with("There was no variation in your behaviour"))
+            {
+                warned_actor = true;
+            }
             match silent_liveness {
                 Ok(_) => {
                     if warned_at.is_none()
@@ -1495,16 +1871,20 @@ async fn logout_idle(
                             t.starts_with("There was no variation in your behaviour for 15 minutes")
                         })
                     {
-                        warned_at = Some(start.elapsed());
+                        warned_at = Some(admission_started.elapsed());
                     }
                 }
-                Err(_) => removed_at = Some(start.elapsed()),
-            }
-            if notices(client)
-                .iter()
-                .any(|t| t.starts_with("There was no variation in your behaviour"))
-            {
-                warned_actor = true;
+                Err(error) => {
+                    let at = admission_started.elapsed();
+                    let eof = idle_transport_closed(&error);
+                    let released = eof && while_serving(client, idle_session_released(clients, silent_session)).await?;
+                    if !idle_removal_evidence(warned_at, at, admission, eof, released)
+                        || start.elapsed() < Duration::from_secs(900)
+                    {
+                        return Err(format!("idle peer closed without timed terminal logout evidence: warning={warned_at:?} close={at:?} terminal={released}: {error}").into());
+                    }
+                    removed_at = Some(at);
+                }
             }
             beat(row);
         }
@@ -1520,8 +1900,9 @@ async fn logout_idle(
         }
         let mut errors: Vec<String> = Vec::new();
         match warned_at {
-            Some(at) => row.pass("idle-warning", format!("warned-at-{}s", at.as_secs())),
-            None => {
+            Some(at) if (Duration::from_secs(900)..=admission + Duration::from_secs(910)).contains(&at) =>
+                row.pass("idle-warning", format!("warned-at-{}s", at.as_secs())),
+            _ => {
                 errors.push("idle-warning: the silent peer received no 15-minute warning".into())
             }
         }
@@ -1531,7 +1912,7 @@ async fn logout_idle(
                     let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
                     loop {
                         progress();
-                        match connect_character(clients, 0x8d, 0).await {
+                        match tokio::time::timeout_at(deadline, connect_character(clients, 0x8d, 0)).await? {
                             Ok(mut again) => {
                                 let id = again.join_snapshot().game_session_id;
                                 let (done, text, ..) =
@@ -1600,27 +1981,35 @@ async fn logout_idle(
     }
 }
 
-fn heard(listener: &DevClientSession, mode: oteryn_dev_client::ChatSpeechMode, text: &str) -> bool {
-    listener.chat_log().is_some_and(|log| {
-        log.lines().any(|line| {
-            matches!(
-                line,
-                oteryn_dev_client::ChatLine::Local { mode: seen, text: said, .. }
-                    if *seen == mode && said == text
-            )
-        })
-    })
+fn speech_matches(
+    line: &oteryn_dev_client::ChatLine,
+    sequence: u64,
+    boundary: u64,
+    speaker: oteryn_dev_client::ChatSpeaker,
+    mode: oteryn_dev_client::ChatSpeechMode,
+    text: &str,
+) -> bool {
+    sequence > boundary
+        && matches!(line, oteryn_dev_client::ChatLine::Local {
+            speaker: source, mode: seen, text: said, ..
+        } if *source == speaker && *seen == mode && said == text)
 }
 
 async fn listen(
     listener: &mut DevClientSession,
+    boundary: u64,
+    speaker: oteryn_dev_client::ChatSpeaker,
     mode: oteryn_dev_client::ChatSpeechMode,
     text: &str,
     window: Duration,
 ) -> TestResult<bool> {
     let deadline = tokio::time::Instant::now() + window;
     loop {
-        if heard(listener, mode, text) {
+        if listener
+            .take_events()
+            .into_iter()
+            .any(|event| speech_event(event, boundary, speaker, mode, text))
+        {
             return Ok(true);
         }
         if tokio::time::Instant::now() >= deadline {
@@ -1628,8 +2017,18 @@ async fn listen(
         }
         progress();
         listener.service_liveness(Duration::from_millis(20)).await?;
-        listener.take_events();
     }
+}
+
+fn speech_event(
+    event: oteryn_dev_client::SessionEvent,
+    boundary: u64,
+    speaker: oteryn_dev_client::ChatSpeaker,
+    mode: oteryn_dev_client::ChatSpeechMode,
+    text: &str,
+) -> bool {
+    matches!(event, oteryn_dev_client::SessionEvent::ChatLine(delta)
+        if speech_matches(&delta.value, delta.server_sequence, boundary, speaker, mode, text))
 }
 
 async fn speech_cooldown(client: &mut DevClientSession, peer: &mut DevClientSession) -> TestResult {
@@ -1640,7 +2039,15 @@ async fn speech_cooldown(client: &mut DevClientSession, peer: &mut DevClientSess
     );
     speaker?;
     listener?;
+    client.take_events();
+    peer.take_events();
     Ok(())
+}
+
+fn far_speech_position(speaker: TilePos, listener: TilePos) -> bool {
+    speaker.floor == listener.floor
+        && speaker.x.abs_diff(listener.x) >= 10
+        && speaker.y.abs_diff(listener.y) <= 2
 }
 
 async fn speech(
@@ -1657,7 +2064,30 @@ async fn speech(
         let other = tile(peer.world_spatial().actor_position)?;
         while_serving(&mut peer, approach_peer_tile(client, other, world)).await?;
         let window = Duration::from_secs(5);
+        let client_level = while_serving(&mut peer, full_e2ef5::level(client)).await?;
+        let peer_level = while_serving(client, full_e2ef5::level(&mut peer)).await?;
+        let negative = ChatIntent::Say { mode: ChatSpeechMode::Yell, text: "E2EF4 ineligible yell".into() };
+        let refused = if peer_level < 20 {
+            while_serving(client, peer.chat(&negative)).await?.disposition
+        } else if client_level < 20 {
+            while_serving(&mut peer, client.chat(&negative)).await?.disposition
+        } else {
+            return Err("S18 needs one observed speaker below the free yell level".into());
+        };
+        if client_level < 20 {
+            let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+            let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+            while_serving(&mut peer, full_e2ef6::earn_death_prerequisites(
+                client, world, &metadata.spawns, 20, 0,
+            )).await?;
+            while_serving(&mut peer, approach_peer_tile(client, other, world)).await?;
+        }
         let mut yell_client = None;
+        let own = own(client)?;
+        let speaker = oteryn_dev_client::ChatSpeaker {
+            identity: own.identity,
+            generation: own.generation.try_into()?,
+        };
         for (action, mode) in [
             ("say", ChatSpeechMode::Say),
             ("whisper", ChatSpeechMode::Whisper),
@@ -1669,7 +2099,16 @@ async fn speech(
                 mode,
                 text: text.clone(),
             };
-            let result = while_serving(&mut peer, client.chat(&intent)).await?;
+            let speaker_boundary = client.last_server_sequence();
+            let listener_boundary = peer.last_server_sequence();
+            let expected = if mode == ChatSpeechMode::Yell { text.to_uppercase() } else { text };
+            let mut delivered = false;
+            let mut witness = |event| {
+                delivered |= speech_event(event, listener_boundary, speaker, mode, &expected);
+            };
+            let result = full_e2ef5::with_observer_events(&mut peer, async {
+                Ok(client.chat(&intent).await?)
+            }, &mut witness).await?;
             if mode == ChatSpeechMode::Yell {
                 yell_client = Some(result.disposition);
             }
@@ -1680,14 +2119,11 @@ async fn speech(
                 ));
                 continue;
             }
-            let expected = if mode == ChatSpeechMode::Yell {
-                text.to_uppercase()
-            } else {
-                text
-            };
-            if !while_serving(&mut peer, listen(client, mode, &expected, window)).await? {
+            if !full_e2ef5::with_observer_events(
+                &mut peer, listen(client, speaker_boundary, speaker, mode, &expected, window), witness,
+            ).await? {
                 failures.push(format!("{action}: own local line absent"));
-            } else if !while_serving(client, listen(&mut peer, mode, &expected, window)).await? {
+            } else if !delivered && !while_serving(client, listen(&mut peer, listener_boundary, speaker, mode, &expected, window)).await? {
                 failures.push(format!("{action}: adjacent real peer never heard it"));
             } else {
                 row.pass(action, "speaker-and-adjacent-listener-exact-mode-and-text");
@@ -1701,9 +2137,6 @@ async fn speech(
                 && (3..=5).contains(&at.x.abs_diff(other.x))
                 && at.y.abs_diff(other.y) <= 2
         });
-        let far = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            at.floor == other.floor && at.x.abs_diff(other.x) >= 10 && at.y.abs_diff(other.y) <= 2
-        });
         let mut range_proof = Vec::new();
         match near {
             Some(path) => {
@@ -1713,10 +2146,16 @@ async fn speech(
                     mode: ChatSpeechMode::Whisper,
                     text: "E2EF4 range whisper".into(),
                 };
-                let result = while_serving(&mut peer, client.chat(&intent)).await?;
+                let listener_boundary = peer.last_server_sequence();
+                let mut delivered = false;
+                let result = full_e2ef5::with_observer_events(&mut peer, async {
+                    Ok(client.chat(&intent).await?)
+                }, |event| {
+                    delivered |= speech_event(event, listener_boundary, speaker, ChatSpeechMode::Whisper, "pspsps");
+                }).await?;
                 if result.disposition != ChatDisposition::Ok {
                     failures.push(format!("range: whisper refused: {:?}", result.disposition));
-                } else if while_serving(client, listen(&mut peer, ChatSpeechMode::Whisper, "pspsps", window)).await? {
+                } else if delivered || while_serving(client, listen(&mut peer, listener_boundary, speaker, ChatSpeechMode::Whisper, "pspsps", window)).await? {
                     range_proof.push("whisper-obscured-at-distance");
                 } else {
                     failures.push("range: distant whisper was not delivered obscured as pspsps".into());
@@ -1724,21 +2163,40 @@ async fn speech(
             }
             None => failures.push("range: no authored tile 3-5 columns from the peer".into()),
         }
+        let far = route(world, tile(client.world_spatial().actor_position)?, |at| {
+            far_speech_position(at, other)
+        });
         match far {
             Some(path) => {
                 while_serving(&mut peer, walk(client, world, &path)).await?;
+                if !far_speech_position(
+                    tile(client.world_spatial().actor_position)?,
+                    tile(peer.world_spatial().actor_position)?,
+                ) {
+                    return Err("S18 walked endpoint did not establish far-say range".into());
+                }
                 speech_cooldown(client, &mut peer).await?;
                 let text = "E2EF4 range say";
                 let intent = ChatIntent::Say {
                     mode: ChatSpeechMode::Say,
                     text: text.into(),
                 };
-                let result = while_serving(&mut peer, client.chat(&intent)).await?;
+                let speaker_boundary = client.last_server_sequence();
+                let listener_boundary = peer.last_server_sequence();
+                let mut delivered = false;
+                let mut witness = |event| {
+                    delivered |= speech_event(event, listener_boundary, speaker, ChatSpeechMode::Say, text);
+                };
+                let result = full_e2ef5::with_observer_events(&mut peer, async {
+                    Ok(client.chat(&intent).await?)
+                }, &mut witness).await?;
                 if result.disposition != ChatDisposition::Ok {
                     failures.push(format!("range: far say refused: {:?}", result.disposition));
-                } else if !while_serving(&mut peer, listen(client, ChatSpeechMode::Say, text, window)).await? {
+                } else if !full_e2ef5::with_observer_events(&mut peer,
+                    listen(client, speaker_boundary, speaker, ChatSpeechMode::Say, text, window), witness,
+                ).await? {
                     failures.push("range: far say has no own local line".into());
-                } else if while_serving(client, listen(&mut peer, ChatSpeechMode::Say, text, Duration::from_secs(2))).await? {
+                } else if delivered || while_serving(client, listen(&mut peer, listener_boundary, speaker, ChatSpeechMode::Say, text, Duration::from_secs(2))).await? {
                     failures.push("range: say beyond eight tiles was heard".into());
                 } else {
                     range_proof.push("say-unheard-beyond-eight-tiles");
@@ -1749,19 +2207,13 @@ async fn speech(
         if range_proof.len() == 2 {
             row.pass("range", range_proof.join("+"));
         }
-        // Yell level/premium matrix: the same refusal rule for both real players.
-        speech_cooldown(client, &mut peer).await?;
-        let intent = ChatIntent::Say {
-            mode: ChatSpeechMode::Yell,
-            text: "E2EF4 peer yell".into(),
-        };
-        let yell_peer = while_serving(client, peer.chat(&intent)).await?.disposition;
-        // The matrix needs one refused ineligible speaker and one accepted eligible speaker.
-        // Two starter characters are both level 1 and non-premium, so it can never be proven
-        // here; two accepted yells would show the gate is missing, not that it holds.
-        failures.push(format!(
-            "yell-level-premium: yell dispositions client={yell_client:?} peer={yell_peer:?}; the matrix needs a level 20 or premium character that real play cannot reach in node boot"
-        ));
+        if yell_client.is_some_and(|accepted| yell_matrix_matches(refused, accepted))
+            && row.passed.contains("yell")
+        {
+            row.pass("yell-level-premium", "underlevel-refusal-and-earned-eligible-yell-delivered");
+        } else {
+            failures.push(format!("yell-level-premium: ineligible={refused:?}; eligible={yell_client:?}"));
+        }
         speech_cooldown(client, &mut peer).await?;
         let last = while_serving(&mut peer, async {
             let mut last = None;
@@ -1801,4 +2253,194 @@ async fn speech(
         return Err(format!("speech peer cleanup logout refused: {cleanup}; attempts={attempts}; busy_timed_out={busy_timed_out}; journey={result:?}").into());
     }
     result
+}
+
+#[cfg(test)]
+mod shop_tests {
+    use super::sell_all_matches;
+
+    #[test]
+    fn rejects_partial_sell_all_even_when_gold_matches() {
+        assert!(!sell_all_matches(2, 1, 7, 7));
+        assert!(sell_all_matches(2, 2, 14, 7));
+    }
+}
+
+#[cfg(test)]
+mod trade_tests {
+    use super::race_custody_matches;
+    use oteryn_protocol_oteryn::player_trade::ResultCode::*;
+
+    #[test]
+    fn race_requires_a_closed_trade_with_matching_disposition_and_custody() {
+        assert!(race_custody_matches(Completed, false, true, true));
+        assert!(race_custody_matches(Stale, true, false, true));
+        assert!(!race_custody_matches(Rejected, true, false, true));
+        assert!(!race_custody_matches(Completed, true, false, true));
+        assert!(!race_custody_matches(Stale, true, false, false));
+    }
+
+    #[test]
+    fn equal_trade_lots_cannot_prove_a_swap() {
+        assert!(!distinguishable_lots((46, 1), (46, 1)));
+        assert!(distinguishable_lots((46, 1), (47, 1)));
+        assert!(distinguishable_lots((46, 1), (46, 2)));
+    }
+
+    use super::distinguishable_lots;
+}
+
+#[cfg(test)]
+mod position_tests {
+    use super::*;
+
+    #[test]
+    fn spawn_alone_cannot_prove_position_persistence() {
+        let spawn = TilePos {
+            x: 10,
+            y: 20,
+            floor: -7,
+        };
+        let moved = TilePos { x: 11, ..spawn };
+        assert!(!saved_logout_position(spawn, spawn, spawn));
+        assert!(!saved_logout_position(spawn, moved, spawn));
+        assert!(saved_logout_position(spawn, moved, moved));
+    }
+}
+
+#[cfg(test)]
+mod idle_tests {
+    use super::*;
+
+    #[test]
+    fn idle_release_requires_timed_warning_and_terminal_logout() {
+        let valid = |warning, removal, eof, released| {
+            idle_removal_evidence(
+                Some(Duration::from_secs(warning)),
+                Duration::from_secs(removal),
+                Duration::from_secs(2),
+                eof,
+                released,
+            )
+        };
+        assert!(valid(902, 963, true, true));
+        assert!(!valid(3, 963, true, true));
+        assert!(!valid(902, 904, true, true));
+        assert!(!valid(902, 963, false, true));
+        assert!(!valid(902, 963, true, false));
+    }
+}
+
+#[cfg(test)]
+mod speech_tests {
+    use super::*;
+    use oteryn_dev_client::{ChatLine, ChatSpeaker, ChatSpeechMode};
+
+    #[test]
+    fn whisper_requires_the_current_command_and_exact_speaker() -> TestResult {
+        let speaker = ChatSpeaker {
+            identity: [1; 16],
+            generation: 1u64.try_into()?,
+        };
+        let impostor = ChatSpeaker {
+            identity: [2; 16],
+            ..speaker
+        };
+        let line = ChatLine::Local {
+            speaker,
+            speaker_name: "Speaker".into(),
+            mode: ChatSpeechMode::Whisper,
+            text: "pspsps".into(),
+            position: ActorPosition {
+                x: 20,
+                y: 20,
+                floor: 7,
+            },
+        };
+        let matches = |sequence, expected| {
+            speech_matches(
+                &line,
+                sequence,
+                20,
+                expected,
+                ChatSpeechMode::Whisper,
+                "pspsps",
+            )
+        };
+        assert!(matches(21, speaker));
+        assert!(!matches(20, speaker));
+        assert!(!matches(21, impostor));
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod coin_plan_tests {
+    use super::*;
+
+    #[test]
+    fn coin_steps_use_an_independently_funded_crystal_before_platinum_upgrade() {
+        let mut counts = [100_u64, 0, 0];
+        for (action, _, _, spend, spent, gain, gained) in coin_steps() {
+            if action == "crystal-down" {
+                counts[2] += 1;
+            }
+            assert!(counts[spend] >= spent, "{action}: {counts:?}");
+            counts[spend] -= spent;
+            counts[gain] += gained;
+        }
+        assert_eq!(counts, [100, 0, 1]);
+    }
+}
+
+#[cfg(test)]
+mod eligibility_tests {
+    use super::*;
+    use oteryn_dev_client::ChatDisposition;
+
+    #[test]
+    fn converter_cannot_pass_without_observed_charge_or_retirement() {
+        assert!(converter_charge_matches(500, Some(499), false));
+        assert!(converter_charge_matches(1, None, true));
+        assert!(!converter_charge_matches(500, Some(500), false));
+        assert!(!converter_charge_matches(2, None, true));
+    }
+
+    #[test]
+    fn yell_matrix_requires_typed_level_refusal_and_eligible_delivery() {
+        assert!(yell_matrix_matches(
+            ChatDisposition::LevelTooLow,
+            ChatDisposition::Ok
+        ));
+        assert!(!yell_matrix_matches(
+            ChatDisposition::Muted,
+            ChatDisposition::Ok
+        ));
+        assert!(!yell_matrix_matches(
+            ChatDisposition::Ok,
+            ChatDisposition::Ok
+        ));
+    }
+}
+
+#[cfg(test)]
+mod speech_range_tests {
+    use super::*;
+
+    #[test]
+    fn far_say_requires_the_walk_to_reach_the_range_from_the_actual_origin() {
+        let listener = TilePos {
+            x: 100,
+            y: 100,
+            floor: -7,
+        };
+        assert!(!far_speech_position(
+            TilePos { x: 107, ..listener },
+            listener
+        ));
+        assert!(far_speech_position(
+            TilePos { x: 110, ..listener },
+            listener
+        ));
+    }
 }

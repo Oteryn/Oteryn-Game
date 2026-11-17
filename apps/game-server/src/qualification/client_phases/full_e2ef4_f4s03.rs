@@ -11,20 +11,11 @@ async fn with_liveness<T>(
     idle: &mut DevClientSession,
     operation: impl std::future::Future<Output = TestResult<T>>,
 ) -> TestResult<T> {
-    let mut operation = std::pin::pin!(operation);
-    let mut tick = tokio::time::interval(Duration::from_millis(250));
-    tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
-    loop {
-        tokio::select! {
-            biased;
-            result = &mut operation => return result,
-            _ = tick.tick() => {
-                progress();
-                idle.service_liveness(Duration::from_millis(20)).await?;
-                idle.take_events();
-            }
-        }
+    let result = full_e2ef5::with_observer_liveness(idle, operation).await;
+    if result.is_ok() {
+        progress();
     }
+    result
 }
 
 /// Also feed progress during a single-session admission or a long hunt.
@@ -214,20 +205,90 @@ pub(super) async fn run(
         }
         // Both characters stay in the unchanged harness world; no island or Oracle flow.
         let mut peer = with_liveness(client, connect_character(clients, 0x89, 0)).await?;
-        let journey = play(row, client, &mut peer, clients, deposited).await;
-        let cleanup = with_liveness(client, logout_peer(&mut peer)).await;
-        cleanup.map_err(|error| format!("S03 cleanup: {error};journey={journey:?}"))?;
-        journey?;
-        // Check the player bank through its NPC as well as through the guild bank view.
-        let actor = approach_npc(client, world, banker).await?;
-        speak(client, actor, "hi").await?;
-        if bank_balance(client, actor).await? != deposited - 2 {
-            return Err("S03 personal bank differs from guild ledger settlement".into());
+        let mut created = [None, None];
+        let journey = async {
+            play(row, client, &mut peer, clients, deposited, &mut created).await?;
+            let actor = with_liveness(&mut peer, approach_npc(client, world, banker)).await?;
+            with_liveness(&mut peer, speak(client, actor, "hi")).await?;
+            if with_liveness(&mut peer, bank_balance(client, actor)).await? != deposited - 2 {
+                return Err("S03 personal bank differs from guild ledger settlement".into());
+            }
+            TestResult::Ok(())
+        }.await;
+        let rival = cleanup_guild(&mut peer, client, created[1].as_deref()).await;
+        let leader = cleanup_guild(client, &mut peer, created[0].as_deref()).await;
+        let logout = with_liveness(client, logout_peer(&mut peer)).await;
+        if rival.is_err() || leader.is_err() || logout.is_err() {
+            return Err(format!("S03 cleanup: rival={rival:?}; leader={leader:?}; logout={logout:?}; journey={journey:?}").into());
         }
+        journey?;
         row.missing_server = Some("source:crates/protocol-oteryn/src/guild.rs:17");
         Err("MOTD-write-unavailable;source:crates/protocol-oteryn/src/guild.rs:17".into())
     })
     .await
+}
+
+fn created_guild_for_cleanup(created: Option<&str>, actual: &str) -> bool {
+    created == Some(actual)
+}
+
+async fn cleanup_guild(
+    founder: &mut DevClientSession,
+    peer: &mut DevClientSession,
+    created: Option<&str>,
+) -> TestResult {
+    if created.is_none() {
+        return Ok(());
+    }
+    let mut panel = ui::GuildPanel {
+        selected: true,
+        ..Default::default()
+    };
+    request(founder, peer, &mut panel, ui::Intent::RefreshOwn).await?;
+    let Some(guild) = panel
+        .own
+        .as_ref()
+        .filter(|guild| created_guild_for_cleanup(created, &guild.name))
+    else {
+        return Ok(());
+    };
+    let id = guild.guild;
+    bank_request(
+        founder,
+        peer,
+        id,
+        Some(bank::GuildBankAction::Disband(guild.name.clone())),
+    )
+    .await?;
+    // The disband reply starts the World job. Only the later membership
+    // removal makes founding on the same pair repeatable.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(420);
+    loop {
+        request(founder, peer, &mut panel, ui::Intent::RefreshOwn).await?;
+        match &panel.own {
+            None => break,
+            Some(own) if own.guild == id && own.state == 3 => {}
+            other => {
+                return Err(format!("S03 unexpected membership after disband: {other:?}").into());
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("S03 disband job retained founder membership past its deadline".into());
+        }
+        let (founder_live, peer_live) = tokio::join!(
+            founder.service_liveness(Duration::from_secs(2)),
+            peer.service_liveness(Duration::from_secs(2)),
+        );
+        founder_live?;
+        peer_live?;
+        founder.take_events();
+        peer.take_events();
+    }
+    let payout = bank_request(founder, peer, id, None).await?;
+    if payout.claim != 0 {
+        bank_request(founder, peer, id, Some(bank::GuildBankAction::Claim)).await?;
+    }
+    Ok(())
 }
 
 async fn play(
@@ -236,6 +297,7 @@ async fn play(
     peer: &mut DevClientSession,
     clients: &SeamClients<'_>,
     personal_balance: u64,
+    created: &mut [Option<String>; 2],
 ) -> TestResult {
     let mut leader = ui::GuildPanel {
         selected: true,
@@ -248,6 +310,7 @@ async fn play(
     if leader.own.is_some() || member.own.is_some() {
         return Err("S03 founding requires both real players to have no guild".into());
     }
+    created[0] = Some(name.clone());
     request(client, peer, &mut leader, ui::Intent::Found(name.clone())).await?;
     request(client, peer, &mut leader, ui::Intent::RefreshOwn).await?;
     let guild = summary(&leader)?.guild;
@@ -445,6 +508,7 @@ async fn play(
         return Err("S03 war opponent retained old membership".into());
     }
     let opponent_name = guild_name(peer, "Rival");
+    created[1] = Some(opponent_name.clone());
     request(
         peer,
         client,
@@ -484,4 +548,16 @@ async fn play(
         "leader-declared-valid-terms-opposing-leader-accepted-same-war",
     );
     Ok(())
+}
+
+#[cfg(test)]
+mod guild_cleanup_tests {
+    use super::*;
+
+    #[test]
+    fn cleanup_disbands_the_guild_created_by_a_failed_journey() {
+        assert!(created_guild_for_cleanup(Some("Sage A"), "Sage A"));
+        assert!(!created_guild_for_cleanup(Some("Sage A"), "Other Guild"));
+        assert!(!created_guild_for_cleanup(None, "Other Guild"));
+    }
 }

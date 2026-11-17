@@ -63,6 +63,15 @@ const HASTE_ACTIONS: &[&str] = &[
 ];
 
 pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
+    rune_rows(clients, world).await;
+    combat_rows(clients, world).await;
+    companion_rows(clients, world).await;
+    tile_item_row(clients, world).await;
+}
+
+pub(super) const SUPPORT_CHARACTER: usize = 0;
+
+pub(super) async fn support_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
     // An error, including admission failure, belongs to one row only.
     for (id, actions, tag, limit) in [
         ("C17a", HASTE_ACTIONS, 0xa4, 140),
@@ -72,7 +81,7 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
         let watch = row.0.watch();
         let result: TestResult = async {
             let _row = watch.enter();
-            let mut client = connect_world(clients, tag).await?;
+            let mut client = connect_character(clients, tag, SUPPORT_CHARACTER).await?;
             let mut completed = false;
             let deadline =
                 format!("{id} native journey exceeded {limit}s; remaining actions unproven");
@@ -81,7 +90,7 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
                     let result = if id == "C17a" {
                         haste(&mut row, &mut client, clients, world).await
                     } else {
-                        illusion(&mut row, &mut client, clients).await
+                        illusion(&mut row, &mut client, clients, world).await
                     };
                     completed = true;
                     result
@@ -111,10 +120,6 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
         .await;
         row.finish(result);
     }
-    rune_rows(clients, world).await;
-    combat_rows(clients, world).await;
-    companion_rows(clients, world).await;
-    tile_item_row(clients, world).await;
 }
 
 fn own_binding(client: &mut DevClientSession) -> TestResult<Binding> {
@@ -147,7 +152,7 @@ fn level_from_stats(payload: &[u8], vocation_selected: bool) -> TestResult<u32> 
     }
     Ok(u32::from_le_bytes(payload[9..13].try_into()?))
 }
-async fn level(client: &mut DevClientSession) -> TestResult<u32> {
+pub(super) async fn level(client: &mut DevClientSession) -> TestResult<u32> {
     use oteryn_protocol_oteryn::cyclopedia_character as wire;
     let request = [wire::CharacterTab::GeneralStats as u8, 0, 0, 1];
     let result = client
@@ -193,7 +198,7 @@ async fn fresh(
         .copied()
         .ok_or("E2EF5 logout vitals absent")?;
     logout(client).await?;
-    *client = connect_world(clients, tag).await?;
+    *client = connect_character(clients, tag, SUPPORT_CHARACTER).await?;
     if previous == client.join_snapshot().game_session_id
         || client.world_spatial().actor_position != position
         || client
@@ -252,10 +257,52 @@ async fn pump(
     observe(client, appearance_sequence, messages)
 }
 
+fn spell_progression_target(current: u32, required: u32, first_vocation: bool) -> Option<u32> {
+    let target = required.max(if first_vocation { 8 } else { 1 });
+    (current < target).then_some(target)
+}
+
+pub(super) async fn prepare_spell_progression(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spell: &crate::spell::SpellDefinition,
+) -> TestResult {
+    use oteryn_protocol_oteryn::cyclopedia_character as wire;
+    let stats = client.session_mut().gated_command(
+        wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+        wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+        &[wire::CharacterTab::GeneralStats as u8, 0, 0, 1],
+    ).await?;
+    if stats.status != CommandStatus::Accepted {
+        return Err(format!("spell progression stats refused: {stats:?}").into());
+    }
+    let selected = general_stats::selected(client);
+    let current = level_from_stats(&stats.payload, selected)?;
+    let vocation = general_stats::validate(&stats.payload, selected)?
+        .ok_or("spell progression requires the negotiated live vocation")?;
+    let first_vocation = vocation == 1
+        && !spell.vocations.is_empty()
+        && !spell.vocations.contains(&crate::spell::Vocation::None);
+    if let Some(target) = spell_progression_target(current, spell.level, first_vocation) {
+        let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+        let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+        super::full_e2ef6::earn_death_prerequisites(client, world, &metadata.spawns, target, 0).await?;
+    }
+    if first_vocation {
+        let vocation = ["sorcerer", "druid", "monk", "knight", "paladin"]
+            .into_iter().find(|key| crate::spell::Vocation::from_key(key)
+                .is_some_and(|vocation| spell.vocations.contains(&vocation)))
+            .ok_or("no base vocation can cast the authored spell")?;
+        player_first_vocation(client, world, vocation).await?;
+    }
+    spell_ready(client, spell).await
+}
+
 async fn illusion(
     row: &mut Row,
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
+    world: &BundleWorld,
 ) -> TestResult {
     let input = native_input()?;
     let book = native_spell_book()?;
@@ -300,6 +347,10 @@ async fn illusion(
         colours: serde_json::from_value(rat["colours"].clone())?,
         addons: u8::try_from(rat["addons"].as_u64().ok_or("C17c rat addons")?)?,
     };
+    prepare_spell_progression(client, world, spell).await?;
+    player_logout(client).await?;
+    *client = connect_character(clients, 0xa1, SUPPORT_CHARACTER).await?;
+    spell_ready(client, spell).await?;
     let mut binding = own_binding(client)?;
     let baseline = binding.look.clone();
     if baseline == expected {
@@ -314,7 +365,7 @@ async fn illusion(
     let cast_started = tokio::time::Instant::now();
     let cast = say(client, words).await?;
     if cast.status != CommandStatus::Accepted || cast.disposition != ChatDisposition::Ok {
-        return Err(format!("C17c legitimate player cast refused: status={:?} disposition={:?}; observed_level={player_level} required_level={} observed_mana={} required_mana={mana} required_vocations={:?}; ordinary starter has no journey to a qualifying vocation/level; source:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/spells.rs:225", cast.status, cast.disposition, spell.level, before.mana, spell.vocations).into());
+        return Err(format!("C17c legitimate player cast refused: status={:?} disposition={:?}; observed_level={player_level} required_level={} observed_mana={} required_mana={mana} required_vocations={:?}; source:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/spells.rs:225", cast.status, cast.disposition, spell.level, before.mana, spell.vocations).into());
     }
     if player_level < spell.level {
         return Err("C17c server accepted illusion below its required level".into());
@@ -715,10 +766,23 @@ async fn haste(
                 .ok_or("C17a invalid speed condition duration")?;
         Ok(Duration::from_millis(ms))
     };
-    let player_level = level(client).await?;
-    if player_level < haste.level {
-        return Err(format!("C17a player level frame={player_level}, Haste requires level {}, Strong Haste requires level {}; this packet has no legitimate advancement/vocation journey; source:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/spells.rs:225", haste.level, strong.level).into());
+    if level(client).await? < haste.level {
+        use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
+        let before = client.actor_vitals().copied().ok_or("underlevel Haste vitals absent")?;
+        let refused = client.cast_spell(player_spell_index(book, "utani hur")?, SpellTarget::None, false).await?;
+        level(client).await?;
+        if refused.disposition != SpellCastDisposition::LevelTooLow
+            || refused.actor_vitals_delta.is_some()
+            || client.actor_vitals().is_none_or(|after| after.mana < before.mana || after.soul < before.soul)
+        {
+            return Err(format!("C17a underlevel Haste did not refuse without payment: {refused:?}").into());
+        }
     }
+    prepare_spell_progression(client, world, strong).await?;
+    player_logout(client).await?;
+    *client = connect_character(clients, 0xa4, SUPPORT_CHARACTER).await?;
+    spell_ready(client, haste).await?;
+    let player_level = level(client).await?;
     let haste_duration = duration(haste)?;
     let strong_duration = duration(strong)?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
@@ -986,17 +1050,42 @@ pub(super) async fn rune_cleanup(client: &mut DevClientSession, world: &BundleWo
     close
 }
 
-// An independently admitted observer must answer native liveness while the
-// other player walks or waits out combat logout. Keep pushed evidence queued.
+// Keep observer frame reads and the other player's command alive together.
 pub(super) async fn with_observer_liveness<T>(
     observer: &mut DevClientSession,
     operation: impl std::future::Future<Output = TestResult<T>>,
 ) -> TestResult<T> {
+    with_observer_events(observer, operation, |_| {}).await
+}
+
+pub(super) async fn with_observer_events<T>(
+    observer: &mut DevClientSession,
+    operation: impl std::future::Future<Output = TestResult<T>>,
+    mut event: impl FnMut(SessionEvent),
+) -> TestResult<T> {
+    service_observer(
+        observer,
+        operation,
+        async |observer: &mut DevClientSession| {
+            observer.service_liveness(Duration::from_millis(50)).await?;
+            Ok(())
+        },
+        |observer| observer.take_events().into_iter().for_each(&mut event),
+    ).await
+}
+
+pub(super) async fn service_observer<T, O>(
+    observer: &mut O,
+    operation: impl std::future::Future<Output = TestResult<T>>,
+    mut service: impl AsyncFnMut(&mut O) -> TestResult,
+    mut drain: impl FnMut(&mut O),
+) -> TestResult<T> {
     let mut operation = std::pin::pin!(operation);
     let mut completed = None;
     loop {
-        let mut service = std::pin::pin!(observer.service_liveness(Duration::from_millis(50)));
-        let serviced = std::future::poll_fn(|context| {
+        let serviced = {
+            let mut service = std::pin::pin!(service(observer));
+            std::future::poll_fn(|context| {
             if completed.is_none()
                 && let std::task::Poll::Ready(result) = operation.as_mut().poll(context)
             {
@@ -1006,7 +1095,9 @@ pub(super) async fn with_observer_liveness<T>(
             // cancelling service_liveness mid-frame would corrupt this socket.
             service.as_mut().poll(context)
         })
-        .await;
+            .await
+        };
+        drain(observer);
         if let Err(error) = serviced {
             // In particular, let peer cleanup finish if the caster connection
             // failed. Do not cancel a logout/return operation with its observer.
@@ -1015,7 +1106,7 @@ pub(super) async fn with_observer_liveness<T>(
             } else {
                 operation.await?;
             }
-            return Err(error.into());
+            return Err(error);
         }
         if let Some(result) = completed.take() {
             return result;
@@ -1035,6 +1126,7 @@ async fn player_logout(client: &mut DevClientSession) -> TestResult {
             return Err(format!("player logout still refused after combat wait: {reply:?}").into());
         }
         client.service_liveness(Duration::from_millis(250)).await?;
+        client.take_events();
     }
 }
 
@@ -1101,6 +1193,8 @@ pub(super) async fn acquire_rune(
         .collect();
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let price = full_gold::price(id, 2)?;
+    full_gold::earn(client, world, &metadata.spawns, "C16-rune", price).await?;
     let here = tile(client.world_spatial().actor_position)?;
     let selected = metadata
         .npcs
@@ -1178,7 +1272,7 @@ pub(super) async fn acquire_rune(
     )
     .await?;
     if reply != wire::NpcIntentDisposition::Ok {
-        return Err(format!("rune {id} player purchase refused by {}: {reply:?}; quantity=2 unit_price={} observed_balances={balances:?} carried_quantity={before}; no earned funds or rune were granted by this journey; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:1", npc.key, offer.unit_price).into());
+        return Err(format!("rune {id} player purchase refused by {}: {reply:?}; quantity=2 unit_price={} observed_balances={balances:?} carried_quantity={before}; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:1", npc.key, offer.unit_price).into());
     }
     let expected = before
         .checked_add(u64::from(offer.count) * 2)
@@ -1254,6 +1348,14 @@ async fn rune_use(
     Ok((disposition, reply.server_sequence))
 }
 
+fn cross_floor_target(floor: i16, basis: super::spatial_basis::Basis) -> i16 {
+    use super::spatial_basis::Basis;
+    match (basis, floor) {
+        (Basis::Native, -15) | (Basis::Legacy, 0) => floor + 1,
+        _ => floor - 1,
+    }
+}
+
 async fn illegal_floor(
     client: &mut DevClientSession,
     reference: std::num::NonZeroU32,
@@ -1267,11 +1369,7 @@ async fn illegal_floor(
         .copied()
         .ok_or("rune refusal vitals absent")?;
     let mut wrong = client.world_spatial().actor_position;
-    wrong.floor = if wrong.floor == -15 {
-        -14
-    } else {
-        wrong.floor - 1
-    };
+    wrong.floor = cross_floor_target(wrong.floor, super::spatial_basis::current(client)?);
     let (reply, sequence) = rune_use(client, reference, None, Some(wrong)).await?;
     if reply != oteryn_protocol_oteryn::world_object::UseDisposition::TargetIllegal {
         return Err(format!("cross-floor rune expected TargetIllegal, observed {reply:?}").into());
@@ -3066,6 +3164,10 @@ async fn companion_speech_refusal(client: &mut DevClientSession, words: &str) ->
     Ok(reply.result_server_sequence)
 }
 
+fn companion_moved(start: ActorPosition, observed: ActorPosition, delta_seen: bool) -> bool {
+    delta_seen || observed != start
+}
+
 // Ownership is behavioral: this exact creature follows the owner's movement,
 // then attacks the owner's exact selected enemy. No master bit is inferred
 // from a name, placement or a successful cast command.
@@ -3103,7 +3205,7 @@ async fn companion_behavior(
         }
         let owner = client.world_spatial().actor_position;
         let entry = creature(client, owned)?;
-        if followed
+        if companion_moved(start, entry.position, followed)
             && entry.position.floor == owner.floor
             && entry
                 .position
@@ -3192,6 +3294,7 @@ async fn wild_rat(
             return Err(format!("compiled rat spawn needs one exact named live target, observed {} (owned exclusions={excluded:?})", candidates.len()).into());
         }
         client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
     }
 }
 
@@ -3221,7 +3324,7 @@ async fn companion_logout(
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
-    let mut observer = connect_character(clients, tag, 0).await?;
+    let mut observer = with_observer_liveness(client, connect_character(clients, tag, 0)).await?;
     let result: TestResult<_> = async {
         let owner_position = tile(client.world_spatial().actor_position)?;
         let path = route(
@@ -3248,8 +3351,12 @@ async fn companion_logout(
             .copied()
             .ok_or("logout companion vitals absent")?;
         observer.take_events();
-        with_observer_liveness(&mut observer, player_logout(client)).await?;
-        let removal = companion_leaves(&mut observer, owned).await?;
+        let mut remaining: BTreeSet<_> = owned.iter().copied().collect();
+        let mut sequence = 0;
+        with_observer_events(&mut observer, player_logout(client), |event| {
+            companion_leave(event, &mut remaining, &mut sequence);
+        }).await?;
+        let removal = companion_leaves(&mut observer, remaining, sequence).await?;
         *client = with_observer_liveness(&mut observer, connect_world(clients, tag + 1)).await?;
         if client.join_snapshot().game_session_id == session
             || tile(client.world_spatial().actor_position)? != TOWN
@@ -3308,22 +3415,29 @@ async fn companion_logout(
     cleanup?;
     Ok(value)
 }
+fn companion_leave(
+    event: SessionEvent,
+    remaining: &mut BTreeSet<oteryn_dev_client::EntityRef>,
+    sequence: &mut u64,
+) {
+    if let SessionEvent::WorldSpatialEntities(delta) = event {
+        for entity in delta.value.leave {
+            if remaining.remove(&entity) {
+                *sequence = (*sequence).max(delta.server_sequence);
+            }
+        }
+    }
+}
+
 async fn companion_leaves(
     client: &mut DevClientSession,
-    owned: &[oteryn_dev_client::EntityRef],
+    mut remaining: BTreeSet<oteryn_dev_client::EntityRef>,
+    mut sequence: u64,
 ) -> TestResult<u64> {
-    let mut remaining: BTreeSet<_> = owned.iter().copied().collect();
-    let mut sequence = 0;
     let until = tokio::time::Instant::now() + Duration::from_secs(8);
     loop {
         for event in client.take_events() {
-            if let SessionEvent::WorldSpatialEntities(delta) = event {
-                for entity in delta.value.leave {
-                    if remaining.remove(&entity) {
-                        sequence = sequence.max(delta.server_sequence);
-                    }
-                }
-            }
+            companion_leave(event, &mut remaining, &mut sequence);
         }
         if remaining.is_empty() && sequence != 0 {
             return Ok(sequence);
@@ -3499,7 +3613,7 @@ async fn companion_owner_death(
     for entity in owned {
         creature(client, *entity)?;
     }
-    let mut observer = connect_character(clients, tag, 0).await?;
+    let mut observer = with_observer_liveness(client, connect_character(clients, tag, 0)).await?;
     let result: TestResult<_> = async {
         let site = tile(encounter)?;
         let path = route(world, tile(observer.world_spatial().actor_position)?, |at| {
@@ -3717,6 +3831,10 @@ async fn inventory_quantity_or_applied(
     Ok(())
 }
 
+fn corpse_enters_after_target_leave(removed: bool, already_present: bool) -> bool {
+    removed && !already_present
+}
+
 async fn player_corpse(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -3758,7 +3876,7 @@ async fn player_corpse(
                     removed |= delta.value.leave.contains(&target.entity);
                     for entry in delta.value.enter {
                         if entry.kind == oteryn_dev_client::EntityKind::Corpse
-                            && !existing.contains(&entry.entity)
+                            && corpse_enters_after_target_leave(removed, existing.contains(&entry.entity))
                             && entry.position == last
                             && matches!(entry.detail, oteryn_dev_client::EntityDetail::Object { item_definition_ref, item_handle: Some(_), .. } if item_definition_ref == corpse_ref.get())
                         {
@@ -4447,5 +4565,95 @@ mod tile_item_tests {
         );
         assert!(tile_item_duration(book.rune(3197).ok_or("Disintegrate absent")?).is_err());
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod observer_tests {
+    use super::*;
+    use std::cell::Cell;
+
+    #[test]
+    fn long_lived_observer_drains_pushes_before_queue_overflow() -> TestResult {
+        tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+            let total = Cell::new(0);
+            let mut queued = Vec::new();
+            let mut observed = 0;
+            service_observer(
+                &mut queued,
+                std::future::poll_fn(|_| {
+                    if total.get() >= 400 { std::task::Poll::Ready(Ok(())) }
+                    else { std::task::Poll::Pending }
+                }),
+                async |queued: &mut Vec<u32>| {
+                    let next = total.get() + 1;
+                    queued.push(next);
+                    // The operation still reaches its end after the observer fails.
+                    total.set(if queued.len() > 256 { 400 } else { next });
+                    if queued.len() > 256 { return Err("observer queue overflow".into()); }
+                    Ok(())
+                },
+                |queued| observed += queued.drain(..).count(),
+            ).await?;
+            assert!(observed >= 400);
+            assert!(queued.is_empty());
+            Ok(())
+        })
+    }
+}
+
+#[cfg(test)]
+mod cross_floor_tests {
+    use super::super::spatial_basis::Basis;
+    use super::cross_floor_target;
+
+    #[test]
+    fn cross_floor_target_is_valid_at_each_projection_boundary() {
+        for (basis, floors) in [(Basis::Legacy, 0..=15), (Basis::Native, -15..=0)] {
+            for floor in floors.clone() {
+                let target = cross_floor_target(floor, basis);
+                assert!(floors.contains(&target), "{basis:?} {floor} -> {target}");
+                assert_eq!(floor.abs_diff(target), 1);
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod follow_tests {
+    use super::*;
+
+    #[test]
+    fn companion_move_during_step_survives_event_drain() {
+        let start = ActorPosition { x: 32, y: 21, floor: 7 };
+        let end = ActorPosition { x: 35, ..start };
+        assert!(companion_moved(start, end, false));
+        assert!(!companion_moved(start, start, false));
+    }
+}
+
+
+#[cfg(test)]
+mod progression_tests {
+    use super::*;
+
+    #[test]
+    fn pristine_caster_has_a_progression_leg_for_the_positive_cast() {
+        assert_eq!(spell_progression_target(1, 20, true), Some(20));
+        assert_eq!(spell_progression_target(3, 4, true), Some(8));
+        assert_eq!(spell_progression_target(28, 26, false), None);
+    }
+}
+
+
+#[cfg(test)]
+mod corpse_order_tests {
+    use super::*;
+
+    #[test]
+    fn preexisting_or_early_corpse_cannot_become_the_selected_kill() {
+        assert!(!corpse_enters_after_target_leave(false, false));
+        assert!(!corpse_enters_after_target_leave(true, true));
+        assert!(corpse_enters_after_target_leave(true, false));
     }
 }
