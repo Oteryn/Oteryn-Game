@@ -25,7 +25,8 @@ fn scenario_case(
 ) -> TestResult {
     let sandra_win = name == "sandra-lottery-win";
     let sandra_blank = name == "sandra-lottery-blank";
-    let sandra_lottery = sandra_win || sandra_blank || name == "sandra-lottery-missing";
+    let sandra_full = name == "sandra-lottery-full";
+    let sandra_lottery = sandra_win || sandra_blank || sandra_full || name == "sandra-lottery-missing";
     let name = if sandra_lottery { "npc-item-exchanges" } else { name };
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
@@ -2460,9 +2461,9 @@ fn scenario_case(
                 &authority,
             ))
             .await?;
-        } else if sandra_win || sandra_blank {
+        } else if sandra_win || sandra_blank || sandra_full {
             Box::pin(super::super::sandra_lottery::exercise_outcome(
-                &mut owner, &mut admitted, &h, &authority, sandra_win,
+                &mut owner, &mut admitted, &h, &authority, sandra_win, sandra_full,
             )).await?;
         } else if sandra_lottery {
             Box::pin(super::super::sandra_lottery::exercise_missing(

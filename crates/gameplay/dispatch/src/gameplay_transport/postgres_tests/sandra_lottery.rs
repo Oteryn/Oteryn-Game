@@ -309,6 +309,7 @@ pub(super) async fn exercise_outcome(
     h: &super::fixture::Harness,
     authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
     win: bool,
+    full: bool,
 ) -> super::TestResult {
     use crate::durability::item_loop_move::ItemLoopContent;
     use crate::durability::quest_state::{
@@ -353,6 +354,43 @@ pub(super) async fn exercise_outcome(
         .ok_or("native")?;
     let weights = crate::gameplay_transport::item_ref_admission::NativeItemWeights(native)
         .with_wheel(owner.premium_coordinator);
+    if full {
+        let mut tx = h.pool.begin().await?;
+        let slot = crate::durability::item_transfer::load_slot(&mut tx, fence.character_id)
+            .await?
+            .ok_or("backpack")?;
+        let entries =
+            crate::durability::item_transfer::load_entries(&mut tx, slot.item_instance_id).await?;
+        tx.rollback().await?;
+        let capacity = weights
+            .loop_facts(&slot.definition)
+            .and_then(|facts| facts.container_capacity)
+            .ok_or("capacity")?;
+        let count = u32::try_from(entries.len())?;
+        for index in count..capacity {
+            super::quest_world_callbacks::input_item(
+                owner,
+                fence.item_fence(),
+                &Offering {
+                    position: Position {
+                        x: 33293,
+                        y: 31677,
+                        floor: -15,
+                    },
+                    item: "oteryn:item.tibia.i3577".into(),
+                    count: 1,
+                },
+                7000 + u64::from(index),
+                true,
+            )
+            .await?;
+        }
+    }
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
     let mut selected = None;
     for ordinal in 6276..16275 {
         let request = NpcProgramRequest {
@@ -388,6 +426,17 @@ pub(super) async fn exercise_outcome(
         )
         .await
         .map_err(super::fixture::debug)?;
+    if full {
+        assert!(matches!(
+            result.transition,
+            QuestTransitionOutcome::Refused(_)
+        ));
+        assert!(!result.inventory_changed);
+        let remaining: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1")
+            .bind(SANDRA_LOTTERY.input).fetch_one(&h.pool).await?;
+        assert_eq!(remaining, 1);
+        return Ok(());
+    }
     assert!(matches!(
         result.transition,
         QuestTransitionOutcome::Committed(_)
@@ -423,6 +472,25 @@ fn sandra_lottery_postgres_seeded_blank_consumes_ticket_and_replays_once() -> su
     super::kill_reward_e2e::scenario_thread::run("sandra-lottery-blank", || {
         super::quest_world_callbacks::scenario(
             "sandra-lottery-blank",
+            oteryn_gameplay_quests::quest::world_callbacks::Position {
+                x: 33294,
+                y: 31677,
+                floor: -15,
+            },
+            false,
+        )
+    })
+}
+
+#[test]
+fn sandra_lottery_postgres_full_inventory_refuses_without_consuming_ticket() -> super::TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run("sandra-lottery-full", || {
+        super::quest_world_callbacks::scenario(
+            "sandra-lottery-full",
             oteryn_gameplay_quests::quest::world_callbacks::Position {
                 x: 33294,
                 y: 31677,

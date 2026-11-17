@@ -555,6 +555,10 @@ impl DurabilityRoot {
             };
             // Select after receipt replay and locked source evaluation, before all
             // reward, receipt and inventory participants inspect the final plan.
+            if request.npc == "oteryn:npc.sandra" && request.transition_key == "oteryn:quest-npc/sandra/lottery"
+                && !sandra_lottery::has_prize_room(&mut tx, character, *content).await? {
+                return Ok(Ok(refused(QuestRefusal::CapacityExceeded)));
+            }
             let resolved = sandra_lottery::resolve(&request, &plan, content.loop_content_digest(), character)?;
             let plan = resolved.unwrap_or(plan);
             if source.programs().iter().any(|program| {

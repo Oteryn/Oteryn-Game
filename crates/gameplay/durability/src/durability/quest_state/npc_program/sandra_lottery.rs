@@ -83,3 +83,24 @@ pub fn claim_key(session: [u8; 16], command: u64) -> String {
     let session: String = session.iter().map(|byte| format!("{byte:02x}")).collect();
     format!("oteryn:reward.sandra-lottery.{session}.{command}")
 }
+
+/// Reserve room for a possible prize before drawing or consuming the ticket.
+/// The Character root lock held by the NPC writer serializes inventory writers.
+pub(super) async fn has_prize_room<C: crate::durability::item_loop_move::ItemLoopContent>(
+    tx: &mut crate::durability::item_mint_audit::Type2Transaction<'_>,
+    character: CharacterId,
+    content: &C,
+) -> StoredResult<bool> {
+    use crate::durability::item_transfer::{load_entries, load_slot};
+    let Some(slot) = load_slot(tx, character).await? else {
+        return Ok(false);
+    };
+    let Some(capacity) = content
+        .loop_facts(&slot.definition)
+        .and_then(|facts| facts.container_capacity)
+    else {
+        return Ok(false);
+    };
+    let entries = load_entries(tx, slot.item_instance_id).await?;
+    Ok(u32::try_from(entries.len()).is_ok_and(|count| count < capacity))
+}
