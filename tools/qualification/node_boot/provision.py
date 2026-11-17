@@ -29,7 +29,11 @@ def provision(socket_path, session, profile):
                 break
             answer.extend(chunk)
         if answer != b"qualified\n":
-            raise RuntimeError("node refused qualification provisioning")
+            # repr escapes control/non-ASCII bytes; the 65th byte only detects overflow.
+            raise RuntimeError(
+                "node refused qualification provisioning: "
+                f"node_answer={bytes(answer[:64])!r} truncated={len(answer) > 64}"
+            )
 
 
 if __name__ == "__main__":
