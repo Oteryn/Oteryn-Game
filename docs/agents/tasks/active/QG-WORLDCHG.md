@@ -44,6 +44,9 @@ thornfire. Done bar: E2E passes and triggers, effects and rewards match Tibia gl
 | Fury Gates: the Fury Dungeon archway (776, aid 9715, 33290,31785,13) returns to the active gate city | TibiaWiki Fury Gates Mini World Change rev 1099676 (TIBIAWIKI_STRUCTURED) | Crystal 201189f `data-global/startup/tables/item.lua:1689`, `fury_gates.lua` (OTS_HYPOTHESIS_ONLY) | agree; the base `world.otbm` lacked the selector, restored by `quest_startup_bindings.py` |
 | Nightmare Isles: the isle exit (10840, uid 35020, 33498,32613,8) returns to the active side | TibiaWiki Nightmare Isles Mini World Change rev 891482 | Crystal 201189f `data-global/startup/tables/teleport.lua:596`, `nightmare_isles.lua` | agree; selector restored the same way |
 | Thawing: 15 Ice Flowers on the Ice Islands floor 5, the 15th south of the immovable Mammoth (Mapper 125.152,121.55 = 32152,31031,5) | TibiaWiki Thawing Mini World Change rev 890265 | Crystal `thawing.lua:4-19` lists 14 | global: 15 flowers |
+| Grimvale: the full moon covers reset days 12-14; Feroxa only the 13th | TibiaWiki Grimvale Mini World Change/Spoiler rev 1102848 | Crystal `grimvale_respawn_event.lua:3` uses only the 13th | global: 12-14, Feroxa 13 (`feroxa_apex`, old decisions read as the 13th) |
+| Stampede: one server-save day, selected once by the daily owner, no raid RNG or XML delays | TibiaWiki Stampede Mini World Change/Spoiler oldid=887155 | Crystal raid XML random timing | global |
+| Overhunting: only White Deer count; ordinary deer keep their homes; guides report four states | TibiaWiki Overhunting World Change/Spoiler rev 1084984 | native `deer_kills` 1000 (open fact: no sourced threshold) | global species rule, native threshold |
 
 Held, with evidence, outside this batch:
 
@@ -56,6 +59,11 @@ Held, with evidence, outside this batch:
 - Server mechanics for Awash, Steamship, Swamp Fever, Chyllfroest, Mummy's Curse, Thornfire,
   Horse Station, Bored, Deeplings and parts of The Mage's Tower and Their Master's Voice were
   sent to the server lane (session_01H5hdvRcH9cRdJH2RatxpTE).
+
+- Stampede Bestiary progress: the Terrified Elephant corpse item (i6052) is
+  `materializable: false` in `content/items/definitions/items-29500-29999.json`, so its reward row
+  is refused `CorpseItemInadmissible` and no kill records Bestiary progress or the Trail of the Ape
+  God count in production. Needs an item/pin content change outside this batch's paths.
 
 ## Validation
 
