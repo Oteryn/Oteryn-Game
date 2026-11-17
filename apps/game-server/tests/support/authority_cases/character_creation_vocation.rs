@@ -45,6 +45,7 @@ async fn exercise(db: &Database) -> TestResult {
     root.admit_fresh_character_recovery(&fresh)
         .await
         .map_err(|e| format!("{e:?}"))?;
+    drop(fresh);
     let sealed = recovery.seal_current().map_err(|e| format!("{e:?}"))?;
     let authority = root
         .open_character_authority(&sealed)
