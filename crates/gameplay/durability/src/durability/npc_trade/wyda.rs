@@ -21,7 +21,7 @@ pub(super) fn validate(request: &NpcTradeRequest, sell_all: bool) -> Result<()> 
         || request.offer_count != 1
         || request.item.definition.family != "Item"
         || request.item.definition.revision_ref != "definition-r1"
-        || request.item.definition.production_key != bored::exchange_reward(&request.cause.occurrence)
+        || !matches!(request.item.definition.production_key.as_str(), bored::TORN_TEDDY | bored::WITCHESBROOM)
         || request.item.container_capacity.is_some()
     {
         return Err(NpcTradeError::InvalidInput);
@@ -36,9 +36,13 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         request: NpcTradeRequest,
+        teddy: ItemDefinitionFacts,
         weights: &dyn super::super::item_transfer::ItemWeightLookup,
     ) -> Result<NpcTradeOutcome> {
-        if request.cause.side != NpcTradeSide::Exchange {
+        if request.cause.side != NpcTradeSide::Exchange
+            || request.item.definition.production_key != bored::WITCHESBROOM
+            || teddy.definition.production_key != bored::TORN_TEDDY
+        {
             return Err(NpcTradeError::InvalidInput);
         }
         validate(&request, false)?;
@@ -49,9 +53,19 @@ impl DurabilityRoot {
             request,
             TradeCommitOptions {
                 weights: Some(weights),
+                wyda_teddy: Some(teddy),
                 ..TradeCommitOptions::default()
             },
         )
         .await
     }
+}
+
+pub(super) async fn roll_teddy(tx: &mut Type2Transaction<'_>) -> std::result::Result<bool, DurabilityError> {
+    let entropy: Vec<u8> = sqlx::query_scalar("SELECT sha256(uuid_send(gen_random_uuid()))")
+        .fetch_one(&mut ***tx)
+        .await?;
+    let sample = entropy.get(..8).and_then(|bytes| bytes.try_into().ok())
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    Ok(bored::exchange_reward(u64::from_be_bytes(sample)) == bored::TORN_TEDDY)
 }

@@ -238,21 +238,20 @@ pub(super) async fn talk(
     let Some((gold, platinum, crystal)) = coins else {
         return Some(rejected());
     };
+    let profile = |output: &str| {
+        let definition = TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: output.into(),
+            revision_ref: index.revision(output)?.into(),
+        };
+        super::super::item_ref_admission::generation_item_facts(native, &definition).ok()
+    };
     let output = if recipe.npc == bored::WYDA {
-        bored::exchange_reward(&occurrence)
+        bored::WITCHESBROOM
     } else {
         recipe.output
     };
-    let Some(revision) = index.revision(output) else {
-        return Some(rejected());
-    };
-    let definition = TypedDefinitionRef {
-        family: "Item".into(),
-        production_key: output.into(),
-        revision_ref: revision.into(),
-    };
-    let Ok(item) = super::super::item_ref_admission::generation_item_facts(native, &definition)
-    else {
+    let Some(item) = profile(output) else {
         return Some(rejected());
     };
     let backpack = match admission
@@ -347,6 +346,9 @@ pub(super) async fn talk(
             )
             .await
     } else if recipe.npc == bored::WYDA {
+        let Some(teddy) = profile(bored::TORN_TEDDY) else {
+            return Some(rejected());
+        };
         admission
             .root
             .exchange_wyda_blood_herb(
@@ -354,6 +356,7 @@ pub(super) async fn talk(
                 admission.holder,
                 fence,
                 request,
+                teddy,
                 &NativeItemWeights(native),
             )
             .await

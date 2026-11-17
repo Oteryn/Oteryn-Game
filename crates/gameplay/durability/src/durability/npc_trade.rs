@@ -91,6 +91,7 @@ struct TradeCommitOptions<'a> {
     /// Source coordinates captured from the exact live NPC by the normal trade caller.
     yasir_position: Option<(u16, u16, i8)>,
     yeo_position: Option<(u16, u16, i8)>,
+    wyda_teddy: Option<ItemDefinitionFacts>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -807,6 +808,7 @@ impl DurabilityRoot {
             weights,
             yasir_position,
             yeo_position,
+            wyda_teddy,
         } = options;
         let (world_id, channel_id) = if let Some(source) = &hireling {
             source.validate(&request, sell_all)?;
@@ -827,6 +829,16 @@ impl DurabilityRoot {
         binding = yeo::bind(binding, yeo_position);
         if let Some(source) = &hireling {
             binding = source.bind(binding);
+        }
+        if let Some(teddy) = &wyda_teddy {
+            let mut teddy_request = request.clone();
+            teddy_request.item = teddy.clone();
+            validate(&teddy_request, sell_all)?;
+            binding = Sha256::new()
+                .chain_update(binding)
+                .chain_update(request_binding(&fence, world_id, &teddy_request, sell_all))
+                .finalize()
+                .to_vec();
         }
         let recovery = authority
             .record_for(self)
@@ -944,14 +956,18 @@ impl DurabilityRoot {
                         && (yeo_position != Some(yeo::POSITION) || !yeo::matches(&request)) {
                         return Ok(Err(NpcTradeError::RequirementNotMet));
                     }
+                    let mut request = request;
+                    if let Some(teddy) = wyda_teddy {
+                        if !super::world_event::change_active(&mut tx, world_id, "bored").await? {
+                            return Ok(Err(NpcTradeError::RequirementNotMet));
+                        }
+                        if wyda::roll_teddy(&mut tx).await? {
+                            request.item = teddy;
+                        }
+                    }
                     let entries = lock_entries(&mut tx, &backpack, world_id, request.fluid_subtype.unwrap_or(0), &request.item.definition.production_key).await?;
                     if request.cause.side == NpcTradeSide::Exchange {
                         let knife = request.cause.npc_key == obsidian_knife::NPC;
-                        if request.cause.npc_key == bored::WYDA
-                            && !super::world_event::change_active(&mut tx, world_id, "bored").await?
-                        {
-                            return Ok(Err(NpcTradeError::RequirementNotMet));
-                        }
                         if knife && !obsidian_knife::ready(&mut tx, fence.character_id).await? {
                             return Ok(Err(NpcTradeError::RequirementNotMet));
                         }

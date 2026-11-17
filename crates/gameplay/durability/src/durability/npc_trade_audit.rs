@@ -394,8 +394,12 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
             pick_exchange::check_recipe(value, "oteryn:npc.seymour", "oteryn:item.tibia.i2856", "oteryn:item.tibia.i3374")?;
         } else if cause.npc_key == oteryn_gameplay_world_change::bored::WYDA {
             use oteryn_gameplay_world_change::bored;
-            let occurrence = cause.occurrence.as_slice().try_into().map_err(|_| AuditError::InvalidInput)?;
-            pick_exchange::check_recipe(value, bored::WYDA, bored::BLOOD_HERB, bored::exchange_reward(occurrence))?;
+            let output = value.lines.get(1).and_then(|line| line.after.as_ref())
+                .and_then(|state| state.definition.as_ref()).ok_or(AuditError::InvalidInput)?;
+            if !matches!(output.production_key.as_str(), bored::TORN_TEDDY | bored::WITCHESBROOM) {
+                return Err(AuditError::InvalidInput);
+            }
+            pick_exchange::check_recipe(value, bored::WYDA, bored::BLOOD_HERB, &output.production_key)?;
         } else { pick_exchange::check(value)?; }
     }
     let hireling_sell = sell_hireling::audit_source(value);

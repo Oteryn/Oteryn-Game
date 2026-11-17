@@ -9,11 +9,11 @@ fn worldchg_bored_is_persisted_by_server_save_postgres() -> TestResult {
         return Ok(());
     };
     super::kill_reward_e2e::scenario_thread::run("worldchg-bored", move || {
-        run(async move |_| exercise(&admin).await)
+        run(async move |_| exercise(admin).await)
     })
 }
 
-async fn exercise(admin: &str) -> TestResult {
+async fn exercise(admin: String) -> TestResult {
     let world = WorldId::decode(&id(42)).map_err(debug)?;
     let expected = roll_calendar(world.as_bytes(), 1, 1, 1).bored;
     let channel = ChannelId::decode(&id(43)).map_err(debug)?;
