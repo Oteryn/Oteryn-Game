@@ -1,0 +1,1836 @@
+{
+  "schema": 2,
+  "quest": "oteryn:quest.authored.rathleton_quest",
+  "premium_required": true,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 4,
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/chosen/rathleton-quest/votes_cast",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/voting",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "voting"
+      ],
+      "guards": [],
+      "reply": [
+        "I'm responsible for overseeing the voting process. Are you here to {learn} more about the voting, your {amount} of voting rights, your citizen rank {status} or do you want to vote on a {topic}?"
+      ],
+      "effects": [],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/topic/rank-0",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "topic"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Today you might vote for a {shortcut}."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/topic/rank-1",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "topic"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Today you might vote for a {shortcut} or {dungeon}."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/topic/rank-2",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "topic"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Today you might vote for a {shortcut}, {dungeon}, or {boss}es."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/topic/rank-3",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "topic"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Today you might vote for a {shortcut}, {dungeon}, {boss}es or {raid}s."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/shortcut",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "shortcut"
+      ],
+      "topics": [
+        1
+      ],
+      "guards": [],
+      "reply": [
+        "Well, in the topic shortcut you have the possibility to vote for shortcuts back from the {minotaur}s, {fungi} or {catacomb}s."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 10
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/shortcut/minotaur",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "minotaur"
+      ],
+      "topics": [
+        10
+      ],
+      "guards": [],
+      "reply": [
+        "How many of your votes do you want to cast?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 11
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/shortcut/minotaur/count",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "1"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        11
+      ],
+      "guards": [],
+      "reply": [
+        "Did I get that right: You want to cast 1 of your votes on the shortcut to the minotaurs?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 111
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/shortcut/minotaur/cast",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        111
+      ],
+      "guards": [],
+      "reply": [
+        "Thanks, you successfully cast your vote. Feel free to continue gathering votes by helping the city! Farewell."
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/votes_cast",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/shortcut/fungi",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "fungi"
+      ],
+      "topics": [
+        10
+      ],
+      "guards": [],
+      "reply": [
+        "How many of your votes do you want to cast?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 12
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/shortcut/fungi/count",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "1"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        12
+      ],
+      "guards": [],
+      "reply": [
+        "Did I get that right: You want to cast 1 of your votes on the shortcut to the fungi?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 112
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/shortcut/fungi/cast",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        112
+      ],
+      "guards": [],
+      "reply": [
+        "Thanks, you successfully cast your vote. Feel free to continue gathering votes by helping the city! Farewell."
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/votes_cast",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/shortcut/catacomb",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "catacomb"
+      ],
+      "topics": [
+        10
+      ],
+      "guards": [],
+      "reply": [
+        "How many of your votes do you want to cast?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 13
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/shortcut/catacomb/count",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "1"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        13
+      ],
+      "guards": [],
+      "reply": [
+        "Did I get that right: You want to cast 1 of your votes on the shortcut to the catacombs?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 113
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/shortcut/catacomb/cast",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        113
+      ],
+      "guards": [],
+      "reply": [
+        "Thanks, you successfully cast your vote. Feel free to continue gathering votes by helping the city! Farewell."
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/votes_cast",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/dungeon",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "dungeon"
+      ],
+      "topics": [
+        1
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Well, the dungeon you have the possibility to vote for can be full of {golem}s, {minotaur}s or the {wrath} of evil."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 20
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/dungeon/golem",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "golem"
+      ],
+      "topics": [
+        20
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "How many of your votes do you want to cast?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 21
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/dungeon/golem/count",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "1"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        21
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did I get that right: You want to cast 1 of your votes on the golems?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 121
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/dungeon/golem/cast",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        121
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Thanks, you successfully cast your vote. Feel free to continue gathering votes by helping the city! Farewell."
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/votes_cast",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/dungeon/minotaur",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "minotaur"
+      ],
+      "topics": [
+        20
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "How many of your votes do you want to cast?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 22
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/dungeon/minotaur/count",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "1"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        22
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did I get that right: You want to cast 1 of your votes on the minotaurs?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 122
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/dungeon/minotaur/cast",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        122
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Thanks, you successfully cast your vote. Feel free to continue gathering votes by helping the city! Farewell."
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/votes_cast",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/dungeon/wrath",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "wrath"
+      ],
+      "topics": [
+        20
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "How many of your votes do you want to cast?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 23
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/dungeon/wrath/count",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "1"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        23
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did I get that right: You want to cast 1 of your votes on the wrath of evil?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 123
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/dungeon/wrath/cast",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        123
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Thanks, you successfully cast your vote. Feel free to continue gathering votes by helping the city! Farewell."
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/votes_cast",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/boss",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "boss"
+      ],
+      "topics": [
+        1
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Well, in this topic you have the possibility to vote for bosses: the furious moohtant {Bullwark}, the poisonous {Lisa} or the mighty {Glooth Fairy}."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 30
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/boss/bullwark",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "bullwark"
+      ],
+      "topics": [
+        30
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "How many of your votes do you want to cast?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 31
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/boss/bullwark/count",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "1"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        31
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Did I get that right: You want to cast 1 of your votes on Bullwark?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 131
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/boss/bullwark/cast",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        131
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Thanks, you successfully cast your vote. Feel free to continue gathering votes by helping the city! Farewell."
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/votes_cast",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/boss/lisa",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "lisa"
+      ],
+      "topics": [
+        30
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "How many of your votes do you want to cast?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 32
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/boss/lisa/count",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "1"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        32
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Did I get that right: You want to cast 1 of your votes on Lisa?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 132
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/boss/lisa/cast",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        132
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Thanks, you successfully cast your vote. Feel free to continue gathering votes by helping the city! Farewell."
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/votes_cast",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/boss/glooth-fairy",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "glooth fairy"
+      ],
+      "topics": [
+        30
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "How many of your votes do you want to cast?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 33
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/boss/glooth-fairy/count",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "1"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        33
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Did I get that right: You want to cast 1 of your votes on the Glooth Fairy?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 133
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/boss/glooth-fairy/cast",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        133
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Thanks, you successfully cast your vote. Feel free to continue gathering votes by helping the city! Farewell."
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/votes_cast",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/raid",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "raid"
+      ],
+      "topics": [
+        1
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Well in the topic raid you have the possibility to vote for {minotaurs}, {mechanical creatures} or {wild life}."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 40
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/raid/minotaurs",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "minotaurs"
+      ],
+      "topics": [
+        40
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "How many of your votes do you want to cast?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 41
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/raid/minotaurs/count",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "1"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        41
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Did I get that right: You want to cast 1 of your votes on minotaurs?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 141
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/raid/minotaurs/cast",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        141
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Thanks, you successfully cast your vote. Feel free to continue gathering votes by helping the city! Farewell."
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/votes_cast",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/raid/mechanical-creature",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "mechanical creature"
+      ],
+      "topics": [
+        40
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "How many of your votes do you want to cast?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 42
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/raid/mechanical-creature/count",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "1"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        42
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Did I get that right: You want to cast 1 of your votes on mechanical creatures?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 142
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/raid/mechanical-creature/cast",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        142
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Thanks, you successfully cast your vote. Feel free to continue gathering votes by helping the city! Farewell."
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/votes_cast",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/raid/wild-life",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "wild life"
+      ],
+      "topics": [
+        40
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "How many of your votes do you want to cast?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 43
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/raid/wild-life/count",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "1"
+      ],
+      "keyword_mode": "exact",
+      "topics": [
+        43
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Did I get that right: You want to cast 1 of your votes on wild life?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 143
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/raid/wild-life/cast",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        143
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "ge",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Thanks, you successfully cast your vote. Feel free to continue gathering votes by helping the city! Farewell."
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/votes_cast",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/promotion/commoner",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "promotion"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "eq",
+          "value": 0
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/votes_cast",
+          "op": "ge",
+          "value": 50
+        }
+      ],
+      "reply": [
+        "You cast 50 votes. I will promote your citizen rank to commoner. Congratulations, |PLAYERNAME|! From now on, you can cast your votes on new topics."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "value": 1
+        },
+        {
+          "kind": "achievement",
+          "name": "Rathleton Commoner"
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/promotion/inhabitant",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "promotion"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/votes_cast",
+          "op": "ge",
+          "value": 150
+        }
+      ],
+      "reply": [
+        "You cast 150 votes. I will promote your citizen rank to inhabitant. Congratulations, |PLAYERNAME|! From now on, you can cast your votes on new topics."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "value": 2
+        },
+        {
+          "kind": "achievement",
+          "name": "Rathleton Inhabitant"
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/promotion/citizen",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "promotion"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/votes_cast",
+          "op": "ge",
+          "value": 300
+        }
+      ],
+      "reply": [
+        "You cast 300 votes. I will promote your citizen rank to citizen. Congratulations, |PLAYERNAME|! From now on, you can cast your votes on new topics."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "value": 3
+        },
+        {
+          "kind": "achievement",
+          "name": "Rathleton Citizen"
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/promotion/squire",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "promotion"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/votes_cast",
+          "op": "ge",
+          "value": 500
+        }
+      ],
+      "reply": [
+        "You cast 500 votes. I will promote your citizen rank to squire. Congratulations, |PLAYERNAME|! From now you can participate in votings on new topics."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "value": 4
+        },
+        {
+          "kind": "achievement",
+          "name": "Rathleton Squire"
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/status/none",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "status"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Currently, you have no citizen rank."
+      ],
+      "effects": [],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/status/commoner",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "status"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Your current citizen rank is commoner."
+      ],
+      "effects": [],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/status/inhabitant",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "status"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Your current citizen rank is inhabitant."
+      ],
+      "effects": [],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/status/citizen",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "status"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Your current citizen rank is citizen."
+      ],
+      "effects": [],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/authored-rathleton/marvin/status/squire",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "npc": "oteryn:npc.marvin",
+      "trigger": "say",
+      "keywords": [
+        "status"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/rathleton-quest/rank",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "Your current citizen rank is squire."
+      ],
+      "effects": [],
+      "sources": [
+        "oteryn-authored:chosen-recipe:rathleton-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=68050&oldid=846610",
+        "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+      ]
+    }
+  ]
+}

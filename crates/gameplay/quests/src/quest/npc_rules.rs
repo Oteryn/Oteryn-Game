@@ -893,6 +893,9 @@ pub fn legacy_defaults<'a>(
 mod multiple_item_rewards_tests;
 
 #[cfg(test)]
+mod rathleton_tests;
+
+#[cfg(test)]
 mod tests;
 
 #[cfg(test)]

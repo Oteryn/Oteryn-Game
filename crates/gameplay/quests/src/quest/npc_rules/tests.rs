@@ -850,8 +850,8 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         std::collections::BTreeSet::from([None, Some(questpc2_gnomus_source::PROGRAM)])
     );
     // The distinct quest set counts Gnomus once; its second source programme
-    // and the separately checked schema2 Mystery each add one runtime owner.
-    assert_eq!(runtime.programs().len(), expected_programmes.len() + 2);
+    // and the separately checked schema2 Mystery and Rathleton each add one runtime owner.
+    assert_eq!(runtime.programs().len(), expected_programmes.len() + 3);
     assert_eq!(
         runtime
             .programs()
@@ -859,7 +859,10 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             .filter(|program| program.document.schema == 2)
             .map(|program| program.document.quest.as_str())
             .collect::<std::collections::BTreeSet<_>>(),
-        std::collections::BTreeSet::from(["oteryn:quest.authored.mystery_of_the_valley_quest"])
+        std::collections::BTreeSet::from([
+            "oteryn:quest.authored.mystery_of_the_valley_quest",
+            "oteryn:quest.authored.rathleton_quest"
+        ])
     );
     assert!(
         !active

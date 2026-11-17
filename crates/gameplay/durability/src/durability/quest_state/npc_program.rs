@@ -12,6 +12,7 @@ mod hot_cuisine_m42_tests;
 mod inventory;
 mod items;
 mod marlin_trophy;
+mod rathleton;
 mod rewards;
 pub mod teleport;
 pub use inventory::{NpcProgramInventory, inventory_prefetch_required, requires_current_inventory};
@@ -646,6 +647,7 @@ impl DurabilityRoot {
             }
             sqlx::query("INSERT INTO game_quest_npc_program_receipts(character_id,game_session_id,command_id,transition_key,reply,next_topic,inventory_changed,end_conversation,end_delay_ms,completes) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8,$9::text::integer,$10)")
                 .bind(id).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).bind(&plan.reply).bind(plan.next_topic).bind(item_action).bind(items::ends(&plan)).bind(items::end_delay(&plan).to_string()).bind(plan.completes).execute(&mut **tx).await?;
+            if !rathleton::cast(&mut tx, fence, &request, &committed).await? { return Ok(Ok(refused(QuestRefusal::StageMismatch))); }
             achievements::grant(&mut tx, character, &request, &achievement_keys).await?;
             if let Some(admission) = teleport { teleport::insert(&mut tx, character, &request, &plan, admission).await?; }
             if experience > 0 {
