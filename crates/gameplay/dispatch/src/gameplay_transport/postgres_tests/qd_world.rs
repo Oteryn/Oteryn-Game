@@ -125,6 +125,7 @@ async fn use_at(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     at: Position,
+    plain: crate::gameplay_transport::capabilities::SelectedCapabilities,
 ) -> TestResult<UseDisposition> {
     owner.clock_origin = owner
         .clock_origin
@@ -147,6 +148,8 @@ async fn use_at(
         expected_revision: map.facts.object_revision(key),
     };
     let command = admitted.continuity.next_command_id;
+    // The bare use wire carries no appearance state, so it joins without the talk set.
+    let talk = std::mem::replace(&mut admitted.continuity.selected_capabilities, plain);
     let reply = super::quest_world_callbacks::wire(
         owner,
         admitted,
@@ -154,8 +157,9 @@ async fn use_at(
         COMMAND_TYPE_USE_INTENT,
         encode_use_intent(&target).map_err(debug)?,
     )
-    .await?;
-    decode_use_result(&reply).map_err(debug)
+    .await;
+    admitted.continuity.selected_capabilities = talk;
+    decode_use_result(&reply?).map_err(debug)
 }
 
 /// TibiaWiki Sam's_Old_Backpack_Quest: Sam takes the backpack, Kroox grants the mine
@@ -201,11 +205,12 @@ async fn sams_old_backpack(
         ],
     )
     .await?;
+    let plain = admitted.continuity.selected_capabilities;
     select_talk_capabilities(owner, admitted)?;
     let talk = super::qengine_rewards::wire_conversation;
     // Neither the sealed door nor the chest answer before Kroox's permission.
     assert_ne!(
-        use_at(owner, admitted, SAMS_GATE).await?,
+        use_at(owner, admitted, SAMS_GATE, plain).await?,
         UseDisposition::Committed
     );
     let (result, _, _) = talk(
@@ -280,7 +285,7 @@ async fn sams_old_backpack(
         .await;
     // The placed quest door (action 40603) now opens, and the player walks into the alcove.
     assert_eq!(
-        use_at(owner, admitted, SAMS_GATE).await?,
+        use_at(owner, admitted, SAMS_GATE, plain).await?,
         UseDisposition::Committed
     );
     let command = admitted.continuity.next_command_id;
@@ -288,7 +293,7 @@ async fn sams_old_backpack(
         .await?;
     assert_eq!(count(h, ARMOR).await?, 0);
     assert_eq!(
-        use_at(owner, admitted, SAMS_CHEST).await?,
+        use_at(owner, admitted, SAMS_CHEST, plain).await?,
         UseDisposition::Committed
     );
     assert_eq!(
@@ -302,7 +307,7 @@ async fn sams_old_backpack(
     );
     assert!(completed(h, "oteryn:quest.sam_s_old_backpack_quest").await?);
     assert_ne!(
-        use_at(owner, admitted, SAMS_CHEST).await?,
+        use_at(owner, admitted, SAMS_CHEST, plain).await?,
         UseDisposition::Committed,
         "once per character"
     );
