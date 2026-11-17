@@ -612,3 +612,19 @@ fn sandra_lottery_ticket_issuance_matches_donor_same_kind_vials() -> super::Test
     assert!(source.item_exchange_keys("oteryn:npc.sandra").is_some());
     Ok(())
 }
+
+#[test]
+fn sandra_lottery_vial_deposits_use_repeatable_command_claims() {
+    use crate::durability::quest_state::npc_program::sandra_lottery::repeatable_exchange;
+    for suffix in ["lottery", "deposit-283", "deposit-284", "deposit-285"] {
+        assert!(repeatable_exchange(&format!(
+            "oteryn:quest-npc/sandra/{suffix}"
+        )));
+    }
+    for suffix in ["bonus-join", "prize", "deposit-286", "deposit-283-extra"] {
+        assert!(!repeatable_exchange(&format!(
+            "oteryn:quest-npc/sandra/{suffix}"
+        )));
+    }
+    assert!(!repeatable_exchange("oteryn:quest-npc/other/lottery"));
+}

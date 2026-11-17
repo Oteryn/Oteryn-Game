@@ -123,3 +123,14 @@ pub fn valid_ticket_effects(effects: &[NpcRuleEffect]) -> bool {
     }
     takes == 1 && gives == 1
 }
+
+/// Only the four donor ticket exchanges use command-scoped repeatable MINT.
+pub fn repeatable_exchange(rule: &str) -> bool {
+    matches!(
+        rule,
+        "oteryn:quest-npc/sandra/lottery"
+            | "oteryn:quest-npc/sandra/deposit-283"
+            | "oteryn:quest-npc/sandra/deposit-284"
+            | "oteryn:quest-npc/sandra/deposit-285"
+    )
+}
