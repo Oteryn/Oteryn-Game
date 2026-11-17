@@ -62,8 +62,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 use crate::qualification_spell_character as spell_character;
 
-#[path = "qualification_wild_spawn.rs"]
-mod wild_spawn;
+use crate::qualification_wild_spawn as wild_spawn;
 
 #[cfg(test)]
 #[path = "spell_book_sweep_tests.rs"]
