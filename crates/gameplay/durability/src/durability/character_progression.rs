@@ -357,6 +357,40 @@ impl DurabilityRoot {
             .await?
     }
 
+    /// Retained XP/death history, even when the current level and XP returned to
+    /// their initial values. Automatic no-gain build checkpoints are not awards.
+    /// This recovery-fenced read does not establish current gameplay authority.
+    pub async fn has_character_experience_or_death_receipts(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character_id: CharacterId,
+    ) -> Result<bool> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let found = sqlx::query_scalar(
+                        "SELECT EXISTS (\
+                           SELECT 1 FROM game_character_xp_receipts \
+                            WHERE character_id = encode($1,'hex')::uuid \
+                           UNION ALL \
+                           SELECT 1 FROM game_character_death_receipts \
+                            WHERE character_id = encode($1,'hex')::uuid)",
+                    )
+                    .bind(character_id.as_bytes().as_slice())
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(found))
+                })
+            })
+            .await?
+    }
+
     pub async fn read_character_progression(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
