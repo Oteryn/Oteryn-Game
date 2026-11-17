@@ -81,7 +81,7 @@ pub(super) async fn exercise(
         item_fence: crate::gameplay_transport::item_fence_of(killer),
         ..*admitted
     };
-    Box::pin(owner.admit_progression_session(&mut killer)).await;
+    owner.admit_quest_session(&killer).await;
     super::questpc7_native_deaths::prepare_native_hunter(owner, &killer).await?;
     let intent = encode_item_use_intent(&UseIntent {
         target: UseTarget::Item(std::num::NonZeroU64::MIN),
