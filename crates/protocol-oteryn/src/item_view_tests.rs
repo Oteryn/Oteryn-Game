@@ -375,10 +375,10 @@ fn registries_bind_the_item_view_ids_and_limits() {
     let command = find("command_types", COMMAND_TYPE_ITEM_MOVE_INTENT);
     assert_eq!(command["name"], "ITEM_MOVE_INTENT");
     assert_eq!(command["capability"], CAPABILITY_ITEM_VIEW_MOVE_V1);
-    // The registered bound includes the capability 61 count; legacy bounds stay unchanged.
+    // The largest negotiated move carries both a stack count and a manual sort slot.
     assert_eq!(
         command["max_payload_bytes"].as_u64(),
-        Some(MAX_ITEM_MOVE_INTENT_STACK_COUNT_BYTES as u64)
+        Some(crate::item_view::MAX_ITEM_MOVE_INTENT_MANUAL_SORT_BYTES as u64)
     );
     assert_eq!(
         command["max_result_payload_bytes"].as_u64(),

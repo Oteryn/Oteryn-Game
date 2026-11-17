@@ -561,7 +561,7 @@ pub fn decode_npc_trade_window_for(
                 })?;
                 let detail = crate::trade_details::NpcQuoteDetails {
                     name: name.ok_or(NpcServiceWireError::Malformed)?,
-                    maximum_quantity: maximum.ok_or(NpcServiceWireError::Malformed)?,
+                    maximum_quantity: maximum.unwrap_or_default(),
                 };
                 check_quote_detail(&detail)?;
                 details.push(detail);

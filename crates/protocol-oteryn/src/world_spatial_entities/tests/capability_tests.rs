@@ -165,3 +165,40 @@ fn guild_emblem_sidecar_is_refused_unless_capability_509_was_selected()
     assert!(decode_world_spatial_entities_delta_with_icons(&bytes, selected).is_err());
     Ok(())
 }
+
+#[test]
+fn schema_declares_negotiated_delta_sidecars() {
+    let schema = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto"
+    ));
+    let delta = schema
+        .split_once("message WorldSpatialEntitiesDeltaV2 {")
+        .expect("delta message")
+        .1
+        .split('}')
+        .next()
+        .expect("delta body");
+    assert!(delta.contains("InventoryCapacityV1 inventory_capacity = 7;"));
+    assert!(delta.contains("GuildEmblemsV1 guild_emblems = 8;"));
+}
+
+#[test]
+fn snapshot_rejects_forecasts_for_another_player() -> Result<(), WorldSpatialError> {
+    let mut other = actor(EntityKind::Player, 1);
+    other.motion = Some(crate::actor_motion::ActorMotion {
+        prewalk_ms: [100; 8],
+        ..Default::default()
+    });
+    let fields = EntityFields::selected(&[6, 502]);
+    let lights = EntityLights::new();
+    let mut bytes = encode_snapshot(&snapshot(vec![own()]), fields, &lights)?;
+    push_message(
+        &mut bytes,
+        4,
+        &super::super::encode_entity(&other, fields, None)?,
+    );
+    assert!(decode_snapshot(&bytes, fields).is_err());
+    assert!(encode_snapshot(&snapshot(vec![own(), other]), fields, &lights).is_err());
+    Ok(())
+}

@@ -5,7 +5,7 @@
   "requires": [
     199
   ],
-  "acceptance_requires": false,
+  "acceptance_requires": true,
   "commands": [],
   "domains": [],
   "supersedes": [],

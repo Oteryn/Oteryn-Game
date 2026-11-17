@@ -894,6 +894,15 @@ fn authoritative_npc_quote_details_decode() {
         details: Vec::new(),
     })
     .expect("window");
+    let mut unavailable = payload.clone();
+    unavailable.extend_from_slice(&[34, 6, 10, 4, b'f', b'i', b's', b'h']);
+    assert_eq!(
+        decode_npc_trade_window_for(&unavailable, true)
+            .expect("unavailable quote")
+            .details[0]
+            .maximum_quantity,
+        0
+    );
     payload.extend_from_slice(&[34, 8, 10, 4, b'f', b'i', b's', b'h', 16, 37]);
     assert!(decode_npc_trade_window(&payload).is_err());
     let decoded = decode_npc_trade_window_for(&payload, true).expect("authoritative quote details");

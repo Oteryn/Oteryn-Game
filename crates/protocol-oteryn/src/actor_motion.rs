@@ -155,7 +155,7 @@ mod tests {
                 translation_revision: 3,
                 step_duration_ms: 200,
                 mount_look_type: 0,
-                prewalk_ms: [550; 8],
+                prewalk_ms: [0; 8],
             }),
             display_name: None,
             kind: EntityKind::Player,
@@ -176,6 +176,10 @@ mod tests {
             },
         };
         let own = WorldSpatialEntity {
+            motion: Some(ActorMotion {
+                prewalk_ms: [550; 8],
+                ..entity.motion.unwrap_or_default()
+            }),
             entity: EntityRef {
                 identity: [1; 16],
                 generation: 1,

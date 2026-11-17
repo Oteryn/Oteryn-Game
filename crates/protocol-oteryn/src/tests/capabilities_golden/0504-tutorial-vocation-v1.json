@@ -5,7 +5,7 @@
   "requires": [
     31
   ],
-  "acceptance_requires": false,
+  "acceptance_requires": true,
   "commands": [
     6243
   ],

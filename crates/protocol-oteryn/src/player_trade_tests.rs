@@ -130,6 +130,15 @@ fn trade_contents_are_negotiated_bounded_and_parent_indexed() -> Result<(), Erro
             name: "fish".into(),
         },
     ];
+    let mut omitted_root_parent = encode_state(&state)?;
+    let mut body = Vec::new();
+    push_message_field(&mut body, 1, &offer(root)?);
+    push_message_field(&mut body, 3, b"backpack");
+    push_message_field(&mut omitted_root_parent, 11, &body);
+    assert_eq!(
+        decode_state_for(&omitted_root_parent, true)?.contents[0],
+        state.contents[0][..1]
+    );
     let encoded = encode_state_for(&state, true)?;
     assert!(decode_state(&encoded).is_err());
     assert_eq!(decode_state_for(&encoded, true)?, state);

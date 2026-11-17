@@ -650,7 +650,7 @@ fn unique_identities<'a>(
 
 /// ITEM-MOVE-WIRE-0 §4.1 (#1703 P2 4175400425): a handle names one item, so two objects of one
 /// snapshot or delta never carry the same handle.
-fn unique_item_handles<'a>(
+pub fn unique_item_handles<'a>(
     entities: impl Iterator<Item = &'a WorldSpatialEntity>,
 ) -> Result<(), WorldSpatialError> {
     let mut seen = BTreeSet::new();
@@ -671,12 +671,32 @@ fn unique_item_handles<'a>(
     Ok(())
 }
 
+impl WorldSpatialEntity {
+    /// Adjacent step forecasts describe only the observing player's next move.
+    pub fn validate_forecast_owner(
+        &self,
+        own_identity: &[u8; ENTITY_IDENTITY_BYTES],
+    ) -> Result<(), WorldSpatialError> {
+        if self.entity.identity != *own_identity
+            && self
+                .motion
+                .is_some_and(|motion| motion.prewalk_ms != [0; 8])
+        {
+            return Err(WorldSpatialError::Malformed);
+        }
+        Ok(())
+    }
+}
+
 pub fn validate_snapshot(snapshot: &WorldSpatialEntitiesSnapshot) -> Result<(), WorldSpatialError> {
     if snapshot.entities.len() > MAX_SNAPSHOT_ENTITIES {
         return Err(WorldSpatialError::LimitExceeded);
     }
     unique_identities(snapshot.entities.iter().map(|entity| &entity.entity))?;
     unique_item_handles(snapshot.entities.iter())?;
+    for entity in &snapshot.entities {
+        entity.validate_forecast_owner(&snapshot.own_identity)?;
+    }
     // The own actor is always included, at the position the header states.
     snapshot
         .entities
@@ -1766,10 +1786,12 @@ mod tests {
             .iter()
             .find(|domain| domain["id"] == 1)
             .expect("domain 1");
-        let bound = payload_limit(EntityFields {
+        let fields = EntityFields {
+            actor_motion: true,
             display_names: true,
             ..EntityFields::default()
-        }) as u64;
+        };
+        let bound = payload_limit(fields) as u64;
         for (key, id, name) in [
             (
                 "delta_types",
@@ -1802,14 +1824,7 @@ mod tests {
                 s.starts_with("docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto#")
             }));
         }
-        assert_eq!(
-            bound,
-            256 * entry_limit(EntityFields {
-                display_names: true,
-                ..EntityFields::default()
-            }) as u64
-                + 1024
-        );
+        assert_eq!(bound, 256 * entry_limit(fields) as u64 + 1024);
 
         let resources: Value = serde_json::from_str(RESOURCE_REGISTRY).expect("resource registry");
         let entries = resources["entries"].as_array().expect("entries");

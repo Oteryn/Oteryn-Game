@@ -668,18 +668,138 @@ fn negotiated_names_survive_join_delta_and_visibility_leave() -> Result<(), BoxE
 #[test]
 fn retained_entity_handles_are_unique_after_enter_and_update() -> Result<(), BoxError> {
     let mut first = corpse(1, at(1, 0));
-    first.detail = EntityDetail::Object { item_definition_ref: 9, quantity: 1, item_handle: Some(handle(7)) };
+    first.detail = EntityDetail::Object {
+        item_definition_ref: 9,
+        quantity: 1,
+        item_handle: Some(handle(7)),
+    };
     let mut second = corpse(2, at(2, 0));
-    second.detail = EntityDetail::Object { item_definition_ref: 9, quantity: 1, item_handle: Some(handle(8)) };
-    let snapshot = WorldSpatialEntitiesSnapshot { content_generation: CONTENT_GENERATION, actor_position: at(0,0), own_identity: OWN, entities: vec![own(at(0,0)), first, second] };
+    second.detail = EntityDetail::Object {
+        item_definition_ref: 9,
+        quantity: 1,
+        item_handle: Some(handle(8)),
+    };
+    let snapshot = WorldSpatialEntitiesSnapshot {
+        content_generation: CONTENT_GENERATION,
+        actor_position: at(0, 0),
+        own_identity: OWN,
+        entities: vec![own(at(0, 0)), first, second],
+    };
     let store = WorldEntities::from_snapshot(&snapshot, Default::default());
     second.detail = first.detail;
     for update in [false, true] {
         let mut incoming = second;
-        if !update { incoming.entity.identity = [3; 16]; }
-        let delta = WorldSpatialEntitiesDelta { content_generation: CONTENT_GENERATION, actor_position: at(0,0), enter: if update {vec![]} else {vec![incoming]}, update: if update {vec![incoming]} else {vec![]}, leave:vec![] };
+        if !update {
+            incoming.entity.identity = [3; 16];
+        }
+        let delta = WorldSpatialEntitiesDelta {
+            content_generation: CONTENT_GENERATION,
+            actor_position: at(0, 0),
+            enter: if update { vec![] } else { vec![incoming] },
+            update: if update { vec![incoming] } else { vec![] },
+            leave: vec![],
+        };
         assert!(store.after(&delta, &Default::default()).is_err());
+        let mut native = delta;
+        let changed = if update {
+            &mut native.update
+        } else {
+            &mut native.enter
+        };
+        changed[0].detail = EntityDetail::ObjectWithAppearance {
+            item_definition_ref: 9,
+            quantity: 1,
+            item_handle: Some(handle(7)),
+            appearance_id: std::num::NonZeroU16::MIN,
+        };
+        assert!(store.after(&native, &Default::default()).is_err());
         assert_eq!(store.len(), 3);
+    }
+    Ok(())
+}
+
+#[test]
+fn retained_view_refuses_forecasts_on_other_actors() {
+    let other = actor(EntityKind::Creature, 1, 1, at(1, 0));
+    let mut forecast = other;
+    forecast.motion = Some(oteryn_protocol_oteryn::actor_motion::ActorMotion {
+        prewalk_ms: [100; 8],
+        ..Default::default()
+    });
+    for update in [false, true] {
+        let mut entities = vec![own(at(0, 0))];
+        if update {
+            entities.push(other);
+        }
+        let snapshot = WorldSpatialEntitiesSnapshot {
+            content_generation: CONTENT_GENERATION,
+            actor_position: at(0, 0),
+            own_identity: OWN,
+            entities,
+        };
+        let store = WorldEntities::from_snapshot(&snapshot, Default::default());
+        let delta = WorldSpatialEntitiesDelta {
+            content_generation: CONTENT_GENERATION,
+            actor_position: at(0, 0),
+            enter: if update { vec![] } else { vec![forecast] },
+            update: if update { vec![forecast] } else { vec![] },
+            leave: vec![],
+        };
+        assert!(store.after(&delta, &Default::default()).is_err());
+    }
+}
+
+#[test]
+fn trade_snapshots_require_registered_type() -> Result<(), BoxError> {
+    use oteryn_protocol_oteryn::{DomainSnapshot, decode_snapshot_chunk_framing, player_trade};
+    for (domain_id, capability, payload) in [
+        (8, 3, vec![]),
+        (
+            26,
+            60,
+            player_trade::encode_state(&Default::default())
+                .map_err(|error| format!("{error:?}"))?,
+        ),
+    ] {
+        let spatial = spatial(0);
+        let decode = |snapshot_type,
+                      previous: Option<&crate::snapshot_state::SnapshotState>|
+         -> Result<_, BoxError> {
+            let frames = encode_single_chunk_snapshot(
+                1,
+                1,
+                1,
+                &[
+                    DomainSnapshot {
+                        domain_id: 1,
+                        revision: 1,
+                        snapshot_type: 1,
+                        payload: &spatial,
+                    },
+                    DomainSnapshot {
+                        domain_id,
+                        revision: 1,
+                        snapshot_type,
+                        payload: &payload,
+                    },
+                ],
+            )?;
+            let envelope = oteryn_protocol_oteryn::decode_wire_envelope(&frames[1])?;
+            let (_, body) = decode_snapshot_chunk_framing(envelope.payload())?;
+            Ok(crate::snapshot_state::SnapshotState::decode(
+                body,
+                1,
+                &[capability],
+                None,
+                previous,
+            ))
+        };
+        let state = decode(1, None)??;
+        for previous in [None, Some(&state)] {
+            assert!(
+                matches!(decode(2, previous)?, Err(SessionError::UnregisteredSnapshotType { domain_id: id, snapshot_type: 2 }) if id == domain_id)
+            );
+        }
     }
     Ok(())
 }

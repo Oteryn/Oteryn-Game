@@ -251,3 +251,10 @@ fn adding_a_capability_command_and_domain_needs_only_new_fragments() -> Result<(
     assert!(build_capabilities::render(&missing, &registry).is_err());
     Ok(())
 }
+
+#[test]
+fn accepted_extensions_require_their_prerequisites() {
+    for id in 502..=511 {
+        assert!(crate::validate_capability_closure(&[id]).is_err(), "{id}");
+    }
+}

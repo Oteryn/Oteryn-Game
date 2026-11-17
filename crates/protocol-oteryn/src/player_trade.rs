@@ -479,7 +479,7 @@ fn read_contents_item(bytes: &[u8]) -> Result<ContentsItem, Error> {
     }
     Ok(ContentsItem {
         item: item.ok_or(Error::Malformed)?,
-        parent: parent.ok_or(Error::Malformed)?.checked_sub(1),
+        parent: parent.unwrap_or_default().checked_sub(1),
         name: name.ok_or(Error::Malformed)?,
     })
 }

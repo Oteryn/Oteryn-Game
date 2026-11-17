@@ -179,4 +179,24 @@ message WorldSpatialEntitiesDeltaV2 {
   // PARTY-SKULL-1: capability 134 only; an icons-only delta, no enter/update/leave.
   // Absent on ordinary spatial deltas. The bundle replaces the observer's icon view.
   oteryn.party_skull.v1.PartyIconsV1 party_icons = 6;
+  // Capabilities 508 and 509 respectively. Each is sent alone on a header-only delta.
+  InventoryCapacityV1 inventory_capacity = 7;
+  GuildEmblemsV1 guild_emblems = 8;
+}
+
+message InventoryCapacityV1 {
+  // Both values are required on the wire, in centi-ounces.
+  optional uint32 capacity = 1;
+  optional uint32 free = 2;
+}
+
+message GuildEmblemsV1 {
+  // Replaces the entire view. An empty message clears all emblems.
+  repeated GuildEmblemV1 entries = 1;
+}
+
+message GuildEmblemV1 {
+  bytes identity = 1;
+  uint64 generation = 2;
+  uint32 emblem = 3;
 }
