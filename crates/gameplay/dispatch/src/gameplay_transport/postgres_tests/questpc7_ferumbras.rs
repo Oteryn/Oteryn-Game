@@ -529,6 +529,7 @@ pub(super) async fn exercise(
         UseDisposition::Rejected
     );
     assert_eq!(facts(h).await?, (5, 3, 1));
+    super::qcx_ferumbras_ascension::assert_chest_bundle(h).await?;
     let observed = owner
         .appearance_observation(actor, a.game_session_id, vec![])
         .await
