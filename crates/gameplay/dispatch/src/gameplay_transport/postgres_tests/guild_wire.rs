@@ -520,22 +520,47 @@ pub(super) async fn capture_activity_return(
         ended
     };
     let driving = async {
+        let mut applied_sequence = before.continuity.server_sequence;
         loop {
             let frame = read_frame(&mut client).await?;
-            let complete = decode_wire_envelope(&frame).map_err(debug)?.message_type()
-                == MessageType::SnapshotCommit;
+            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+            applied_sequence = applied_sequence.max(envelope.server_sequence());
+            let complete = envelope.message_type() == MessageType::SnapshotCommit;
             capture.push(frame);
             if complete {
                 break;
             }
         }
-        action.await?;
+        // Keep consuming egress while the owner action runs. Otherwise the bounded
+        // duplex can fill with visibility updates and disconnect a healthy fixture.
+        let mut action = std::pin::pin!(action);
+        let mut action_finished = false;
+        let mut frames = crate::gameplay_transport::tcp_tls::FrameReader::default();
         let mut barrier: Option<oteryn_protocol_oteryn::activity_scope::ActivityScopeSnapshot> =
             None;
         let mut commits = 0;
         loop {
-            let frame = read_frame(&mut client).await?;
+            let frame = tokio::select! {
+                result = &mut action, if !action_finished => {
+                    result?;
+                    action_finished = true;
+                    continue;
+                }
+                frame = frames.next(&mut client) => frame?,
+            };
             let env = decode_wire_envelope(&frame).map_err(debug)?;
+            applied_sequence = applied_sequence.max(env.server_sequence());
+            if env.message_type() == MessageType::LivenessProbe {
+                let probe =
+                    oteryn_protocol_oteryn::decode_liveness_probe(env.payload()).map_err(debug)?;
+                let ack = oteryn_protocol_oteryn::encode_liveness_ack(
+                    env.connection_generation(),
+                    probe,
+                    applied_sequence,
+                )
+                .map_err(debug)?;
+                write_frame(&mut client, &ack).await?;
+            }
             if env.message_type() == MessageType::SnapshotChunk {
                 let (_, domains) =
                     oteryn_protocol_oteryn::decode_snapshot_chunk(env.payload()).map_err(debug)?;
@@ -565,6 +590,9 @@ pub(super) async fn capture_activity_return(
                 }
                 break;
             }
+        }
+        if !action_finished {
+            action.await?;
         }
         client.shutdown().await?;
         barrier.ok_or("autonomous scope barrier".into())

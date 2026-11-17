@@ -604,6 +604,9 @@ pub(super) async fn exercise(
         let (id, payload) = use_shapechanger(owner, admitted).await?; // intended semantic RED without Rule12251 registration
         let appearance = form["appearance"].as_u64().ok_or("form appearance")?;
         assert_form(owner, admitted, appearance).await?;
+        // Drive the same admitted-player cadence as serve, without changing the clock.
+        let _ = owner.tick_vitals(actor, admitted.game_session_id).await;
+        assert_form(owner, admitted, appearance).await?;
         if i == 0 {
             let callback = form["callback"].as_str().ok_or("callback")?;
             assert!(

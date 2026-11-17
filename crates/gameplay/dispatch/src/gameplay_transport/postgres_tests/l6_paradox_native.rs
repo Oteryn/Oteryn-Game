@@ -727,11 +727,17 @@ async fn third(
         assert!(runtime.current_live_creature_candidates(4096).is_err());
         actors
     };
+    // Index by slot, then compare the complete reference so reused generations stay visible.
+    let unrelated_by_id = unrelated
+        .iter()
+        .map(|actor| (actor.actor_local_id(), *actor))
+        .collect::<std::collections::BTreeMap<_, _>>();
+    assert_eq!(unrelated_by_id.len(), unrelated.len());
     let puzzle_creatures = |runtime: &crate::foundation::ChannelRuntimeV1|
      -> TestResult<Vec<crate::foundation::ExactActorRef>> {
         let mut actors = runtime.current_live_creature_census().map_err(debug)?;
         let total = actors.len();
-        actors.retain(|actor| !unrelated.contains(actor));
+        actors.retain(|actor| unrelated_by_id.get(&actor.actor_local_id()) != Some(actor));
         assert_eq!(
             total - actors.len(),
             unrelated.len(),

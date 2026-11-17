@@ -1777,11 +1777,17 @@ async fn run_nested_reset_mid_batch_refusal(admin: String) -> TestResult {
     assert_eq!(h.count("game_item_decay_retire_reservations").await?, 0);
 
     // Refuse the second descendant only after the first has its real terminal
-    // writes. The nontransactional counters prove that a false helper result
-    // stops the batch before its third child; every original guard stays active.
+    // writes. Suppress its DELETE at the actual bulk-writer boundary; the
+    // nontransactional counters prove that no third child executes, and every
+    // original guard stays active.
+    sqlx::raw_sql(
+        "CREATE FUNCTION test_nested_batch_entry() RETURNS trigger LANGUAGE plpgsql AS $fixture$\nBEGIN\n RETURN OLD;\nEND\n$fixture$;",
+    )
+    .execute(&h.pool)
+    .await?;
     let (definition, body): (String, String) = sqlx::query_as(
         "SELECT pg_get_functiondef(p.oid),p.prosrc FROM pg_proc p \
-         WHERE p.oid='game_player_death_retire_entry(uuid,numeric,uuid,uuid,smallint,bigint,bigint,text,bigint)'::regprocedure",
+         WHERE p.oid='test_nested_batch_entry()'::regprocedure",
     )
     .fetch_one(&h.pool)
     .await?;
@@ -1798,7 +1804,7 @@ async fn run_nested_reset_mid_batch_refusal(admin: String) -> TestResult {
     let injection = format!(
         "\nBEGIN\n \
          PERFORM nextval('test_nested_batch_attempts_seq'::regclass); \
-         IF p_item='{}'::uuid THEN \
+         IF OLD.item_instance_id='{}'::uuid THEN \
           IF NOT EXISTS(SELECT 1 FROM game_item_decay_retire_receipts r \
             JOIN game_item_instances i ON i.item_instance_id=r.item_instance_id \
              AND i.quantity=0 AND i.lifecycle=2 AND i.last_transaction_id=r.transaction_id \
@@ -1810,7 +1816,7 @@ async fn run_nested_reset_mid_batch_refusal(admin: String) -> TestResult {
            RAISE EXCEPTION 'mid-batch fixture requires a completed first descendant'; \
           END IF; \
           PERFORM nextval('test_nested_batch_refused_seq'::regclass); \
-          RETURN FALSE; \
+          RETURN NULL; \
          END IF;\n",
         uuid_text(items[2]),
         uuid_text(items[3]),
@@ -1824,6 +1830,14 @@ async fn run_nested_reset_mid_batch_refusal(admin: String) -> TestResult {
         &injected_body,
         1,
     )))
+    .execute(&h.pool)
+    .await?;
+    sqlx::raw_sql(
+        "CREATE TRIGGER zzz_test_nested_batch_entry BEFORE DELETE ON game_item_container_entries \
+          FOR EACH ROW EXECUTE FUNCTION test_nested_batch_entry(); \
+         CREATE TRIGGER zzz_test_nested_batch_entry BEFORE DELETE ON game_item_nested_entries \
+          FOR EACH ROW EXECUTE FUNCTION test_nested_batch_entry();",
+    )
     .execute(&h.pool)
     .await?;
     let rejected = h

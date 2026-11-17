@@ -83,6 +83,24 @@ impl Scratch {
         self.0.join(relative)
     }
 
+    fn locked_package_field(&self, name: &str, field: &str) -> String {
+        let lock = fs::read_to_string(self.path("Cargo.lock")).expect("lock fixture");
+        let name = format!("name = \"{name}\"");
+        let mut packages = lock
+            .split("[[package]]")
+            .filter(|package| package.lines().any(|line| line == name));
+        let package = packages.next().expect("locked package");
+        assert!(packages.next().is_none(), "unambiguous locked package");
+        let prefix = format!("{field} = \"");
+        let mut values = package.lines().filter_map(|line| {
+            line.strip_prefix(&prefix)
+                .and_then(|value| value.strip_suffix('"'))
+        });
+        let value = values.next().expect("locked field").to_owned();
+        assert!(values.next().is_none(), "singular locked field");
+        value
+    }
+
     fn json(&self, relative: &str) -> Value {
         serde_json::from_slice(&fs::read(self.path(relative)).expect("read")).expect("json")
     }
@@ -300,6 +318,10 @@ fn inputs_digest_is_stable_across_squash_and_pin_edits_and_moves_with_inputs() {
 #[test]
 fn inputs_digest_takes_the_cargo_inputs_of_the_world_crates_only() {
     let dir = Scratch::new("cargo");
+    let rcgen_checksum = dir.locked_package_field("rcgen", "checksum");
+    let rcgen_version = dir.locked_package_field("rcgen", "version");
+    let zstd_checksum = dir.locked_package_field("zstd", "checksum");
+    let zstd_version = dir.locked_package_field("zstd", "version");
     let mut production = pin(&"0".repeat(64));
     production["production"] = json!(true);
     dir.write_json(&dir.pin_file(), &production);
@@ -337,15 +359,11 @@ fn inputs_digest_takes_the_cargo_inputs_of_the_world_crates_only() {
         "[[package]]\nname = \"oteryn-unrelated\"\nversion = \"0.1.0\"\ndependencies = [\n \"rcgen\",\n \"serde\",\n]\n\n\
          [[package]]\nname = \"rcgen\"\n",
     );
-    edit(
-        "Cargo.lock",
-        "8774e05a7d0de114588e6a28fe7e71694b82614ed569d86d8b389dfbc98b8ad8",
-        &"9".repeat(64),
-    );
+    edit("Cargo.lock", &rcgen_checksum, &"9".repeat(64));
     edit(
         "Cargo.toml",
-        "rcgen = { version = \"=0.14.10\"",
-        "rcgen = { version = \"=0.14.11\"",
+        &format!("rcgen = {{ version = \"={rcgen_version}\""),
+        &format!("rcgen = {{ version = \"={rcgen_version}-pin-test\""),
     );
     edit(
         "Cargo.toml",
@@ -359,28 +377,24 @@ fn inputs_digest_takes_the_cargo_inputs_of_the_world_crates_only() {
     // The checksum or version of a package in the closure, a World workspace dependency and a
     // profile each move it.
     for (path, from, to) in [
+        ("Cargo.lock", zstd_checksum, "0".repeat(64)),
         (
             "Cargo.lock",
-            "db3ae9bf90af6e40197bef767eeefc46ad6397420fe873830bd85e5fbbfb3c70",
-            "0".repeat(64),
-        ),
-        (
-            "Cargo.lock",
-            "name = \"zstd\"\nversion = \"0.14.3\"",
-            "name = \"zstd\"\nversion = \"0.14.4\"".to_owned(),
+            format!("name = \"zstd\"\nversion = \"{zstd_version}\""),
+            format!("name = \"zstd\"\nversion = \"{zstd_version}-pin-test\""),
         ),
         (
             "Cargo.toml",
-            "zstd = { version = \"=0.14.3\"",
-            "zstd = { version = \"=0.14.4\"".to_owned(),
+            format!("zstd = {{ version = \"={zstd_version}\""),
+            format!("zstd = {{ version = \"={zstd_version}-pin-test\""),
         ),
         (
             "Cargo.toml",
-            "[workspace.lints.rust]\n",
+            "[workspace.lints.rust]\n".to_owned(),
             "[profile.release]\nopt-level = 2\n\n[workspace.lints.rust]\n".to_owned(),
         ),
     ] {
-        edit(path, from, &to);
+        edit(path, &from, &to);
         assert_ne!(stale(&dir), tree, "{path}: {to}");
         restore();
     }
