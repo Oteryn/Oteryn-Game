@@ -886,6 +886,11 @@ stage() { # name prerequisite... -- function
   if [[ $rc == 0 ]]; then
     STATUS[$name]=PASS
     if grep -q 'e2e_all scenario=.* status=FAIL' "$WORK/stage-$name.log"; then
+      # A FAIL row is a failed qualification even when the stage process exits 0.
+      local failed_rows
+      failed_rows=$(grep -oE 'e2e_all scenario=[^ ]+ status=FAIL' "$WORK/stage-$name.log" | sed -E 's/e2e_all scenario=([^ ]+) .*/\1/' | sort -u | paste -sd, -)
+      STATUS[$name]="FAIL(rows)"
+      echo "NODE_BOOT_STAGE_FAILED $name rows=$failed_rows"
       echo "--- session close events behind failed e2e rows"
       grep -E 'event=(serve_end|serve_command_end|command_guard_failed|join_prepare_failed|connection_[a-z_]+)( |$)' "$node_log" 2>/dev/null | tail -n 120 || true
     fi
