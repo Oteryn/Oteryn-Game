@@ -12,6 +12,7 @@ import re
 from native_container_fluids import project_fluid_child
 from pathlib import Path
 
+import global_corrections
 import poison_daggers
 
 SOURCE = Path(__file__).with_name('container_native_source.json')
@@ -47,6 +48,8 @@ CHARGED_QUEST_CLAIMS = {
     'canary:reward-claim/kv/desert2': 3084,
     'canary:reward-claim/kv/draconia1': 3284,
     'canary:reward-claim/kv/fireaxe1': 3085,
+    'canary:reward-claim/kv/ghoulroom1': 3083,
+    'canary:reward-claim/kv/silveramulet': 3054,
     'canary:reward-claim/kv/timering3': 3082,
     'canary:reward-claim/kv/triangletower': 3083,
     'canary:reward-claim/kv/trollcave1': 3083,
@@ -74,7 +77,7 @@ def native_charge_item(item, profile):
         return item
     identity = item['identity']
     key = identity['key']
-    charges = {3082: 50, 3083: 150, 3084: 250, 3085: 200, 3284: 1}.get(item_id(identity))
+    charges = {3054: 200, 3082: 50, 3083: 150, 3084: 250, 3085: 200, 3284: 1}.get(item_id(identity))
     if charges is None:
         return item
     held = item
@@ -335,6 +338,7 @@ def derive(definition, items, stack_problem):
             # Existing chest source authoring deliberately strips outer LF:
             # quest-authoring/ots_chests.py:278-279. Keep its accepted hash.
             body = text['text'].strip('\n')
+            body = global_corrections.source_text(ids[0], body)
             if (not 1 <= len(body.encode()) <= 7996 or len(body) > 4000 or '\0' in body
                     or item_id(written.get('item', {})) != text['item_id']
                     or written.get('text_ref') != {'length': len(body), 'placeholders': [],
@@ -390,7 +394,8 @@ def derive(definition, items, stack_problem):
         if (root is None or root['identity'] != reward['container'] or item_id(reward['container']) != setting['container']
                 or stack_problem(root, 1) is not None or type(capacity) is not int or not 1 <= capacity <= 65535):
             return None
-        original = poison_daggers.source_reward(ids[0], setting['itemPos'], setting['reward'])
+        original = global_corrections.source_reward(
+            ids[0], setting['itemPos'], poison_daggers.source_reward(ids[0], setting['itemPos'], setting['reward']))
         if ids[0] in ACCEPTED_TWO_STACKS:
             selected = ACCEPTED_TWO_STACKS[ids[0]]
             original = [part for source_id, count in original

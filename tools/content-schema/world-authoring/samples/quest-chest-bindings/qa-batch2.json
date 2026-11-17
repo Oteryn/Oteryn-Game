@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "repository": "zimbadev/crystalserver",
+  "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+  "table": "data-global/startup/tables/chest.lua",
+  "table_sha256": "0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
+  "startup": "data-global/startup/others/functions.lua:97-120",
+  "bindings": [
+    {
+      "claim": "oteryn:reward-claim.kv.deeperfibula5",
+      "position": [
+        32256,
+        32500,
+        10
+      ],
+      "appearance": 4240,
+      "unique": 6012,
+      "source_line": 667
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.devilhemet1",
+      "position": [
+        32459,
+        32144,
+        15
+      ],
+      "appearance": 2472,
+      "unique": 6139,
+      "source_line": 1659
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.devilhemet2",
+      "position": [
+        32465,
+        32148,
+        15
+      ],
+      "appearance": 2480,
+      "unique": 6140,
+      "source_line": 1666
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.devilhemet3",
+      "position": [
+        32466,
+        32148,
+        15
+      ],
+      "appearance": 2480,
+      "unique": 6141,
+      "source_line": 1673
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.ghoulroom1",
+      "position": [
+        32500,
+        32175,
+        14
+      ],
+      "appearance": 2472,
+      "unique": 6136,
+      "source_line": 1636
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.ghoulroom2",
+      "position": [
+        32500,
+        32177,
+        14
+      ],
+      "appearance": 2472,
+      "unique": 6137,
+      "source_line": 1644
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.silveramulet",
+      "position": [
+        32506,
+        32269,
+        9
+      ],
+      "appearance": 2469,
+      "unique": 6154,
+      "source_line": 1780
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.key.id4502",
+      "position": [
+        32201,
+        31571,
+        10
+      ],
+      "appearance": 2472,
+      "unique": 5008,
+      "source_line": 435
+    }
+  ],
+  "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
+  "level_access": [],
+  "startup_sha256": "897c4ea5572c6adef1d2b300fd75c141910d608a093ca15c3d3bf65fcf56826c"
+}

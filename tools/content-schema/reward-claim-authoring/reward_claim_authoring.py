@@ -44,6 +44,7 @@ from pathlib import Path
 
 import container_native
 import charge_native
+import global_corrections
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
@@ -316,7 +317,8 @@ def build_records(claims: list, manifest: dict, items: dict,
             position = placement["position"]
             xyz = (position["x"], position["y"], position["z"])
             rewards = []
-            for reward in placement["reward"]["items"]:
+            for reward in global_corrections.pilot_items(
+                    claim["identity"]["key"], position, placement["reward"]["items"]):
                 key = a12(reward["item"])
                 quantity, charge_check = charged_source_reward(qualified_items.get(key),
                     claim["identity"]["key"], position, key, reward["count"], charge_evidence)
@@ -455,7 +457,8 @@ def validate(records: list, items: dict, source_checks: list | None = None,
     expected_charge_checks = []
     charge_evidence = load_source_charge_evidence() if charge_evidence is None else charge_evidence
     originals = {(c["identity"]["key"], tuple(p["position"][k] for k in ("x", "y", "z")), a12(r["item"])): r["count"]
-        for c in (source_claims or []) for p in c["placements"] for r in p.get("reward", {}).get("items", [])}
+        for c in (source_claims or []) for p in c["placements"]
+        for r in global_corrections.pilot_items(c["identity"]["key"], p["position"], p.get("reward", {}).get("items", []))}
     keys, bindings = set(), set()
     for row in records:
         record = row["definition"]

@@ -28,6 +28,10 @@ class SourceChargedAdmission(unittest.TestCase):
         self.assertEqual(self.items[KEY], before)
         self.assertIsNot(projected[KEY], self.items[KEY])
         self.assertEqual(native.CHARGED_QUEST_CLAIMS, {PILOT: 3084,
+            'canary:reward-claim/kv/draconia1': 3284,
+            'canary:reward-claim/kv/fireaxe1': 3085,
+            'canary:reward-claim/kv/ghoulroom1': 3083,
+            'canary:reward-claim/kv/silveramulet': 3054,
             'canary:reward-claim/kv/timering3': 3082,
             'canary:reward-claim/kv/triangletower': 3083,
             'canary:reward-claim/kv/trollcave1': 3083,

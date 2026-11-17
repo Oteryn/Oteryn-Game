@@ -196,6 +196,7 @@ def capture(source_root, selected, root=ROOT):
 
     sys.path.insert(0, str(ROOT / "tools/content-schema/reward-claim-authoring"))
     import container_native
+    import global_corrections
     import poison_daggers
     import reward_claim_authoring
 
@@ -252,7 +253,11 @@ def capture(source_root, selected, root=ROOT):
             )
             source_reward = container_native.source_charged_reward(
                 definition.get("provenance", {}).get("pilot_key"),
-                poison_daggers.source_reward(unique, position, setting["reward"]),
+                global_corrections.source_reward(
+                    unique,
+                    position,
+                    poison_daggers.source_reward(unique, position, setting["reward"]),
+                ),
                 items,
             )
             if (

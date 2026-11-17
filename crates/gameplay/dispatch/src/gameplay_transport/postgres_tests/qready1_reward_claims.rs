@@ -99,7 +99,7 @@ fn retained_world(
     Err("source chest has no enterable adjacent tile".into())
 }
 
-fn claim_case(
+pub(super) fn claim_case(
     claim: &str,
     chest: (u16, u16, i8),
     choices: &[(u16, u16)],
@@ -455,7 +455,7 @@ fn qready1_captain_iglues_treasure_quest_exact_reward_once() -> TestResult {
                 &[(32039, 6117)],
                 2472,
                 "oteryn:item.tibia.i3579",
-                1,
+                2,
             )
             .map_err(|e| e.to_string())?;
             Ok(())
