@@ -34,7 +34,19 @@ pub(super) async fn prepare(
     };
     match prepare_build(root, authority, proof, config, native, session, profile).await {
         Ok(()) => "qualified",
-        Err(_) => "rejected",
+        Err(error) => {
+            // The control answer stays a bare word; the node log keeps the cause.
+            let reason: String = error
+                .to_string()
+                .chars()
+                .map(|c| if c.is_whitespace() { '_' } else { c })
+                .take(240)
+                .collect();
+            event(&format!(
+                "event=qualification_fixture result=rejected reason={reason}"
+            ));
+            "rejected"
+        }
     }
 }
 

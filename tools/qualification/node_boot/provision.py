@@ -29,7 +29,9 @@ def provision(socket_path, session, profile):
                 break
             answer.extend(chunk)
         if answer != b"qualified\n":
-            raise RuntimeError("node refused qualification provisioning")
+            raise RuntimeError(
+                f"node refused qualification provisioning: answer={bytes(answer)!r} profile={profile}"
+            )
 
 
 if __name__ == "__main__":
