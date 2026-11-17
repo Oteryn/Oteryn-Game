@@ -158,55 +158,7 @@ fn cyclopedia_items_reaches_catalogue_and_renders_confirmed_details() -> TestRes
     );
     app.update();
     click(&mut app, Action::Prices)?;
-    let PlayCommand::Market(command) = receiver
-        .try_recv()
-        .map_err(|error| format!("command: {error}"))?
-    else {
-        return Err("market offers".into());
-    };
-    assert_eq!((command.0.action, command.0.definition), (2, 42));
-    let PlayCommand::Feature(statistics) = receiver
-        .try_recv()
-        .map_err(|error| format!("statistics: {error}"))?
-    else {
-        return Err("price statistics".into());
-    };
-    use oteryn_client_runtime::market::market_details::PriceSummary;
-    use oteryn_client_ui::market::details::{Query, Reply, Statistics};
-    assert_eq!(
-        Query::Statistics { definition: 42 },
-        oteryn_client_runtime::market::market_details::decode_query(&statistics.payload)
-            .map_err(|e| format!("{e:?}"))?
-    );
-    let summary = PriceSummary {
-        trades: 1,
-        units: 1,
-        minimum: Some(19),
-        maximum: Some(19),
-        average: Some(19),
-    };
-    outbox.bevy_market_reply(
-        &statistics,
-        &oteryn_session::GatedCommandResult {
-            command_id: 2,
-            server_sequence: 2,
-            status: oteryn_session::CommandStatus::Accepted,
-            payload: oteryn_client_runtime::market::market_details::encode_reply(
-                &Reply::Statistics(Statistics {
-                    definition: 42,
-                    as_of_us: 2592000000000,
-                    trades: 1,
-                    units: 1,
-                    minimum: Some(19),
-                    maximum: Some(19),
-                    average: Some(19),
-                    sell: summary,
-                    ..default()
-                }),
-            )
-            .map_err(|e| format!("{e:?}"))?,
-        },
-    );
+    reply_to_prices(&mut receiver, &outbox)?;
     app.update();
     assert!(visible(&mut app).contains("average 19"));
     // Topmost modal owns activation, even for a directly triggered Bevy event.
@@ -288,6 +240,62 @@ fn drop_sources_continue_after_inventory_inspection() -> TestResult {
     drop_sources_pages(true)
 }
 
+fn reply_to_prices(
+    receiver: &mut tokio::sync::mpsc::UnboundedReceiver<PlayCommand>,
+    outbox: &crate::play::Outbox,
+) -> TestResult {
+    let PlayCommand::Market(command) = receiver
+        .try_recv()
+        .map_err(|error| format!("command: {error}"))?
+    else {
+        return Err("market offers".into());
+    };
+    assert_eq!((command.0.action, command.0.definition), (2, 42));
+    let PlayCommand::Feature(statistics) = receiver
+        .try_recv()
+        .map_err(|error| format!("statistics: {error}"))?
+    else {
+        return Err("price statistics".into());
+    };
+    use oteryn_client_runtime::market::market_details::PriceSummary;
+    use oteryn_client_ui::market::details::{Query, Reply, Statistics};
+    assert_eq!(
+        Query::Statistics { definition: 42 },
+        oteryn_client_runtime::market::market_details::decode_query(&statistics.payload)
+            .map_err(|e| format!("{e:?}"))?
+    );
+    let summary = PriceSummary {
+        trades: 1,
+        units: 1,
+        minimum: Some(19),
+        maximum: Some(19),
+        average: Some(19),
+    };
+    outbox.bevy_market_reply(
+        &statistics,
+        &oteryn_session::GatedCommandResult {
+            command_id: 2,
+            server_sequence: 2,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: oteryn_client_runtime::market::market_details::encode_reply(
+                &Reply::Statistics(Statistics {
+                    definition: 42,
+                    as_of_us: 2592000000000,
+                    trades: 1,
+                    units: 1,
+                    minimum: Some(19),
+                    maximum: Some(19),
+                    average: Some(19),
+                    sell: summary,
+                    ..default()
+                }),
+            )
+            .map_err(|e| format!("{e:?}"))?,
+        },
+    );
+    Ok(())
+}
+
 fn drop_sources_pages(inspect_between_pages: bool) -> TestResult {
     let (mut app, link, mut receiver, outbox) = catalogue_window()?;
     click(&mut app, Action::Select(42))?;
@@ -349,7 +357,9 @@ fn drop_sources_pages(inspect_between_pages: bool) -> TestResult {
             app.update();
             click(&mut app, Action::Prices)?;
             assert_eq!(link.inspection_panel().catalogue_market, Some(42));
-            while receiver.try_recv().is_ok() {}
+            reply_to_prices(&mut receiver, &outbox)?;
+            app.update();
+            assert!(visible(&mut app).contains("average 19"));
             super::super::item_details::install(&mut app);
             crate::bevy_shell::ui::window_layout::install(&mut app);
             link.inspection_set_open(true);
@@ -400,6 +410,7 @@ fn drop_sources_pages(inspect_between_pages: bool) -> TestResult {
     }
     if inspect_between_pages {
         assert!(visible(&mut app).contains("Related market offers:"));
+        assert!(visible(&mut app).contains("average 19"));
         assert_eq!(link.inspection_panel().catalogue_market, Some(42));
     }
     Ok(())
@@ -414,9 +425,14 @@ fn trimmed_search_fits_wire_limit() -> TestResult {
         .editor_mut()
         .set_text(&format!("{} ", "x".repeat(64)));
     click(&mut app, Action::Browse)?;
-    assert!(matches!(
-        commands.try_recv()?,
-        PlayCommand::ServerMechanic(_)
-    ));
+    let PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("missing browse request".into());
+    };
+    assert_eq!(
+        wire::decode_request(&command.payload).map_err(|e| format!("{e:?}"))?,
+        Request::CatalogueQuery(
+            catalogue::items(0, 0, &"x".repeat(64)).map_err(|e| format!("{e:?}"))?
+        )
+    );
     Ok(())
 }
