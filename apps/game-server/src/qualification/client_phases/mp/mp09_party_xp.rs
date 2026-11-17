@@ -560,6 +560,11 @@ async fn encounter(
         }
     }
     let (name, pool, spawns, path) = chosen.ok_or_else(|| format!("no reachable authored hunt spawn;tried={tried:?};start={from:?};source:apps/game-server/src/qualification/client_phases/world.rs:441"))?;
+    evidence(&format!(
+        "MP_CHECK MP09 hunt-route PASS target={name} base_xp={pool} spawns={} steps={} from={from:?}",
+        spawns.len(),
+        path.len()
+    ));
     bots::walk_bot(bots, 0, world, &path).await?;
     let leader = tile(bots[0].client()?.world_spatial().actor_position)?;
     for actor in [1, 2] {
@@ -581,6 +586,9 @@ async fn encounter(
             .map_err(|reached| format!("MP peer approach has no reachable tile;walkable_reached={};start={here:?};leader={leader:?}", reached.len()))?;
         bots::walk_bot(bots, actor, world, &path).await?;
     }
+    evidence(&format!(
+        "MP_CHECK MP09 hunt-arrived PASS leader={leader:?} peers within 1 tile outside protection zone"
+    ));
     let mut start = [0; 3];
     for (index, bot) in bots.iter_mut().enumerate() {
         start[index] = stats(bot).await?.0;
@@ -625,6 +633,9 @@ async fn encounter(
     )
     .await?;
     let target = target.ok_or("hunt target entity absent")?;
+    evidence(&format!(
+        "MP_CHECK MP09 hunt-target-found PASS name={name} entity={target:?}"
+    ));
     let attackers = [bots[0].own()?, bots[1].own()?, bots[2].own()?];
     for bot in bots.iter_mut() {
         let modes = oteryn_protocol_oteryn::attack::FightModes {
@@ -639,6 +650,7 @@ async fn encounter(
         }
         attack_target(bot, Some(&target)).await?;
     }
+    evidence("MP_CHECK MP09 hunt-attack-started PASS all three bots attacking in chase mode");
     let mut hits = [false; 3];
     bots::wait_observation(bots, deadline, "all three damage the hunt target and kill", |bots, events| {
         for stream in events {
@@ -656,6 +668,9 @@ async fn encounter(
         if gone && !hits.iter().all(|hit| *hit) { return Err(format!("hunt target removed before all contributions;attributed_damage={hits:?};source:crates/gameplay/dispatch/src/gameplay_transport/attack/shared_experience.rs:52").into()); }
         Ok(gone && hits.iter().all(|hit| *hit))
     }).await?;
+    evidence(&format!(
+        "MP_CHECK MP09 hunt-kill PASS target gone;attributed_damage={hits:?}"
+    ));
     for bot in bots.iter_mut() {
         attack_target(bot, None).await?;
     }
