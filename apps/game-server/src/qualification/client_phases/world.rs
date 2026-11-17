@@ -2839,6 +2839,83 @@ pub(super) async fn journeys(
                 })
                 .await;
             }
+            if e2e_row_selected(312) {
+                verdict::indexed("Q03a.full", async {
+                    full_row_q01::run_packet(clients, &full_row_q01::CHESTS[5]).await;
+                    release_row_characters(clients).await
+                })
+                .await;
+            }
+            if e2e_row_selected(313) {
+                verdict::indexed("Q03b.full", async {
+                    full_row_q01::run_packet(clients, &full_row_q01::CHESTS[6]).await;
+                    release_row_characters(clients).await
+                })
+                .await;
+            }
+            if e2e_row_selected(314) {
+                verdict::indexed("Q03c.full", async {
+                    full_row_q01::run_packet(clients, &full_row_q01::CHESTS[7]).await;
+                    release_row_characters(clients).await
+                })
+                .await;
+            }
+            if e2e_row_selected(315) {
+                verdict::indexed("Q03d.full", async {
+                    full_row_q01::run_packet(clients, &full_row_q01::CHESTS[8]).await;
+                    release_row_characters(clients).await
+                })
+                .await;
+            }
+            if e2e_row_selected(316) {
+                verdict::indexed("Q03e.full", async {
+                    full_row_q01::run_packet(clients, &full_row_q01::CHESTS[9]).await;
+                    release_row_characters(clients).await
+                })
+                .await;
+            }
+            if e2e_row_selected(317) {
+                verdict::indexed("Q03f.full", async {
+                    full_row_q01::run_packet(clients, &full_row_q01::CHESTS[10]).await;
+                    release_row_characters(clients).await
+                })
+                .await;
+            }
+            if e2e_row_selected(318) {
+                verdict::indexed("Q03g.full", async {
+                    full_row_q01::run_packet(clients, &full_row_q01::CHESTS[11]).await;
+                    release_row_characters(clients).await
+                })
+                .await;
+            }
+            if e2e_row_selected(319) {
+                verdict::indexed("Q03h.full", async {
+                    full_row_q01::run_packet(clients, &full_row_q01::CHESTS[12]).await;
+                    release_row_characters(clients).await
+                })
+                .await;
+            }
+            if e2e_row_selected(320) {
+                verdict::indexed("Q03i.full", async {
+                    full_row_q01::run_packet(clients, &full_row_q01::CHESTS[13]).await;
+                    release_row_characters(clients).await
+                })
+                .await;
+            }
+            if e2e_row_selected(321) {
+                verdict::indexed("Q03j.full", async {
+                    full_row_q01::run_packet(clients, &full_row_q01::CHESTS[14]).await;
+                    release_row_characters(clients).await
+                })
+                .await;
+            }
+            if e2e_row_selected(322) {
+                verdict::indexed("Q03k.full", async {
+                    full_row_q01::run_packet(clients, &full_row_q01::CHESTS[15]).await;
+                    release_row_characters(clients).await
+                })
+                .await;
+            }
         }
         for index in 0..clients.accounts.len() {
             wait_character_released(clients, index).await?;

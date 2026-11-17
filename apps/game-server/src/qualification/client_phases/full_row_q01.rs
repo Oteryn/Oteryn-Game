@@ -57,12 +57,23 @@ const fn chest(
 }
 
 #[rustfmt::skip]
-pub(super) const CHESTS: [Chest; 5] = [
+pub(super) const CHESTS: [Chest; 16] = [
     chest("Q01a", "noble_armor", (32451, 32048, 8), 6132, 3380, 1, 0xf1),
     chest("Q01b", "noble_armor", (32455, 32048, 8), 6133, 3385, 0, 0xf2),
     chest("Q01c", "dark_armor", (33178, 31870, 12), 6028, 3383, 1, 0xf3),
     chest("Q01d", "double_hero", (33109, 31679, 13), 6032, 3039, 1, 0xf4),
     chest("Q01e", "double_hero", (33110, 31679, 13), 6033, 3093, 0, 0xf5),
+    chest("Q03a", "battle_axe", (32305, 32254, 9), 6180, 3266, 0, 0xeb),
+    chest("Q03b", "deeper_fibula", (32256, 32500, 10), 6012, 3318, 1, 0xec),
+    chest("Q03c", "devil_helmet", (32459, 32144, 15), 6139, 3029, 0, 0xed),
+    chest("Q03d", "devil_helmet", (32465, 32148, 15), 6140, 3356, 1, 0xee),
+    chest("Q03e", "devil_helmet", (32466, 32148, 15), 6141, 3269, 0, 0xef),
+    chest("Q03f", "ghoul_room", (32500, 32175, 14), 6136, 3083, 1, 0x13),
+    chest("Q03g", "ghoul_room", (32500, 32177, 14), 6137, 3093, 0, 0x14),
+    chest("Q03h", "minotaur_leather", (32302, 32415, 7), 6149, 5878, 1, 0x19),
+    chest("Q03i", "naginata", (32346, 32063, 12), 6135, 3314, 0, 0x1a),
+    chest("Q03j", "silver_amulet", (32506, 32269, 9), 6154, 3054, 1, 0x1b),
+    chest("Q03k", "six_rubies", (32371, 32262, 12), 6156, 3030, 0, 0x1c),
 ];
 
 static PLANNER: OnceLock<travel::Planner<'static>> = OnceLock::new();
