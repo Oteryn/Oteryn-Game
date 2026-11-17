@@ -38,20 +38,32 @@ fn awash_coal_threshold_is_applied_at_the_next_server_save() -> TestResult {
                        RETURN NEW;
                      END $$;
                      CREATE TRIGGER seed_awash_coal AFTER INSERT ON game_world_change_days
-                       FOR EACH ROW EXECUTE FUNCTION seed_awash_coal();",
+                       FOR EACH ROW EXECUTE FUNCTION seed_awash_coal();
+                     CREATE FUNCTION seed_awash_scout_credit() RETURNS trigger LANGUAGE plpgsql AS $$
+                     BEGIN
+                       IF NEW.change_key='awash' AND NEW.active AND NEW.reset_epoch IN (3,5,6) THEN
+                         UPDATE game_world_change_states SET counter=CASE NEW.reset_epoch
+                             WHEN 3 THEN 20 WHEN 5 THEN 30 ELSE 40 END
+                         WHERE (world_id, reset_epoch, change_key)=
+                             (NEW.world_id, NEW.reset_epoch, NEW.change_key);
+                       END IF;
+                       RETURN NEW;
+                     END $$;
+                     CREATE TRIGGER seed_awash_scout_credit AFTER INSERT ON game_world_change_states
+                       FOR EACH ROW EXECUTE FUNCTION seed_awash_scout_credit();",
                 )
                 .execute(&h.pool)
                 .await?;
                 event_fixture::reset_epochs(&h, &authority, pin.qualified_room(), world, channel, 8).await?;
-                let states: Vec<bool> = sqlx::query_scalar(
-                    "SELECT active FROM game_world_change_states
+                let states: Vec<(bool, i64)> = sqlx::query_as(
+                    "SELECT active,counter FROM game_world_change_states
                      WHERE world_id=encode($1,'hex')::uuid AND change_key='awash'
                      ORDER BY reset_epoch",
                 )
                 .bind(world.as_bytes().as_slice())
                 .fetch_all(&h.pool)
                 .await?;
-                assert_eq!(states, [false, false, true, true, true, true, true, false]);
+                assert_eq!(states, [(false, 0), (false, 0), (true, 20), (true, 20), (true, 30), (true, 40), (true, 40), (false, 0)]);
                 Ok(())
             })
             .map_err(|error| error.to_string())

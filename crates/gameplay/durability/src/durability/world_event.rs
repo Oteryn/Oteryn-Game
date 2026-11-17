@@ -440,6 +440,24 @@ pub(super) async fn capture_kill<const N: usize>(
         return Err(DurabilityError::InvalidStoredState);
     };
     let world = member.fence.runtime_scope.world_id();
+    if input.creature == oteryn_gameplay_world_change::awash::SCOUT
+        && matches!(
+            member.fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Channel { .. }
+        )
+    {
+        sqlx::query(
+            "UPDATE game_world_change_states s SET counter=counter+1
+            FROM game_world_reset_active a
+            WHERE (s.world_id,s.reset_epoch)=(a.world_id,a.reset_epoch)
+              AND s.world_id=encode($1,'hex')::uuid AND s.change_key='awash'
+              AND s.active AND s.counter<$2",
+        )
+        .bind(world.as_bytes().as_slice())
+        .bind(oteryn_gameplay_world_change::awash::MAX_SCOUT_CREDIT)
+        .execute(&mut **tx)
+        .await?;
+    }
     let epoch: Option<String> = sqlx::query_scalar("SELECT a.reset_epoch::text FROM game_world_reset_active a WHERE a.world_id=encode($1,'hex')::uuid AND EXISTS(SELECT 1 FROM game_world_change_states s WHERE (s.world_id,s.reset_epoch)=(a.world_id,a.reset_epoch) AND s.creature_key=$2)")
         .bind(world.as_bytes().as_slice()).bind(&input.creature).fetch_optional(&mut **tx).await?;
     let Some(epoch) = epoch else {

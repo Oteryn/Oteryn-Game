@@ -25,9 +25,34 @@ pub fn must_flood(previous_days: [bool; MAX_DRY_DAYS]) -> bool {
     previous_days.into_iter().all(|dry| dry)
 }
 
+pub const SCOUT: &str = "oteryn:creature.deepling_scout";
+// The retained completion242 Awash recipe supplies the chosen Oteryn count.
+// The wiki identifies a daily quota without giving its numeric value.
+const SCOUTS_PER_DAY: i64 = 10;
+pub const MAX_SCOUT_CREDIT: i64 = 50;
+
+pub fn next_scout_credit(days_open: usize, last_credit: Option<i64>) -> Option<i64> {
+    if !(1..MAX_DRY_DAYS).contains(&days_open) {
+        return None;
+    }
+    let minimum = i64::try_from(days_open).ok()? * SCOUTS_PER_DAY;
+    last_credit.filter(|credit| (minimum..=MAX_SCOUT_CREDIT).contains(credit))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn awash_carries_surplus_scout_credit_until_the_next_save() {
+        assert_eq!(next_scout_credit(0, None), None);
+        assert_eq!(next_scout_credit(1, Some(9)), None);
+        assert_eq!(next_scout_credit(1, Some(10)), Some(10));
+        assert_eq!(next_scout_credit(2, Some(19)), None);
+        assert_eq!(next_scout_credit(2, Some(20)), Some(20));
+        assert_eq!(next_scout_credit(4, Some(50)), Some(50));
+        assert_eq!(next_scout_credit(5, Some(50)), None);
+    }
 
     #[test]
     fn awash_forces_flood_after_five_consecutive_dry_days() {

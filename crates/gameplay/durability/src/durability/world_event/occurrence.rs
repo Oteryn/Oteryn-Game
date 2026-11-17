@@ -147,34 +147,43 @@ pub(super) async fn insert(
             &bound.native,
         ),
     };
-    let selected = if selected && definition.key == "awash" {
-        use oteryn_gameplay_world_change::awash::{MAX_DRY_DAYS, must_flood};
-        let days: Vec<bool> = sqlx::query_scalar(
-            "SELECT COALESCE(state.active, false)
+    let (selected, initial_credit) = if definition.key == "awash" {
+        use oteryn_gameplay_world_change::awash::{MAX_DRY_DAYS, must_flood, next_scout_credit};
+        let days: Vec<Option<i64>> = sqlx::query_scalar(
+            "SELECT CASE WHEN state.active THEN state.counter END
              FROM generate_series(1, $3::integer) AS prior(days_ago)
              LEFT JOIN game_world_change_states state
                ON state.world_id=encode($1,'hex')::uuid AND state.change_key='awash'
-               AND state.reset_epoch=$2::text::numeric-prior.days_ago",
+               AND state.reset_epoch=$2::text::numeric-prior.days_ago
+             ORDER BY prior.days_ago",
         )
         .bind(world.as_bytes().as_slice())
         .bind(epoch.to_string())
         .bind(i32::try_from(MAX_DRY_DAYS).map_err(|_| DurabilityError::InvalidStoredState)?)
         .fetch_all(&mut **tx)
         .await?;
-        !must_flood(
-            days.try_into()
-                .map_err(|_| DurabilityError::InvalidStoredState)?,
-        )
+        let days: [Option<i64>; MAX_DRY_DAYS] = days
+            .try_into()
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        match days[0] {
+            None => (selected, 0),
+            Some(_) if must_flood(days.map(|credit| credit.is_some())) => (false, 0),
+            Some(credit) => {
+                let open_days = days.iter().take_while(|credit| credit.is_some()).count();
+                let carried = next_scout_credit(open_days, Some(credit));
+                (carried.is_some(), carried.unwrap_or(0))
+            }
+        }
     } else {
-        selected
+        (selected, 0)
     };
     let counter = definition.counter.as_ref().filter(|_| selected);
     let active = counter.map_or(selected, |c| c.initial_active);
     let creature = counter.map(|c| c.creature.as_str());
     let goal = counter.map(|c| i64::from(c.kills));
     let goal_active = counter.is_none_or(|c| c.active_on_goal);
-    sqlx::query("INSERT INTO game_world_change_states(world_id,reset_epoch,change_key,active,creature_key,kill_goal,goal_active,definition) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,$4,$5,$6,$7,$8) ON CONFLICT DO NOTHING")
-        .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind(&definition.key).bind(active).bind(creature).bind(goal).bind(goal_active).bind(&bytes).execute(&mut **tx).await?;
+    sqlx::query("INSERT INTO game_world_change_states(world_id,reset_epoch,change_key,active,creature_key,kill_goal,goal_active,definition,counter) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT DO NOTHING")
+        .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind(&definition.key).bind(active).bind(creature).bind(goal).bind(goal_active).bind(&bytes).bind(initial_credit).execute(&mut **tx).await?;
     let (stored,matches): (Option<Vec<u8>>,bool) = sqlx::query_as("SELECT definition,(creature_key IS NOT DISTINCT FROM $4::text) AND (kill_goal IS NOT DISTINCT FROM $5::bigint) AND goal_active=$6 FROM game_world_change_states WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric AND change_key=$3 FOR UPDATE")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind(&definition.key).bind(creature).bind(goal).bind(goal_active).fetch_one(&mut **tx).await?;
     if !matches || stored.as_ref().is_some_and(|stored| stored != &bytes) {
