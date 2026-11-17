@@ -421,7 +421,7 @@ async fn ground_item(
                         production_key: "fixture:quest-callbacks".into(),
                         revision_ref: "definition-r1".into(),
                     },
-                    "fixture:quest-callbacks".into(),
+                    crate::durability::item_mint::CORPSE_MATERIALIZATION_PURPOSE_KEY.into(),
                     0,
                 ),
                 item: TypedDefinitionRef {
@@ -433,10 +433,20 @@ async fn ground_item(
                 ground: GroundPlacement {
                     spatial_position:
                         crate::durability::map_item_mint_audit::map_item_spatial_position(
-                            at.x, at.y, at.floor,
+                            at.x, at.y, -at.floor,
                         ),
                     corpse_ref: super::fixture::id(3).to_vec(),
-                    map_revision: crate::map::overlay::map_revision(map.overlay.base()),
+                    map_revision: {
+                        use sha2::{Digest, Sha256};
+                        let revision = crate::map::overlay::map_revision(map.overlay.base());
+                        format!(
+                            "sha256:{}",
+                            Sha256::digest(revision.as_bytes())
+                                .iter()
+                                .map(|b| format!("{b:02x}"))
+                                .collect::<String>()
+                        )
+                    },
                     content_revision: revision,
                     native_room_placement_context: frame.to_vec(),
                 },

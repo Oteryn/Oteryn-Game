@@ -82,18 +82,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let Some(ground) = self
             .root
-            .read_ground_action_source(self.character, fence, target)
+            .read_item_loop_ground_for_scope(fence.runtime_scope)
             .await
             .map_err(|_| ())?
+            .into_iter()
+            .find(|entry| entry.item.item_instance_id == target)
         else {
             return Ok(Some(UseOutcome::rejected()));
         };
         if callback.selector.target_definition.as_deref()
-            != Some(ground.definition().production_key.as_str())
+            != Some(ground.item.definition.production_key.as_str())
         {
             return Ok(Some(UseOutcome::rejected()));
         }
-        let target_position = ground.position();
+        let Some(map) = self.bundle_map() else {
+            return Ok(Some(UseOutcome::rejected()));
+        };
+        use sha2::{Digest, Sha256};
+        let map_revision = crate::map::overlay::map_revision(map.overlay.base());
+        let native_revision = format!("sha256:{}", hex(&Sha256::digest(map_revision.as_bytes())));
+        let cell = crate::durability::spell_items_abi::decode_ground_cell(
+            &ground.item.ground.spatial_position,
+        )
+        .map_err(|_| ())?;
+        let floor = if ground.item.ground.map_revision == native_revision {
+            cell.z
+        } else if ground.item.ground.map_revision == map_revision {
+            -cell.z
+        } else {
+            return Ok(Some(UseOutcome::rejected()));
+        };
+        let target_position = crate::foundation::MovementLocalPosition {
+            x: cell.x,
+            y: cell.y,
+            floor: i16::try_from(floor).map_err(|_| ())?,
+        };
         let Some(catalogue) = self.quest_catalogue.as_ref() else {
             return Ok(Some(UseOutcome::rejected()));
         };

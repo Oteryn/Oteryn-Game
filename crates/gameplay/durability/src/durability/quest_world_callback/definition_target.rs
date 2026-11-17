@@ -24,23 +24,24 @@ pub(super) async fn require(
     else {
         return Ok(false);
     };
-    let position: Option<Vec<u8>> = sqlx::query_scalar(
-        "SELECT g.spatial_position FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) \
+    let position: Option<(Vec<u8>, bool)> = sqlx::query_as(
+        "SELECT g.spatial_position,g.map_revision<>$6 FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) \
          WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid \
          AND g.channel_id=encode($3,'hex')::uuid AND g.runtime_scope_ownership_generation=$4::text::numeric \
          AND i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=$5 \
-         AND g.map_revision=$6 AND g.content_revision=$7 AND g.native_room_placement_context=$8 \
+         AND (g.map_revision=$6 OR g.map_revision='sha256:'||encode(sha256(convert_to($6,'UTF8')),'hex')) AND g.content_revision=$7 AND g.native_room_placement_context=$8 \
          FOR SHARE OF i,g"
     ).bind(target.item.as_slice()).bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice())
         .bind(fence.scope_ownership_generation.get().to_string()).bind(definition).bind(&context.map_revision).bind(&context.content_revision).bind(&context.placement_context).fetch_optional(&mut **tx).await?;
-    let Some(position) = position else {
+    let Some((position, native_axes)) = position else {
         return Ok(false);
     };
     let cell = super::super::spell_items_abi::decode_ground_cell(&position)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     let [x, y, floor] = target.actor_position;
-    Ok(target.target_position == [cell.x, cell.y, -cell.z]
+    let target_floor = if native_axes { cell.z } else { -cell.z };
+    Ok(target.target_position == [cell.x, cell.y, target_floor]
         && x.abs_diff(cell.x) <= u32::from(callback.use_range)
         && y.abs_diff(cell.y) <= u32::from(callback.use_range)
-        && floor == -cell.z)
+        && floor == target_floor)
 }
