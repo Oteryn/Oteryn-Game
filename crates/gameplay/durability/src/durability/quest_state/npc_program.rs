@@ -553,6 +553,10 @@ impl DurabilityRoot {
                 Ok(Some(plan)) if plan.selected_rule_keys.first()==Some(&request.transition_key) && (!plan.track_changes.is_empty() || plan.completes)=>plan,
                 _=>return Ok(Ok(refused(QuestRefusal::StageMismatch))),
             };
+            // Select after receipt replay and locked source evaluation, before all
+            // reward, receipt and inventory participants inspect the final plan.
+            let resolved = sandra_lottery::resolve(&request, &plan, content.loop_content_digest(), character)?;
+            let plan = resolved.unwrap_or(plan);
             if source.programs().iter().any(|program| {
                 program.document.quest == plan.quest && program.document.premium_required
             }) {

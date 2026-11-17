@@ -72,3 +72,17 @@ fn sandra_lottery_server_rng_is_seeded_and_receipt_bound() {
         assert_eq!(draw([seed; 32], binding), draws[usize::from(seed)]);
     }
 }
+
+#[test]
+fn sandra_lottery_distinct_receipts_have_distinct_rng_streams() {
+    use crate::durability::quest_state::npc_program::sandra_lottery::draw;
+    let first: Vec<_> = (0..=255_u8).map(|seed| draw([seed; 32], [1; 33])).collect();
+    let second: Vec<_> = (0..=255_u8).map(|seed| draw([seed; 32], [2; 33])).collect();
+    assert_ne!(first, second);
+    assert!(
+        first
+            .iter()
+            .chain(&second)
+            .all(|value| value.is_some_and(|value| value < 98))
+    );
+}

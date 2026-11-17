@@ -43,13 +43,6 @@ pub(super) async fn apply<C: ItemLoopContent>(
     node: &NodeIncarnationProof,
     permit: &crate::durability::spell_owner_commit::SpellLanePermit,
 ) -> StoredResult<bool> {
-    let resolved = sandra_lottery::resolve(
-        request,
-        plan,
-        content.loop_content_digest(),
-        fence.character_id,
-    )?;
-    let plan = resolved.as_ref().unwrap_or(plan);
     if !crate::durability::quest_world_callback::consume_npc_inputs(
         tx,
         permit,
