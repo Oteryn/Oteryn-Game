@@ -366,7 +366,10 @@ fn reward_world(
                     .map(|palette| sector::Item {
                         palette,
                         depth: 0,
-                        attrs: Default::default(),
+                        attrs: sector::Attrs {
+                            text: (palette == 1).then(|| "Yesim Adeit".into()),
+                            ..Default::default()
+                        },
                     })
                     .collect(),
             });
