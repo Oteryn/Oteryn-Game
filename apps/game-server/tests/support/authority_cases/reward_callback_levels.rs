@@ -410,7 +410,8 @@ async fn overflow(h: &fixture::Harness) -> TestResult {
         QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
     };
     use crate::durability::reward_claim_mint::QuestRewardAdmission;
-    use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack};
+    use oteryn_gameplay_quests::quest::QuestStateCatalogue;
+    use sha2::Digest;
     let mut callback: reward_callbacks::RewardCallback = serde_json::from_value(
         serde_json::json!({
             "key":"oteryn:quest-reward/level-overflow", "quest":"oteryn:quest.level_overflow",
@@ -439,20 +440,19 @@ async fn overflow(h: &fixture::Harness) -> TestResult {
         .map_err(debug)?;
     for (factor, command, commits) in [(i64::MAX, 17010, false), (50, 17011, true)] {
         callback.experience_per_level = Some(factor);
-        let catalogue = Arc::new(
-            QuestStateCatalogue::new(
-                "content-1",
-                vec![QuestTrack {
-                    key: callback.storage[0].track.clone(),
-                    quest: callback.quest.clone(),
-                    initial: 0,
-                    min: 0,
-                    max: 1,
-                }],
-                vec![reward_callbacks::primary_transition(&callback)?],
-            )
-            .map_err(debug)?,
-        );
+        let bindings = oteryn_gameplay_quests::quest::authored_bindings::Bindings::parse(
+            &serde_json::to_vec(&serde_json::json!({
+                "schema": 1, "quests": [{
+                    "quest": callback.quest,
+                    "recipe_sha256": format!("{:x}", sha2::Sha256::digest(b"engine reward scaling fixture")),
+                    "sources": ["engine reward scaling fixture"],
+                    "tracks": [{"key": callback.storage[0].track, "initial":0,"minimum":0,"maximum":1}],
+                    "stages": [{"key":"reward","completes":false,"trigger":{"kind":"npc_dialogue","callback": &callback}}]
+                }]
+            }))?,
+        )?;
+        let catalogue =
+            Arc::new(bindings.attach(&QuestStateCatalogue::empty("content-1").ok_or("base")?)?);
         let outcome = h
             .root
             .commit_fixture_quest_reward(
