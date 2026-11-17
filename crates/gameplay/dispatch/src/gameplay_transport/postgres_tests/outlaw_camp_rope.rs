@@ -25,7 +25,7 @@ fn outlaw_camp_rope_use_lifts_the_same_ground_barrel_postgres() -> TestResult {
         return Ok(());
     };
     super::kill_reward_e2e::scenario_thread::run("outlaw-camp-rope", move || {
-        super::fixture::run(async |_| scenario(admin, false).await)
+        super::fixture::run(async |_| scenario(admin, None).await)
     })
 }
 
@@ -35,11 +35,21 @@ fn outlaw_camp_moves_empty_map_barrel_to_ground_postgres() -> TestResult {
         return Ok(());
     };
     super::kill_reward_e2e::scenario_thread::run("outlaw-camp-barrel", move || {
-        super::fixture::run(async |_| scenario(admin, true).await)
+        super::fixture::run(async |_| scenario(admin, Some((EAST, EAST))).await)
     })
 }
 
-async fn scenario(admin: String, acquire_barrel: bool) -> TestResult {
+#[test]
+fn outlaw_camp_moves_barrel_through_open_hole_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run("outlaw-camp-barrel-drop", move || {
+        super::fixture::run(async |_| scenario(admin, Some((HOLE, BELOW))).await)
+    })
+}
+
+async fn scenario(admin: String, barrel_move: Option<(TilePos, TilePos)>) -> TestResult {
     let harness =
         Harness::create_with_admission_seed(admin, "outlaw_camp_rope", true, false).await?;
     prepare_current_session(&harness).await?;
@@ -61,7 +71,7 @@ async fn scenario(admin: String, acquire_barrel: bool) -> TestResult {
     let rope = index
         .definition_ref("Item", ROPE, "definition-r1")
         .ok_or("rope definition")?;
-    let barrel = if acquire_barrel {
+    let barrel = if barrel_move.is_some() {
         Some(
             index
                 .definition_ref("Item", BARREL, "definition-r1")
@@ -118,8 +128,8 @@ async fn scenario(admin: String, acquire_barrel: bool) -> TestResult {
         .bind(pin.identity().server_artifact_digest().as_slice())
         .bind(pin.identity().client_artifact_digest().as_slice())
         .bind(frame.as_slice()).execute(&harness.pool).await?;
-    if acquire_barrel {
-        move_barrel(&owner, &deps, &harness, &map, fence).await?;
+    if let Some(route) = barrel_move {
+        move_barrel(&owner, &deps, &harness, &map, fence, route).await?;
         drop(owner);
         drop(authority);
         drop(seal);
@@ -195,6 +205,7 @@ async fn move_barrel(
     harness: &Harness,
     map: &crate::map::boot::BundleWorld,
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    (destination, landing): (TilePos, TilePos),
 ) -> TestResult {
     use crate::gameplay_transport::connection::UseCommand;
     use crate::gameplay_transport::item_move::{ItemMoveStep, item_move};
@@ -261,7 +272,7 @@ async fn move_barrel(
         "SELECT g.spatial_position, i.quantity FROM game_item_ground_locations g
          JOIN game_item_instances i USING (item_instance_id) WHERE i.definition_production_key = $1",
     ).bind(BARREL).fetch_one(&harness.pool).await?;
-    assert_eq!(result, (cell(EAST), 1));
+    assert_eq!(result, (cell(landing), 1));
     let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_map_item_mint_receipts")
         .fetch_one(&harness.pool)
         .await?;

@@ -64,9 +64,11 @@ pub(super) async fn move_map_item(
                 (i32::from(from.x), i32::from(from.y), i16::from(from.floor))
             });
             let cell = if door_origin.is_some() {
-                source_drop_cell(at.map.overlay.base(), reach, to)
+                source_drop_tile(at.map, reach, to)
+                    .map(|landed| ground_cell(landed.x, landed.y, landed.floor))
             } else {
-                drop_cell(at.map.overlay.base(), reach, to)
+                drop_tile(at.map, reach, to)
+                    .map(|landed| ground_cell(landed.x, landed.y, landed.floor))
             };
             let spatial_position = match cell {
                 Ok(cell) => cell,

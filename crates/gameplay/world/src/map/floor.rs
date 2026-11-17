@@ -397,53 +397,105 @@ fn follow(
         if mask == 0 {
             return land(next, changed_floor);
         }
-        let target = if mask & DOWN != 0 {
-            let below = (next.0, next.1, next.2 + 1);
-            let shifted = |dx: i32, dy: i32| (below.0 + dx, below.1 + dy, below.2);
-            if floor_mask(shifted(0, -1)) & SOUTHALT != 0 {
-                shifted(0, -2)
-            } else if floor_mask(shifted(-1, 0)) & EASTALT != 0 {
-                shifted(-2, 0)
-            } else if ground(below) != Ground::Absent {
-                let below_mask = floor_mask(below);
-                let mut offset = (0, 0);
-                for (flag, dx, dy) in [
-                    (NORTH, 0, 1),
-                    (SOUTH, 0, -1),
-                    (SOUTHALT, 0, -2),
-                    (EAST, -1, 0),
-                    (EASTALT, -2, 0),
-                    (WEST, 1, 0),
-                ] {
-                    if below_mask & flag != 0 {
-                        offset = (offset.0 + dx, offset.1 + dy);
-                    }
-                }
-                shifted(offset.0, offset.1)
-            } else {
-                return land(next, changed_floor);
-            }
-        } else {
-            let mut offset = (0, 0);
-            for (flag, dx, dy) in [
-                (NORTH, 0, -1),
-                (SOUTH, 0, 1),
-                (SOUTHALT, 0, 2),
-                (EAST, 1, 0),
-                (EASTALT, 2, 0),
-                (WEST, -1, 0),
-            ] {
-                if mask & flag != 0 {
-                    offset = (offset.0 + dx, offset.1 + dy);
-                }
-            }
-            (next.0 + offset.0, next.1 + offset.1, next.2 - 1)
+        let Some(target) = floor_destination(ground, floor_mask, next, mask) else {
+            return land(next, changed_floor);
         };
         if ground(target) == Ground::Absent {
             return land(next, changed_floor);
         }
         changed_floor |= target.2 != next.2;
         next = target;
+    }
+    Err(Refusal::Chain)
+}
+
+fn floor_destination(
+    ground: &impl Fn(Cell) -> Ground,
+    floor_mask: &impl Fn(Cell) -> u8,
+    next: Cell,
+    mask: u8,
+) -> Option<Cell> {
+    Some(if mask & DOWN != 0 {
+        let below = (next.0, next.1, next.2 + 1);
+        let shifted = |dx: i32, dy: i32| (below.0 + dx, below.1 + dy, below.2);
+        if floor_mask(shifted(0, -1)) & SOUTHALT != 0 {
+            shifted(0, -2)
+        } else if floor_mask(shifted(-1, 0)) & EASTALT != 0 {
+            shifted(-2, 0)
+        } else if ground(below) != Ground::Absent {
+            let below_mask = floor_mask(below);
+            let mut offset = (0, 0);
+            for (flag, dx, dy) in [
+                (NORTH, 0, 1),
+                (SOUTH, 0, -1),
+                (SOUTHALT, 0, -2),
+                (EAST, -1, 0),
+                (EASTALT, -2, 0),
+                (WEST, 1, 0),
+            ] {
+                if below_mask & flag != 0 {
+                    offset = (offset.0 + dx, offset.1 + dy);
+                }
+            }
+            shifted(offset.0, offset.1)
+        } else {
+            return None;
+        }
+    } else {
+        let mut offset = (0, 0);
+        for (flag, dx, dy) in [
+            (NORTH, 0, -1),
+            (SOUTH, 0, 1),
+            (SOUTHALT, 0, 2),
+            (EAST, 1, 0),
+            (EASTALT, 2, 0),
+            (WEST, -1, 0),
+        ] {
+            if mask & flag != 0 {
+                offset = (offset.0 + dx, offset.1 + dy);
+            }
+        }
+        (next.0 + offset.0, next.1 + offset.1, next.2 - 1)
+    })
+}
+
+/// Resolve the tile reached by an item dropped on a native floor change.
+/// Crystal `Tile::queryDestination` redirects items without a creature walkability test.
+pub fn item_drop_destination(
+    map: &super::boot::BundleMap,
+    entered: TilePos,
+) -> Result<TilePos, Refusal> {
+    let base = map.overlay.base();
+    let exists = |pos: TilePos| base.tile(pos.x, pos.y, pos.floor).is_some();
+    let current_mask = |pos| map.facts.quest_callback_floor_mask(base, pos);
+    let ground = |(x, y, z)| {
+        if pos(x, y, z).is_some_and(exists) {
+            Ground::Walkable
+        } else {
+            Ground::Absent
+        }
+    };
+    let mask = |cell: Cell| {
+        pos(cell.0, cell.1, cell.2)
+            .and_then(current_mask)
+            .unwrap_or_else(|| map.floors.mask(cell))
+    };
+    let mut next = (
+        i32::from(entered.x),
+        i32::from(entered.y),
+        -i32::from(entered.floor),
+    );
+    for _ in 0..MAX_DESTINATIONS {
+        let current = mask(next);
+        if current == 0 {
+            return pos(next.0, next.1, next.2).ok_or(Refusal::Blocked);
+        }
+        let Some(to) = floor_destination(&ground, &mask, next, current)
+            .filter(|to| ground(*to) != Ground::Absent)
+        else {
+            return pos(next.0, next.1, next.2).ok_or(Refusal::Blocked);
+        };
+        next = to;
     }
     Err(Refusal::Chain)
 }

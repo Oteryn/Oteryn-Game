@@ -894,7 +894,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
                         floor_assembly::target(at.map, *to, content_digest, admission.reset_epoch);
                 }
                 (
-                    at.map.overlay.base().clone(),
+                    at.map,
                     (at.at.x, at.at.y, at.at.floor),
                     content_revision,
                     placement_context,
@@ -921,7 +921,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
     };
     // ITEM-MOVE-2b: an item the map view shows on the Ground is a pickup from its cell.
     let ground = match &pins {
-        Some((base, ..)) => loop_ground(admission, base, index).await,
+        Some((map, ..)) => loop_ground(admission, map.overlay.base(), index).await,
         None => None,
     };
     let pickup = ground
@@ -936,6 +936,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
         (Some(_), _) => return LoopMoveResult::TooFar,
         (None, _) => None,
     };
+    let mut ground_destination = None;
     let destination = match request.target {
         LoopTarget::MainBackpack => LoopDestination::MainBackpack,
         LoopTarget::Container(ItemKey::Instance(container)) => {
@@ -943,7 +944,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
         }
         LoopTarget::Container(_) => return refused(LoopMoveRefusal::NotSupported),
         LoopTarget::Ground(to) => {
-            let Some((base, at, content_revision, placement_context)) = &pins else {
+            let Some((map, at, content_revision, placement_context)) = &pins else {
                 return refused(LoopMoveRefusal::NotSupported);
             };
             if let Some(mailbox) = mailbox {
@@ -958,15 +959,17 @@ pub(super) async fn move_loop_item_with_house_capacity(
                     return posted;
                 }
             }
-            match drop_cell(base, *at, to) {
-                Ok(spatial_position) => LoopDestination::Ground(LoopGround {
-                    spatial_position,
-                    map_revision: map_revision(base),
-                    content_revision: content_revision.clone(),
-                    placement_context: placement_context.clone(),
-                }),
+            let landed = match drop_tile(map, *at, to) {
+                Ok(landed) => landed,
                 Err(result) => return result,
-            }
+            };
+            ground_destination = Some(landed);
+            LoopDestination::Ground(LoopGround {
+                spatial_position: ground_cell(landed.x, landed.y, landed.floor),
+                map_revision: map_revision(map.overlay.base()),
+                content_revision: content_revision.clone(),
+                placement_context: placement_context.clone(),
+            })
         }
     };
     let touches_ground = pickup_cell.is_some() || matches!(destination, LoopDestination::Ground(_));
@@ -1116,7 +1119,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
     if let Ok(Ok(receipt)) = &committed
         && !receipt.replayed
         && let Some(effect) = receipt.floor_effect
-        && let LoopTarget::Ground(to) = request.target
+        && let Some(to) = ground_destination
         && let Some(map) = admission.bundle_map()
         && let (Ok(x), Ok(y), Ok(floor)) = (
             u16::try_from(to.x),
@@ -1130,14 +1133,10 @@ pub(super) async fn move_loop_item_with_house_capacity(
     // Publish the tile-order event while the same Channel lane still excludes
     // observers. Even pickup + re-drop between two view polls must append the item.
     if touches_ground && matches!(committed, Ok(Ok(_))) {
-        let destination = match request.target {
-            LoopTarget::Ground(to) => Some(to),
-            _ => None,
-        };
         admission
             .states
             .browse_fields
-            .committed_move(request.item, destination);
+            .committed_move(request.item, ground_destination);
     }
     if touches_ground && !matches!(committed, Ok(Err(_))) {
         admission.states.loop_ground.invalidate();
@@ -1161,32 +1160,38 @@ pub(super) async fn move_loop_item_with_house_capacity(
     }
 }
 
-/// The 10-byte cell of a drop onto `to`: a base tile of the bundle in reach of the actor at
-/// `at`; otherwise the refusal.
-fn drop_cell(
-    base: &WorldBase,
+/// The Ground cell reached after a drop onto a native tile in the actor's reach.
+fn drop_tile(
+    map: &crate::map::boot::BundleMap,
     at: (i32, i32, i16),
     to: WorldTilePosition,
-) -> Result<Vec<u8>, LoopMoveResult> {
+) -> Result<WorldTilePosition, LoopMoveResult> {
     if !in_reach(at, (to.x, to.y, to.floor)) {
         return Err(LoopMoveResult::TooFar);
     }
-    let tile = match (
-        u16::try_from(to.x),
-        u16::try_from(to.y),
-        i8::try_from(to.floor),
-    ) {
-        (Ok(x), Ok(y), Ok(floor)) => base.tile(x, y, floor),
-        _ => None,
+    let blocked = LoopMoveResult::Refused(LoopMoveRefusal::Blocked);
+    let entered = TilePos {
+        x: u16::try_from(to.x).map_err(|_| blocked)?,
+        y: u16::try_from(to.y).map_err(|_| blocked)?,
+        floor: i8::try_from(to.floor).map_err(|_| blocked)?,
     };
-    if tile.is_none() {
-        return Err(LoopMoveResult::Refused(LoopMoveRefusal::Blocked));
+    let base = map.overlay.base();
+    if base.tile(entered.x, entered.y, entered.floor).is_none() {
+        return Err(blocked);
     }
-    Ok(ground_cell(to.x, to.y, to.floor))
+    let landed = crate::map::floor::item_drop_destination(map, entered).map_err(|_| blocked)?;
+    if entered != landed && map.facts.house_id(entered) != map.facts.house_id(landed) {
+        return Err(blocked);
+    }
+    Ok(WorldTilePosition {
+        x: i32::from(landed.x),
+        y: i32::from(landed.y),
+        floor: i16::from(landed.floor),
+    })
 }
 
 /// Finite source-script relocation may span a small authored room. Both cells
-/// must exist on the same floor; ordinary item drops still use drop_cell.
+/// must exist on the same floor; ordinary item drops use drop_tile.
 fn source_drop_cell(
     base: &WorldBase,
     from: (i32, i32, i16),
