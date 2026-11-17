@@ -116,6 +116,20 @@ async fn finish_refresh<T>(
     Ok((live, readback().await?))
 }
 
+async fn read_then_cleanup<S>(
+    session: &mut S,
+    read: impl AsyncFnOnce(&mut S) -> TestResult<u32>,
+    cleanup: impl AsyncFnOnce(&mut S) -> TestResult,
+) -> TestResult<u32> {
+    let count = read(session).await;
+    let cleaned = cleanup(session).await;
+    match (count, cleaned) {
+        (Err(read), Err(cleanup)) => Err(format!("{read}; cleanup also failed: {cleanup}").into()),
+        (Err(error), _) | (_, Err(error)) => Err(error),
+        (Ok(count), Ok(())) => Ok(count),
+    }
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let best = tr::COMMAND_TYPE_BESTIARY_TRACKER;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
@@ -204,14 +218,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
 
     let (live, after) = finish_refresh(live, async || {
         let mut fresh = connect_world(clients, 0xd7).await?;
-        let list = read(&mut fresh, best).await?;
-        let after = kills(&list, RAT);
-        if !was_tracked {
-            let (status, list) = call(&mut fresh, best, &change(tr::TrackerAction::Remove, RAT)).await?;
-            expect(status == CommandStatus::Accepted && !has(&list, RAT), "cleanup", status)?;
-        }
-        logout(&mut fresh).await?;
-        Ok(after)
+        read_then_cleanup(
+            &mut fresh,
+            async |fresh| Ok(kills(&read(fresh, best).await?, RAT)),
+            async |fresh| {
+                let removed: TestResult = async {
+                    if !was_tracked {
+                        let (status, list) = call(fresh, best, &change(tr::TrackerAction::Remove, RAT)).await?;
+                        expect(status == CommandStatus::Accepted && !has(&list, RAT), "cleanup", status)?;
+                    }
+                    Ok(())
+                }.await;
+                let closed = logout(fresh).await;
+                removed.and(closed)
+            },
+        ).await
     }).await?;
     expect(before.checked_add(1) == Some(after), "kill-credit", (before, after, &live))?;
     let (pushed, push_error) = live?;
@@ -322,5 +343,20 @@ mod delta_tests {
             assert_eq!(live.err().map(|error| error.to_string()).as_deref(), Some(failure));
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod review_regressions {
+    use super::*;
+    #[tokio::test]
+    async fn malformed_readback_still_attempts_remove() {
+        let mut tracked = true;
+        let outcome = read_then_cleanup(&mut tracked, async |_| Err("malformed READ".into()), async |tracked| {
+            *tracked = false;
+            Ok(())
+        }).await;
+        assert!(!tracked);
+        assert_eq!(outcome.err().map(|e| e.to_string()).as_deref(), Some("malformed READ"));
     }
 }

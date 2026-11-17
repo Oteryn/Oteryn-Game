@@ -212,7 +212,7 @@ async fn hunt_once(
     key: &str,
     name: &str,
 ) -> TestResult<bool> {
-    travel_to_spawn(client, world, spawns, key).await?;
+    travel_to_named_spawn(client, world, spawns, key, name).await?;
     kill_adjacent(client, name).await
 }
 
@@ -227,18 +227,55 @@ async fn rat_reward(
     ).bind(character.as_slice()).fetch_optional(database).await?)
 }
 
-fn currency_plan(current: u32, cost: u32, available: &[(NonZeroU32, u32, u32)]) -> Vec<NonZeroU32> {
-    let mut candidates = available.to_vec();
-    candidates.sort_by(|a, b| {
-        (u64::from(a.1) * u64::from(b.2)).cmp(&(u64::from(b.1) * u64::from(a.2)))
-            .then_with(|| a.1.cmp(&b.1)).then_with(|| a.0.cmp(&b.0))
-    });
-    let remaining = cost.saturating_sub(current);
-    candidates.into_iter().scan(remaining, |left, (id, _, points)| {
-        if *left == 0 { return None; }
-        *left = left.saturating_sub(points);
-        Some(id)
-    }).collect()
+#[derive(Clone, Copy)]
+struct CurrencyHunt {
+    race: NonZeroU32,
+    points: u32,
+    seconds: u32,
+}
+
+fn deadline_plan(current: u32, cost: u32, hunts: &[CurrencyHunt], budget: u32) -> Option<Vec<NonZeroU32>> {
+    let needed = usize::try_from(cost.saturating_sub(current)).ok()?;
+    // For each reachable balance, retain the cheapest schedule. Iterate backwards so a race
+    // completion can be used only once, even when several balances overshoot the target.
+    let mut best = vec![None; needed + 1];
+    best[0] = Some((0_u32, Vec::new()));
+    for hunt in hunts {
+        for balance in (0..needed).rev() {
+            let Some((seconds, races)) = &best[balance] else { continue };
+            let Some(seconds) = seconds.checked_add(hunt.seconds).filter(|seconds| *seconds <= budget) else { continue };
+            let next = balance.saturating_add(usize::try_from(hunt.points).ok()?).min(needed);
+            if best[next].as_ref().is_none_or(|(current, _)| seconds < *current) {
+                let mut races = races.clone();
+                races.push(hunt.race);
+                best[next] = Some((seconds, races));
+            }
+        }
+    }
+    best.pop().flatten().map(|(_, races)| races)
+}
+
+fn hunt_seconds(kills: u32, respawns_ms: impl IntoIterator<Item = u32>) -> Option<u32> {
+    // Keep the next spawn time for each point. Account for serial combat as well as respawn,
+    // and budget one approach per source. The row's hard deadline still bounds live combat.
+    use std::{cmp::Reverse, collections::BinaryHeap};
+    let mut ready: BinaryHeap<_> = respawns_ms.into_iter().map(|delay| Reverse((0_u64, delay))).collect();
+    let mut elapsed = 0_u64;
+    for _ in 0..kills {
+        let Reverse((next, delay)) = ready.pop()?;
+        elapsed = elapsed.max(next).checked_add(2_000)?;
+        ready.push(Reverse((elapsed.checked_add(u64::from(delay))?, delay)));
+    }
+    u32::try_from(elapsed.div_ceil(1000)).ok()?.checked_add(30)
+}
+
+fn fastest_source(spawns: &oteryn_world_bundle::spawn::Table, creature: &str, kills: u32) -> Option<(usize, u32)> {
+    let index = u32::try_from(spawns.creatures.binary_search_by(|entry| entry.key.as_str().cmp(creature)).ok()?).ok()?;
+    spawns.sources.iter().enumerate().filter_map(|(source, record)| {
+        let respawns = record.points.iter().filter(|point| point.creature == index && point.boss_policy.is_none())
+            .map(|point| point.respawn_ms);
+        hunt_seconds(kills, respawns).map(|seconds| (source, seconds))
+    }).min_by_key(|(_, seconds)| *seconds)
 }
 
 fn authored_bestiary() -> TestResult<Vec<(crate::domain::bestiary::BestiaryRace, u32)>> {
@@ -315,26 +352,41 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     evidence("P01_CHECK locked-assignment-refusal PASS disposition=CharmLocked");
 
     row.at("earn-unlock-currency");
-    let spawned: std::collections::BTreeSet<_> = metadata.spawns.sources.iter().flat_map(|source| &source.points)
-        .filter_map(|point| metadata.spawns.creatures.get(point.creature as usize))
-        .map(|creature| creature.key.as_str()).collect();
-    let mut candidates = Vec::new();
+    let budget = DEADLINE.saturating_sub(row.started.elapsed()).saturating_sub(Duration::from_secs(180));
+    let rat_left = rat_limit.saturating_sub(count(&current, race));
+    let mut sources = std::collections::BTreeMap::new();
+    let mut hunts = Vec::new();
     for (index, (authored, points)) in races.iter().enumerate() {
         let id = NonZeroU32::new(u32::try_from(index + 1)?).ok_or("invalid Bestiary index")?;
         let left = authored.final_kill_threshold().saturating_sub(count(&current, id));
-        if left > 0 && *points > 0 && id != race && spawned.contains(authored.key()) {
-            candidates.push((id, left, *points));
+        if left > 0 && *points > 0
+            && let Some((source, seconds)) = fastest_source(&metadata.spawns, authored.key(), left)
+        {
+            sources.insert(id, (source, seconds));
+            if id != race {
+                hunts.push(CurrencyHunt { race: id, points: *points, seconds });
+            }
         }
     }
-    for id in std::iter::once(race).chain(
-        currency_plan(current.charms.charm_points_available.saturating_add(
-            if race_complete(&current, race) { 0 } else { races[rat_index].1 }
-        ), cost, &candidates),
-    ) {
+    let rat_seconds = if rat_left == 0 { 0 } else {
+        sources.get(&race).ok_or("step=earn-unlock-currency needed=repeatable-Rat-source")?.1
+    };
+    let remaining = u32::try_from(budget.as_secs())?.checked_sub(rat_seconds)
+        .ok_or("step=earn-unlock-currency needed=Rat-completion-within-row-deadline")?;
+    let balance = current.charms.charm_points_available.saturating_add(if rat_left == 0 { 0 } else { races[rat_index].1 });
+    let plan = deadline_plan(balance, cost, &hunts, remaining)
+        .ok_or_else(|| format!("step=earn-unlock-currency needed={cost}-points-from-repeatable-spawns budget-seconds={remaining} balance-after-Rat={balance}"))?;
+    for id in std::iter::once(race).chain(plan) {
+        if race_complete(&current, id) { continue; }
         let (authored, points) = &races[usize::try_from(id.get() - 1)?];
         let name = super::full_row_p02::creature_display_name(authored.key())?;
+        let source = sources.get(&id).ok_or("step=earn-unlock-currency observed=missing-planned-source")?.0;
+        let cluster = oteryn_world_bundle::spawn::Table {
+            creatures: metadata.spawns.creatures.clone(),
+            sources: vec![metadata.spawns.sources[source].clone()],
+        };
         while !race_complete(&current, id) {
-            hunt_once(&mut client, world, &metadata.spawns, authored.key(), &name).await?;
+            hunt_once(&mut client, world, &cluster, authored.key(), &name).await?;
             let next = query(&mut client).await?;
             let next_count = count(&next, id);
             let award = if next_count == authored.final_kill_threshold() { *points } else { 0 };
@@ -480,12 +532,30 @@ mod delta_tests {
     #[test]
     fn currency_plan_from_zero_earns_the_full_zap_cost() -> TestResult {
         let race = |n| NonZeroU32::new(n).ok_or("test race index is zero");
-        let available = [(race(1)?, 250, 5), (race(2)?, 1000, 50), (race(3)?, 400, 100),
-            (race(4)?, 400, 100), (race(5)?, 400, 100)];
-        let plan = currency_plan(0, 320, &available);
-        let points = plan.iter().map(|id| available.iter().find(|entry| entry.0 == *id).map_or(0, |entry| entry.2)).sum::<u32>();
-        assert!(points >= 320);
-        assert!(currency_plan(320, 320, &available).is_empty());
+        let id = race(1)?;
+        let available = [CurrencyHunt { race: id, points: 320, seconds: 80 }];
+        assert_eq!(deadline_plan(0, 320, &available, 90), Some(vec![id]));
+        assert_eq!(deadline_plan(320, 320, &available, 0), Some(vec![]));
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod review_regressions {
+    use super::*;
+    #[test]
+    fn spawn_cadence_excludes_unfinishable_bestiary_race() -> TestResult {
+        let cat = NonZeroU32::new(1).ok_or("cat index")?;
+        let feasible = NonZeroU32::new(2).ok_or("viable index")?;
+        // One initial Cat and 24 subsequent spawns, 90 seconds apart.
+        let cat_seconds = hunt_seconds(25, [90_000]).ok_or("Cat estimate")?;
+        assert!(cat_seconds >= 2160);
+        let available = [
+            CurrencyHunt { race: cat, points: 10, seconds: cat_seconds },
+            CurrencyHunt { race: feasible, points: 10, seconds: 1200 },
+        ];
+        assert_eq!(deadline_plan(0, 10, &available, 1800), Some(vec![feasible]));
+        assert_eq!(deadline_plan(0, 20, &available, 1800), None);
         Ok(())
     }
 }

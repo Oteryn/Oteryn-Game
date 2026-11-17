@@ -5077,6 +5077,26 @@ async fn travel_to_spawn(
     spawns: &oteryn_world_bundle::spawn::Table,
     creature: &str,
 ) -> TestResult {
+    travel_to_spawn_target(client, world, spawns, creature, None).await
+}
+
+async fn travel_to_named_spawn(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    creature: &str,
+    name: &str,
+) -> TestResult {
+    travel_to_spawn_target(client, world, spawns, creature, Some(name)).await
+}
+
+async fn travel_to_spawn_target(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    creature: &str,
+    name: Option<&str>,
+) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
     let points: Vec<_> = spawns
         .sources
@@ -5128,27 +5148,54 @@ async fn travel_to_spawn(
         )
     })?;
     walk(client, world, &path).await?;
+    let respawn = points
+        .iter()
+        .map(|(_, point)| point.respawn_ms)
+        .max()
+        .unwrap_or(0);
+    let deadline = tokio::time::Instant::now() + Duration::from_millis(u64::from(respawn) + 2_000);
     for _ in 0..32 {
         let here = client.world_spatial().actor_position;
-        let target = client
-            .world_entities()
-            .and_then(|entities| {
-                entities
-                    .iter()
-                    .filter(|entry| {
-                        entry.kind == oteryn_dev_client::EntityKind::Creature
-                            && entry.position.floor == here.floor
-                    })
-                    .min_by_key(|entry| {
-                        entry
-                            .position
-                            .x
-                            .abs_diff(here.x)
-                            .max(entry.position.y.abs_diff(here.y))
-                    })
-            })
-            .copied()
-            .ok_or("spawn route has no visible creature")?;
+        let target = loop {
+            let target = client
+                .world_entities()
+                .and_then(|entities| {
+                    entities
+                        .iter()
+                        .filter(|entry| {
+                            entry.kind == oteryn_dev_client::EntityKind::Creature
+                                && entry.position.floor == here.floor
+                                && name.is_none_or(|name| {
+                                    entry.display_name.is_some_and(|display| {
+                                        display.as_str().is_ok_and(|display| display == name)
+                                    })
+                                })
+                        })
+                        .min_by_key(|entry| {
+                            entry
+                                .position
+                                .x
+                                .abs_diff(here.x)
+                                .max(entry.position.y.abs_diff(here.y))
+                        })
+                })
+                .copied();
+            if let Some(target) = target {
+                break target;
+            }
+            if name.is_none() {
+                return Err("spawn route has no visible creature".into());
+            }
+            tokio::time::timeout_at(
+                deadline,
+                client.service_liveness(Duration::from_millis(250)),
+            )
+            .await
+            .map_err(|_| {
+                format!("spawn route did not observe a live {creature} within its respawn window")
+            })??;
+            client.take_events();
+        };
         let target = tile(target.position)?;
         let path = route(world, tile(here)?, |at| {
             at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1

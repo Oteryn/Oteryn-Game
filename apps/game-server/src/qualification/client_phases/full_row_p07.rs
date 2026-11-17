@@ -16,6 +16,11 @@
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::wheel_allocation;
+use oteryn_gameplay_progression::{
+    atelier::vessels as vessel_rules,
+    wheel::{WheelRuleset, WheelSlots},
+    wheel_gem_data::WheelGemData,
+};
 use oteryn_protocol_oteryn::{atelier, wheel, wheel_presentation};
 
 #[derive(Default)]
@@ -165,44 +170,117 @@ fn grade_preserves_other_assets(before: &AtelierState, after: &AtelierState, kin
 }
 
 fn socket_committed(reply: &wheel::WheelAllocationReply, after: &AtelierState, gem: [u8; 16]) -> bool {
-    !reply.refused && !after.0.refused && reply.vessels.is_some_and(|v| v[0] == Some(gem))
-        && after.0.gems.iter().any(|entry| entry.id == gem && entry.vessel && entry.domain == 0)
-        && after.0.gems.iter().filter(|entry| entry.vessel).all(|entry|
-            reply.vessels.and_then(|slots| slots.get(usize::from(entry.domain)).copied().flatten()) == Some(entry.id))
+    let Some(cells) = reply.vessels else { return false };
+    !reply.refused && !after.0.refused && cells.contains(&Some(gem))
+        && after.0.gems.iter().any(|entry| entry.id == gem && entry.vessel)
+        && cells.iter().enumerate().all(|(cell, expected)| {
+            after.0.gems.iter().find(|entry| entry.vessel && usize::from(entry.domain) == cell)
+                .map(|entry| entry.id) == *expected
+        })
 }
 
-async fn socket_effect_is_live(
-    client: &mut DevClientSession,
-    wheel: &wheel::WheelAllocationReply,
-    atelier_revision: u64,
-    gem: [u8; 16],
-) -> TestResult<bool> {
-    let request = wheel_presentation::Request {
-        nonce: 1,
-        wheel_revision: wheel.revision,
-        atelier_revision,
-        points: wheel.points,
-        vessels: wheel.vessels.ok_or("step=socket observed=no-vessel-receipt")?,
+fn socket_points(
+    rules: &WheelRuleset,
+    mut points: [u16; 36],
+    nodes: &[u8],
+    required: usize,
+    available: u32,
+    unlock_points: u32,
+) -> Option<[u16; 36]> {
+    let capacities = rules.capacities();
+    let original = WheelSlots::new(points).ok()?;
+    let open_count = |points: &[u16; 36]| {
+        nodes.iter().filter(|&&slot| {
+            let index = usize::from(slot.saturating_sub(1));
+            slot > 0 && points.get(index).zip(capacities.get(index)).is_some_and(|(p, cap)| p == cap)
+        }).count()
     };
+    while open_count(&points) < required {
+        // The cheapest full path to a node, including its centre/adjacency prerequisites.
+        let mut paths = [None::<[u16; 36]>; 36];
+        let cost = |candidate: &[u16; 36]| candidate.iter().map(|&p| u32::from(p)).sum::<u32>();
+        for _ in 0..36 {
+            let mut changed = false;
+            for (index, rule) in rules.slots().iter().enumerate() {
+                let parent = if rule.unlock_from.is_empty() {
+                    Some(points)
+                } else {
+                    rule.unlock_from.iter()
+                        .filter_map(|slot| paths[usize::from(*slot) - 1])
+                        .min_by_key(cost)
+                };
+                if let Some(mut candidate) = parent {
+                    candidate[index] = rule.capacity;
+                    let allocation = WheelSlots::new(candidate).ok()?;
+                    if paths[index].is_none_or(|old| cost(&candidate) < cost(&old))
+                        && rules.validate_with_unlock_points(&original, &allocation, available, unlock_points, false).is_ok()
+                    {
+                        paths[index] = Some(candidate);
+                        changed = true;
+                    }
+                }
+            }
+            if !changed { break; }
+        }
+        points = nodes.iter().filter_map(|&slot| paths.get(usize::from(slot.checked_sub(1)?)).copied().flatten())
+            .filter(|candidate| open_count(candidate) > open_count(&points))
+            .min_by_key(cost)?;
+    }
+    Some(points)
+}
+
+fn insert_socket(mut vessels: wheel::WheelVessels, gem: [u8; 16]) -> Option<wheel::WheelVessels> {
+    *vessels.iter_mut().find(|cell| cell.is_none())? = Some(gem);
+    Some(vessels)
+}
+
+fn grade_fee_matches(before: &atelier::resources::ResourceBalances, after: &atelier::resources::ResourceBalances, fee: u64) -> bool {
+    let carried = before.carried_gold.min(fee);
+    before.carried_gold.checked_sub(carried) == Some(after.carried_gold)
+        && before.bank_gold.checked_sub(fee - carried) == Some(after.bank_gold)
+}
+
+async fn vessel_state(client: &mut DevClientSession) -> TestResult<atelier::v2::AtelierReply> {
+    use atelier::v2 as v2;
+    let response = client.session_mut().gated_command(
+        v2::CAPABILITY_GEM_ATELIER_V2, v2::COMMAND_TYPE_ATELIER_V2_QUERY, &v2::encode_query(),
+    ).await?;
+    let view = v2::decode_reply(&response.payload).map_err(|error| format!("step=socket live-vessels decode={error:?}"))?;
+    if response.status != CommandStatus::Accepted || view.refused || view.vessels.len() != vessel_rules::GEM_VESSEL_SLOTS {
+        return Err(format!("step=socket observed=vessel-state:{view:?} status:{:?}", response.status).into());
+    }
+    Ok(view)
+}
+
+async fn presentation(
+    client: &mut DevClientSession, wheel_revision: u64, points: [u16; 36],
+    atelier_revision: u64, vessels: wheel::WheelVessels,
+) -> TestResult<wheel_presentation::Reply> {
+    let request = wheel_presentation::Request { nonce: 1, wheel_revision, atelier_revision, points, vessels };
     let payload = request.encode().ok_or("step=socket observed=invalid-presentation-request")?;
     let response = client.session_mut().gated_command(
-        wheel_presentation::CAPABILITY_WHEEL_PRESENTATION_V1,
-        wheel_presentation::COMMAND_TYPE_WHEEL_PRESENTATION,
-        &payload,
+        wheel_presentation::CAPABILITY_WHEEL_PRESENTATION_V1, wheel_presentation::COMMAND_TYPE_WHEEL_PRESENTATION, &payload,
     ).await?;
-    let prefix = format!("Socketed gem {:032X}: ", u128::from_be_bytes(gem));
-    Ok(response.status == CommandStatus::Accepted
-        && wheel_presentation::Reply::decode(&response.payload).is_some_and(|view| {
-            view.request == request && view.eligible && view.current.iter().any(|line| {
-                line.strip_prefix(&prefix).and_then(|value| value.split_once(" active positions, effective grades "))
-                    .is_some_and(|(positions, grades)| {
-                        let grades = grades.split(", ").map(str::parse::<u8>).collect::<Result<Vec<_>, _>>();
-                        grades.is_ok_and(|grades| !grades.is_empty()
-                            && positions.parse::<usize>().ok() == Some(grades.len())
-                            && grades.into_iter().all(|grade| (1..=4).contains(&grade)))
-                    })
-            })
-        }))
+    let view = wheel_presentation::Reply::decode(&response.payload).ok_or("step=socket observed=undecodable-wheel-presentation")?;
+    if response.status != CommandStatus::Accepted || view.request != request || !view.eligible {
+        return Err(format!("step=socket observed=presentation:{:?} eligible:{} reason:{}", response.status, view.eligible, view.reason).into());
+    }
+    Ok(view)
+}
+
+fn socket_effect_matches(view: &wheel_presentation::Reply, state: &AtelierState, gem: [u8; 16]) -> TestResult<bool> {
+    let gem = state.0.gems.iter().find(|entry| entry.id == gem && entry.vessel)
+        .ok_or("step=socket observed=gem-not-socketed")?;
+    let grades = gem.modifiers.iter().take(usize::from(gem.quality) + 1).enumerate()
+        .map(|(position, id)| {
+            let kind = u8::from(position == 2);
+            state.0.grades.iter().find(|grade| grade.kind == kind && grade.mod_id == *id)
+                .map(|grade| (u16::from(grade.grade) + 1).to_string())
+                .ok_or("step=socket observed=modifier-grade-missing")
+        }).collect::<Result<Vec<_>, _>>()?;
+    let expected = format!("Socketed gem {:032X}: {} active positions, effective grades {}",
+        u128::from_be_bytes(gem.id), grades.len(), grades.join(", "));
+    Ok(!grades.is_empty() && view.current.contains(&expected))
 }
 
 async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResult {
@@ -329,8 +407,7 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
                 && reply.revision > revision
                 && reply.revision == graded.0.revision
                 && selected_grade(&reply) && grade_preserves_other_assets(&dismantled, &graded, target.0, target.1, grade)
-                && gold_debit(&dismantled.1, &graded.1) == Some(grade_quote.gold)
-                && graded.1.bank_gold <= dismantled.1.bank_gold && graded.1.carried_gold <= dismantled.1.carried_gold
+                && grade_fee_matches(&dismantled.1, &graded.1, grade_quote.gold)
                 && fragment_total(&dismantled.1, target.0).checked_sub(fragment_total(&graded.1, target.0)) == Some(u64::from(grade_quote.fragments)) =>
         {
             revision = reply.revision;
@@ -471,42 +548,56 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
             }
         }
     };
-    let before_socket = query(&mut client).await?;
-    if !before_socket.0.gems.iter().any(|entry| entry.id == gem && !entry.vessel) {
-        return Err("step=socket needed=unsocketed-original-gem".into());
+    let before_socket = vessel_state(&mut client).await?;
+    let target = before_socket.gems.iter().find(|entry| entry.id == gem && entry.slot.is_none())
+        .ok_or("step=socket needed=unsocketed-original-gem")?;
+    let stored = std::array::from_fn(|slot| before_socket.vessels[slot].gem);
+    let before_cells = vessel_rules::legacy_cells(&stored);
+    let requested_cells = insert_socket(before_cells, gem)
+        .ok_or("step=socket needed=unused-legacy-cell-to-preserve-existing-gems")?;
+    let destination = before_socket.vessels.iter().position(|slot| slot.quality == target.quality && slot.gem.is_none())
+        .ok_or("step=socket needed=vacant-compatible-vessel")?;
+    let expected = vessel_rules::place(&stored, destination, Some(gem)).ok_or("step=socket observed=invalid-destination")?;
+    let expected_cells = vessel_rules::legacy_cells(&expected);
+    let rules = WheelGemData::embedded()?.wheel_ruleset()?;
+    let view = presentation(&mut client, wheel_state.revision, wheel_state.points, before_socket.revision, before_cells).await?;
+    let nodes = vessel_rules::node_slots(&rules, &view.vocation);
+    if before_socket.wheel_revision != wheel_state.revision || before_socket.vessel_nodes != nodes {
+        return Err("step=socket observed=wheel-and-atelier-baselines-disagree".into());
     }
-    let mut vessels = [None; wheel::WHEEL_VESSELS];
-    for entry in before_socket.0.gems.iter().filter(|entry| entry.vessel) {
-        let Some(cell) = vessels.get_mut(usize::from(entry.domain)) else {
-            return Err("step=socket observed=invalid-vessel-cell".into());
-        };
-        *cell = Some(entry.id);
-    }
-    vessels[0] = Some(gem);
+    let points = socket_points(&rules, wheel_state.points, &nodes, destination + 1, view.available, view.unlock_points)
+        .ok_or("step=socket needed=wheel-budget-for-vacant-compatible-vessel")?;
     let socket = wheel::WheelAllocationRequest {
         action: 1,
         occurrence: occurrence(session, 8),
         expected_revision: wheel_state.revision,
-        points: wheel_state.points,
-        vessels: Some(vessels),
+        points,
+        vessels: Some(requested_cells),
     };
     let response = raw(
         &mut client,
         wheel::COMMAND_TYPE_WHEEL_ALLOCATION,
         wheel::encode_wheel_request(&socket).map_err(|e| format!("socket encode: {e:?}"))?,
-    )
-    .await?;
+    ).await?;
     let before_stale = query(&mut client).await?;
+    let live = vessel_state(&mut client).await?;
     if response.status == CommandStatus::Accepted
         && let Ok(reply) = wheel::decode_wheel_reply(&response.payload)
-        && reply.revision > wheel_state.revision && reply.points == wheel_state.points
-        && reply.vessels == Some(vessels)
+        && reply.revision > wheel_state.revision && reply.points == points
+        && reply.vessels == Some(expected_cells)
+        && live.wheel_revision == reply.revision && live.revision == before_stale.0.revision
+        && live.vessels[destination].open
+        && live.vessels.iter().map(|slot| slot.gem).eq(expected)
         && socket_committed(&reply, &before_stale, gem)
-        && socket_effect_is_live(&mut client, &reply, before_stale.0.revision, gem).await?
     {
-        seen.pass("5-socket-vessel-resonance");
+        let effect = presentation(&mut client, reply.revision, points, live.revision, expected_cells).await?;
+        if socket_effect_matches(&effect, &before_stale, gem)? {
+            seen.pass("5-socket-vessel-resonance");
+        } else {
+            seen.fail("5-socket-vessel-resonance", (&effect.current, &before_stale.0.grades, target));
+        }
     } else {
-        seen.fail("5-socket-vessel-resonance", &response);
+        seen.fail("5-socket-vessel-resonance", (&response, &live.vessels, expected));
     }
 
     let stale = atelier::MutateRequest {
@@ -647,5 +738,34 @@ mod delta_tests {
         assert!(!socket_committed(&receipt, &live, [1; 16]));
         live.0.gems[0].vessel = true;
         assert!(socket_committed(&receipt, &live, [1; 16]));
+    }
+}
+
+#[cfg(test)]
+mod review_regressions {
+    use super::*;
+    #[test]
+    fn clean_wheel_plan_fills_a_vessel_node() -> TestResult {
+        let rules = WheelGemData::embedded()?.wheel_ruleset()?;
+        let nodes = vessel_rules::node_slots(&rules, "knight");
+        let points = socket_points(&rules, [0; 36], &nodes, 1, 1000, 1000).ok_or("clean wheel plan")?;
+        let allocation = WheelSlots::new(points).map_err(|error| format!("{error:?}"))?;
+        assert!(rules.validate(&WheelSlots::ZERO, &allocation, 1000, false).is_ok());
+        assert_eq!(vessel_rules::open_slots_for(&rules, &allocation, "knight", 1050, true), 1);
+        Ok(())
+    }
+    #[test]
+    fn adding_a_socket_preserves_occupied_cells() {
+        assert_eq!(insert_socket([Some([1; 16]), None, None, None], [2; 16]),
+            Some([Some([1; 16]), Some([2; 16]), None, None]));
+        assert_eq!(insert_socket([Some([1; 16]); 4], [2; 16]), None);
+    }
+    #[test]
+    fn grade_fee_spends_carried_gold_first() {
+        let before = atelier::resources::ResourceBalances { carried_gold: 80, bank_gold: 100, ..Default::default() };
+        let wrong = atelier::resources::ResourceBalances { bank_gold: 50, ..before };
+        let right = atelier::resources::ResourceBalances { carried_gold: 30, ..before };
+        assert!(!grade_fee_matches(&before, &wrong, 50));
+        assert!(grade_fee_matches(&before, &right, 50));
     }
 }

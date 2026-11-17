@@ -240,24 +240,24 @@ fn refused_start_unchanged(initial: wire::TrainingResult, refused: wire::Trainin
     refused == wire::TrainingResult::REFUSED && after == initial
 }
 
-fn settled_charges(ticked: wire::TrainingResult, stopped: wire::TrainingResult) -> bool {
+fn settled_charges(ticked: wire::TrainingResult, stopped: wire::TrainingResult, elapsed: Duration) -> bool {
     stopped.disposition == 2
-        && ticked.charges.checked_sub(stopped.charges).is_some_and(|lost| lost <= 1)
+        && ticked.charges.checked_sub(stopped.charges).is_some_and(|lost| u128::from(lost) <= elapsed.as_nanos().div_ceil(2_000_000_000).max(1))
         && stopped.revision >= ticked.revision
         && (stopped.charges == ticked.charges || stopped.revision > ticked.revision)
 }
 
 async fn observe_tick(
     full: u32,
-    mut status: impl AsyncFnMut() -> TestResult<wire::TrainingResult>,
-) -> TestResult<wire::TrainingResult> {
+    mut status: impl AsyncFnMut() -> TestResult<(tokio::time::Instant, wire::TrainingResult)>,
+) -> TestResult<(tokio::time::Instant, wire::TrainingResult)> {
     loop {
-        let ticked = status().await?;
+        let (sent, ticked) = status().await?;
         if ticked.disposition != 1 || ticked.charges > full {
             return Err(format!("post-tick STATUS reply={ticked:?}; need=running with at most {full} charges").into());
         }
         if ticked.charges < full {
-            return Ok(ticked);
+            return Ok((sent, ticked));
         }
     }
 }
@@ -309,17 +309,19 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
     }
     verdict.pass(3, running);
 
-    let ticked = tokio::time::timeout(Duration::from_secs(15), observe_tick(full, async || {
+    let (status_sent, ticked) = tokio::time::timeout(Duration::from_secs(15), observe_tick(full, async || {
         client.service_liveness(Duration::from_millis(125)).await?;
         client.take_events();
-        command(&mut client, wire::ExerciseIntent::Status).await
+        let sent = tokio::time::Instant::now();
+        Ok((sent, command(&mut client, wire::ExerciseIntent::Status).await?))
     })).await.map_err(|_| "step=exercise-tick observed=no-charge-decrease-before-deadline")??;
     verdict.pass(4, ticked);
 
     let stopped = command(&mut client, wire::ExerciseIntent::Stop).await?;
-    if !settled_charges(ticked, stopped) {
+    let elapsed = status_sent.elapsed();
+    if !settled_charges(ticked, stopped, elapsed) {
         return Err(format!(
-            "STOP reply={stopped:?}; before={ticked:?}; need=settled durable charge/revision"
+            "STOP reply={stopped:?}; before={ticked:?} elapsed={elapsed:?}; need=settled durable charge/revision"
         )
         .into());
     }
@@ -373,7 +375,7 @@ mod tests {
     #[tokio::test]
     async fn exercise_waits_for_delayed_tick() -> TestResult {
         let mut responses = [training_result(1, 10, 2), training_result(1, 9, 3)].into_iter();
-        let ticked = observe_tick(10, async || responses.next().ok_or_else(|| "no more responses".into())).await?;
+        let (_, ticked) = observe_tick(10, async || responses.next().map(|result| (tokio::time::Instant::now(), result)).ok_or_else(|| "no more responses".into())).await?;
         assert_eq!(ticked.charges, 9);
         Ok(())
     }
@@ -381,8 +383,8 @@ mod tests {
     #[test]
     fn exercise_stop_can_settle_a_concurrent_tick() {
         let ticked = training_result(1, 9, 3);
-        assert!(settled_charges(ticked, training_result(2, 8, 4)));
-        assert!(!settled_charges(ticked, training_result(2, 8, 3)));
+        assert!(settled_charges(ticked, training_result(2, 8, 4), Duration::ZERO));
+        assert!(!settled_charges(ticked, training_result(2, 8, 3), Duration::ZERO));
     }
 
     #[test]
@@ -407,6 +409,18 @@ mod delta_tests {
     #[test]
     fn stop_rejects_more_than_one_extra_charge_per_tick() {
         let result = |disposition, charges, revision| wire::TrainingResult { disposition, charges, revision, ..wire::TrainingResult::REFUSED };
-        assert!(!settled_charges(result(0, 9, 7), result(2, 1, 8)));
+        assert!(!settled_charges(result(0, 9, 7), result(2, 1, 8), Duration::ZERO));
+    }
+}
+
+#[cfg(test)]
+mod review_regressions {
+    use super::*;
+    #[test]
+    fn delayed_stop_settles_two_elapsed_ticks() {
+        let before = wire::TrainingResult { disposition: 1, charges: 9, revision: 7, ..wire::TrainingResult::REFUSED };
+        let stopped = wire::TrainingResult { disposition: 2, charges: 7, revision: 8, ..before };
+        assert!(settled_charges(before, stopped, Duration::from_secs(4)));
+        assert!(!settled_charges(before, stopped, Duration::from_millis(500)));
     }
 }
