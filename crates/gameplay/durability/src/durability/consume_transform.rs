@@ -25,6 +25,8 @@ mod dispenser;
 mod ground;
 #[path = "consume_transform_planting.rs"]
 mod planting;
+mod sweet_mangonaise;
+pub use sweet_mangonaise::is_sweet_mangonaise;
 pub use ground::{GroundActionContext, GroundActionSource};
 #[path = "consume_transform_house.rs"]
 mod house;
@@ -419,6 +421,11 @@ async fn write<C: ItemLoopContent>(
             consume_source: true,
             effects,
             extra_inputs: Vec::new(),
+        }
+    } else if request.target.is_none() && is_sweet_mangonaise(&definition.production_key) {
+        match sweet_mangonaise::prepare(tx, fence, native).await? {
+            Ok(plan) => plan,
+            Err(disposition) => return Ok(ConsumeTransformResult::refused(disposition)),
         }
     } else if secondary.is_none() {
         if let Some(plan) = oteryn_gameplay_items::novelty_items::plan(

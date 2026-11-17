@@ -3,9 +3,10 @@
 import argparse
 import hashlib
 import json
+import re
 
 from build_dialogues import HERE, PIN, REPO
-from capture import Capture, inventory
+from capture import Capture, inventory, item
 from lower_dialogue import Lowering
 from lua_tables import assignments
 
@@ -79,7 +80,37 @@ def capture(donor):
     c.save()
 
 
+def capture_elixir(donor, check):
+    capture = Capture(donor, "hot_cuisine", "quest/u8_5/hot_cuisine_quest")
+    path = "data/scripts/actions/items/sweet_mangonaise_elixir.lua"
+    source = (capture.donor / path).read_text(encoding="utf-8")
+    rings = assignments(source, {"ringMultiplicationTable"})["ringMultiplicationTable"]["fields"]
+    registration = re.search(r"^sweetMangonaiseElixir:id\((\d+)\)$", source, re.MULTILINE)
+    if registration is None or not rings:
+        raise ValueError(f"Missing elixir action in {path}")
+    profile = {
+        "item": item(int(registration.group(1))),
+        "ring_outputs": {row["key"]: row["value"] for row in rings},
+        "source": f"{PIN}{path}:1-{len(source.splitlines())}",
+    }
+    output = REPO / "content/quests/hot-cuisine-sweet-mangonaise.json"
+    generated = json.dumps(profile, indent=2) + "\n"
+    if check:
+        if output.read_text(encoding="utf-8") != generated:
+            raise ValueError(f"Stale elixir profile: {output}")
+    else:
+        output.write_text(generated, encoding="utf-8")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("donor")
-    capture(parser.parse_args().donor)
+    parser.add_argument("--elixir", action="store_true", help="capture only the elixir item action")
+    parser.add_argument("--check", action="store_true", help="verify the generated elixir profile")
+    args = parser.parse_args()
+    if args.check and not args.elixir:
+        parser.error("--check requires --elixir")
+    if args.elixir:
+        capture_elixir(args.donor, args.check)
+    else:
+        capture(args.donor)

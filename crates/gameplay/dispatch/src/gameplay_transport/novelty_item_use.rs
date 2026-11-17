@@ -3,7 +3,9 @@ use super::ComposedFreshAdmission;
 use super::connection::{UseCommand, UseOutcome};
 use super::item_ref_admission::NativeItemWeights;
 use super::item_view::ItemKey;
-use crate::durability::consume_transform::{ConsumeTransformRequest, ConsumeTransformResult};
+use crate::durability::consume_transform::{
+    ConsumeTransformRequest, ConsumeTransformResult, is_sweet_mangonaise,
+};
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use crate::gameplay_transport::actor_spell::NoveltyEffectRequest;
@@ -193,6 +195,81 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &format!("The time is {}:{:02}.", minute / 60, minute % 60),
             );
             return Ok(Some(outcome(UseDisposition::Committed)));
+        }
+        if is_sweet_mangonaise(&item.definition.production_key) {
+            if intent.use_with.is_some()
+                || intent.use_with_map_item.is_some()
+                || intent.use_with_position.is_some()
+            {
+                return Ok(Some(outcome(UseDisposition::NotPossible)));
+            }
+            {
+                let runtime = self.runtime.lock().await;
+                let states = self.states.spell_states.lock().await;
+                if states.is_dead(actor)
+                    || !states.spell_idle(&runtime, actor, command.game_session_id)
+                    || !runtime
+                        .player_control_facts(actor, command.game_session_id)
+                        .is_ok_and(|facts| facts.control_loss.is_none())
+                {
+                    return Ok(Some(outcome(UseDisposition::Rejected)));
+                }
+            }
+            if !self
+                .states
+                .player_trades
+                .physical(command.game_session_id, Some(id))
+            {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            }
+            let receipt = self
+                .root
+                .consume_transform_detailed(
+                    &permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request,
+                    native,
+                    &content,
+                    false,
+                )
+                .await
+                .map_err(|_| ())?
+                .ok_or(())?;
+            let (feedback, cue) = match receipt.disposition {
+                UseDisposition::Committed if receipt.fresh => {
+                    ("Your ring has been multiplied.", Some(14))
+                }
+                UseDisposition::NoTarget => ("No ring equipped.", Some(3)),
+                UseDisposition::TargetIllegal => ("This ring cannot be multiplied.", Some(3)),
+                UseDisposition::Exhausted => ("You need to wait before using it again.", None),
+                disposition => return Ok(Some(outcome(disposition))),
+            };
+            self.states
+                .chat
+                .push_quest_feedback(command.game_session_id, feedback);
+            if let Some(cue) = cue {
+                let runtime = self.runtime.lock().await;
+                if receipt.fresh {
+                    self.states.chat.publish_quest_speech(
+                        &runtime,
+                        actor,
+                        command.game_session_id,
+                        "Slurp.",
+                    );
+                }
+                if let Ok(position) = runtime.read_actor_position(actor) {
+                    // Crystal CONST_ME_MAGIC_RED (14) and CONST_ME_POFF (3).
+                    self.states
+                        .spell_states
+                        .lock()
+                        .await
+                        .sounds
+                        .record_item_effect(&runtime, actor, position.position(), cue, false);
+                }
+            }
+            return Ok(Some(outcome(receipt.disposition)));
         }
         // Reward containers retain the existing craft receipt owner and its route.
         if !novelty_items::is_novelty(&item.definition.production_key) {
