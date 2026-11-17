@@ -21,7 +21,13 @@ fn lersatio_first_mirror_use_advances_durable_counter() -> TestResult {
 }
 
 pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
-    quest_world_callbacks::world_with_objects(
+    let cells: Vec<_> = (-2..=-1)
+        .flat_map(|floor| {
+            (32954..=32972)
+                .flat_map(move |x| (31447..=31465).map(move |y| Position { x, y, floor }))
+        })
+        .collect();
+    quest_world_callbacks::world_with_scene_cells(
         callback,
         MIRROR,
         &[
@@ -51,6 +57,7 @@ pub(super) fn world(callback: &Callback) -> TestResult<crate::map::boot::BundleW
             ),
         ],
         &[8326, 8721],
+        &cells,
     )
 }
 
@@ -122,6 +129,35 @@ pub(super) async fn exercise(
         map.facts.object_revision(key),
         2,
         "current mirror reset publishes once"
+    );
+    let restored = object_target(
+        owner,
+        TilePos {
+            x: MIRROR.x,
+            y: MIRROR.y,
+            floor: MIRROR.floor,
+        },
+        1,
+    )?;
+    assert_eq!(
+        use_target(owner, admitted, 3, &restored).await?,
+        UseDisposition::Committed
+    );
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "quest fence")?
+        .ok_or("quest fence")?;
+    let state = owner
+        .root
+        .read_character_quest_state(owner.character, fence.character_id)
+        .await
+        .map_err(super::fixture::debug)?;
+    assert_eq!(
+        state
+            .tracks()
+            .get("oteryn:quest-progress/crystalserver/quest/u8_4/blood_brothers/mirror_counter"),
+        Some(&0)
     );
     Ok(())
 }

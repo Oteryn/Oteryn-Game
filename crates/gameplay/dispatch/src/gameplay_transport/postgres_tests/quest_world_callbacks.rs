@@ -283,6 +283,25 @@ pub(super) fn world_with_objects(
     )
 }
 
+pub(super) fn world_with_scene_cells(
+    callback: &Callback,
+    trigger: Position,
+    objects: &[(Position, u16)],
+    appearances: &[u16],
+    cells: &[Position],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    world_cells(
+        callback,
+        trigger,
+        callback.selector.appearance.unwrap_or(100),
+        1,
+        objects,
+        appearances,
+        None,
+        cells,
+    )
+}
+
 fn world_ordinal(
     callback: &Callback,
     trigger: Position,
