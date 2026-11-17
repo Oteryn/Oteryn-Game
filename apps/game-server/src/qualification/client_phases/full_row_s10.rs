@@ -75,8 +75,12 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(&mut row, clients))).await;
-    row.finish(match result { Ok(result) => result, Err(_) => Err("step deadline: no server reply within 360s; need the server to complete the pending NPC/travel command".into()) });
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(1200),
+        verdict::observe(journey(&mut row, clients)),
+    )
+    .await;
+    row.finish(match result { Ok(result) => result, Err(_) => Err("step deadline: no server reply within 1200s; need the server to complete the pending NPC/travel command".into()) });
 }
 
 async fn talk(
@@ -142,6 +146,10 @@ fn travel_contact_is_nearby(speaker: ActorPosition, npc: ActorPosition) -> bool 
     speaker.floor == npc.floor && speaker.x.abs_diff(npc.x).max(speaker.y.abs_diff(npc.y)) <= 3
 }
 
+fn rashid_at_anchor(observed: ActorPosition, anchor: ActorPosition) -> bool {
+    travel_contact_is_nearby(observed, anchor)
+}
+
 fn actor_at(
     client: &DevClientSession,
     npc: &oteryn_world_bundle::npc::Npc,
@@ -155,11 +163,11 @@ fn actor_at(
                 && travel_contact_is_nearby(speaker, entry.position)
                 && npc.placements.iter().any(|p| {
                     entry.position
-                        == ActorPosition {
+                        == (ActorPosition {
                             x: i32::from(p.x),
                             y: i32::from(p.y),
                             floor: -i16::from(p.floor),
-                        }
+                        })
                 })
         })
         .map(|entry| entry.entity)
@@ -241,9 +249,13 @@ async fn earn(
         })
         .ok_or("step earn-fare: no legitimate route to an authored rat spawn")?;
         walk(client, world, &path).await?;
-        client_hunt::hunt(client)
-            .await
-            .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step earn-fare: real combat/loot failed: {error}"), error) })?;
+        client_hunt::hunt(client).await.map_err(|error| {
+            verdict::record_error(verdict::IndexedError::as_error(&error));
+            verdict::context(
+                format!("step earn-fare: real combat/loot failed: {error}"),
+                error,
+            )
+        })?;
     }
     Ok(())
 }
@@ -322,10 +334,29 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step travel: observed reply={travelled:?} position={:?} carried_gold={}; need relocation and atomic fare burn", client.world_spatial().actor_position, carried_gold(&client)?).into());
     }
     row.step("travel", &travelled);
-    let rashid = metadata.npcs.npcs.iter().find(|npc| npc.key == "oteryn:npc.rashid").ok_or("step rashid-gate: compiled world omitted today's Rashid placement; need the node boot weekday rotation to retain it")?;
+    let authored_rashid = metadata
+        .npcs
+        .npcs
+        .iter()
+        .find(|npc| npc.key == "oteryn:npc.rashid")
+        .ok_or("step rashid-gate: compiled world omitted Rashid")?;
     let expected_rashid = utc_rashid_destination()?;
-    let (rashid, expected_rashid_position) = weekday_rashid(rashid, expected_rashid)?;
-    let rashid_actor = approach(&mut client, world, &rashid).await?;
+    let (_, expected_rashid_position) = weekday_rashid(authored_rashid, expected_rashid)?;
+    for anchor in &authored_rashid.placements {
+        let coordinates = (anchor.x, anchor.y, anchor.floor);
+        if coordinates != expected_rashid_position
+            && inspect_rashid_anchor(&mut client, world, coordinates)
+                .await?
+                .is_some()
+        {
+            return Err(
+                format!("step rashid-gate: live Rashid at off-day anchor {coordinates:?}").into(),
+            );
+        }
+    }
+    let rashid_actor = inspect_rashid_anchor(&mut client, world, expected_rashid_position)
+        .await?
+        .ok_or("step rashid-gate: no live Rashid at today's anchor")?;
     let _ = talk(&mut client, rashid_actor, "hi").await?;
     let (trade, _, shop_opened) = talk(&mut client, rashid_actor, "trade").await?;
     if trade.is_empty() || !shop_opened {
@@ -353,7 +384,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("step fresh-admission: durable state mismatch position={:?}/{saved_position:?} gold={}/{}", fresh.world_spatial().actor_position, carried_gold(&fresh)?, saved_gold).into());
     }
-    let fresh_rashid = approach(&mut fresh, world, &rashid).await?;
+    let fresh_rashid = inspect_rashid_anchor(&mut fresh, world, expected_rashid_position)
+        .await?
+        .ok_or("step fresh-admission: no live Rashid at today's anchor")?;
     let _ = talk(&mut fresh, fresh_rashid, "hi").await?;
     let (fresh_trade, _, fresh_shop) = talk(&mut fresh, fresh_rashid, "trade").await?;
     if fresh_trade.is_empty() || !fresh_shop {
@@ -365,6 +398,79 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 }
 
 type PlacementCoordinates = (u16, u16, i8);
+
+async fn inspect_rashid_anchor(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    (x, y, floor): PlacementCoordinates,
+) -> TestResult<Option<oteryn_dev_client::EntityRef>> {
+    let anchor = ActorPosition {
+        x: x.into(),
+        y: y.into(),
+        floor: -i16::from(floor),
+    };
+    let from = tile(client.world_spatial().actor_position)?;
+    // A cell one tile from the anchor keeps the entire three-tile wander area in view.
+    let path = reach_route(client, world, from, |at| {
+        at.floor == floor && at.x.abs_diff(x).max(at.y.abs_diff(y)) <= 1
+    })
+    .await?
+    .map_err(|failure| format!("step rashid-gate: cannot inspect anchor {anchor:?}: {failure}"))?;
+    walk(client, world, &path).await?;
+    client.service_liveness(Duration::from_millis(100)).await?;
+    client.take_events();
+    let candidates: Vec<_> = client
+        .world_entities()
+        .ok_or("missing Rashid entity view")?
+        .iter()
+        .filter(|entry| entry.kind == EntityKind::Npc && rashid_at_anchor(entry.position, anchor))
+        .map(|entry| entry.entity)
+        .collect();
+    let mut rashid = None;
+    for (index, candidate) in candidates.into_iter().enumerate() {
+        if index > 0 {
+            client.service_liveness(Duration::from_millis(110)).await?;
+            client.take_events();
+        }
+        if full_row_w02::actor_has_name(client, candidate, "Rashid").await?
+            && rashid.replace(candidate).is_some()
+        {
+            return Err(
+                format!("step rashid-gate: multiple live Rashid actors at {anchor:?}").into(),
+            );
+        }
+    }
+    let Some(actor) = rashid else {
+        return Ok(None);
+    };
+    for _ in 0..8 {
+        let here = client.world_spatial().actor_position;
+        let position = client
+            .world_entities()
+            .and_then(|entities| entities.get(&actor))
+            .map(|entry| entry.position)
+            .ok_or("step rashid-gate: identified Rashid left view")?;
+        if travel_contact_is_nearby(here, position) {
+            return Ok(Some(actor));
+        }
+        let path = route(world, tile(here)?, |at| {
+            travel_contact_is_nearby(
+                ActorPosition {
+                    x: at.x.into(),
+                    y: at.y.into(),
+                    floor: -i16::from(at.floor),
+                },
+                position,
+            )
+        })
+        .ok_or("step rashid-gate: live Rashid outside reachable speech range")?;
+        let step = path
+            .first()
+            .ok_or("step rashid-gate: empty speech approach")?;
+        walk(client, world, std::slice::from_ref(step)).await?;
+    }
+    Err("step rashid-gate: live Rashid moved outside speech range during approach".into())
+}
 
 fn weekday_rashid(
     rashid: &oteryn_world_bundle::npc::Npc,
@@ -439,12 +545,31 @@ mod review_regressions {
             placements: vec![yesterday, today],
         };
         let expected = oteryn_gameplay_entities::rashid_schedule::destination_at(0);
-        assert_eq!(
-            weekday_rashid(&rashid, expected)?.0.placements,
-            [today]
-        );
+        assert_eq!(weekday_rashid(&rashid, expected)?.0.placements, [today]);
         rashid.placements.pop();
         assert!(weekday_rashid(&rashid, expected).is_err());
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod delta_review_tests {
+    use super::*;
+    #[test]
+    fn rashid_anchor_includes_native_wander_area() {
+        let anchor = ActorPosition {
+            x: 100,
+            y: 100,
+            floor: 7,
+        };
+        assert!(rashid_at_anchor(ActorPosition { x: 103, ..anchor }, anchor));
+        assert!(!rashid_at_anchor(
+            ActorPosition { x: 104, ..anchor },
+            anchor
+        ));
+        assert!(!rashid_at_anchor(
+            ActorPosition { floor: 8, ..anchor },
+            anchor
+        ));
     }
 }

@@ -55,7 +55,9 @@ const LEVERS: &[TilePos] = &[
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(320), verdict::observe(journey(clients)))
+            .await;
     match result {
         Ok(Ok(())) => evidence(&format!(
             "e2e_all scenario=W02.full status=PASS seconds={:.3} evidence=lever-instance-defeat-cooldown-participation-reward-fresh-admission",
@@ -67,7 +69,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             evidence_token(&error.to_string())
         )),
         Err(_) => evidence(&format!(
-            "e2e_all scenario=W02.full status=FAIL seconds={:.3} evidence=step-timeout:240s;need=completed-native-boss-lifecycle",
+            "e2e_all scenario=W02.full status=FAIL seconds={:.3} evidence=step-timeout:320s;need=completed-native-boss-lifecycle",
             started.elapsed().as_secs_f64()
         )),
     }
@@ -107,12 +109,10 @@ async fn cooldowns(client: &mut DevClientSession) -> TestResult<Vec<u8>> {
     Ok(reply.payload)
 }
 
-pub(super) async fn fight_boss(
+async fn walk_to_boss_lever(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
-    row: &str,
-) -> TestResult<[u8; 16]> {
-    use oteryn_protocol_oteryn::activity_scope::ActivityScope;
+) -> TestResult {
     // Route from the live player cell to the authored encounter lever, servicing the
     // connection during the search for entrances outside the starting town.
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
@@ -127,7 +127,16 @@ pub(super) async fn fight_boss(
     let path = reach_route(client, world, from, |at| LEVERS.contains(&at))
         .await?
         .map_err(|failure| format!("step-2-lever-walk:observed=no-route-from-{from:?} {failure};need=walk-to-authored-lever"))?;
-    walk(client, world, &path).await?;
+    walk(client, world, &path).await
+}
+
+pub(super) async fn fight_boss(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    row: &str,
+) -> TestResult<[u8; 16]> {
+    use oteryn_protocol_oteryn::activity_scope::ActivityScope;
+    walk_to_boss_lever(client, clients).await?;
     let lever_position = client.world_spatial().actor_position;
     let channel_session = client.join_snapshot().game_session_id;
 
@@ -217,13 +226,31 @@ pub(super) async fn fight_boss(
         client.take_events();
     }
     client.session_mut().attack_target(None).await?;
-    let return_deadline = tokio::time::Instant::now() + Duration::from_secs(20);
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let (x, y, floor, wait_ms): (i32, i32, i16, i64) = sqlx::query_as(
+        "SELECT q.exit_x, q.exit_y, q.exit_floor, b.after_kill_ms
+         FROM game_activity_runtime_placements q
+         JOIN game_activity_handoff_participants p USING (handoff_id, character_id)
+         JOIN game_boss_room_activities b ON b.admission = q.handoff_id
+         WHERE q.handoff_id = encode($1,'hex')::uuid
+           AND p.destination_game_session_id = encode($2,'hex')::uuid",
+    )
+    .bind(handoff.as_slice())
+    .bind(instance_session.as_bytes().as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    let (return_wait, expected_exit) = return_expectation(
+        ActorPosition { x, y, floor },
+        Duration::from_millis(wait_ms.try_into()?),
+    );
+    let return_deadline = tokio::time::Instant::now() + return_wait;
+    verdict::Harness::global().bounded_wait(return_deadline, "boss-return");
     while client.join_snapshot().game_session_id == instance_session
-        || client.world_spatial().actor_position != lever_position
+        || client.world_spatial().actor_position != expected_exit
     {
         if tokio::time::Instant::now() >= return_deadline {
             return Err(format!(
-                "step-3-return-to-channel:observed-session-changed={},position={:?};need=new-Channel-session-at-{lever_position:?}",
+                "step-3-return-to-channel:observed-session-changed={},position={:?};need=new-Channel-session-at-{expected_exit:?}",
                 client.join_snapshot().game_session_id != instance_session,
                 client.world_spatial().actor_position
             )
@@ -250,11 +277,14 @@ pub(super) async fn fight_boss(
     Ok(handoff)
 }
 
+fn return_expectation(exit: ActorPosition, after_kill: Duration) -> (Duration, ActorPosition) {
+    (after_kill.saturating_add(Duration::from_secs(20)), exit)
+}
+
 pub(super) async fn named_creature(
     client: &mut DevClientSession,
     name: &str,
 ) -> TestResult<Option<oteryn_dev_client::EntityRef>> {
-    use oteryn_protocol_oteryn::item_look as look;
     let candidates: Vec<_> = client
         .world_entities()
         .ok_or("missing creature entity view")?
@@ -262,36 +292,48 @@ pub(super) async fn named_creature(
         .filter(|entry| entry.kind == oteryn_dev_client::EntityKind::Creature)
         .map(|entry| entry.entity)
         .collect();
-    let selection = look::ItemLookSelection { extended: true };
     for target in candidates {
-        let payload = look::encode_item_look_intent_for(
-            look::ItemLookIntent {
-                target: look::ItemLookTarget::Creature(target),
-            },
-            selection,
-        )
-        .map_err(|error| format!("creature LOOK encode: {error:?}"))?;
-        let reply = client.session_mut().gated_command(28, 30, &payload).await?;
-        if reply.status != CommandStatus::Accepted {
-            return Err(format!("creature LOOK refused: {reply:?}").into());
-        }
-        let result = look::decode_item_look_result_for(&reply.payload, selection)
-            .map_err(|error| format!("creature LOOK decode: {error:?}"))?;
-        if let look::ItemLookResult::Text(text) = result
-            && let Some(observed) = text
-                .strip_prefix("You see ")
-                .and_then(|text| text.strip_suffix('.'))
-        {
-            let observed = ["the ", "an ", "a "]
-                .iter()
-                .find_map(|article| observed.strip_prefix(article))
-                .unwrap_or(observed);
-            if observed.eq_ignore_ascii_case(name) {
-                return Ok(Some(target));
-            }
+        if actor_has_name(client, target, name).await? {
+            return Ok(Some(target));
         }
     }
     Ok(None)
+}
+
+pub(super) async fn actor_has_name(
+    client: &mut DevClientSession,
+    target: oteryn_dev_client::EntityRef,
+    name: &str,
+) -> TestResult<bool> {
+    use oteryn_protocol_oteryn::item_look as look;
+    let selection = look::ItemLookSelection { extended: true };
+    let payload = look::encode_item_look_intent_for(
+        look::ItemLookIntent {
+            target: look::ItemLookTarget::Creature(target),
+        },
+        selection,
+    )
+    .map_err(|error| format!("creature LOOK encode: {error:?}"))?;
+    let reply = client.session_mut().gated_command(28, 30, &payload).await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("creature LOOK refused: {reply:?}").into());
+    }
+    let result = look::decode_item_look_result_for(&reply.payload, selection)
+        .map_err(|error| format!("creature LOOK decode: {error:?}"))?;
+    if let look::ItemLookResult::Text(text) = result
+        && let Some(observed) = text
+            .strip_prefix("You see ")
+            .and_then(|text| text.strip_suffix('.'))
+    {
+        let observed = ["the ", "an ", "a "]
+            .iter()
+            .find_map(|article| observed.strip_prefix(article))
+            .unwrap_or(observed);
+        if observed.eq_ignore_ascii_case(name) {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -346,6 +388,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     evidence("W02_CHECK step=4 status=PASS observed=cooldown-and-personal-reward");
 
+    // The defeated handoff returns at the authored exit. The repeat probe must stand
+    // on a lever square so the cooldown is the reason for refusal.
+    walk_to_boss_lever(&mut client, clients).await?;
     let before_repeat_session = client.join_snapshot().game_session_id;
     let before_repeat_position = client.world_spatial().actor_position;
     let payload =
@@ -493,5 +538,21 @@ mod tests {
     fn cooldown_key_detection_requires_contiguous_wire_text() {
         assert!(contains_key(b"\x0a\x1boteryn:boss.faceless_bane", BOSS));
         assert!(!contains_key(b"oteryn:boss.other", BOSS));
+    }
+}
+
+#[cfg(test)]
+mod delta_review_tests {
+    use super::*;
+    #[test]
+    fn defeated_return_uses_authored_exit_and_wait() {
+        let exit = ActorPosition {
+            x: 33618,
+            y: 32523,
+            floor: 15,
+        };
+        let (budget, goal) = return_expectation(exit, Duration::from_secs(60));
+        assert_eq!(goal, exit);
+        assert!(budget > Duration::from_secs(60));
     }
 }

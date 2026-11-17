@@ -301,6 +301,11 @@ pub struct DevClientSession {
 }
 
 impl DevClientSession {
+    /// Local monotonic lower bound for the admission or recovery commit.
+    pub fn connection_started(&self) -> Instant {
+        self.started
+    }
+
     /// Drops the TLS stream and retains only client continuity for a later recovery attempt.
     pub fn disconnect(self) -> RecoveryState {
         self.session.disconnect()

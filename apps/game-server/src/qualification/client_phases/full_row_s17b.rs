@@ -39,13 +39,21 @@ fn viewer_join_error(error: oteryn_dev_client::SessionError) -> TestResult {
     .into())
 }
 
-pub(super) fn refusal_is_from_dispatch(
+fn refusal_is_from_dispatch(
+    registered: bool,
     result: &Result<
         oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicResponse,
         oteryn_dev_client::SessionError,
     >,
 ) -> bool {
-    matches!(result, Ok(reply) if reply.status == CommandStatus::Rejected && reply.payload.is_empty())
+    attributed_cast_refusal(
+        registered,
+        matches!(result, Ok(reply) if reply.status == CommandStatus::Rejected && reply.payload.is_empty()),
+    )
+}
+
+fn attributed_cast_refusal(registered: bool, wire_rejected: bool) -> bool {
+    registered && wire_rejected
 }
 
 /// A correctly encoded unnegotiated cast command must be rejected by Game dispatch.
@@ -58,6 +66,10 @@ pub(super) async fn refused_by_session(
     if client.selected_capabilities().contains(&capability) {
         return Err(format!("step=cast-command;observed=capability-{capability}-selected").into());
     }
+    use oteryn_protocol_oteryn::capability_tables::GATED;
+    let registered = GATED
+        .iter()
+        .any(|(id, commands, _)| *id == capability && commands.contains(&command));
     let payload = message
         .encode()
         .map_err(|error| format!("step=encode;observed={error:?}"))?;
@@ -65,9 +77,22 @@ pub(super) async fn refused_by_session(
         .session_mut()
         .qualification_command(command, &payload)
         .await;
-    let refused = refusal_is_from_dispatch(&reply);
     let error = format!("{reply:?}");
-    expect(refused, "cast-command", &error)?;
+    if !registered {
+        expect(
+            matches!(&reply, Ok(result) if result.status == CommandStatus::Rejected && result.payload.is_empty()),
+            "unregistered-cast-command",
+            &error,
+        )?;
+        return Ok(format!(
+            "capability-attribution-unavailable:player-route-unregistered:capability={capability}:command={command}"
+        ));
+    }
+    expect(
+        refusal_is_from_dispatch(registered, &reply),
+        "cast-command",
+        &error,
+    )?;
     Ok(error)
 }
 
@@ -160,16 +185,20 @@ mod tests {
             status: CommandStatus::Rejected,
             payload: vec![],
         };
-        assert!(refusal_is_from_dispatch(&Ok(result.clone())));
-        assert!(!refusal_is_from_dispatch(&Ok(
-            oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicResponse {
-                status: CommandStatus::Accepted,
-                ..result
-            }
-        )));
-        assert!(!refusal_is_from_dispatch(&Err(
-            SessionError::CapabilityNotSelected { capability: 292 }
-        )));
+        assert!(refusal_is_from_dispatch(true, &Ok(result.clone())));
+        assert!(!refusal_is_from_dispatch(
+            true,
+            &Ok(
+                oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicResponse {
+                    status: CommandStatus::Accepted,
+                    ..result
+                }
+            )
+        ));
+        assert!(!refusal_is_from_dispatch(
+            true,
+            &Err(SessionError::CapabilityNotSelected { capability: 292 })
+        ));
     }
 
     #[test]
@@ -178,5 +207,15 @@ mod tests {
         assert!(!value.contains(char::is_whitespace));
         assert!(value.len() <= 240);
         assert!(value.starts_with("step=a-b-c-"));
+    }
+}
+
+#[cfg(test)]
+mod delta_review_tests {
+    use super::*;
+    #[test]
+    fn unregistered_cast_rejection_is_not_capability_evidence() {
+        assert!(!attributed_cast_refusal(false, true));
+        assert!(attributed_cast_refusal(true, true));
     }
 }

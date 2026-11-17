@@ -25,7 +25,9 @@ const ROW: &str = "S15b";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients)))
+            .await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err(
@@ -269,8 +271,17 @@ fn protected_observation_is_quiet(
     !observed_damage && current_health >= initial_health
 }
 
+fn protection_deadlines(
+    request: tokio::time::Instant,
+    joined: tokio::time::Instant,
+    duration: Duration,
+) -> (tokio::time::Instant, tokio::time::Instant) {
+    (request + duration, joined + duration)
+}
+
 pub(super) struct ProtectionWindow {
     pub(super) deadline: tokio::time::Instant,
+    latest_expiry: tokio::time::Instant,
     own: [u8; 16],
     health: u32,
     step: &'static str,
@@ -282,7 +293,13 @@ impl ProtectionWindow {
         duration: Duration,
         step: &'static str,
     ) -> TestResult<Self> {
-        let deadline = tokio::time::Instant::now() + duration;
+        // Commit is bracketed by starting the transport and completing its snapshot.
+        // Only traffic received before the earliest possible expiry proves a violation.
+        let (deadline, latest_expiry) = protection_deadlines(
+            tokio::time::Instant::from_std(client.connection_started()),
+            tokio::time::Instant::now(),
+            duration,
+        );
         let own = *client
             .world_entities()
             .ok_or("missing own entity view at protection boundary")?
@@ -293,6 +310,7 @@ impl ProtectionWindow {
             .health;
         Ok(Self {
             deadline,
+            latest_expiry,
             own,
             health,
             step,
@@ -300,12 +318,15 @@ impl ProtectionWindow {
     }
 
     pub(super) fn check(&self, client: &mut DevClientSession) -> TestResult {
-        use oteryn_protocol_oteryn::presentation::PresentationEventKind;
+        use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationValueKind};
+        if tokio::time::Instant::now() >= self.deadline {
+            return Ok(());
+        }
         let events = client.take_events();
         let damage = events.iter().any(|event| match event {
             SessionEvent::ActorVitals(delta) => delta.value.health < self.health,
             SessionEvent::Presentation(delta) => delta.value.iter().any(|event| {
-                matches!(&event.kind, PresentationEventKind::ValueText { target, attacker: Some(_), primary, .. }
+                matches!(&event.kind, PresentationEventKind::ValueText { kind: PresentationValueKind::DamageReceived | PresentationValueKind::DamageDealt | PresentationValueKind::DamageOthers, target, attacker: Some(_), primary, .. }
                     if target.identity == self.own && primary.value > 0)
             }),
             _ => false,
@@ -333,7 +354,7 @@ impl ProtectionWindow {
             )
             .into());
         }
-        verdict::Harness::global().bounded_wait(self.deadline, "bounded-observation");
+        verdict::Harness::global().bounded_wait(self.latest_expiry, "bounded-observation");
         while tokio::time::Instant::now() < self.deadline {
             let remaining = self
                 .deadline
@@ -342,6 +363,17 @@ impl ProtectionWindow {
                 .service_liveness(remaining.min(Duration::from_millis(25)))
                 .await?;
             self.check(client)?;
+        }
+        // The exact owner commit timestamp is absent from the snapshot. Frames
+        // between the two possible expiry times cannot prove either phase.
+        while tokio::time::Instant::now() < self.latest_expiry {
+            let remaining = self
+                .latest_expiry
+                .saturating_duration_since(tokio::time::Instant::now());
+            client
+                .service_liveness(remaining.min(Duration::from_millis(25)))
+                .await?;
+            client.take_events();
         }
         Ok(())
     }
@@ -408,5 +440,21 @@ mod tests {
     #[test]
     fn evidence_is_one_token() {
         assert_eq!(compact("step=3 missing delta"), "step=3-missing-delta");
+    }
+}
+
+#[cfg(test)]
+mod delta_review_tests {
+    use super::*;
+    #[test]
+    fn snapshot_delay_does_not_extend_guaranteed_protection() {
+        let request = tokio::time::Instant::now();
+        let joined = request + Duration::from_millis(450);
+        let duration = Duration::from_secs(4);
+        let first_possible_legal_hit = request + duration + Duration::from_millis(10);
+        let (earliest, latest) = protection_deadlines(request, joined, duration);
+        assert_eq!(earliest, request + duration);
+        assert_eq!(latest, joined + duration);
+        assert!(first_possible_legal_hit >= earliest && first_possible_legal_hit < latest);
     }
 }

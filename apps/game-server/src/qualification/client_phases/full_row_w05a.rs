@@ -4,8 +4,7 @@
 //!    server-save-countdown snapshot at revision zero and retain its session identity.
 //! 2. Send an ordinary STEP player command; expect `Accepted`, a `Moved` disposition and
 //!    the matching world-spatial delta. This produces player-owned durable state before save.
-//! 3. Send an unregistered command through Game dispatch. The countdown is snapshot-only,
-//!    so no production player reset command exists. Check the refusal and unchanged state.
+//! 3. Verify capability 75 registers a countdown domain and no player command.
 //! 4. Service the native connection through the reset-owner polling interval; when a planned
 //!    reset is in its five-minute window, expect a domain-40 delta whose revisions advance by
 //!    one, whose epoch is nonzero and whose remaining minute is in 5..=1.
@@ -18,10 +17,10 @@
 //!    re-check the same durable state, and report the reached missing server path rather than
 //!    claiming the reset lifecycle passed.
 use super::*;
-use oteryn_dev_client::{DevClientSession, SessionEvent};
+use oteryn_dev_client::{AppliedDelta, DevClientSession, SessionError, SessionEvent};
 use oteryn_protocol_oteryn::server_save_countdown::{
     CAPABILITY_SERVER_SAVE_COUNTDOWN_V1, SERVER_SAVE_COUNTDOWN_SNAPSHOT,
-    STATE_DOMAIN_SERVER_SAVE_COUNTDOWN,
+    STATE_DOMAIN_SERVER_SAVE_COUNTDOWN, ServerSaveCountdown,
 };
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
@@ -80,48 +79,31 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         "W05a_CHECK step=walk direction={direction:?} reply={moved:?}"
     ));
 
-    // Capability 75 only publishes countdown state. Probe actual dispatch without treating
-    // the local capability-and-command pairing as wire evidence.
-    let next_command = client.next_command_id();
-    let sequence = client.last_server_sequence();
-    let position = client.world_spatial().actor_position;
-    let countdown_before = client
-        .session_mut()
-        .gated_snapshot(STATE_DOMAIN_SERVER_SAVE_COUNTDOWN)
-        .cloned();
-    let refusal = client
-        .session_mut()
-        .qualification_command(u32::MAX, &[])
-        .await;
-    if !full_row_s17b::refusal_is_from_dispatch(&refusal)
-        || next_command.checked_add(1) != Some(client.next_command_id())
-        || !refusal
-            .as_ref()
-            .is_ok_and(|reply| reply.command_id == next_command && reply.server_sequence > sequence)
-        || client.world_spatial().actor_position != position
-        || client
-            .session_mut()
-            .gated_snapshot(STATE_DOMAIN_SERVER_SAVE_COUNTDOWN)
-            .cloned()
-            != countdown_before
-    {
-        return Err(format!("step=wire-route-refusal observed={refusal:?}").into());
+    if !countdown_has_read_only_registration(oteryn_protocol_oteryn::capability_tables::GATED) {
+        return Err("step=player-reset-boundary observed=countdown-registry-not-read-only".into());
     }
     evidence(
-        "W05a_CHECK step=player-reset-boundary observed=unregistered-command-rejected wire_submission=true countdown-and-position=unchanged",
+        "W05a_CHECK step=player-reset-boundary observed=registered-countdown-domain-has-no-player-command",
     );
 
-    client.take_events();
-    client.service_liveness(Duration::from_secs(7)).await?;
-    let notice = client
-        .take_events()
-        .into_iter()
-        .find_map(|event| match event {
-            SessionEvent::ServerSaveCountdown(delta) => Some(delta),
-            _ => None,
-        });
+    let mut notice = latest_countdown(client.take_events());
+    let mut close = Ok(());
+    if notice.is_none() {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(7);
+        while notice.is_none() && tokio::time::Instant::now() < deadline {
+            let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+            close = client
+                .session_mut()
+                .service_liveness(remaining.min(Duration::from_millis(100)))
+                .await;
+            (notice, close) = countdown_poll(client.take_events(), close)?;
+            if close.is_err() {
+                break;
+            }
+        }
+    }
     if let Some(delta) = notice {
-        if delta.new_revision != delta.base_revision + 1
+        if delta.base_revision.checked_add(1) != Some(delta.new_revision)
             || delta.value.ending_epoch == 0
             || !(1..=5).contains(&delta.value.minutes_remaining)
         {
@@ -137,20 +119,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
             Duration::from_secs((minutes - 1) * 60).saturating_sub(Duration::from_secs(5));
         let latest = Duration::from_secs(minutes * 60 + 30);
         verdict::Harness::global().bounded_wait(noticed + latest, "reset-countdown");
-        let close = loop {
+        while close.is_ok() {
             let remaining = latest.saturating_sub(noticed.elapsed());
             if remaining.is_zero() {
-                break Ok(());
+                break;
             }
-            let result = client
+            close = client
                 .session_mut()
-                .service_liveness(remaining.min(Duration::from_millis(250)))
+                .service_liveness(remaining.min(Duration::from_millis(100)))
                 .await;
-            if result.is_err() {
-                break result;
-            }
             client.take_events();
-        };
+        }
         let elapsed = noticed.elapsed();
         if !observed_reset_close(&close) {
             return Err(format!(
@@ -283,6 +262,36 @@ fn reset_epoch_advanced(ending: u64, active: Option<u64>) -> bool {
     active.is_some() && ending.checked_add(1) == active
 }
 
+type Countdown = AppliedDelta<ServerSaveCountdown>;
+type ResetRead = Result<(), SessionError>;
+
+fn latest_countdown(events: Vec<SessionEvent>) -> Option<Countdown> {
+    events.into_iter().rev().find_map(|event| match event {
+        SessionEvent::ServerSaveCountdown(delta) => Some(delta),
+        _ => None,
+    })
+}
+
+fn countdown_poll(
+    events: Vec<SessionEvent>,
+    read: ResetRead,
+) -> Result<(Option<Countdown>, ResetRead), SessionError> {
+    let notice = latest_countdown(events);
+    if notice.is_none() {
+        read?;
+        return Ok((None, Ok(())));
+    }
+    Ok((notice, read))
+}
+
+fn countdown_has_read_only_registration(routes: &[(u32, &[u32], &[u32])]) -> bool {
+    routes.iter().any(|(id, commands, domains)| {
+        *id == CAPABILITY_SERVER_SAVE_COUNTDOWN_V1
+            && commands.is_empty()
+            && domains.contains(&STATE_DOMAIN_SERVER_SAVE_COUNTDOWN)
+    })
+}
+
 fn observed_reset_close(result: &Result<(), oteryn_dev_client::SessionError>) -> bool {
     matches!(result, Err(oteryn_dev_client::SessionError::Io(error)) if error.kind() == std::io::ErrorKind::UnexpectedEof)
 }
@@ -304,5 +313,42 @@ mod review_regressions {
         assert!(observed_reset_close(&Err(SessionError::Io(
             std::io::ErrorKind::UnexpectedEof.into()
         ))));
+    }
+}
+
+#[cfg(test)]
+mod delta_review_tests {
+    use super::*;
+    #[test]
+    fn countdown_already_received_survives_eof_in_the_same_poll() -> TestResult {
+        let notice = AppliedDelta {
+            server_sequence: 5,
+            base_revision: 0,
+            new_revision: 1,
+            value: ServerSaveCountdown {
+                ending_epoch: 7,
+                minutes_remaining: 1,
+            },
+        };
+        let events = vec![SessionEvent::ServerSaveCountdown(notice.clone())];
+        assert_eq!(latest_countdown(events.clone()), Some(notice.clone()));
+        let eof = || Err(SessionError::Io(std::io::ErrorKind::UnexpectedEof.into()));
+        let (observed, close) = countdown_poll(events, eof())?;
+        assert_eq!(observed, Some(notice));
+        assert!(observed_reset_close(&close));
+        assert!(countdown_poll(Vec::new(), eof()).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn unknown_opcode_rejection_does_not_prove_reset_boundary() {
+        assert!(!countdown_has_read_only_registration(&[(
+            CAPABILITY_SERVER_SAVE_COUNTDOWN_V1,
+            &[1],
+            &[STATE_DOMAIN_SERVER_SAVE_COUNTDOWN]
+        ),]));
+        assert!(countdown_has_read_only_registration(
+            oteryn_protocol_oteryn::capability_tables::GATED
+        ));
     }
 }

@@ -72,7 +72,11 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(&mut row, clients))).await;
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(120),
+        verdict::observe(journey(&mut row, clients)),
+    )
+    .await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => Err(
@@ -271,6 +275,44 @@ async fn claim_wrench(
     Ok(())
 }
 
+fn taming_requires_step(here: ActorPosition, target: ActorPosition) -> bool {
+    here.floor != target.floor || here.x.abs_diff(target.x).max(here.y.abs_diff(target.y)) > 1
+}
+
+async fn approach_taming_target(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    target: oteryn_dev_client::EntityRef,
+) -> TestResult {
+    for _ in 0..32 {
+        let here = client.world_spatial().actor_position;
+        let target_position = client
+            .world_entities()
+            .and_then(|entities| entities.get(&target))
+            .map(|entry| entry.position)
+            .ok_or("step=taming-attempt observed=named-target-left-view")?;
+        if !taming_requires_step(here, target_position) {
+            return Ok(());
+        }
+        let path = route(world, tile(here)?, |at| {
+            !taming_requires_step(
+                ActorPosition {
+                    x: at.x.into(),
+                    y: at.y.into(),
+                    floor: -i16::from(at.floor),
+                },
+                target_position,
+            )
+        })
+        .ok_or("step=taming-attempt observed=no-route-to-named-target")?;
+        let step = path
+            .first()
+            .ok_or("step=taming-attempt observed=empty-approach-route")?;
+        walk(client, world, std::slice::from_ref(step)).await?;
+    }
+    Err("step=taming-attempt observed=named-target-outside-use-range-after-approach".into())
+}
+
 async fn taming_attempt(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
@@ -308,6 +350,7 @@ async fn taming_attempt(
     let target = full_row_w02::named_creature(client, "modified gnarlhound")
         .await?
         .ok_or("step=taming-attempt observed=no-visible-modified-gnarlhound")?;
+    approach_taming_target(client, world, target).await?;
     client.take_events();
     let before_use_sequence = client.last_server_sequence();
     let payload = world_object::encode_item_use_intent(&world_object::UseIntent {
@@ -450,5 +493,31 @@ mod tests {
         }
         assert!(ACTIONS.iter().all(|action| row.passed.contains(action)));
         assert!(row.failure.is_none());
+    }
+}
+
+#[cfg(test)]
+mod delta_review_tests {
+    use super::*;
+    #[test]
+    fn named_taming_target_two_tiles_away_requires_approach() {
+        let here = ActorPosition {
+            x: 10,
+            y: 15,
+            floor: 7,
+        };
+        assert!(taming_requires_step(here, ActorPosition { x: 12, ..here }));
+        assert!(taming_requires_step(
+            here,
+            ActorPosition { floor: 8, ..here }
+        ));
+        assert!(!taming_requires_step(
+            here,
+            ActorPosition {
+                x: 11,
+                y: 16,
+                ..here
+            }
+        ));
     }
 }
