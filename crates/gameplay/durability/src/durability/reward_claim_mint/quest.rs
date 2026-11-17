@@ -13,6 +13,7 @@ use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback;
 
 mod claim;
+mod native_daily;
 pub(crate) use claim::QuestMintClaim;
 
 pub(crate) fn prepare_achievement(
@@ -621,7 +622,14 @@ async fn mint_npc(
         {
             return Err(DurabilityError::InvalidStoredState);
         }
-        binding.key.clone()
+        if binding.daily {
+            let Some(key) = native_daily::admit(tx, fence.character_id, &binding.key).await? else {
+                return Ok(None);
+            };
+            key
+        } else {
+            binding.key.clone()
+        }
     } else if callback.counter.is_some() {
         questpc7_counter_claim::key(
             &callback.key,
@@ -675,7 +683,9 @@ pub(crate) async fn mint(
     admission: QuestRewardAdmission<'_>,
     native_claim: Option<&oteryn_gameplay_quests::quest::reward_callbacks::NativeClaimBinding>,
 ) -> std::result::Result<Option<[u8; 16]>, DurabilityError> {
-    if native_claim.is_some() && !matches!(claim, QuestMintClaim::Once) {
+    if native_claim.is_some_and(|binding| binding.daily)
+        || (native_claim.is_some() && !matches!(claim, QuestMintClaim::Once))
+    {
         return Err(DurabilityError::InvalidStoredState);
     }
     let claim_key = if let Some(binding) = native_claim {

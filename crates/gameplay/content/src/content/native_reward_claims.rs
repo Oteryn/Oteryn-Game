@@ -1,9 +1,9 @@
-//! Native authored allocations use the shared map binder and once-claim mint owner.
+//! Native authored allocations use the shared map binder and fenced claim mint owner.
 //! A claim's placements are alternatives sharing one durable per-character claim;
 //! independent caches must have independent claim keys. Container contents are
 //! explicit allocations, never inferred from recipe prose or donor evidence.
 //!
-//! `native_authored_v1` requires ready, per-character once claims. Each placement
+//! `native_authored_v1` requires ready, per-character once or daily claims. Each placement
 //! pins `source_binding.project_position`, `source_binding.native_entry_ordinal`
 //! and `appearance_tibia_id`. `reward.items` declares one root (or bounded
 //! independent roots with an exactly bound `reward_callback`); optional
@@ -19,14 +19,17 @@ pub(super) fn candidate(
     definition: &serde_json::Map<String, Value>,
     admitted: &dyn Fn(&TypedDefinitionRef) -> bool,
 ) -> Result<Result<Candidate, LeftOut>, ClaimsError> {
+    let daily = definition.get("claim")
+        == Some(&serde_json::json!({"per": "character", "repeat": {"kind": "daily"}}));
     let encoded = definition.get("definition_profile").and_then(Value::as_str)
         == Some("native_authored_v1")
         && definition
             .keys()
             .all(|key| DEFINITION_FIELDS.contains(&key.as_str()) || key == "definition_profile")
         && definition.get("readiness").and_then(Value::as_str) == Some("ready")
-        && definition.get("claim")
-            == Some(&serde_json::json!({"per": "character", "repeat": {"kind": "once"}}));
+        && (daily
+            || definition.get("claim")
+                == Some(&serde_json::json!({"per": "character", "repeat": {"kind": "once"}})));
     if !encoded {
         return Ok(Err(LeftOut::UnencodedField));
     }
@@ -47,6 +50,9 @@ pub(super) fn candidate(
         let Some(placement) = placement_candidate(placement)? else {
             return Ok(Err(LeftOut::UnencodedField));
         };
+        if daily && placement.reward_callback.is_none() {
+            return Ok(Err(LeftOut::UnencodedField));
+        }
         if !admitted(&placement.item)
             || placement
                 .extra_items
@@ -62,6 +68,7 @@ pub(super) fn candidate(
         parsed.push(placement);
     }
     Ok(Ok(Candidate {
+        daily,
         revision: revision.to_owned(),
         placements: parsed,
     }))
@@ -391,6 +398,22 @@ mod tests {
     }
 
     #[test]
+    fn native_authored_rewards_admit_daily_callbacks() {
+        let mut source = definition();
+        source["claim"]["repeat"]["kind"] = "daily".into();
+        source["placements"][0]["reward_callback"] =
+            "oteryn:quest-reward/engclaim-kingdom_of_kormarak-corpse".into();
+        source["placements"][0]
+            .as_object_mut()
+            .expect("placement")
+            .remove("achievement");
+        assert!(matches!(
+            candidate(source.as_object().expect("definition"), &|_| true),
+            Ok(Ok(_))
+        ));
+    }
+
+    #[test]
     fn native_authored_rewards_refuse_unknown_and_partial_shapes() {
         for mutation in [
             "repeat",
@@ -402,7 +425,7 @@ mod tests {
         ] {
             let mut source = definition();
             match mutation {
-                "repeat" => source["claim"]["repeat"]["kind"] = "daily".into(),
+                "repeat" => source["claim"]["repeat"]["kind"] = "weekly".into(),
                 "profile" => source["definition_profile"] = "unrecognized".into(),
                 "child" => source["placements"][0]["reward"]["contents"][0]["random"] = true.into(),
                 "achievement" => source["placements"][0]["achievement"] = "client-selected".into(),

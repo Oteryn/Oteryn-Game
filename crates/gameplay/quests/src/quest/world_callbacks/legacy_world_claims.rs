@@ -187,6 +187,7 @@ fn bind(callbacks: &str, claims: &str) -> Result<Vec<Binding>, String> {
             callback: callback.clone(),
             source_unique: u16::try_from(uid).map_err(|_| "legacy World source id")?,
             claim: NativeClaimBinding {
+                daily: false,
                 key: claim_key,
                 revision: "reward-claim-r1".into(),
                 authority_sha256,

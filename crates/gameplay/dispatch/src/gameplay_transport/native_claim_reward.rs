@@ -25,6 +25,7 @@ fn callback(claim: &ServedClaim, bound: &BoundPlacement) -> Option<RewardCallbac
     let binding = callback.world_claim.as_ref()?;
     if binding.key != claim.key.as_str()
         || binding.revision != claim.revision.as_str()
+        || binding.daily != claim.daily
         || binding.authority_sha256 != hex(&claim.authority_digest)
         || callback.carried_item.is_some()
     {

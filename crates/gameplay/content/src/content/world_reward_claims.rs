@@ -150,6 +150,7 @@ pub struct ServedClaim {
     pub key: ProductionKey,
     pub revision: DefinitionRevisionRef,
     pub authority_digest: [u8; 32],
+    pub daily: bool,
     pub placements: Vec<BoundPlacement>,
 }
 
@@ -323,6 +324,7 @@ fn bind_reward_claims_with_aliases(
 }
 
 struct Candidate {
+    daily: bool,
     revision: String,
     placements: Vec<CandidatePlacement>,
 }
@@ -478,6 +480,7 @@ fn candidate(
         return Ok(Err(LeftOut::ItemNotAdmitted));
     }
     Ok(Ok(Candidate {
+        daily: false,
         revision: revision.to_owned(),
         placements: parsed,
     }))
@@ -1215,6 +1218,7 @@ fn bind_candidate(
             key: ProductionKey::new(key)?,
             revision: DefinitionRevisionRef::new(&candidate.revision)?,
             authority_digest,
+            daily: candidate.daily,
             placements: bound,
         });
     }

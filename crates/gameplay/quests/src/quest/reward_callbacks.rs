@@ -219,6 +219,8 @@ pub struct NativeClaimBinding {
     pub key: String,
     pub revision: String,
     pub authority_sha256: String,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub daily: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -982,6 +984,7 @@ fn validate_document_with_capacity(
                 && c.counter.is_none()
                 && !c.value_only_guarded()
                 && !c.is_save_restart_only()
+                && !c.world_claim.as_ref().is_some_and(|claim| claim.daily)
                 && c.storage
                     .iter()
                     .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
