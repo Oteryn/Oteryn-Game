@@ -170,7 +170,7 @@ impl Stack {
             select_character: Arc::new(|rows, _, _| {
                 crate::character_selection::SelectionAction::Play {
                     character_id: rows[0].character.character_id.clone(),
-                    channel_id: Some(rows[0].channels[0].0.clone()),
+                    channel_id: Some(rows[0].channels[0].id.clone()),
                 }
             }),
         }
@@ -285,7 +285,7 @@ async fn serve_http(
     }
     let response = match target.as_str() {
         "GET /v1/client/directory" => format!(
-            r#"{{"epoch":1,"worlds":[{{"id":"{WORLD}","name":"Alpha","channels":[{{"id":"{CHANNEL}","name":"First"}}],"characters":[]}}]}}"#
+            r#"{{"epoch":1,"worlds":[{{"id":"{WORLD}","name":"Alpha","channels":[{{"id":"{CHANNEL}","name":"First","pvp_type":"OPTIONAL_PVP","region":"EU"}}],"characters":[]}}]}}"#
         ),
         "GET /api/v1/game-auth/native-characters" if empty => r#"{"protocol_version":2,"characters":[]}"#.to_owned(),
         "GET /api/v1/game-auth/native-characters" if training => super::training_batch_tests::roster(),

@@ -110,7 +110,7 @@ pub(super) async fn authorize(
             return Err(rejected(PublicClass::RetryLogin));
         };
         let directory = directory_client
-            .fetch_directory(cancellation.clone())
+            .fetch_directory_as(token.as_ref(), cancellation.clone())
             .await
             .map_err(retry_login)?;
         let rows = crate::character_selection::join(characters, &directory);
@@ -165,7 +165,7 @@ pub(super) async fn authorize(
                         && row.character.character_id == character_id
                         && channel_id
                             .as_ref()
-                            .is_none_or(|id| row.channels.iter().any(|channel| &channel.0 == id))
+                            .is_none_or(|id| row.channels.iter().any(|channel| &channel.id == id))
                 });
                 let selected = selected.ok_or_else(|| rejected(PublicClass::RetryLogin))?;
                 break (

@@ -6,7 +6,8 @@ pub mod native_login;
 use oteryn_foundation::{BoundedText, Cancellable, CancellationToken, cancellable};
 use oteryn_platform_contracts::{
     ClientDirectoryEpoch, DirectoryChannel, DirectoryChannelRef, DirectoryCharacter,
-    DirectoryCharacterRef, DirectorySnapshot, DirectoryWorld, DirectoryWorldRef,
+    DirectoryCharacterRef, DirectoryPvpType, DirectorySnapshot, DirectoryWorld, DirectoryWorldRef,
+    MAX_DIRECTORY_REGION_BYTES,
 };
 use reqwest::{Client, Url, redirect::Policy};
 use serde_json::{Map, Value};
@@ -57,6 +58,8 @@ pub enum PlatformClientError {
     ResponseTooLarge,
     InvalidPayload,
     ForbiddenGameplayField,
+    /// HTTP 401 `{"error":"unauthenticated"}`: the bearer token was refused.
+    Unauthenticated,
 }
 
 impl Display for PlatformClientError {
@@ -73,6 +76,7 @@ impl Display for PlatformClientError {
             Self::ForbiddenGameplayField => {
                 formatter.write_str("Platform directory exposed a forbidden gameplay field")
             }
+            Self::Unauthenticated => formatter.write_str("Platform refused the access token"),
         }
     }
 }
@@ -131,8 +135,19 @@ impl PlatformClient {
         Ok(Self { client, config })
     }
 
+    /// The anonymous directory: every World and Channel, `characters` always empty.
     pub async fn fetch_directory(
         &self,
+        cancellation: CancellationToken,
+    ) -> Result<DirectorySnapshot, PlatformClientError> {
+        self.fetch_directory_as(None, cancellation).await
+    }
+
+    /// The directory with the owner's characters when `token` (the native OAuth access token
+    /// of native-characters-v1) is given as `Authorization: Bearer`.
+    pub async fn fetch_directory_as(
+        &self,
+        token: Option<&native_login::AccessToken>,
         cancellation: CancellationToken,
     ) -> Result<DirectorySnapshot, PlatformClientError> {
         let endpoint = self
@@ -151,12 +166,17 @@ impl PlatformClient {
         span.field("attempts", 1_u64);
         let started = std::time::Instant::now();
         let request = async {
-            let mut response = self
-                .client
-                .get(endpoint)
+            let mut request = self.client.get(endpoint);
+            if let Some(token) = token {
+                request = request.bearer_auth(token.expose());
+            }
+            let mut response = request
                 .send()
                 .await
                 .map_err(|_error| PlatformClientError::Request)?;
+            if response.status() == reqwest::StatusCode::UNAUTHORIZED {
+                return Err(PlatformClientError::Unauthenticated);
+            }
             if !response.status().is_success() {
                 return Err(PlatformClientError::HttpStatus(response.status().as_u16()));
             }
@@ -269,6 +289,13 @@ fn parse_world(object: &Map<String, Value>) -> Result<DirectoryWorld, PlatformCl
                 .map_err(|_error| PlatformClientError::InvalidPayload)?,
             display_name: BoundedText::new(required_string(entry, "name")?, 96)
                 .map_err(|_error| PlatformClientError::InvalidPayload)?,
+            pvp_type: DirectoryPvpType::parse(required_string(entry, "pvp_type")?)
+                .ok_or(PlatformClientError::InvalidPayload)?,
+            region: BoundedText::new(
+                required_string(entry, "region")?,
+                MAX_DIRECTORY_REGION_BYTES,
+            )
+            .map_err(|_error| PlatformClientError::InvalidPayload)?,
         });
     }
     let mut characters = Vec::with_capacity(character_values.len());
@@ -331,7 +358,7 @@ fn contains_forbidden_gameplay_field(value: &Value) -> bool {
 mod tests {
     use super::*;
 
-    const SAFE: &[u8] = br#"{"epoch":7,"worlds":[{"id":"w-alpha","name":"Alpha","channels":[{"id":"c-1","name":"Default"}],"characters":[{"id":"char-1","name":"Ari"}]}]}"#;
+    const SAFE: &[u8] = br#"{"epoch":7,"worlds":[{"id":"w-alpha","name":"Alpha","channels":[{"id":"c-1","name":"Default","pvp_type":"OPTIONAL_PVP","region":"EU"}],"characters":[{"id":"char-1","name":"Ari"}]}]}"#;
 
     #[test]
     fn safe_directory_contains_no_route() -> Result<(), PlatformClientError> {
