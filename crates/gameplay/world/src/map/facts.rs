@@ -374,12 +374,13 @@ impl BundleFacts {
         }
         // 7252: painted baby seal (Crystal actions_paint.lua:27), absent from the base palette.
         // 13842: W05b Thawing ice flower (Crystal thawing.lua:1).
+        // 20359–20361: Ursagrodon melt states (Crystal actions_ursagrodon.lua:36–54).
         let mut movement_solidities = BTreeMap::new();
         let movement_definitions: BTreeMap<_, _> = [
             435, 1025, 1841, 1949, 5022, 7252, 9125, 9126, 9929, 9933, 9934, 9935, 9936, 9937,
             9938, 9939, 10186, 10187, 12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055,
-            14064, 14074, 14076, 14077, 14163, 14164, 14255, 17939, 21804, 21805, 21812, 22059,
-            22074, 26077, 26087, 26100,
+            14064, 14074, 14076, 14077, 14163, 14164, 14255, 17939, 20359, 20360, 20361, 21804,
+            21805, 21812, 22059, 22074, 26077, 26087, 26100,
         ]
         .into_iter()
         .chain(6594..=6608)
@@ -1482,6 +1483,40 @@ mod tests {
     use super::*;
     use crate::foundation::{ChannelId, WorldId};
     use crate::map::boot::{boot, tests as fixture};
+
+    #[test]
+    fn ursagrodon_melt_appearances_resolve_outside_the_base_palette() -> Result<(), String> {
+        let (bytes, _) = fixture::bundle();
+        let bundle =
+            oteryn_world_bundle::bundle::read(&bytes).map_err(|error| error.to_string())?;
+        let facts = BundleFacts::palette(&bundle.manifest, |key| {
+            fixture::items(key).or_else(|| {
+                matches!(
+                    key,
+                    "oteryn:item.tibia.i20359"
+                        | "oteryn:item.tibia.i20360"
+                        | "oteryn:item.tibia.i20361"
+                )
+                .then_some(ItemDefinition {
+                    reference: NonZeroU32::MIN,
+                    solid: Some(true),
+                    blocks_projectile: true,
+                    pickupable: false,
+                    door: false,
+                })
+            })
+        })
+        .map_err(|error| format!("{error:?}"))?;
+        let key =
+            oteryn_world_bundle::bundle::placement_key(-7, 100, 100, 0).ok_or("source key")?;
+        for appearance in 20359..=20361 {
+            let replacement = facts
+                .quest_callback_replacement(key, appearance)
+                .ok_or("melt replacement")?;
+            assert_eq!(replacement.appearance_id, appearance);
+        }
+        Ok(())
+    }
 
     #[test]
     fn source_house_membership_keeps_adjacent_identities_and_refuses_ambiguity() {
