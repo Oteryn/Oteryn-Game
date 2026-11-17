@@ -206,7 +206,11 @@ fn run_case(case: Case) -> TestResult {
                     false,
                 )
                 .await?;
-                let result = scenario(&h, case).await;
+                // Erase the large composed scenario before the generic harness owns it.
+                // This keeps focused native-service builds within the retained memory limit.
+                let scenario: std::pin::Pin<Box<dyn std::future::Future<Output = TestResult> + '_>> =
+                    Box::pin(scenario(&h, case));
+                let result = scenario.await;
                 h.cleanup().await?;
                 result?;
                 println!("HIRELING_LIFECYCLE POSTGRES_CASE_COMPLETED");
