@@ -10,13 +10,13 @@ use oteryn_protocol_oteryn::boss_encounter as wire;
 #[test]
 fn srx3_source_death_actual_malice_notice_runs_older_cage_timer_at_real_now_postgres() -> TestResult
 {
-    run_malice_source_death_timers(false, 40_000)
+    run_malice_source_death_timers(false, 14_000)
 }
 
 #[test]
 fn srx3_source_death_runs_original_taint_check_before_later_malice_callback_postgres() -> TestResult
 {
-    run_malice_source_death_timers(true, 40_000)
+    run_malice_source_death_timers(true, 14_000)
 }
 
 pub(super) fn run_malice_source_death_timers(require_taint_prefix: bool, cage_lifetime_ms: u64) -> TestResult {
@@ -287,7 +287,7 @@ pub(super) fn run_malice_source_death_timers(require_taint_prefix: bool, cage_li
             assert!(
                 successor >= before_execution / 1000 + cage_lifetime_ms
                     && successor <= after_execution / 1000 + cage_lifetime_ms,
-                "Lua successor delay starts at actual execution, not the old cutoff"
+                "Cage expiry starts at actual execution, not the old cutoff"
             );
             assert!(successor > cutoff / 1000);
             assert_eq!(

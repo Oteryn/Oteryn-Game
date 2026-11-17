@@ -30,6 +30,8 @@ struct CageTimer {
 }
 // Source room duration is20min and each next Cage birth waits23s. These
 // bounds retain every original death/timer, refusing before a new claim.
+// TibiaWiki Soul War Quest/Spoiler, curid 91800, oldid 1213730.
+const CAGE_LIFETIME_MS: u64 = 14_000;
 const MAX_CAGE_TIMERS: usize = 128;
 const MAX_CAGE_DEATHS: usize = 64;
 
@@ -169,7 +171,7 @@ impl MaliceRoom {
                 CageTimerKind::Spawn if !cage_exists => {
                     effects.push(MaliceEffect::SpawnCage);
                     // Removal is scheduled even when createMonster returns nil.
-                    if let Some(due) = now_ms.checked_add(40_000) {
+                    if let Some(due) = now_ms.checked_add(CAGE_LIFETIME_MS) {
                         self.cage_timers.push(CageTimer {
                             due,
                             kind: CageTimerKind::Remove,
@@ -282,7 +284,7 @@ mod tests {
             vec![MaliceEffect::SpawnCage]
         );
         assert!(
-            room.advance(63_100, false, true).is_empty(),
+            room.advance(37_100, false, true).is_empty(),
             "source callback sees no Cage and schedules no successor"
         );
         assert!(room.advance(200_000, false, true).is_empty());
@@ -295,12 +297,12 @@ mod tests {
             vec![MaliceEffect::SpawnCage]
         );
         assert_eq!(
-            room.advance(63_000, true, true),
+            room.advance(37_000, true, true),
             vec![MaliceEffect::RemoveCage, MaliceEffect::BuffMalice]
         );
-        assert!(room.advance(85_999, false, true).is_empty());
+        assert!(room.advance(59_999, false, true).is_empty());
         assert_eq!(
-            room.advance(86_000, false, true),
+            room.advance(60_000, false, true),
             vec![MaliceEffect::SpawnCage]
         );
     }
@@ -319,9 +321,9 @@ mod tests {
         );
         // The successor is relative to actual callback execution, not a replay
         // of callbacks which never ran while the owner was unavailable.
-        assert!(overdue.advance(40_499, true, true).is_empty());
+        assert!(overdue.advance(14_499, true, true).is_empty());
         assert_eq!(
-            overdue.advance(40_500, true, true),
+            overdue.advance(14_500, true, true),
             vec![MaliceEffect::RemoveCage, MaliceEffect::BuffMalice]
         );
     }
@@ -353,12 +355,12 @@ mod tests {
         assert!(room.advance_through(47_000, 100_000, true, true).is_empty());
         assert_eq!(
             room.next_due_ms(),
-            Some(140_000),
+            Some(114_000),
             "Cage lifetime starts at actual spawn execution"
         );
         let before = room.clone();
         assert!(
-            room.advance_through(200_000, 139_999, true, true)
+            room.advance_through(200_000, 113_999, true, true)
                 .is_empty()
         );
         assert_eq!(
@@ -366,7 +368,7 @@ mod tests {
             "a future cutoff cannot make the real clock run early"
         );
         assert_eq!(
-            room.advance_through(140_000, 200_000, true, true),
+            room.advance_through(114_000, 200_000, true, true),
             vec![MaliceEffect::RemoveCage, MaliceEffect::BuffMalice]
         );
         assert_eq!(
@@ -408,32 +410,34 @@ mod tests {
             room.advance(23_000, false, true),
             vec![MaliceEffect::SpawnCage]
         );
+        // A retained death from an earlier Cage can register an overlapping spawn.
         assert!(
-            room.cage_died([1; 32], 24_000)?,
+            room.cage_died([1; 32], 13_000)?,
             "actual copied onDeath schedules its23s continuation"
         );
         assert!(
             !room.cage_died([1; 32], 25_000)?,
             "same original death cannot schedule twice"
         );
-        assert!(room.advance(46_999, false, true).is_empty());
+        assert!(room.advance(35_999, false, true).is_empty());
         assert_eq!(
-            room.advance(47_000, false, true),
+            room.advance(36_000, false, true),
             vec![MaliceEffect::SpawnCage]
         );
         assert_eq!(
-            room.advance(63_000, true, true),
+            room.advance(37_000, true, true),
             vec![MaliceEffect::RemoveCage, MaliceEffect::BuffMalice],
             "older callback removes the NEW currently named Cage"
         );
+        assert_eq!(room.next_due_ms(), Some(50_000));
         assert_eq!(
-            room.advance(86_000, false, true),
-            vec![MaliceEffect::SpawnCage]
+            room.advance(50_000, true, true),
+            vec![MaliceEffect::RemoveCage, MaliceEffect::BuffMalice],
+            "the 36s spawn's removal survives the 37s callback"
         );
         assert_eq!(
-            room.advance(87_000, true, true),
-            vec![MaliceEffect::RemoveCage, MaliceEffect::BuffMalice],
-            "47s spawn's removal survives the63s callback"
+            room.advance(60_000, false, true),
+            vec![MaliceEffect::SpawnCage]
         );
         Ok(())
     }
@@ -445,15 +449,15 @@ mod tests {
             room.advance(23_000, false, true),
             vec![MaliceEffect::SpawnCage]
         );
-        assert!(room.cage_died([2; 32], 40_000)?);
-        assert_eq!(room.next_due_ms(), Some(63_000));
+        assert!(room.cage_died([2; 32], 14_000)?);
+        assert_eq!(room.next_due_ms(), Some(37_000));
         assert!(
-            room.advance(63_000, false, true).is_empty(),
-            "remove registered at23s executes before spawn registered at40s"
+            room.advance(37_000, false, true).is_empty(),
+            "removal registered first executes before the retained death spawn"
         );
-        assert_eq!(room.next_due_ms(), Some(63_000));
+        assert_eq!(room.next_due_ms(), Some(37_000));
         assert_eq!(
-            room.advance(63_000, false, true),
+            room.advance(37_000, false, true),
             vec![MaliceEffect::SpawnCage]
         );
         Ok(())

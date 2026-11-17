@@ -95,13 +95,17 @@ pub(super) fn run_megalomania_native_step(expected_cooldown: Option<i64>) -> Tes
             assert!(matches!(reply, wire::BossActivityReply::Accepted { .. }));
             assert!(barrier.is_some());
             if let Some(expected) = expected_cooldown {
-                let cooldown: i64 = sqlx::query_scalar(
-                    "SELECT cooldown_seconds FROM game_boss_room_publications WHERE boss_key=$1",
+                let cooldown_ms: i64 = sqlx::query_scalar(
+                    "SELECT c.available_at - a.opened_at \
+                     FROM game_character_boss_cooldowns c \
+                     JOIN game_boss_room_activities a ON a.admission=c.admission \
+                     WHERE c.boss_key=$1 AND c.character_id=encode($2,'hex')::uuid",
                 )
                 .bind("oteryn:boss.goshnar_s_megalomania")
+                .bind(id(41).as_slice())
                 .fetch_one(&h.pool)
                 .await?;
-                assert_eq!(cooldown, expected, "published Megalomania retry period");
+                assert_eq!(cooldown_ms, expected * 1000, "Megalomania retry period");
             }
             let fence = admitted.item_fence.ok_or("actual Instance Player")?;
             assert_eq!(fence.runtime_scope, instance);
