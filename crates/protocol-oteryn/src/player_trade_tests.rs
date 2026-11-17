@@ -156,3 +156,29 @@ fn trade_contents_are_negotiated_bounded_and_parent_indexed() -> Result<(), Erro
     assert!(encode_state_for(&state, true).is_err());
     Ok(())
 }
+
+#[test]
+fn player_trade_own_offer_look_accepts_omitted_false() -> Result<(), Error> {
+    let trade_id = [9; 16];
+    let mut bytes = vec![34, 18, 10, 16];
+    bytes.extend_from_slice(&trade_id);
+    assert_eq!(
+        decode_intent(&bytes)?,
+        Intent::Look {
+            trade_id,
+            counter_offer: false
+        }
+    );
+    Ok(())
+}
+
+#[test]
+fn player_trade_state_rejects_one_byte_above_registered_ceiling() {
+    let payload = vec![0; 65_537];
+    assert_eq!(
+        decode_state_for(&payload[..65_536], true),
+        Err(Error::Malformed)
+    );
+    assert_eq!(decode_state_for(&payload, true), Err(Error::LimitExceeded));
+    assert_eq!(MAX_CONTENTS_STATE_BYTES, 65_536);
+}

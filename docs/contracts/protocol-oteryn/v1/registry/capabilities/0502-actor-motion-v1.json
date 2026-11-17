@@ -13,6 +13,6 @@
   ],
   "state_domains": [],
   "offered": false,
-  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES and appearance_available. Field 14 of each actor visibility entry; legacy entries unchanged.",
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES and appearance_available. Field 16 of each actor visibility entry; legacy entries unchanged.",
   "extends_core_commands": []
 }

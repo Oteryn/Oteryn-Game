@@ -13,7 +13,7 @@
   "client_visible": true,
   "boundary_tests": [
     "authoritative_npc_quote_details_decode",
-    "trade_contents_are_negotiated_bounded_and_parent_indexed"
+    "npc_quote_window_rejects_one_byte_above_registered_ceiling"
   ],
   "notes": "Capability 501 only. The existing legacy wire byte and count ceilings remain enforced without selection."
 }

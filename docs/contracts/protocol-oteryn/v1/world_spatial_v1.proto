@@ -157,15 +157,23 @@ message WorldSpatialEntityV1 {
   // at most 64 bytes, no control characters. Never on objects. Unknown to old
   // decoders, so omitted unless negotiated. Entry limits for each profile appear above.
   string display_name = 13;
+  // Capability 372 only, actors only, at most three entries.
+  repeated NativeCreatureIconV1 native_icons = 14;
+  // Capability 386 only, objects only, exact source-pinned native resource 1..65535.
+  // The generation-local item_definition_ref and canonical handle remain unchanged.
+  uint32 native_object_appearance_id = 15;
   // Optional, actors only, exclusively under capability 502 ACTOR_MOTION_V1.
   // Exactly 48 bytes; the strict little-endian profile is actor-motion-v1.md.
   // Includes last translation revision, authoritative step duration (zero for a
   // teleport), active mount look type and own-actor adjacent prewalk forecasts.
-  // Capability386 only; objects only, exact source-pinned native resource1..65535.
-  // The generation-local item_definition_ref and canonical handle remain unchanged.
-  uint32 native_object_appearance_id = 15;
-  // Field 14 is capability 372's repeated native creature icons.
   bytes actor_motion = 16;
+}
+
+// All fields must be explicitly present, including zero category or count.
+message NativeCreatureIconV1 {
+  optional uint32 category = 1;
+  optional uint32 id = 2;
+  optional uint32 count = 3;
 }
 
 // StateDomainSnapshot.payload of domain 1, snapshot type 2. At most 256 entities (MOVE-RL-11),

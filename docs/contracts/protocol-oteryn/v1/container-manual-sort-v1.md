@@ -37,6 +37,13 @@ transaction; the depot box's ordinals are rotated the same way, under a deferred
 constraint and an ordinal-only update trigger. One receipt holds at most 500 entries, so a depot
 slot beyond 499 places the entry at slot 499.
 
+With 510 selected, command 36 publishes opaque withdrawal ordinals for the exact items on its
+current page. The client echoes the displayed ordinal in field 5. Every page reply replaces the
+previous selection without reusing an ordinal during the GameSession, and a reconnect closes the
+selection. A withdrawal with an expired ordinal returns STALE. The depot owner checks the
+selected instance is still on the requested page under its existing fence before moving it.
+Durable receipt replay still returns the original outcome.
+
 The client toggles the mode with the `ToggleManualSortMode` hotkey action (Tibia Global default
 Shift+S) for the current session; while it is on, container titles render orange and a drop on a
 container slot sends that slot.

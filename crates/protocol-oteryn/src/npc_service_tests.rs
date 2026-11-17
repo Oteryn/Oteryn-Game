@@ -909,3 +909,95 @@ fn authoritative_npc_quote_details_decode() {
     assert_eq!(decoded.details[0].name, "fish");
     assert_eq!(decoded.details[0].maximum_quantity, 37);
 }
+
+#[test]
+fn npc_quote_maximum_respects_bulk_transaction_limit() {
+    let mut window = NpcTradeWindow {
+        open: Some((
+            EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            },
+            9,
+        )),
+        offers: vec![NpcOffer {
+            item_definition_ref: 42,
+            side: NpcTradeSide::Buy,
+            count: 1,
+            unit_price: 17,
+        }],
+        details: vec![crate::trade_details::NpcQuoteDetails {
+            name: "fish".into(),
+            maximum_quantity: 10_000,
+        }],
+    };
+    let bytes = encode_npc_trade_window_for(&window, true).expect("bulk quote");
+    assert_eq!(
+        decode_npc_trade_window_for(&bytes, true),
+        Ok(window.clone())
+    );
+    // The last varint is 10,000. Change it to 10,001 without using the encoder.
+    let mut invalid = bytes;
+    let quantity = invalid.len() - 2;
+    assert_eq!(&invalid[quantity..], &[0x90, 0x4e]);
+    invalid[quantity] = 0x91;
+    window.details[0].maximum_quantity = 10_001;
+    assert_eq!(
+        (
+            encode_npc_trade_window_for(&window, true),
+            decode_npc_trade_window_for(&invalid, true)
+        ),
+        (
+            Err(NpcServiceWireError::Malformed),
+            Err(NpcServiceWireError::Malformed)
+        )
+    );
+}
+
+#[test]
+fn npc_quote_schema_covers_negotiated_window() {
+    let window = NpcTradeWindow {
+        open: Some((
+            EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            },
+            9,
+        )),
+        offers: vec![
+            NpcOffer {
+                item_definition_ref: 42,
+                side: NpcTradeSide::Buy,
+                count: 1,
+                unit_price: 17
+            };
+            200
+        ],
+        details: vec![
+            crate::trade_details::NpcQuoteDetails {
+                name: "a".repeat(128),
+                maximum_quantity: 1
+            };
+            200
+        ],
+    };
+    let bytes = encode_npc_trade_window_for(&window, true).expect("large shop");
+    assert!(bytes.len() > MAX_NPC_TRADE_WINDOW_BYTES);
+    assert_eq!(decode_npc_trade_window_for(&bytes, true), Ok(window));
+    let schema = include_str!("../../../docs/contracts/protocol-oteryn/v1/npc_service_v1.proto");
+    assert!(schema.contains("22,570 bytes without capability 501, 170,026 bytes with it"));
+}
+
+#[test]
+fn npc_quote_window_rejects_one_byte_above_registered_ceiling() {
+    let payload = vec![0; 170_027];
+    assert_eq!(
+        decode_npc_trade_window_for(&payload[..170_026], true),
+        Err(NpcServiceWireError::Malformed)
+    );
+    assert_eq!(
+        decode_npc_trade_window_for(&payload, true),
+        Err(NpcServiceWireError::LimitExceeded)
+    );
+    assert_eq!(MAX_NPC_TRADE_WINDOW_DETAILS_BYTES, 170_026);
+}

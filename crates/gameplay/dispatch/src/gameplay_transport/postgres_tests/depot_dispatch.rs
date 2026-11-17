@@ -548,7 +548,9 @@ fn scenario_with_premium(
             5
         } else if retrieve {
             22
-        } else if stash || ground_container || mail || mode == Mode::ManualSort {
+        } else if mode == Mode::ManualSort {
+            4
+        } else if stash || ground_container || mail {
             3
         } else {
             1
@@ -712,6 +714,7 @@ fn scenario_with_premium(
                 })
                 .collect::<Result<Vec<_>, _>>()?;
             manual_sort_cases::exercise(&owner, admitted, &harness.pool, &handles).await?;
+            Box::pin(manual_sort_cases::stale_withdrawal(&owner, admitted, &harness.pool, &handles)).await?;
             drop(owner);
             drop(authority);
             drop(seal);

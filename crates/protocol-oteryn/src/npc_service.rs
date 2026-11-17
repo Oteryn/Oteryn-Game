@@ -506,7 +506,11 @@ pub fn encode_npc_trade_window_for(window: &NpcTradeWindow, details: bool) -> Wi
 }
 
 fn check_quote_detail(detail: &crate::trade_details::NpcQuoteDetails) -> WireResult<()> {
-    if detail.name.is_empty() || detail.name.len() > 128 || detail.name.contains('\0') {
+    if detail.name.is_empty()
+        || detail.name.len() > 128
+        || detail.name.contains('\0')
+        || detail.maximum_quantity > 10_000
+    {
         return malformed();
     }
     Ok(())

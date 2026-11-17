@@ -650,3 +650,69 @@ fn stash_reply_mirrored_into_domain_27_is_applied_not_rejected() -> Result<(), B
         .join()
         .map_err(|_| "stash session test thread panicked")?
 }
+
+#[test]
+fn npc_quote_details_deliver_large_windows_and_reject_overlimit_quantities() -> Result<(), BoxError>
+{
+    block_on(async {
+        use oteryn_protocol_oteryn::{npc_service, trade_details::NpcQuoteDetails};
+        let capabilities = &[3, 4, 6, 501];
+        let (client, mut server) = tokio::io::duplex(64 * 1024);
+        let peer = tokio::spawn(async move {
+            join_peer_with(
+                &mut server,
+                capabilities,
+                capabilities,
+                &[],
+                item_snapshot(vec![])?,
+                &[(8, 1, 1, vec![])],
+            )
+            .await
+        });
+        let mut session = Session::admit(client, admission_with(capabilities)?).await?;
+        peer.await??;
+        let window = npc_service::NpcTradeWindow {
+            open: Some((
+                EntityRef {
+                    identity: [9; 16],
+                    generation: 2,
+                },
+                7,
+            )),
+            offers: vec![
+                npc_service::NpcOffer {
+                    item_definition_ref: 5,
+                    side: NpcTradeSide::Buy,
+                    count: 1,
+                    unit_price: 12,
+                };
+                200
+            ],
+            details: vec![
+                NpcQuoteDetails {
+                    name: "a".repeat(128),
+                    maximum_quantity: 10_000
+                };
+                200
+            ],
+        };
+        let mut bytes = npc_service::encode_npc_trade_window_for(&window, true)
+            .map_err(|error| format!("{error:?}"))?;
+        assert!(bytes.len() > npc_service::MAX_NPC_TRADE_WINDOW_BYTES);
+        let frame = encode_state_delta(1, 41, 8, 1, 2, 1, &bytes)?;
+        assert!(matches!(
+            session.apply_state_delta(41, decode_wire_envelope(&frame)?.payload())?,
+            SessionEvent::NpcTradeWindow(delta) if delta.value == window
+        ));
+        let quantity = bytes.len() - 2;
+        assert_eq!(&bytes[quantity..], &[0x90, 0x4e]);
+        bytes[quantity] = 0x91;
+        let frame = encode_state_delta(1, 42, 8, 2, 3, 1, &bytes)?;
+        assert!(matches!(
+            session.apply_state_delta(42, decode_wire_envelope(&frame)?.payload()),
+            Err(SessionError::SessionUnusable)
+        ));
+        assert!(session.gated_revisions.contains(&(8, 2)));
+        Ok(())
+    })?
+}

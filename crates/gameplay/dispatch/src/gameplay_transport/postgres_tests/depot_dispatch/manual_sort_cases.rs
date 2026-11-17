@@ -65,13 +65,19 @@ pub(super) async fn exercise(
                 .outcome,
         )
     };
-    assert_eq!(outcome(1, a_handle, a, None).await?, DepotOutcome::Moved);
+    assert_eq!(outcome(101, a_handle, a, None).await?, DepotOutcome::Moved);
     assert_eq!(order(pool).await?, vec![text(a)]);
     // A slot past the last entry places the deposit last.
-    assert_eq!(outcome(2, b_handle, b, Some(5)).await?, DepotOutcome::Moved);
+    assert_eq!(
+        outcome(102, b_handle, b, Some(5)).await?,
+        DepotOutcome::Moved
+    );
     assert_eq!(order(pool).await?, vec![text(a), text(b)]);
     // The third deposit takes slot 1, between the earlier two.
-    assert_eq!(outcome(3, c_handle, c, Some(1)).await?, DepotOutcome::Moved);
+    assert_eq!(
+        outcome(103, c_handle, c, Some(1)).await?,
+        DepotOutcome::Moved
+    );
     assert_eq!(order(pool).await?, vec![text(a), text(c), text(b)]);
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_item_container_sort_receipts \
@@ -79,10 +85,19 @@ pub(super) async fn exercise(
     )
     .fetch_one(pool)
     .await?;
-    assert_eq!(receipts, 2, "one depot ordinal receipt per rotated placement");
+    assert_eq!(
+        receipts, 2,
+        "one depot ordinal receipt per rotated placement"
+    );
     // The same command with the same slot replays; with another slot it conflicts.
-    assert_eq!(outcome(3, c_handle, c, Some(1)).await?, DepotOutcome::Moved);
-    assert_eq!(outcome(3, c_handle, c, Some(0)).await?, DepotOutcome::Rejected);
+    assert_eq!(
+        outcome(103, c_handle, c, Some(1)).await?,
+        DepotOutcome::Moved
+    );
+    assert_eq!(
+        outcome(103, c_handle, c, Some(0)).await?,
+        DepotOutcome::Rejected
+    );
     assert_eq!(order(pool).await?, vec![text(a), text(c), text(b)]);
     // The receipt triggers admit no ordinal change outside a current depot move.
     let forged = sqlx::query(
@@ -92,6 +107,115 @@ pub(super) async fn exercise(
     .bind(text(a))
     .execute(pool)
     .await;
-    assert!(forged.is_err(), "an ordinal update without its receipt is refused");
+    assert!(
+        forged.is_err(),
+        "an ordinal update without its receipt is refused"
+    );
     Ok(())
+}
+
+pub(super) async fn stale_withdrawal(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: crate::gameplay_transport::connection::AdmittedSession,
+    pool: &sqlx::PgPool,
+    stacks: &[(ItemHandle, [u8; 16])],
+) -> TestResult {
+    use super::write_text_depot_session::{exchange, read_reply, send, send_at};
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        owner.offered_capabilities(),
+        &[4, 6, 12, 14, 18, 37, 62, 153, 510],
+    )
+    .ok_or("manual sort selection")?;
+    let browse = DepotIntent {
+        town: Some(0),
+        box_number: 17,
+        page: 0,
+        action: DepotAction::Browse,
+    };
+    let (_, added) = stacks[3];
+    let storage_ordinal = async |item| -> TestResult<String> {
+        Ok(sqlx::query_scalar(
+            "SELECT ordinal::text FROM game_item_character_depot_locations WHERE item_instance_id=$1::uuid",
+        )
+        .bind(text(item))
+        .fetch_one(pool)
+        .await?)
+    };
+    let previous_ordinal = storage_ordinal(stacks[1].1).await?;
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    let mut view = SessionItemView::resume(admitted.continuity.item_view).with_equip_drop();
+    view.snapshot(
+        crate::gameplay_transport::item_move::observe_inventory(
+            owner,
+            actor,
+            admitted.game_session_id,
+            &view,
+        )
+        .await
+        .ok_or("current inventory")?,
+        None,
+    )
+    .map_err(debug)?;
+    let source = view
+        .table()
+        .handle(&ItemKey::Instance(added))
+        .ok_or("last carried stack")?;
+    let reordered = vec![
+        text(stacks[0].1),
+        text(stacks[2].1),
+        text(stacks[1].1),
+        text(added),
+    ];
+    tokio::time::timeout(
+        std::time::Duration::from_secs(30),
+        exchange(owner, &mut admitted, async |client| {
+            send(client, 1, browse).await?;
+            let before = read_reply(client, 1).await?;
+            assert_eq!(before.outcome, DepotOutcome::Opened);
+            let old = before
+                .entries
+                .last()
+                .ok_or("the formerly last entry")?
+                .ordinal;
+            send_at(
+                client,
+                2,
+                DepotIntent {
+                    action: DepotAction::Deposit(source),
+                    ..browse
+                },
+                Some(5),
+            )
+            .await?;
+            assert_eq!(read_reply(client, 2).await?.outcome, DepotOutcome::Moved);
+            assert_eq!(order(pool).await?, reordered);
+            assert_eq!(storage_ordinal(added).await?, previous_ordinal);
+            send(
+                client,
+                3,
+                DepotIntent {
+                    action: DepotAction::Withdraw(old),
+                    ..browse
+                },
+            )
+            .await?;
+            let stale = read_reply(client, 3).await?;
+            assert_eq!(stale.outcome, DepotOutcome::Stale);
+            assert_eq!(order(pool).await?, reordered);
+            let current = stale.entries.last().ok_or("the added entry")?.ordinal;
+            send(
+                client,
+                4,
+                DepotIntent {
+                    action: DepotAction::Withdraw(current),
+                    ..browse
+                },
+            )
+            .await?;
+            assert_eq!(read_reply(client, 4).await?.outcome, DepotOutcome::Moved);
+            assert_eq!(order(pool).await?, reordered[..3]);
+            Ok(())
+        }),
+    )
+    .await?
 }
