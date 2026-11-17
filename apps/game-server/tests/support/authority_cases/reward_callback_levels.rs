@@ -374,7 +374,15 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
             callback.failure_reply
         );
     } else {
-        assert_eq!(outcome.disposition, NpcIntentDisposition::Ok, "{outcome:?}");
+        assert_eq!(
+            outcome.disposition,
+            NpcIntentDisposition::Ok,
+            "conversation: {:?}",
+            outcome
+                .conversation
+                .as_ref()
+                .map(|conversation| &conversation.lines)
+        );
         assert_eq!(receipts, 1);
         if spirit {
             let amount: i64 = sqlx::query_scalar("SELECT coalesce((SELECT sum(amount) FROM game_character_quest_xp_obligations),(SELECT sum(experience_awarded) FROM game_character_xp_receipts),0)::bigint").fetch_one(&h.pool).await?;
