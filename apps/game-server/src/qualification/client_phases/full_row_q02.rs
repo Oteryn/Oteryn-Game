@@ -34,6 +34,9 @@ const MARK_WALL: TilePos = at(33834, 32139, 4);
 const WALL_LANDING: TilePos = at(33833, 32138, 4);
 const CRYPT_EXIT: TilePos = at(32402, 32472, 5);
 const CRYPT_LANDING: TilePos = at(32402, 32473, 4);
+/// Day and night tiles of Kesar's clock spawn (`apps/game-server/src/node/serve/bundle_npcs.rs`).
+const KESAR_DAY: TilePos = at(32365, 32478, 2);
+const KESAR_NIGHT: TilePos = at(32368, 32473, 3);
 
 fn show(pos: TilePos) -> String {
     format!("{},{},{}", pos.x, pos.y, -i16::from(pos.floor))
@@ -199,47 +202,64 @@ async fn setup(clients: &SeamClients<'_>, client: &mut DevClientSession) -> Test
 }
 
 /// Talk to Kesar as a player: walk to him and say hi, problem, help, help, help.
+/// Kesar has no fixed placement: the day/night clock spawns him at his day or night tile
+/// (`bundle_npcs.rs`), so the row walks to the day tile, then the night tile, until it sees him.
 async fn kesar(
     client: &mut DevClientSession,
     planner: &travel::Planner<'_>,
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult<String> {
-    let npc = npcs
+    let mut spots: Vec<TilePos> = npcs
         .npcs
         .iter()
-        .find(|npc| npc.key == KESAR)
-        .filter(|npc| !npc.placements.is_empty())
-        .ok_or("kesar not placed")?;
-    let place = &npc.placements[0];
-    let spot = TilePos {
-        x: place.x,
-        y: place.y,
-        floor: place.floor,
-    };
-    let near = move |here: TilePos| {
-        here.floor == spot.floor && here.x.abs_diff(spot.x).max(here.y.abs_diff(spot.y)) <= 2
-    };
-    let mut passages = travel::Passages::default();
-    travel::travel_to(client, planner, "Q02:kesar", spot, &near, &mut passages).await?;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    let actor = loop {
-        let found = client.world_entities().and_then(|entities| {
-            entities.iter().find(|entity| {
-                entity.kind == EntityKind::Npc
-                    && entity.position.x == i32::from(spot.x)
-                    && entity.position.y == i32::from(spot.y)
-                    && entity.position.floor == i16::from(spot.floor)
-            })
-        });
-        if let Some(entity) = found {
-            break entity.entity;
+        .filter(|npc| npc.key == KESAR)
+        .flat_map(|npc| npc.placements.iter())
+        .map(|place| TilePos {
+            x: place.x,
+            y: place.y,
+            floor: place.floor,
+        })
+        .collect();
+    spots.extend([KESAR_DAY, KESAR_NIGHT]);
+    let mut misses = Vec::new();
+    let mut actor = None;
+    for spot in spots {
+        let near = move |here: TilePos| {
+            here.floor == spot.floor && here.x.abs_diff(spot.x).max(here.y.abs_diff(spot.y)) <= 2
+        };
+        let mut passages = travel::Passages::default();
+        if let Err(error) =
+            travel::travel_to(client, planner, "Q02:kesar", spot, &near, &mut passages).await
+        {
+            misses.push(format!("{}: {error}", show(spot)));
+            continue;
         }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("kesar placed at {} but not visible", show(spot)).into());
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        loop {
+            let found = client.world_entities().and_then(|entities| {
+                entities.iter().find(|entity| {
+                    entity.kind == EntityKind::Npc
+                        && entity.position.floor == -i16::from(spot.floor)
+                        && entity.position.x.abs_diff(i32::from(spot.x)) <= 3
+                        && entity.position.y.abs_diff(i32::from(spot.y)) <= 3
+                })
+            });
+            if let Some(entity) = found {
+                actor = Some(entity.entity);
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                misses.push(format!("{}: no NPC visible within 3 tiles", show(spot)));
+                break;
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
+            client.take_events();
         }
-        client.service_liveness(Duration::from_millis(50)).await?;
-        client.take_events();
-    };
+        if actor.is_some() {
+            break;
+        }
+    }
+    let actor = actor.ok_or_else(|| format!("kesar not found: {misses:?}"))?;
     let mut replies = Vec::new();
     for text in ["hi", "problem", "help", "help", "help"] {
         let lines = travel::converse(client, actor, text).await?;

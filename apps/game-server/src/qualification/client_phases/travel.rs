@@ -710,9 +710,11 @@ impl Planner<'_> {
                         show(entered)
                     ));
                     if reply != UseDisposition::Committed {
-                        let level = (action > 1000)
-                            .then(|| format!(" (level door, requires level {})", action - 1000))
-                            .unwrap_or_default();
+                        let level = if action > 1000 {
+                            format!(" (level door, requires level {})", action - 1000)
+                        } else {
+                            String::new()
+                        };
                         return Ok(Acted::DoorRefused(
                             entered,
                             format!(
