@@ -86,3 +86,19 @@ fn sandra_lottery_distinct_receipts_have_distinct_rng_streams() {
             .all(|value| value.is_some_and(|value| value < 98))
     );
 }
+
+#[test]
+fn sandra_lottery_dialogue_is_registered_for_production() -> super::TestResult {
+    use oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog;
+    let source = NpcRuleCatalog::runtime()?;
+    let rule = source
+        .programs()
+        .iter()
+        .flat_map(|program| &program.document.rules)
+        .find(|rule| rule.key == "oteryn:quest-npc/sandra/lottery")
+        .ok_or("Sandra lottery dialogue missing")?;
+    assert_eq!(rule.npc, "oteryn:npc.sandra");
+    assert_eq!(rule.keywords, ["lottery"]);
+    assert!(source.item_exchange_keys(&rule.npc).is_some());
+    Ok(())
+}

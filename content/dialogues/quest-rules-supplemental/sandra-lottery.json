@@ -1,0 +1,69 @@
+{
+  "schema": 1,
+  "program_key": "oteryn:quest-npc-program.sandra-lottery",
+  "quest": "oteryn:quest.outfit_and_addon_quests",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:103-119"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/sandra/lottery",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.sandra",
+      "trigger": "say",
+      "keywords": [
+        "lottery"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i5957",
+          "count": 1,
+          "op": "ge"
+        }
+      ],
+      "reply": [
+        "Your lottery ticket has been drawn."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
+          "value": 1
+        },
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i5957",
+          "count": 1
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i5958",
+          "count": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:108-117",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/scripts/actions/items/lottery_ticket.lua:4-9"
+      ],
+      "inventory_failure_reply": [
+        "Please bring your lottery ticket and make room for the prize."
+      ]
+    }
+  ]
+}
