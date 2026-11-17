@@ -198,11 +198,11 @@
   "outputs": [
     {
       "path": "npc.json.gz",
-      "sha256": "2078c09118270934e8bb765426bd51fea3f7052fb26b299a2afab0e1e23ea024"
+      "sha256": "3d39287f071e3a778756bbe81eb2cfad776f40b19f48e7d1a1e88fad3ebe2ca3"
     },
     {
       "path": "npc-index.json",
-      "sha256": "20d878d0ee9917361a05d84135f65668481313ead4f129940deeae1094dba495"
+      "sha256": "43af099837196ba0b3ed51c721a4e946ae685d28ca0e62d2b2d46b2ff7794446"
     },
     {
       "path": "rewards.json.gz",
@@ -210,7 +210,7 @@
     },
     {
       "path": "npc-dependencies.json",
-      "sha256": "b41b50fa4d3240e842f41435433bc81ae2df120e90e638938c4b6c1131cbb707"
+      "sha256": "b67d4a9bbc282ee10b77dc54c37a753ca67f7e7aa5018f3569d48d920d1710c2"
     },
     {
       "path": "gap-triage.json",
@@ -274,15 +274,15 @@
     },
     {
       "path": "components248/crosswalk.json",
-      "sha256": "e3fdb0e331574ca895d943f1b5936b17081f306dedd05bb85efae490138a63f0"
+      "sha256": "accffee1294cb8d80597b5dea180b920e699ce0a54a082f66e9410f616f6b1ab"
     },
     {
       "path": "components248/dialogue.json.gz",
-      "sha256": "bcdaef305d16ab3e27a99877acc6978e27329a621f0ff3782deeb5679ba3db72"
+      "sha256": "4ae155d58bd45bea99f287a4b3237251103dc4864a087568c545ec13394e9202"
     },
     {
       "path": "components248/summary.json",
-      "sha256": "3378c7ebac653b6fbe2415e2d2932bc6e4fe3e14e8b2acd5f6153aeeb05a7d2f"
+      "sha256": "d567749501be439f8df177a5bb367cc53569bee1d02fceffa9a84c35e662739f"
     },
     {
       "path": "refinements/conditions.json",
@@ -306,7 +306,7 @@
     },
     {
       "path": "refinements/joins.json",
-      "sha256": "9ba18290d71c245750812b3f7893659930ac7d0d4c582cf91cc38d308b247dd4"
+      "sha256": "cc0c252a1fd4c9ebcacb11e20e600605d73ccf24797f4ceb631c357c01b1a68c"
     },
     {
       "path": "refinements/dialogue.json.gz",
@@ -314,7 +314,7 @@
     },
     {
       "path": "refinements/summary.json",
-      "sha256": "c1167cf77ecf7d24442d5ee5aa5d8883de14d2d57bc640116dcebfce02ab7a6f"
+      "sha256": "9b23930aaacc8123109c63657831d8ab15d4587b173c07ffd442e644fe8def0c"
     }
   ],
   "quest_refinements": {
@@ -896,7 +896,7 @@
       },
       {
         "path": "joins.json",
-        "sha256": "9ba18290d71c245750812b3f7893659930ac7d0d4c582cf91cc38d308b247dd4"
+        "sha256": "cc0c252a1fd4c9ebcacb11e20e600605d73ccf24797f4ceb631c357c01b1a68c"
       },
       {
         "path": "dialogue.json.gz",
