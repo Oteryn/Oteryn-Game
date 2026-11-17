@@ -2,7 +2,7 @@
 use super::*;
 use crate::foundation::{ChannelId, WorldId};
 
-use super::world_event::event_fixture;
+use super::world_event::{T94Bootstrap, event_fixture};
 
 #[test]
 fn cbchance_chyllfroest_opens_and_closes_at_server_save() -> TestResult {
@@ -24,6 +24,7 @@ fn cbchance_chyllfroest_opens_and_closes_at_server_save() -> TestResult {
                     "CREATE FUNCTION chyllfroest_save_clock() RETURNS trigger LANGUAGE plpgsql AS $$
                     BEGIN
                       NEW.activated_at = CASE NEW.reset_epoch
+                          WHEN 0 THEN TIMESTAMPTZ '2026-03-30 06:00 Europe/Berlin'
                           WHEN 1 THEN TIMESTAMPTZ '2026-03-31 06:00 Europe/Berlin'
                           WHEN 2 THEN TIMESTAMPTZ '2026-04-01 06:00 Europe/Berlin'
                           WHEN 3 THEN TIMESTAMPTZ '2026-05-01 06:00 Europe/Berlin'
@@ -45,7 +46,10 @@ fn cbchance_chyllfroest_opens_and_closes_at_server_save() -> TestResult {
                 let channel = ChannelId::decode(&id(43)).map_err(debug)?;
                 let (_controller, pin) =
                     crate::content::native_gameplay::test_support::activated_with_loot_tables(
-                        world, None,
+                        world,
+                        Some(include_bytes!(
+                            "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+                        )),
                     );
                 let seal = h.recovery.seal_current().map_err(debug)?;
                 let authority = h
@@ -53,6 +57,12 @@ fn cbchance_chyllfroest_opens_and_closes_at_server_save() -> TestResult {
                     .open_character_authority(&seal)
                     .await
                     .map_err(debug)?;
+                h.root
+                    .t94_initialize(&authority, "oteryn:game:primary", &mut T94Bootstrap)
+                    .await?;
+                h.root
+                    .t94_start_world(&authority, world, &Default::default(), "oteryn:game:primary")
+                    .await?;
                 event_fixture::reset_epochs(&h, &authority, pin.qualified_room(), world, channel, 4)
                     .await?;
                 let days: Vec<(String, bool)> = sqlx::query_as(

@@ -567,7 +567,7 @@ async fn exchange(
     Ok(results)
 }
 
-struct T94Bootstrap;
+pub(super) struct T94Bootstrap;
 impl crate::native_admission_source::account_characters::EpochFence for T94Bootstrap {
     fn read(
         &mut self,
