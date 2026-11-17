@@ -4,11 +4,12 @@ use super::{
     fixture::{Harness, debug},
 };
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
-use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::{
     self,
     world_callbacks::{Callback, Position},
 };
+use oteryn_gameplay_world::map;
+use oteryn_gameplay_world::map::view::MapFacts;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 pub(super) const NAME: &str = "brainout";
@@ -120,8 +121,8 @@ pub(super) fn catalogue(
     .map_err(debug)
 }
 pub(super) fn world(
-    native: &crate::content::native_gameplay::NativeGameplayState,
-) -> TestResult<crate::map::boot::BundleWorld> {
+    native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+) -> TestResult<map::boot::BundleWorld> {
     use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_scene};
     // The machine crosses the original x=33024 region boundary. Preserve both
     // source crops; neither the control stack nor the offering tiles are invented.
@@ -129,10 +130,9 @@ pub(super) fn world(
         native,
         vec![
             NativeCrop {
-                bytes: include_bytes!(concat!(
-                    env!("CARGO_MANIFEST_DIR"),
-                    "/../../../content/world/placements/region-z10-x128-y126.b3"
-                )),
+                bytes: include_bytes!(
+                    "../../../../../../content/world/placements/region-z10-x128-y126.b3"
+                ),
                 region: (10, 128, 126),
                 bounds: (33019, 32328, 33024, 32335),
                 start: (START.x, START.y),
@@ -160,10 +160,9 @@ pub(super) fn world(
                 ],
             },
             NativeCrop {
-                bytes: include_bytes!(concat!(
-                    env!("CARGO_MANIFEST_DIR"),
-                    "/../../../content/world/placements/region-z10-x129-y126.b3"
-                )),
+                bytes: include_bytes!(
+                    "../../../../../../content/world/placements/region-z10-x129-y126.b3"
+                ),
                 region: (10, 129, 126),
                 bounds: (33024, 32328, 33027, 32335),
                 start: (START.x, START.y),
@@ -185,17 +184,20 @@ pub(super) async fn exercise(
     callback: &Callback,
     name: &str,
 ) -> TestResult {
-    owner
-        .states
-        .chat
-        .admit(admitted.game_session_id, "Brain", owner.owner_now());
+    owner.states.chat.admit(
+        admitted.game_session_id,
+        "Brain",
+        crate::foundation::SemanticTimeMicros::from_micros(u64::try_from(
+            owner.clock_origin.elapsed().as_micros(),
+        )?),
+    );
     let source = callback
         .selector
         .native
         .as_ref()
         .ok_or("native brain control")?;
     let (key, placement) = {
-        let map = owner.bundle_map().ok_or("map")?;
+        let map = bundle_map(owner)?;
         let key = oteryn_world_bundle::bundle::placement_key(
             source.position.floor,
             source.position.x,
@@ -313,10 +315,7 @@ pub(super) async fn exercise(
         "same command replays"
     );
     assert_eq!(counts(h).await?, (0, 1, 1));
-    assert_eq!(
-        owner.bundle_map().ok_or("map")?.facts.object_revision(key),
-        1
-    );
+    assert_eq!(bundle_map(owner)?.facts.object_revision(key), 1);
     assert_eq!(
         use_(owner, admitted, 3, 1).await?,
         UseDisposition::Rejected,
@@ -366,4 +365,21 @@ fn brainout_ground_output_schema_rejects_unbound_or_mixed_outputs() -> TestResul
         assert!(!validate(invalid)?, "invalid Ground output case {case}");
     }
     Ok(())
+}
+
+fn bundle_map<'a>(
+    owner: &'a ComposedFreshAdmission<'_, '_, '_>,
+) -> TestResult<&'a map::boot::BundleMap> {
+    use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
+    let room = owner
+        .rooms
+        .gate_source_world()
+        .ok_or("qualified source room")?;
+    let oteryn_gameplay_content::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(
+        index,
+    ) = room.movement_cells().index()
+    else {
+        return Err("native Bundle collision index".into());
+    };
+    Ok(index.map())
 }
