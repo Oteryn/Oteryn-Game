@@ -93,14 +93,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .read_actor_position(actor)
                     .map_err(|_| DurabilityError::Unavailable)?;
                 if in_room(position.position()) {
-                    let proof = crate::map::floor::prepare_quest_callback_teleport(
-                        &mut runtime,
+                    let proof = crate::map::floor::prepare_quest_encounter_ejection(
+                        &runtime,
                         self.movement_cells(),
                         actor,
                         session,
                         position,
                         exit,
-                        false,
                         &closed,
                     )
                     .map_err(|_| DurabilityError::Unavailable)?;

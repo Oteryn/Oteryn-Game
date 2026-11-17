@@ -1,4 +1,4 @@
-//! A credited Mage's Tower death returns its Energized actor on the first respawn drive.
+//! Credited Mage deaths, spectator ejection and damage-dealt reset on PostgreSQL.
 use super::fixture::{Harness, debug, id};
 use super::{
     AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session,
@@ -246,7 +246,11 @@ async fn scenario(admin: String) -> TestResult {
         }
         runtime.spawn_point_creatures()[0].2.ok_or("Raging Mage")?
     };
-    exercise_personal_reset(&h, &owner, &admitted, raging).await
+    exercise_personal_reset(&h, &owner, &admitted, raging).await?;
+    drop(owner);
+    drop(authority);
+    drop(seal);
+    h.cleanup().await
 }
 
 async fn exercise_personal_reset(
