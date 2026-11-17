@@ -37,13 +37,7 @@ where
     if session.inventory_capacity == Some(capacity) {
         return Ok(());
     }
-    super::sidecar::write(
-        stream,
-        authority,
-        session,
-        &DeltaSidecar::InventoryCapacity(capacity),
-    )
-    .await?;
+    super::sidecar::write(stream, session, &DeltaSidecar::InventoryCapacity(capacity)).await?;
     session.inventory_capacity = Some(capacity);
     Ok(())
 }

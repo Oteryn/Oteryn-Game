@@ -257,6 +257,9 @@ pub struct SessionVisibility {
     lights: EntityLights,
     /// When each shown entity's light last changed on the wire, in owner milliseconds.
     light_sent_at: BTreeMap<[u8; ENTITY_IDENTITY_BYTES], u64>,
+    /// The content generation and own position of the last view sent: the header a
+    /// header-only sidecar delta must repeat, or the client refuses it.
+    published: Option<([u8; 32], ActorPosition)>,
 }
 
 impl SessionVisibility {
@@ -269,6 +272,11 @@ impl SessionVisibility {
                     EntityKind::Player | EntityKind::Creature | EntityKind::Npc
                 )
         })
+    }
+
+    /// The content generation and own position the session last sent; `None` before any view.
+    pub(crate) fn published(&self) -> Option<([u8; 32], ActorPosition)> {
+        self.published
     }
 
     /// A view that shows objects (corpses) when `objects`, the session's capability 4.
@@ -427,7 +435,15 @@ impl SessionVisibility {
         })
     }
 
-    fn show(&mut self, query: VisibilityQuery, selected: Vec<WorldSpatialEntity>) {
+    fn show(
+        &mut self,
+        channel: &ChannelEntities,
+        query: VisibilityQuery,
+        selected: Vec<WorldSpatialEntity>,
+    ) {
+        self.published = selected
+            .first()
+            .map(|own| (channel.content_generation, own.position));
         self.shown = Some(query);
         self.entities = selected
             .into_iter()
@@ -444,7 +460,7 @@ impl SessionVisibility {
         let (query, selected) = self.select(channel, attach)?;
         let snapshot = Self::snapshot_of(channel, &selected)?;
         self.show_lights(channel, &selected);
-        self.show(query, selected);
+        self.show(channel, query, selected);
         Ok(snapshot)
     }
 
@@ -459,14 +475,14 @@ impl SessionVisibility {
         let Some(shown) = &self.shown else {
             let snapshot = Self::snapshot_of(channel, &selected)?;
             self.show_lights(channel, &selected);
-            self.show(query, selected);
+            self.show(channel, query, selected);
             return Ok(VisibilityUpdate::Snapshot(snapshot));
         };
         let changes = match diff_interest(shown, &query) {
             InterestDiff::Resync(_) => {
                 let snapshot = Self::snapshot_of(channel, &selected)?;
                 self.show_lights(channel, &selected);
-                self.show(query, selected);
+                self.show(channel, query, selected);
                 return Ok(VisibilityUpdate::Snapshot(snapshot));
             }
             InterestDiff::Delta(changes) => changes,
@@ -527,7 +543,7 @@ impl SessionVisibility {
                 if delta.enter.len() + delta.update.len() + delta.leave.len() == MAX_DELTA_ENTRIES {
                     let snapshot = Self::snapshot_of(channel, &selected)?;
                     self.show_lights(channel, &selected);
-                    self.show(query, selected);
+                    self.show(channel, query, selected);
                     return Ok(VisibilityUpdate::Snapshot(snapshot));
                 }
                 delta.update.push(*entity);
@@ -572,7 +588,7 @@ impl SessionVisibility {
             room -= 1;
         }
         self.forget_lights(&selected);
-        self.show(query, selected);
+        self.show(channel, query, selected);
         if delta.enter.is_empty() && delta.update.is_empty() && delta.leave.is_empty() {
             Ok(VisibilityUpdate::Unchanged)
         } else {

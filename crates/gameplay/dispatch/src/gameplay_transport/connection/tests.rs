@@ -20,6 +20,9 @@ mod integrity;
 #[path = "tests/inventory_capacity_reread.rs"]
 mod inventory_capacity_reread;
 
+#[path = "tests/sidecar_header.rs"]
+mod sidecar_header;
+
 mod bed_sleep_dispatch_tests {
     include!("../bed_sleep_dispatch_tests.rs");
 }

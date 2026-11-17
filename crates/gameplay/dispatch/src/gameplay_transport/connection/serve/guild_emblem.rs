@@ -32,7 +32,7 @@ where
         return Ok(());
     }
     let sidecar = DeltaSidecar::GuildEmblems(emblems);
-    super::sidecar::write(stream, authority, session, &sidecar).await?;
+    super::sidecar::write(stream, session, &sidecar).await?;
     if let DeltaSidecar::GuildEmblems(emblems) = sidecar {
         session.guild_emblems = emblems;
     }
