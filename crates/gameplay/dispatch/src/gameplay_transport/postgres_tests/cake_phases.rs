@@ -98,7 +98,7 @@ fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResul
 }
 /// Test-only open terrain at real donor coordinates. Item identities and compact
 /// references come from the actual active generation; production geometry is untouched.
-fn cake_bundle(
+pub(super) fn cake_bundle(
     native: &crate::content::native_gameplay::NativeGameplayState,
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
