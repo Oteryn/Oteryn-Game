@@ -181,15 +181,6 @@ fn own(client: &DevClientSession) -> TestResult<EntityRef> {
         .ok_or_else(|| "native own actor absent".into())
 }
 
-async fn approach_peer(
-    client: &mut DevClientSession,
-    peer: &DevClientSession,
-    world: &BundleWorld,
-) -> TestResult {
-    let other = tile(peer.world_spatial().actor_position)?;
-    approach_peer_tile(client, other, world).await
-}
-
 async fn approach_peer_tile(
     client: &mut DevClientSession,
     other: TilePos,
@@ -1526,30 +1517,31 @@ async fn party(
         )
         .map_err(|e| format!("party view: {e:?}").into())
     }
-    let mut peer = connect_character(clients, 0x82, 0).await?;
+    let mut peer = while_serving(client, connect_character(clients, 0x82, 0)).await?;
     let result: TestResult = async {
-        approach_peer(client, &peer, world).await?;
-        send(client, Some(PartyIntent::Invite(own(&peer)?))).await?;
-        let invitations = send(&mut peer, None).await?;
+        let other = tile(peer.world_spatial().actor_position)?;
+        while_serving(&mut peer, approach_peer_tile(client, other, world)).await?;
+        let invite = PartyIntent::Invite(own(&peer)?);
+        while_serving(&mut peer, send(client, Some(invite))).await?;
+        let invitations = while_serving(client, send(&mut peer, None)).await?;
         let handle = invitations
             .invitations
             .first()
             .ok_or("party invitation not visible to peer")?
             .handle;
         row.pass("invite", "peer-current-query-has-invitation");
-        let state = send(&mut peer, Some(PartyIntent::Accept(handle))).await?;
+        let state = while_serving(client, send(&mut peer, Some(PartyIntent::Accept(handle)))).await?;
         if state.members.len() != 2 {
             return Err("party join did not produce two members".into());
         }
         row.pass("join", "two-current-members");
-        let result = client
-            .chat(&oteryn_dev_client::ChatIntent::Say {
-                mode: oteryn_dev_client::ChatSpeechMode::Say,
-                text: "/sharedxp on".into(),
-            })
-            .await?;
+        let intent = oteryn_dev_client::ChatIntent::Say {
+            mode: oteryn_dev_client::ChatSpeechMode::Say,
+            text: "/sharedxp on".into(),
+        };
+        let result = while_serving(&mut peer, client.chat(&intent)).await?;
         if result.disposition != oteryn_dev_client::ChatDisposition::Ok
-            || !send(client, None).await?.shared_xp_enabled
+            || !while_serving(&mut peer, send(client, None)).await?.shared_xp_enabled
         {
             return Err("shared XP toggle not reflected by party owner".into());
         }
@@ -1557,14 +1549,14 @@ async fn party(
             "shared-xp-toggle",
             "leader-chat-toggle-current-state-enabled",
         );
-        let state = send(client, None).await?;
+        let state = while_serving(&mut peer, send(client, None)).await?;
         let member = state
             .members
             .iter()
             .find(|m| !m.leader)
             .ok_or("no nonleader member")?;
         let target_name = member.name.clone();
-        let state = send(client, Some(PartyIntent::PassLeadership(member.handle))).await?;
+        let state = while_serving(&mut peer, send(client, Some(PartyIntent::PassLeadership(member.handle)))).await?;
         if !state
             .members
             .iter()
@@ -1573,17 +1565,20 @@ async fn party(
             return Err("leadership did not pass to selected member".into());
         }
         row.pass("leadership", "current-query-selected-member-is-leader");
-        send(client, Some(PartyIntent::Leave)).await?;
-        if !send(client, None).await?.members.is_empty() {
+        while_serving(&mut peer, send(client, Some(PartyIntent::Leave))).await?;
+        if !while_serving(&mut peer, send(client, None)).await?.members.is_empty() {
             return Err("party leave retained membership".into());
         }
         row.pass("leave", "leaver-current-query-empty");
         Err("BLOCKED shared-xp-split: not authored; needs a real kill by both members with an XP observation per member".into())
     }
     .await;
-    let _ = send(client, Some(PartyIntent::Leave)).await;
+    let _ = while_serving(&mut peer, send(client, Some(PartyIntent::Leave))).await;
     let (cleanup_result, cleanup, attempts, busy_timed_out) =
-        super::logout_retrying_busy(&mut peer).await?;
+        match while_serving(client, super::logout_retrying_busy(&mut peer)).await {
+            Ok(cleanup) => cleanup,
+            Err(error) => return result.and(Err(error)),
+        };
     if cleanup_result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("party peer cleanup logout refused: {cleanup}; attempts={attempts}; busy_timed_out={busy_timed_out}; journey={result:?}").into());
     }
