@@ -53,5 +53,17 @@ pub(super) async fn exercise(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(counts, (0, 1));
+    let receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_world_change_credit_receipts WHERE source_kind=1",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(receipts, 1);
+    let personal: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_world_change_personal_counters WHERE change_key='deeplings'",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(personal, 0);
     Ok(())
 }
