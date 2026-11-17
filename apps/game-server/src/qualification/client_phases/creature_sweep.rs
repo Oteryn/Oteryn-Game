@@ -475,7 +475,8 @@ pub(super) async fn run(
         .as_ref()
         .map_or(0, |found| found.health);
     let dps = match measured {
-        Some(kill) if tally.fail == before && kill > 0.0 && health > 0 => health as f64 / kill,
+        // Only the kill time calibrates; loot or corpse failures stay ordinary rows.
+        Some(kill) if kill > 0.0 && health > 0 => health as f64 / kill,
         _ => {
             return Err(format!(
                 "creature sweep calibration on {CALIBRATION_KEY} failed: kill_seconds={measured:?} hp={health} fail_rows={}",
