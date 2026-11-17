@@ -29,6 +29,13 @@ readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Pac
 # The served readiness.content_revision is this same revision: the quest and Task Board
 # owners refuse a Character whose stored progression content differs from the served one.
 readonly INTERPRETATION=(nb-profile-1 nb-ruleset-1 s3b-content-1 nb-starter-1)
+# The second, Open PvP (world_type=2) World of the World pass: its own Accounts, intents and node.
+readonly PVP_WORLD_ID=01934f10-7c02-7002-805b-3b1122334402
+readonly PVP_CHANNEL_ID=01934f10-7c03-7002-805b-3b1122334402
+readonly PVP_ACCOUNT_IDS=(01934f10-7c00-7000-8000-000000000005 01934f10-7c00-7000-8000-000000000006)
+readonly PVP_INTENT_OPERATIONS=(01934f10-7c04-7005-805b-3b1122334405 01934f10-7c04-7006-805b-3b1122334406)
+readonly PVP_INTENT_NAMES=("Arena One" "Arena Two")
+readonly PVP_DATABASE=oteryn_node_boot_pvp
 readonly COMPOSE_FILE=tools/qualification/wp5_s3a/compose.yml
 readonly COMPOSE_S3B=tools/qualification/wp5_s3b/compose.override.yml
 readonly COMPOSE_OVERLAY=tools/qualification/node_boot/compose.override.yml
@@ -50,6 +57,9 @@ for node_boot_port in NODE_BOOT_PG_PORT NODE_BOOT_PLATFORM_PORT NODE_BOOT_GAME_P
     || { echo "NODE_BOOT_RESULT=BLOCKED reason=invalid_port_${node_boot_port,,}"; exit 2; }
 done
 readonly SERVICE_USER BASE
+# The Open PvP World's node: its own tree under BASE (cleanup removes it) and the next port.
+readonly PVP_BASE="$BASE/pvp"
+readonly PVP_GAME_PORT=$(( ${NODE_BOOT_GAME_PORT:-17181} + 1 ))
 # NODE_BOOT_KEEP_STACK=1 leaves the stack up after the seam stage; NODE_BOOT_REUSE_STACK=1
 # reruns only the seam stage against it, =teardown removes it. Local development only.
 NODE_BOOT_KEEP_STACK="${NODE_BOOT_KEEP_STACK:-0}"
@@ -237,7 +247,7 @@ pg_observability_dump() { # stage exit: statements, lock waits and slow statemen
 save_reuse_state() { # the seam stage's inputs, for NODE_BOOT_REUSE_STACK=1
   local names=(WORK node_log failed_node_log WP5_PKI WP5_SCRATCH WP5_PORT WP5_DB_PASSWORD WP5_DB_ROOT_PASSWORD
     WP5_APP_KEY PG_PORT PG_ADMIN_PASSWORD CONTROL_PASSWORD RUNTIME_PASSWORD ADMIN_URL FRESH_SEED_HEX
-    RECOVERY_SEED_HEX MAP_REVISION NODE_PID NODE_CLOCK_FEATURES NODE_GAMEPLAY_ENV PG_OBS)
+    RECOVERY_SEED_HEX MAP_REVISION NODE_PID NODE_CLOCK_FEATURES NODE_SPAWN_FEATURES NODE_GAMEPLAY_ENV PG_OBS)
   [[ -z "${OTERYN_QUALIFICATION_CLOCK_FILE:-}" ]] || names+=(OTERYN_QUALIFICATION_CLOCK_FILE)
   ( umask 077
     { declare -p "${names[@]}"
@@ -385,14 +395,16 @@ fi # Platform lifecycle
 # The accelerated build is disposable: production binaries omit its file input.
 # Real-clock qualification deliberately builds the ordinary shipping binary.
 NODE_CLOCK_FEATURES=()
+# The root-only `spawn` control command needs the disposable qualification-spawn build.
+NODE_SPAWN_FEATURES=(--features qualification-spawn)
 export OTERYN_NODE_BOOT_REAL_CLOCK="${OTERYN_NODE_BOOT_REAL_CLOCK:-0}"
 case "$OTERYN_NODE_BOOT_REAL_CLOCK" in 0|1) ;; *) fail invalid_real_clock_mode ;; esac
 if [[ "$NODE_BOOT_WORLD" == 1 && "$OTERYN_NODE_BOOT_REAL_CLOCK" == 0 ]]; then
   NODE_CLOCK_FEATURES=(--features qualification-clock)
 fi
 # Shipped binaries and the SEAM client harness.
-cargo +1.100.0 build --locked -p oteryn-game-server --bins "${NODE_CLOCK_FEATURES[@]}"
-cargo +1.100.0 test --locked -p oteryn-game-server --lib --no-run "${NODE_CLOCK_FEATURES[@]}"
+cargo +1.100.0 build --locked -p oteryn-game-server --bins "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
+cargo +1.100.0 test --locked -p oteryn-game-server --lib --no-run "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
 TARGET="$GAME_SOURCE/target/debug"
 
 # Deployment administration: service user, directories, roles, migration.
@@ -1124,6 +1136,13 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
     test_env+=("NODE_BOOT_WORLD_BUNDLE=$BASE/world/world.otbundle" "NODE_BOOT_WORLD_PIN=$BASE/world/world.json" "NODE_BOOT_MAP_REVISION=$MAP_REVISION" "RUST_MIN_STACK=${RUST_MIN_STACK:-67108864}")
     test_env+=("NODE_BOOT_PACKET_ACCOUNT_ID=$PACKET_ACCOUNT_ID" "NODE_BOOT_PACKET_SECOND_ACCOUNT_ID=$SECOND_PACKET_ACCOUNT_ID")
   fi
+  if [[ "$NODE_BOOT_WORLD" == 1 && -z "${NODE_BOOT_LIFECYCLE:-}" ]]; then
+    # MP01's PvP rows run against the Open PvP World's own node and database.
+    test_env+=("NODE_BOOT_PVP_ADDRESS=127.0.0.1:$PVP_GAME_PORT" "NODE_BOOT_PVP_CONTROL_SOCKET=$PVP_BASE/run/control.sock"
+      "NODE_BOOT_PVP_DATABASE_URL=${ADMIN_URL%/*}/$PVP_DATABASE" "NODE_BOOT_PVP_WORLD_ID=$PVP_WORLD_ID"
+      "NODE_BOOT_PVP_CHANNEL_ID=$PVP_CHANNEL_ID" "NODE_BOOT_PVP_ACCOUNT_ID=${PVP_ACCOUNT_IDS[0]}"
+      "NODE_BOOT_PVP_SECOND_ACCOUNT_ID=${PVP_ACCOUNT_IDS[1]}")
+  fi
   # Row selection, fail-fast and the no-progress watchdog belong to the seam harness.
   local knob
   for knob in NODE_BOOT_E2E_ONLY NODE_BOOT_NO_FAILFAST NODE_BOOT_NO_PROGRESS_S; do
@@ -1143,7 +1162,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   WP5_S3A_ACCOUNT_ID="$ACCOUNT_ID" WP5_S3B_SECOND_ACCOUNT_ID="$SECOND_ACCOUNT_ID" \
   WP5_S3B_FRESH_KEY_ID="$FRESH_KEY_ID" WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
   WP5_S3B_RECOVERY_KEY_ID="$RECOVERY_KEY_ID" WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
-    cargo +1.100.0 test --locked -p oteryn-game-server --lib "${NODE_CLOCK_FEATURES[@]}" \
+    cargo +1.100.0 test --locked -p oteryn-game-server --lib "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}" \
     "qualification::$qualification" -- --ignored --exact --nocapture
 }
 
@@ -1212,6 +1231,110 @@ signal_before_ready() { # SIGTERM in the assignment wait: clean exit, never read
   evidence "signal_in_assignment_wait exit=0 ready=never socket=absent"
 }
 
+# The Open PvP World (world_type=2) of the World pass, beside the unchanged no-PvP World.
+# One `serve` process serves one World/Channel scope (node/config.rs ScopeConfig), and one
+# database holds one live node's S2 custody (native_admission_source.rs, custody claim),
+# so this World gets its own database in the same PostgreSQL container and its own node.
+# Platform, PKI, secrets, binaries, bundle and gameplay inputs are shared; the steps mirror
+# operator_setup, node_deployment_grants, node_complete_assignment and character_bootstrap.
+pvp_ops() { sudo env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$PVP_BASE/ops/ops.toml" "$@"; }
+pvp_fail() { echo "--- PvP node log"; tail -n 120 "$WORK/pvp-node.log" 2>/dev/null || true; fail "$@"; }
+pvp_await_log() { # pattern seconds
+  for _ in $(seq 1 "$2"); do grep -q "$1" "$WORK/pvp-node.log" && return 0; sleep 1; done
+  pvp_fail "missing PvP node event: $1"
+}
+
+pvp_world_ready() {
+  local boot_started=$SECONDS pvp_url="${ADMIN_URL%/*}/$PVP_DATABASE"
+  echo "CREATE DATABASE $PVP_DATABASE" | psql_admin postgres
+  OTERYN_GAME_MIGRATION_DATABASE_URL="$pvp_url" "$BASE/bin/oteryn-game-migrate"
+  echo "GRANT CONNECT ON DATABASE $PVP_DATABASE TO nb_control, nb_runtime" | psql_admin "$PVP_DATABASE"
+  sudo install -d -o root -g root -m 0755 "$PVP_BASE" "$PVP_BASE/state" "$PVP_BASE/fence-parent" "$PVP_BASE/node"
+  sudo install -d -o root -g root -m 0700 "$PVP_BASE/ops"
+  sudo install -d -o "$SERVICE_UID" -m 0700 "$PVP_BASE/fence-parent/fence" "$PVP_BASE/run"
+  sed -e "s|^state_directory = .*|state_directory = \"$PVP_BASE/state\"|" \
+    -e "s|^database = .*|database = \"$PVP_DATABASE\"|" \
+    -e "s|^fence_directory = .*|fence_directory = \"$PVP_BASE/fence-parent/fence\"|" \
+    "$WORK/ops.toml" > "$WORK/pvp-ops.toml"
+  sudo install -o root -m 0600 "$WORK/pvp-ops.toml" "$PVP_BASE/ops/ops.toml"
+  pvp_ops authorization issue --file launch-pvp.json --binding node-boot-pvp
+  # The existing World's launch-a configuration with this World's scope, port, store and paths.
+  sed -e "s|^address = .*|address = \"127.0.0.1:$PVP_GAME_PORT\"|" \
+    -e "s|^world_id = .*|world_id = \"$PVP_WORLD_ID\"|" \
+    -e "s|^channel_id = .*|channel_id = \"$PVP_CHANNEL_ID\"|" \
+    -e "s|^database = .*|database = \"$PVP_DATABASE\"|" \
+    -e "s|^fence_directory = .*|fence_directory = \"$PVP_BASE/fence-parent/fence\"|" \
+    -e "s|^socket_path = .*|socket_path = \"$PVP_BASE/run/control.sock\"|" \
+    -e "s|^authorization_file = .*|authorization_file = \"$PVP_BASE/state/launch-pvp.json\"|" \
+    -e "s|^s2_authorization_file = .*|s2_authorization_file = \"$PVP_BASE/state/s2-fresh-store.json\"|" \
+    "$WORK/node.toml" > "$WORK/pvp-node.toml"
+  local line
+  for line in "address = \"127.0.0.1:$PVP_GAME_PORT\"" "world_id = \"$PVP_WORLD_ID\"" "channel_id = \"$PVP_CHANNEL_ID\"" \
+    "database = \"$PVP_DATABASE\"" "socket_path = \"$PVP_BASE/run/control.sock\"" "[world_bundle]"; do
+    grep -qxF "$line" "$WORK/pvp-node.toml" || fail "PvP node configuration lacks: $line"
+  done
+  sudo install -o root -m 0644 "$WORK/pvp-node.toml" "$PVP_BASE/node/node.toml"
+  pvp_ops s2 issue --node-config "$PVP_BASE/node/node.toml" --file s2-fresh-store.json --namespace node-boot-pvp --authorization disposable-qualification
+  pvp_ops character fresh-store --request fresh-store.json
+  pvp_ops character interpretation --profile "${INTERPRETATION[0]}" --ruleset "${INTERPRETATION[1]}" --content "${INTERPRETATION[2]}" --starter "${INTERPRETATION[3]}"
+  sudo -u "$SERVICE_USER" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$PVP_BASE/node/node.toml" \
+    < /dev/null > /dev/null 2> "$WORK/pvp-node.log" &
+  remember PVP_NODE_PID "$!"
+  pvp_await_log awaiting_assignment 120
+  local node revision
+  node="$(node_field "$WORK/pvp-node.log" node_id)"; revision="$(node_field "$WORK/pvp-node.log" registration_revision)"
+  psql_admin "$PVP_DATABASE" <<SQL
+INSERT INTO game_control_scope_grants SELECT 'nb_control', '$PVP_WORLD_ID', '$PVP_CHANNEL_ID', op FROM unnest(ARRAY[1,2,3,4]::smallint[]) op;
+INSERT INTO game_control_field_policy_grants VALUES ('nb_control', '$PVP_WORLD_ID', 'policy-s3b-1');
+SQL
+  # Open PvP (world_type=2) under the same readiness revision; the granted login inserts it.
+  docker exec -i -e PGPASSWORD="$CONTROL_PASSWORD" "$PG_CONTAINER" \
+    psql -v ON_ERROR_STOP=1 -qAt -h 127.0.0.1 -U nb_control -d "$PVP_DATABASE" <<SQL
+INSERT INTO game_spell_field_world_policies (world_id, world_policy_revision, world_type, protection_level, in_fight_ms, source_pin, control_role, decision_identity)
+VALUES ('$PVP_WORLD_ID', 'policy-s3b-1', 2, 8, 60000, '99902524e052f37574194466c2949c576e4ab269', session_user, 'node-boot-qualification');
+SQL
+  [[ "$(echo "SELECT world_type FROM game_spell_field_world_policies WHERE world_id='$PVP_WORLD_ID'" | psql_admin "$PVP_DATABASE")" == 2 ]] || fail "PvP World policy is not Open PvP"
+  pvp_ops content activate --request content-1.json --world "$PVP_WORLD_ID" --channel "$PVP_CHANNEL_ID" --sequence 1 --previous empty
+  pvp_ops assignment assign --request assign-pvp.json --world "$PVP_WORLD_ID" --channel "$PVP_CHANNEL_ID" --node-id "$node" --revision "$revision"
+  pvp_await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
+  pvp_await_log "event=readiness .*ready=true" 60
+  local epoch_result
+  epoch_result="$({
+    echo 'PREPARE node_boot_world_epoch(UUID, UUID, TEXT) AS'
+    cat "$GAME_SOURCE/tools/qualification/node_boot/world_epoch.sql"
+    printf "EXECUTE node_boot_world_epoch('%s', '%s', '%s');\n" "$PVP_WORLD_ID" "$PVP_CHANNEL_ID" "$WORLD_DIGEST"
+  } | psql_admin "$PVP_DATABASE")"
+  [[ "$epoch_result" == t ]] || fail "PvP World epoch initialization"
+  [[ "$(sudo stat -c '%u %a' "$PVP_BASE/run/control.sock")" == "$SERVICE_UID 600" ]] || fail "PvP control socket mode"
+  evidence "pvp_world world_type=2 database=$PVP_DATABASE port=$PVP_GAME_PORT node=separate_process readiness=true world_epoch=0 boot_seconds=$((SECONDS - boot_started))"
+}
+
+pvp_character_bootstrap() { # two level-qualifiable Characters from real Platform intents
+  local index account operation name failed=0
+  php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"${PVP_ACCOUNT_IDS[0]}"'","nb-five@example.invalid"],["'"${PVP_ACCOUNT_IDS[1]}"'","nb-six@example.invalid"]] as [$accountId,$email]) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); }'
+  for index in 0 1; do
+    account="${PVP_ACCOUNT_IDS[$index]}"; operation="${PVP_INTENT_OPERATIONS[$index]}"; name="${PVP_INTENT_NAMES[$index]}"
+    if ! php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $id=Illuminate\Support\Facades\DB::table("identities")->where("account_id","'"$account"'")->value("id"); $code=Illuminate\Support\Facades\Artisan::call("game-auth:character-bootstrap-intent:issue",["--identity-id"=>(string)$id,"--operation-id"=>"'"$operation"'","--target-world-id"=>"'"$PVP_WORLD_ID"'","--requested-name"=>"'"$name"'","--requested-sex"=>"Female","--profile-revision"=>"'"${INTERPRETATION[0]}"'","--ruleset-revision"=>"'"${INTERPRETATION[1]}"'","--content-revision"=>"'"${INTERPRETATION[2]}"'","--starter-template-revision"=>"'"${INTERPRETATION[3]}"'"]); fwrite(STDERR, Illuminate\Support\Facades\Artisan::output()); exit($code);'; then
+      echo "platform intent issue failed for PvP operation $operation"
+      failed=1
+      continue
+    fi
+    pvp_ops character bootstrap --socket "$PVP_BASE/run/control.sock" --operation-id "$operation" || { failed=1; continue; }
+    pvp_ops character bootstrap --socket "$PVP_BASE/run/control.sock" --operation-id "$operation" || failed=1
+  done
+  [[ $failed == 0 ]] || pvp_fail "PvP Character bootstrap"
+  [[ "$(echo "SELECT count(*) FROM game_character_roots WHERE world_id='$PVP_WORLD_ID'" | psql_admin "$PVP_DATABASE")" == 2 ]] || fail "PvP World Characters"
+  evidence "pvp_characters=2 world=$PVP_WORLD_ID source=platform_intents path=pvp_control_socket retry=idempotent"
+}
+
+pvp_world_shutdown() { # the Open PvP World's node ends cleanly before the lifecycle probes
+  sudo kill -TERM "$PVP_NODE_PID"
+  for _ in $(seq 1 30); do sudo kill -0 "$PVP_NODE_PID" 2>/dev/null || break; sleep 1; done
+  grep -q "event=shutdown .*state=complete" "$WORK/pvp-node.log" || pvp_fail "PvP node did not shut down cleanly"
+  [[ ! -e "$PVP_BASE/run/control.sock" ]] || fail "PvP socket left after graceful shutdown"
+  evidence "pvp_world shutdown=complete socket=removed"
+}
+
 if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
   game_platform_identity
   exit "$?"
@@ -1227,9 +1350,15 @@ stage configuration_negatives operator_setup -- configuration_negatives
 stage node_assigned_ready operator_setup -- node_assigned_ready
 stage control_socket_peer node_assigned_ready -- control_socket_peer
 stage character_bootstrap node_assigned_ready -- character_bootstrap
+if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+  # MP01's PvP rows report this World's absence themselves, so the seam stage does not need it.
+  stage pvp_world_ready node_assigned_ready -- pvp_world_ready
+  stage pvp_character_bootstrap pvp_world_ready -- pvp_character_bootstrap
+fi
 stage "$seam_stage_name" character_bootstrap -- seam_stages
 fi
 if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
+[[ "$NODE_BOOT_WORLD" != 1 ]] || stage pvp_world_shutdown pvp_world_ready -- pvp_world_shutdown
 stage graceful_shutdown node_assigned_ready -- graceful_shutdown
 stage restart_without_supersession graceful_shutdown -- restart_without_supersession
 stage superseding_replacement graceful_shutdown -- superseding_replacement

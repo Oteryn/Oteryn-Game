@@ -777,6 +777,7 @@ fn fail_cause(step: &str, error: &str) -> String {
 /// each row owns its admissions and cleanup.
 const GROUPS: &[(&str, &[&str])] = &[
     ("core", &[]),
+    ("creature_sweep", &[]),
     ("f4", &[]),
     ("f5", &[]),
     ("f6", &[]),
@@ -785,6 +786,7 @@ const GROUPS: &[(&str, &[&str])] = &[
     ("f7cont", &[]),
     ("f7forge", &[]),
     ("f7run", &[]),
+    ("mp", &[]),
     ("rows", &[]),
 ];
 
