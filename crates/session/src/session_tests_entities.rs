@@ -803,3 +803,80 @@ fn trade_snapshots_require_registered_type() -> Result<(), BoxError> {
     }
     Ok(())
 }
+
+#[test]
+fn world_spatial_session_routes_negotiated_sidecars_on_both_floor_frames() -> Result<(), BoxError> {
+    use oteryn_protocol_oteryn::guild_emblem::{Emblem, GuildEmblem};
+    use oteryn_protocol_oteryn::inventory_capacity::InventoryCapacity;
+    use oteryn_protocol_oteryn::party_skull::PartyIcon;
+    use oteryn_protocol_oteryn::world_spatial_entities::{
+        DeltaSidecar, EntityFields, EntityLights, encode_world_spatial_entities_sidecar_delta,
+        encode_world_spatial_entities_snapshot_with_fields,
+    };
+
+    block_on(async {
+        const SELECTED: &[u32] = &[4, 6, 42, 134, 508, 509];
+        for floor in [7, -7] {
+            let position = ActorPosition {
+                x: 100,
+                y: 100,
+                floor,
+            };
+            let player = own(position);
+            let snapshot = WorldSpatialEntitiesSnapshot {
+                content_generation: CONTENT_GENERATION,
+                actor_position: position,
+                own_identity: OWN,
+                entities: vec![player],
+            };
+            let bytes = encode_world_spatial_entities_snapshot_with_fields(
+                &snapshot,
+                EntityFields::selected(SELECTED),
+                &EntityLights::new(),
+            )
+            .map_err(|e| format!("{e:?}"))?;
+            let (client, peer) = entity_peer((2, bytes), SELECTED, vec![]);
+            let mut session = Session::admit(client, entity_admission()?).await?;
+            let sidecars = [
+                DeltaSidecar::PartyIcons(vec![PartyIcon {
+                    entity: player.entity,
+                    shield: 3,
+                    skull: 2,
+                }]),
+                DeltaSidecar::InventoryCapacity(InventoryCapacity {
+                    capacity: 60_000,
+                    free: 58_750,
+                }),
+                DeltaSidecar::GuildEmblems(vec![GuildEmblem {
+                    entity: player.entity,
+                    emblem: Emblem::Member,
+                }]),
+            ];
+            for (sequence, sidecar) in (41..).zip(sidecars) {
+                let bytes = encode_world_spatial_entities_sidecar_delta(
+                    CONTENT_GENERATION,
+                    position,
+                    &sidecar,
+                )
+                .map_err(|e| format!("{e:?}"))?;
+                let frame =
+                    encode_state_delta(1, sequence, 1, sequence - 36, sequence - 35, 2, &bytes)?;
+                let event =
+                    session.apply_state_delta(sequence, decode_wire_envelope(&frame)?.payload())?;
+                let decoded = match event {
+                    SessionEvent::PartyIcons(delta) => DeltaSidecar::PartyIcons(delta.value),
+                    SessionEvent::InventoryCapacity(delta) => {
+                        DeltaSidecar::InventoryCapacity(delta.value)
+                    }
+                    SessionEvent::GuildEmblems(delta) => DeltaSidecar::GuildEmblems(delta.value),
+                    _ => return Err("expected a typed visibility sidecar".into()),
+                };
+                assert_eq!(decoded, sidecar);
+                assert_eq!(session.world_spatial().actor_position, position);
+            }
+            drop(session);
+            peer.await??;
+        }
+        Ok(())
+    })?
+}

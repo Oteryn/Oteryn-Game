@@ -927,7 +927,7 @@ fn decode_delta(
     payload: &[u8],
     fields: EntityFields,
 ) -> Result<(WorldSpatialEntitiesDelta, EntityLights), WorldSpatialError> {
-    decode_world_spatial_entities_delta_with_icons(payload, fields)
+    decode_world_spatial_entities_delta_with_sidecar(payload, fields)
         .map(|(delta, lights, _)| (delta, lights))
 }
 
