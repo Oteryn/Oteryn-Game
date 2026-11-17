@@ -145,6 +145,7 @@ impl PlayLink {
             // Preference and options-window actions belong to the settings owner.
             UtilityAction::ToggleCreatureHuds
             | UtilityAction::ToggleFpsLagIndicator
+            | UtilityAction::ToggleDiagnosticsOverlay
             | UtilityAction::NextHotkeyPreset
             | UtilityAction::ShowOptionsHotkeys => false,
         }

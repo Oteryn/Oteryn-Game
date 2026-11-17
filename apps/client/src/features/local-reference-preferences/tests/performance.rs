@@ -62,6 +62,11 @@ fn t061_scheduler_tracks_focus_occlusion_successful_frames_and_stale_samples()
         )
         .ok_or("indicator")?;
     assert!(text.contains("FPS: 4") && text.contains("Command RTT: 23 ms"));
+    assert_eq!(
+        pacer.measured(now + Duration::from_secs(1)),
+        Some((4, Duration::from_millis(250)))
+    );
+    assert_eq!(pacer.measured(now + Duration::from_secs(20)), None);
     let stale = pacer
         .indicator(
             now + Duration::from_secs(20),

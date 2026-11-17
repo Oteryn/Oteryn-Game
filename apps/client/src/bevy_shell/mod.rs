@@ -4,6 +4,7 @@ mod audio;
 mod audit;
 mod controls;
 mod creature_bars;
+mod diagnostics;
 mod exit;
 mod frame_pacing;
 mod game_ui;
@@ -158,7 +159,8 @@ fn build_app(options: Options, owner: HostOwner) -> App {
                 close_when_requested: false,
                 primary_window: Some(window),
                 ..default()
-            }),
+            })
+            .set(diagnostics::log_plugin(&owner)),
     )
     .add_plugins((
         oteryn_client_ui_bevy::GlobalUiPlugin,
@@ -220,6 +222,7 @@ fn build_app(options: Options, owner: HostOwner) -> App {
     account_services::install(&mut app);
     audio::install(&mut app);
     creature_bars::install(&mut app);
+    app.add_plugins(diagnostics::DiagnosticsPlugin);
     exit::install(&mut app);
     frame_pacing::install(&mut app);
     game_ui::install(&mut app);

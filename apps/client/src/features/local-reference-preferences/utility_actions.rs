@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 pub enum UtilityAction {
     ToggleCreatureHuds,
     ToggleFpsLagIndicator,
+    ToggleDiagnosticsOverlay,
     NextHotkeyPreset,
     ClearOldestMessage,
     ShowIgnoreList,
@@ -29,9 +30,10 @@ pub enum UtilityAction {
 }
 
 impl UtilityAction {
-    pub const ALL: [Self; 20] = [
+    pub const ALL: [Self; 21] = [
         Self::ToggleCreatureHuds,
         Self::ToggleFpsLagIndicator,
+        Self::ToggleDiagnosticsOverlay,
         Self::NextHotkeyPreset,
         Self::ClearOldestMessage,
         Self::ShowIgnoreList,
@@ -56,6 +58,7 @@ impl UtilityAction {
         match self {
             Self::ToggleCreatureHuds => "Utility: show or hide creature health bars",
             Self::ToggleFpsLagIndicator => "Utility: show or hide the FPS and lag indicator",
+            Self::ToggleDiagnosticsOverlay => "Utility: show or hide the diagnostics overlay",
             Self::NextHotkeyPreset => "Utility: next hotkey preset",
             Self::ClearOldestMessage => "Utility: clear the oldest chat message",
             Self::ShowIgnoreList => "Utility: show the ignore, whitelist and blacklist",
@@ -117,6 +120,9 @@ impl SettingsState {
         match action {
             UtilityAction::ToggleCreatureHuds => preferences.toggle_creature_huds(),
             UtilityAction::ToggleFpsLagIndicator => preferences.toggle_fps_lag_indicator(),
+            UtilityAction::ToggleDiagnosticsOverlay => {
+                preferences.diagnostics.overlay = !preferences.diagnostics.overlay;
+            }
             UtilityAction::NextHotkeyPreset => {
                 if preferences.next_hotkey_preset().is_err() {
                     return false;

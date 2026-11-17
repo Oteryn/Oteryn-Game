@@ -283,6 +283,20 @@ impl PlayLink {
         lock(&self.mailbox).shared_frontend
     }
 
+    /// Shares the admitted session's byte counters with every link of this connection.
+    pub fn set_traffic(&self, traffic: Arc<crate::traffic::Traffic>) {
+        lock(&self.mailbox).traffic = Some(traffic);
+    }
+
+    /// `(sent, received)` bytes of the admitted session, for diagnostics.
+    #[must_use]
+    pub fn traffic_bytes(&self) -> Option<(u64, u64)> {
+        lock(&self.mailbox)
+            .traffic
+            .as_ref()
+            .map(|traffic| traffic.bytes())
+    }
+
     pub fn request(&self, direction: StepDir) {
         let mut mailbox = lock(&self.mailbox);
         if mailbox.world_input_blocked() {
