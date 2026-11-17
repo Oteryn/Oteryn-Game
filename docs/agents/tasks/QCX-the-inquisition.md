@@ -1,0 +1,39 @@
+# QCX38 · The Inquisition Quest
+
+Base `98d09d5ce17df2a621df3fac9c2ce341dccc073b`. Quest `oteryn:quest.the_inquisition_quest`.
+
+## Evidence
+
+The direct Fandom MediaWiki API returned HTTP 402. The supplied qfacts MediaWiki wikitext is the Global authority for this audit. The repository's older structured capture corroborates the quest metadata. The Brazilian TibiaWiki API served the full walkthrough inline on the quest page. Its `/Spoiler` title was missing. Donor citations use Crystal `201189f871d23597b82caf88fd611454a2ddefb8`, with source paths relative to that revision. [Global quest](https://tibia.fandom.com/?curid=25383&oldid=1211625) · [Global spoiler](https://tibia.fandom.com/?curid=34108&oldid=1092599) · [Brazilian walkthrough](https://www.tibiawiki.com.br/index.php?curid=3048&oldid=445826) · [Crystal quest scripts](https://github.com/zimbadev/crystalserver/tree/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_inquisition_quest)
+
+## Parity audit
+
+| Part | Global and Crystal evidence | Main and QCX38 disposition |
+| --- | --- | --- |
+| Requirements | Free accounts can start and do the first three missions. Level 100 applies to the last mission only. 150+ is recommended. Demon Forge also requires Ungreez and at least one Pits of Inferno throne. Crystal checks questline ≥20, level ≥100 and any of seven throne values at (33192,31691,14). | Definition records premium and a generic minimum of 100 with an unparsed scope note. The Premium flag has no stage scope. Henricus's existing recruitment and guard callbacks do not enforce a level floor. The Forge entry has a blue portal (1949) in the B3 map and lacks the quest-specific conjunction with any-throne admission in the callback registries. |
+| 1. Interrogation | Join Henricus, pick up the written field guide, interrogate Tim, Kulag, Grof, Miles and Walter in any order, report to Henricus. Crystal guide UID 6500 yields one book 2821. | Join, first mission, guard completion and report have NPC records. The guide is an authored variant held for written reward lowering, with no UID on the committed (32316,32260,8) chest. |
+| 2. Eclipse | Henricus gives one flask 133. Uzon's Eclipse route leads to the cauldron. Use the flask, take one Witches' Grimoire 7874 and report with it. | Canonical Grimoire claim and chest geometry agree with Crystal. The chest at (32649,31932,1) has ground 4565 and chest 2472 at ordinal 1, with no UID. QCX38 binds donor UID 6270's original once claim to that native chest using the existing alias registry. Stage start, carpet route, cauldron use and report remain partial. [Donor source](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2615-L2621) |
+| 3. Vampire Hunt | Storkus accepts 20 Vampire Dust (5905) in installments. Three optional Garlic Necklaces (3083) yield the Weakened Count from the coffin (AID 2002), otherwise The Count. Return his ring to Storkus and report to Henricus. Donor dust progress uses 1 as the counter baseline and 21 as its terminal value. | Definition retains donor source progress. No complete active conversation, conditional coffin summon and ring hand-in was found. Storkus's repeatable vampire token rank XP belongs to a separate activity. |
+| 4. The Haunted Ruin | One flask 133 from Henricus, Liberty Bay exorcism, optional Pirate Ghost kill, temporary door closure and report. | Source progress is retained. Active start, use and return need qualification. |
+| 5. Essential Gathering | Henricus takes 20 Demonic Essences (6499). Demon Hunter base outfit is available afterward. | No active full hand-in was found. Outfit grants belong to the outfit lane. |
+| 6. The Demon Ungreez | Enter the sealed room, kill Ungreez with most damage, report to Henricus. First addon follows via outfit dialogue. Crystal uses AID 1004 (5113/5114) and advances questline 18→19 for the most-damage player. | No active quest-specific door or most-damage credit was found. Global describes a population-dependent 5–15 minute respawn and room access ending after report. The ordinary kill-goal path does not establish this source credit rule. |
+| 7. The Shadow Nexus | Reach the Forge, defeat Ushuriel, Zugurosh, Madareth, Latrivan and Golgordan, Annihilon, and Hellgorak. The brothers share a clear. Global gives two minutes to take each cleared exit, compared with Crystal's ten minutes. Timely entry unlocks the corresponding hub portal permanently. Hellgorak requires convinced Dreadbeasts. Purify the Nexus with holy water through its timed stages, then report. | Nineteen UID-only transport callbacks exist. The pinned donor has 31 entries (2150–2180), leaving 2150/2151/2153/2157/2159/2162/2164/2168/2170/2174/2176/2178 without active counterparts. A scan of the Forge placement regions did not resolve retained donor UIDs. The quest-specific ordered boss exits, shortcut unlocks, brother levers, Nexus cycle and final report remain partial. |
+| Final chest | Global names ten choices and allows one item. Crystal UID→item, count one each: 1300→8062, 1301→8090, 1302→8053, 1303→8060, 1304→8023, 1305→8096, 1306→8100, 1307→8102, 1308→8026, 1309→50261. Choices are Emerald Sword, Hellforged Axe, Obsidian Truncheon, Warsinger Bow, Royal Crossbow, Spellbook of Dark Mysteries, Master Archer's Armor, Fireborn Giant Armor, Robe of the Underworld and Merudri Nanbando. | Donor choice is retained as source interaction evidence. No active canonical final ten-way once claim was found. The reward-room door at (32320,32258,9) has appearance 5104 and action 41699. The donor's choice warning writes a distinct room marker at three tiles. |
+| Final access and achievements | High Inquisitor on report, Master of the Nexus on chest claim, Demonbane on both addons. Demon Forge access, the reward room and post-quest Inquisition blessing service are separate rewards. Global gives all five blessings together at a 10% surcharge. Global describes base after mission 5, first addon after Ungreez, final addon after reporting Shadow Nexus. Crystal also grants both addons at the chest. | No active end-to-end quest-specific report, choice and access chain was found. The donor addon grant at the chest differs from the Global timing. Outfit/addon records are outside QCX38. |
+
+## BLOCKER
+
+- BLOCKER Demon Forge timed boss exits shared boss death latch with a ten-minute reset and a two-boss clear `data-global/scripts/quests/the_inquisition_quest/creaturescripts_inquisition_boss.lua:19-29`
+- BLOCKER Vampire Hunt coffin conditional world-monster summon with three placed offerings `data-global/scripts/quests/the_inquisition_quest/actions_vampire_hunt.lua:10-26`
+- BLOCKER Ungreez most-damage-only quest credit `data-global/scripts/quests/the_inquisition_quest/creaturescripts_inquisition_ungreez.lua:2-10`
+- BLOCKER Demon Forge entrance any-of-seven Pits throne storage predicate composed with questline and level `data-global/scripts/quests/the_inquisition_quest/movements_entrance.lua:1-32`
+
+## OPEN-FACTS
+
+- Exact selector coordinates and map bindings for Forge portal UIDs, final chest UIDs 1300–1309 and the Ungreez door. The committed map gives the fixed entrance and reward-room door tiles but the inspected Forge regions contain no retained 2150–2180 UIDs.
+- Exact Global durations and completion capacity for the Shadow Nexus cycle. The walkthrough gives approximate values.
+- No fixed quest XP reward is listed in the retained Global summary or the pinned final-chest action. This is distinct from creature XP and Storkus's independent vampire token exchanges.
+
+## PARTIAL
+
+Guide execution, Eclipse start/use/report and travel, Vampire Hunt, Haunted Ruin, gathering, Ungreez, Forge entrance and progression, Shadow Nexus, end report, blessing eligibility, final choice and achievements remain open. Outfit and addon authoring is owned by the outfit lane.
