@@ -785,6 +785,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || callback.item_on_target.as_ref().is_none_or(|tool| {
                 !tool.reusable
                     || !tool.selected_instance
+                    || !tool.alternatives.is_empty()
                     || tool.target_remove
                     || tool.target_replacement.is_some()
             })
@@ -1246,6 +1247,14 @@ mod tool_spawn_tests {
         assert!(!valid(&callback));
         callback.requires_world_admission = true;
         callback.item_on_target.as_mut().ok_or("tool")?.reusable = false;
+        assert!(!valid(&callback));
+        callback.item_on_target.as_mut().ok_or("tool")?.reusable = true;
+        callback
+            .item_on_target
+            .as_mut()
+            .ok_or("tool")?
+            .alternatives
+            .push("oteryn:item.tibia.i7253".into());
         assert!(!valid(&callback));
         Ok(())
     }
