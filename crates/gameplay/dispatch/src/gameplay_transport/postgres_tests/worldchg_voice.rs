@@ -1,7 +1,5 @@
 use super::*;
-use crate::durability::world_event::changes::counters::{
-    CounterKind, CounterState, Credit, CreditEvent, CreditOutcome,
-};
+use crate::durability::world_event::changes::counters::{CounterKind, CounterState};
 use crate::foundation::{
     ChannelId, CharacterId, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
 };
@@ -25,7 +23,7 @@ fn scenario() -> TestResult {
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
         let character = CharacterId::decode(&id(41)).map_err(debug)?;
         let scope = RuntimeScopeRefV1::channel(world, channel);
-        let (_, pin) =
+        let (controller, pin) =
             crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -70,42 +68,117 @@ fn scenario() -> TestResult {
             .await?
             .ok_or("active change")?;
         assert!(day.their_masters_voice);
-        let mut occurrence = world.as_bytes().to_vec();
-        occurrence.extend_from_slice(channel.as_bytes());
-        occurrence.extend_from_slice(&(epoch + 1).to_be_bytes());
-        occurrence.extend_from_slice(&[1; 12]);
-        let event = CreditEvent {
-            source_kind: 1,
-            occurrence,
-            credits: vec![(kind, Credit::VoiceMage)],
-            counter_generations: day.counter_generations,
-            occurred_at_ms: u64::try_from(now)?,
-            character: Some(character),
-        };
         let generation = ScopeOwnershipGeneration::new(epoch + 1).map_err(debug)?;
-        assert_eq!(
-            h.root
-                .credit_world_change_event(
-                    &authority,
-                    &h.node,
-                    scope,
-                    generation,
-                    epoch,
-                    event.clone()
+        let mut deps = Dependencies::new()?;
+        deps.combat_room = Some(pin.qualified_room().clone());
+        planned_world_reset::reset_fixture::set_runtime_with_capacity(
+            &mut deps,
+            world,
+            channel,
+            &pin,
+            epoch + 1,
+            4,
+        )?;
+        let session = deps.admitted.game_session_id;
+        let targets = {
+            let mut runtime = deps.runtime.lock().await;
+            let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+            deps.actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+            runtime
+                .initialize_first_entry_position(deps.actor)
+                .map_err(debug)?;
+            runtime
+                .bind_attacker_lease(
+                    deps.actor,
+                    session,
+                    crate::foundation::CharacterLease::new(character, 2).map_err(debug)?,
                 )
-                .await?,
-            CreditOutcome::Refused,
-        );
-        sqlx::query("UPDATE game_world_change_personal_counters SET counter=25 WHERE change_key='their_masters_voice'")
-            .execute(&h.pool).await?;
-        assert_eq!(
-            h.root
-                .credit_world_change_event(&authority, &h.node, scope, generation, epoch, event)
-                .await?,
-            CreditOutcome::Applied {
-                phase_changed: true
-            },
-        );
+                .map_err(debug)?;
+            let native = controller
+                .active()
+                .and_then(|active| active.native_gameplay())
+                .ok_or("native")?;
+            use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+            native
+                .install_companion_policies(&mut runtime)
+                .map_err(debug)?;
+            let health = runtime
+                .companion_policy(MAGE)
+                .map_err(debug)?
+                .maximum_health;
+            let start = pin.qualified_room().entry_start();
+            let cells = vec![
+                (start.x + 1, start.y, start.floor),
+                (start.x + 2, start.y, start.floor),
+            ];
+            assert_eq!(
+                runtime
+                    .realize_activation_spawns(vec![(
+                        cells,
+                        60_000,
+                        5_000,
+                        MAGE.into(),
+                        u64::try_from(health)?
+                    )])
+                    .map_err(debug)?,
+                2
+            );
+            let points = runtime.spawn_point_creatures();
+            let [(point, _, Some(first)), (_, _, Some(second))] = points.as_slice() else {
+                return Err("Mad Mage fixture spawns".into());
+            };
+            runtime
+                .bind_world_spawn_source(
+                    point.source,
+                    "their_masters_voice.mage",
+                    day.counter_generations[kind.index()],
+                )
+                .map_err(debug)?;
+            runtime
+                .install_world_change_cycles(
+                    epoch,
+                    CounterKind::ALL
+                        .into_iter()
+                        .map(|kind| (kind.key().into(), day.counter_generations[kind.index()]))
+                        .collect(),
+                )
+                .map_err(debug)?;
+            [*first, *second]
+        };
+        let mut item_fence = fence(1)?.item_fence();
+        item_fence.character_lease_generation = 2;
+        item_fence.scope_ownership_generation = generation;
+        deps.admitted.item_fence = Some(item_fence);
+        deps.admitted.runtime_actor = Some(deps.actor);
+        deps.admitted.first_entry = FirstEntryOutcome::Positioned;
+        let mut owner = deps.owner(&h, &authority);
+        owner.active_generation = controller.active();
+        owner.reset_epoch = epoch;
+        deps.initialize(&owner).await;
+        owner.admit_progression_session(&deps.admitted).await;
+
+        let mut kill_counts = [0, 0];
+        for (index, target) in targets.into_iter().enumerate() {
+            if index == 1 {
+                sqlx::query("UPDATE game_world_change_personal_counters SET counter=25 WHERE change_key='their_masters_voice'")
+                    .execute(&h.pool).await?;
+            }
+            kill(
+                &owner,
+                character,
+                session,
+                deps.actor,
+                target,
+                20000 + u64::try_from(index)?,
+            )
+            .await?;
+            kill_counts[index] = sqlx::query_scalar::<_, i64>(
+                "SELECT count(*) FROM game_world_change_credit_receipts WHERE source_kind=1",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+        }
+        assert_eq!(kill_counts, [0, 1]);
         let terrain: (i64, i64, Option<i64>) = sqlx::query_as(
             "SELECT state_item_id,object_revision,decay_at_unix_ms FROM game_terrain_tool_transforms",
         )
@@ -191,4 +264,68 @@ fn placement() -> TestResult<Vec<u8>> {
         .ok_or("fungus placement")?;
     placement.extend_from_slice(&key.to_be_bytes());
     Ok(placement)
+}
+
+const MAGE: &str = "oteryn:creature.mad_mage";
+
+async fn kill(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    character: CharacterId,
+    session: GameSessionId,
+    actor: ExactActorRef,
+    target: ExactActorRef,
+    command: u64,
+) -> TestResult {
+    use crate::foundation::{CommandId, CommandRef, OwnerDamageCommand};
+    use crate::gameplay_transport::kill_reward::{self, DrainOutcome, KillSink};
+    let native = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .ok_or("native")?;
+    let observed = owner.owner_now();
+    let now = observed.get() / 1_000;
+    let queue = owner.states.attack.lock().await.kills().clone();
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let health = runtime.companion_snapshot(target).map_err(debug)?.health;
+        runtime
+            .borrow_exact_actor_commit_at(now)
+            .commit_damage_for_bound_attacker(
+                target,
+                actor,
+                CommandRef::new(session, CommandId::new(command).map_err(debug)?),
+                0,
+                OwnerDamageCommand {
+                    target: MAGE.as_bytes(),
+                    occurrence: session.as_bytes(),
+                    binding: b"their-masters-voice",
+                    damage: health,
+                },
+            )
+            .map_err(debug)?;
+        kill_reward::record_creature_kill(
+            &mut runtime,
+            KillSink {
+                prey: None,
+                activity: &[],
+                queue: &queue,
+                rewards: native.reward_table(),
+                charms: None,
+            },
+            target,
+            crate::combat::CapturedRewardPrincipal {
+                character,
+                lease_generation: 2,
+                session,
+                actor,
+            },
+            now,
+            Some(observed),
+        );
+    }
+    assert_eq!(
+        owner.drain_kill_rewards(session).await,
+        DrainOutcome::Drained
+    );
+    Ok(())
 }
