@@ -31,7 +31,7 @@ async fn send(bot: &mut Bot<'_, '_>, intent: ChatIntent, expected: ChatDispositi
     if reply.disposition != expected
         || (expected == ChatDisposition::Ok && reply.status != CommandStatus::Accepted)
     {
-        return Err(format!("intent={intent:?} reply={reply:?};source:crates/gameplay/dispatch/src/gameplay_transport/chat_intent.rs:716").into());
+        return Err(format!("intent={intent:?} reply={reply:?};source:crates/gameplay/dispatch/src/gameplay_transport/chat_intent.rs:1103").into());
     }
     Ok(())
 }
@@ -184,11 +184,13 @@ pub(super) async fn run(
             .await,
         );
         passed &= row("offline_private", async {
-            // Use the real fourth Character, whose session is not admitted in MP07.
+            // Use the real fourth Character, whose session is not admitted in MP07. B sends it:
+            // A has spent its four bucket lines (CHAT0-RL-02) on say, whisper, yell and private,
+            // and C stays silent for spam_mute.
             let mut db = sqlx::PgConnection::connect(core.url).await?;
             let name: String = sqlx::query_scalar("SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid").bind(core.characters[1].as_slice()).fetch_one(&mut db).await?;
             db.close().await?;
-            send(&mut bots[0], ChatIntent::Private { recipient_name: name, text: "MP07 offline".into() }, ChatDisposition::NotOnline).await
+            send(&mut bots[1], ChatIntent::Private { recipient_name: name, text: "MP07 offline".into() }, ChatDisposition::NotOnline).await
         }.await);
         passed &= row(
             "private_channel",
@@ -256,8 +258,9 @@ pub(super) async fn run(
                     )
                     .await?;
                 }
+                // B speaks: A keeps its bucket for yell_exhaustion, C for spam_mute.
                 send(
-                    &mut bots[0],
+                    &mut bots[1],
                     ChatIntent::Room {
                         room: ChatRoom::Help,
                         text: "MP07 help".into(),
@@ -285,13 +288,16 @@ pub(super) async fn run(
             "spam_mute",
             async {
                 let mut replies = Vec::new();
+                let start = tokio::time::Instant::now();
                 // C has sent no speech in this scenario. Crystal's fifth line creates
                 // the first five-second mute; the sixth is refused (game.cpp:6734,6748).
                 for index in 0..6 {
                     let reply = bots[2].client()?.chat(&ChatIntent::Say { mode: ChatSpeechMode::Say, text: "MP07 spam".into() }).await?;
                     let correct = if index < 5 { reply.disposition == ChatDisposition::Ok } else { reply.disposition == ChatDisposition::Muted && reply.wait_seconds == 5 };
-                    replies.push(reply);
-                    if !correct { return Err(format!("Crystal buffer=4, fifth creates mute, sixth refused;reply={replies:?};source:crates/gameplay/social/src/chat/spam.rs:40").into()); }
+                    // Both buckets refill (Crystal one per 1.5 s, CHAT0-RL-02 one per 2.5 s), so
+                    // the elapsed time of each reply tells a refill from the line rule.
+                    replies.push((start.elapsed().as_millis(), reply));
+                    if !correct { return Err(format!("Crystal buffer=4, fifth creates mute, sixth refused;replies_elapsed_ms={replies:?};rule:crates/gameplay/social-rules/src/spam.rs:181 (CHAT0-RL-02 refuses the line beyond the 4-line bucket and mutes)").into()); }
                 }
                 bots::pump(&mut bots).await?;
                 Ok(())
@@ -328,7 +334,9 @@ pub(super) async fn run(
         passed &= row("ignore_private", async {
             let recipient_name = bots[1].name.clone();
             let reply = bots[0].client()?.chat(&ChatIntent::Private { recipient_name, text: "MP07 ignore probe".into() }).await?;
-            Err(format!("ignore list cannot be set through CHAT_V1;PM reply={reply:?};source:crates/gameplay/dispatch/src/gameplay_transport/chat_intent.rs:1176;wire:crates/protocol-oteryn/src/chat.rs:132;client-filter:crates/client-ui/src/features/0007-chat/state.rs:323").into())
+            // Tibia's ignore list is the client's own list: the server delivers the line and
+            // the client hides it. Oteryn keeps it client-side too, so no wire row can show it.
+            Err(format!("not-a-wire-row: ignore is client-side (no ignore in CHAT_V1, crates/protocol-oteryn/src/chat.rs:132; server delivers, PM reply={reply:?}); client-filter:crates/client-ui/src/features/0007-chat/state.rs:349").into())
         }.await);
     } else {
         for case in [

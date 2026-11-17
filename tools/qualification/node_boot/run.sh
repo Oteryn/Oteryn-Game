@@ -481,6 +481,9 @@ psql_admin oteryn_node_boot <<SQL
 CREATE ROLE nb_control LOGIN PASSWORD '$CONTROL_PASSWORD' IN ROLE oteryn_game_control;
 CREATE ROLE nb_runtime LOGIN PASSWORD '$RUNTIME_PASSWORD' IN ROLE oteryn_game_runtime;
 GRANT CONNECT ON DATABASE oteryn_node_boot TO nb_control, nb_runtime;
+-- CHAT-2B (migration 0122, CP decision D1400): the World chat relay pins logging off per session.
+GRANT SET ON PARAMETER log_parameter_max_length, log_parameter_max_length_on_error,
+  log_statement, log_min_duration_statement TO nb_runtime;
 SQL
 secret_to() { # owner source destination
   sudo install -o "$1" -m 0600 "$2" "$3"
@@ -496,6 +499,11 @@ secret_to "$SERVICE_UID" "$WP5_PKI/client.crt" "$BASE/node/secrets/platform-clie
 secret_to "$SERVICE_UID" "$WP5_PKI/client.key" "$BASE/node/secrets/platform-client.key"
 secret_to "$SERVICE_UID" "$WP5_PKI/gameplay.crt" "$BASE/node/secrets/gameplay.crt"
 secret_to "$SERVICE_UID" "$WP5_PKI/gameplay.key" "$BASE/node/secrets/gameplay.key"
+# CHAT-2B: the World chat relay (private, room, private-channel lines and VIP presence) is
+# enabled by its key file: one disposable key, active from database time 0.
+( umask 077; printf '1 0 %s\n' "$(head -c 32 /dev/urandom | base64 -w0)" > "$WORK/chat-relay-keys" )
+secret_to "$SERVICE_UID" "$WORK/chat-relay-keys" "$BASE/node/secrets/chat-relay-keys"
+NODE_GAMEPLAY_ENV+=("OTERYN_CHAT_RELAY_KEYS_FILE=$BASE/node/secrets/chat-relay-keys")
 
 cat > "$WORK/ops.toml" <<TOML
 [operator]
@@ -1126,8 +1134,10 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   for knob in NODE_BOOT_E2E_ONLY NODE_BOOT_NO_FAILFAST NODE_BOOT_NO_PROGRESS_S; do
     [[ -z "${!knob+x}" ]] || test_env+=("$knob=${!knob}")
   done
-  local staged_manifest="${NODE_GAMEPLAY_ENV[0]:-}"
-  staged_manifest="${staged_manifest#OTERYN_NATIVE_GAMEPLAY_MANIFEST=}"
+  local staged_manifest="" entry
+  for entry in "${NODE_GAMEPLAY_ENV[@]}"; do
+    [[ "$entry" != OTERYN_NATIVE_GAMEPLAY_MANIFEST=* ]] || staged_manifest="${entry#OTERYN_NATIVE_GAMEPLAY_MANIFEST=}"
+  done
   env "${NODE_GAMEPLAY_ENV[@]}" "${test_env[@]}" \
   NODE_BOOT_SPELL_MANIFEST="$staged_manifest" \
   NODE_BOOT_CONTROL_SOCKET="$BASE/run/control.sock" \
