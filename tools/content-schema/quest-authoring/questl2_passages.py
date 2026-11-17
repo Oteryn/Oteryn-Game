@@ -26,7 +26,8 @@ def append(add, state, callbacks, offers, inputs, pin):
     pending = [state(root + 'passage', 0, 0, 1, preserve=True)]
     offer('dalbrect', ['brooch'], 0, 1, pending, 'What? You want me to examine a brooch?')
     offer('dalbrect', ['yes'], 1, 2, pending,
-          "Can it be? I recognize my family's arms! Please give that brooch to me.")
+          ("Can it be? I recognise my family's arms! You have found a treasure indeed! "
+           "I am poor and all I can offer you is my friendship, but ... please ... give that brooch to me."))
 
     # The current Dalbrect source writes WhiteRaven QuestLog, while Costello
     # still names the obsolete FamilyBrooch flag. Use the atomic completion
@@ -39,12 +40,19 @@ def append(add, state, callbacks, offers, inputs, pin):
         reply=['Thank you very much! From now on you may open the warded doors to the catacombs.'])
     offer('costello', ['fugio'], 0, 1,
           [state(root + 'diary', 0, 0, preserve=True)],
-          'Perhaps you are willing to investigate this matter?', friendship)
+          ('To be honest, I fear the omen in my dreams may be true. Perhaps Fugio is unable to see '
+           'the danger down there. Perhaps ... you are willing to investigate this matter?'), friendship)
     diary = [state(root + 'diary', 1, 2)]
     add('l2-white-raven-diary', quest, 'costello', ['yes'], diary,
         take=[(3212, 1)], give=(3214, 1), topic=2, requires=friendship)
-    callbacks[-1].update(sources=[witness('costello', '63-93')],
-        reply=["You have done our order a great favour by giving this diary to me! Take this blessed Ankh."])
+    # TibiaWiki The_White_Raven_Monastery_Quest/Spoiler: the diary hand-in ends the quest.
+    callbacks[-1]['completes'] = True
+    callbacks[-1].update(sources=[
+        witness('costello', '63-93'),
+        'https://tibia.fandom.com/wiki/The_White_Raven_Monastery_Quest/Spoiler: Costello diary/yes transcript'],
+        reply=["By the gods! This is brother Fugio's handwriting and what I read is horrible indeed! "
+               "You have done our order a great favour by giving this diary to me! Take this blessed "
+               "Ankh. May it protect you in even your darkest hours."])
     offer('costello', ['diary'], 0, 2,
           [state(root + 'diary', 1, 1, preserve=True)],
           'Do you want me to inspect a diary?', friendship)

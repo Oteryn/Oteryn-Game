@@ -756,7 +756,6 @@
           "set": 2
         }
       ],
-      "completes": true,
       "take": [
         {
           "item": "oteryn:item.tibia.i3212",
@@ -783,7 +782,8 @@
           "minimum": 1,
           "maximum": 1
         }
-      ]
+      ],
+      "completes": true
     }
   ]
 }

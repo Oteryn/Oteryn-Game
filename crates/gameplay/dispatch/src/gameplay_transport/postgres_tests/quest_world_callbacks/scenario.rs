@@ -1536,9 +1536,7 @@ fn scenario_case(
                 3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
                 13
-            } else if classic_npc {
-                5
-            } else if qd_b2 {
+            } else if classic_npc || qd_b2 {
                 5
             } else if monk {
                 4

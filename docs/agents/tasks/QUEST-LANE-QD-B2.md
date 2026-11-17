@@ -26,10 +26,7 @@ Notes:
 - Gap (P3 backlog): the spoiler notes that Jerom pays 200 gp when the necklace was lost; the
   Crystal donor and this route have no such branch.
 
-## Held (returned from Codex as BLOCKED-ENGINE, 2026-11-17)
+## Not in qd
 
-Held in qd until the server-lane hooks land; qd does no engine work for them.
-
-- qcx22 The Outlaw Camp: rope lift of a barrel from the floor below.
-- qcx23 The Postman Missions: topic-only dialogue, travel receipt, rank discount.
-- qcx29 Giant Smithhammer: the authored smith cache reward requires a Giant Spider kill.
+The server lane owns qcx15-31 (including The Outlaw Camp, The Postman Missions and
+Giant Smithhammer) as its own Codex lanes; qd authors none of them.
