@@ -537,3 +537,27 @@ fn sandra_lottery_rejects_extra_or_optional_inventory_effects() -> super::TestRe
     assert!(!valid_ticket_effects(&[]));
     Ok(())
 }
+
+#[test]
+fn sandra_lottery_refuses_unrelated_rewards_before_inventory_mutation() -> super::TestResult {
+    use crate::durability::quest_state::npc_program::sandra_lottery::valid_ticket_effects;
+    use oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect;
+    let base = SANDRA_LOTTERY.effects(1, |_| 0).ok_or("winning effects")?;
+    for effect in [
+        NpcRuleEffect::Experience { amount: 1 },
+        NpcRuleEffect::GiveMoney {
+            amount: 1,
+            include_bank: false,
+        },
+        NpcRuleEffect::OutfitAddon {
+            look_type: 138,
+            addon: 1,
+        },
+    ] {
+        let mut effects = base.clone();
+        effects.push(effect);
+        assert!(!valid_ticket_effects(&effects));
+    }
+    assert!(valid_ticket_effects(&base));
+    Ok(())
+}

@@ -114,8 +114,11 @@ pub fn valid_ticket_effects(effects: &[NpcRuleEffect]) -> bool {
                 count: 1,
                 subtype: None,
             } if item == "oteryn:item.tibia.i5958" => gives += 1,
-            NpcRuleEffect::TakeItem { .. } | NpcRuleEffect::GiveItem { .. } => return false,
-            _ => {}
+            NpcRuleEffect::Set { track, value: 1 }
+                if track
+                    == "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt" => {}
+            NpcRuleEffect::SetTopic { value: 0 } => {}
+            _ => return false,
         }
     }
     takes == 1 && gives == 1
