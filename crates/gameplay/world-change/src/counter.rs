@@ -50,6 +50,9 @@ impl CounterKind {
 #[serde(deny_unknown_fields)]
 pub struct Parameters {
     pub deepling_points: u64,
+    /// Open fact: the authored value 1000 White Deer kills per day is a native choice.
+    /// TibiaWiki Overhunting World Change/Spoiler rev 1084984 gives no threshold;
+    /// no retained donor value establishes one. Ordinary Deer do not count.
     pub deer_kills: u64,
     pub wolf_recovery: u64,
 }
@@ -650,4 +653,63 @@ pub struct SpawnSourceCell {
     pub x: u16,
     pub y: u16,
     pub floor: u8,
+}
+
+#[cfg(test)]
+mod overhunting_tests {
+    use super::*;
+
+    #[test]
+    fn only_white_deer_kills_count_and_ordinary_deer_keep_their_homes() -> Result<(), String> {
+        let b: Bindings = serde_json::from_str(BINDINGS_JSON).map_err(|e| e.to_string())?;
+        let at = (32596, 31745, 7);
+        assert!(b.credits("oteryn:creature.deer", at).is_empty());
+        assert_eq!(
+            b.credits("oteryn:creature.white_deer", at),
+            vec![(CounterKind::Overhunting, Credit::Kill(0))]
+        );
+        for stage in [1, 2] {
+            let mut stages = [1; 8];
+            stages[CounterKind::Overhunting.index()] = stage;
+            assert_eq!(b.spawn_projection("oteryn:creature.deer", at, stages), None);
+            assert_eq!(
+                b.spawn_projection("oteryn:creature.white_deer", at, stages),
+                Some(if stage == 1 {
+                    Some("oteryn:creature.white_deer")
+                } else {
+                    None
+                })
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn overhunting_save_chain_and_ten_to_one_trap_recovery() -> Result<(), String> {
+        let kind = CounterKind::Overhunting;
+        let p = Parameters {
+            deer_kills: 2,
+            wolf_recovery: 10,
+            ..Parameters::default()
+        };
+        let credit = |s: CounterState, c| s.credit(kind, c, &p, 0).map_err(|e| format!("{e:?}"));
+        let save = |s: CounterState, epoch| {
+            s.at_save(kind, epoch, false, &p, 0)
+                .map_err(|e| format!("{e:?}"))
+        };
+        let initial = CounterState::new(kind, 1, false);
+        let one = credit(initial, Credit::Kill(0))?;
+        assert_eq!(save(one, 2)?.stage, 1);
+        let hunted = credit(one, Credit::Kill(0))?;
+        assert_eq!(hunted.stage, 1);
+        let wolves = save(hunted, 2)?;
+        assert_eq!(wolves.stage, 2);
+        let killed = credit(wolves, Credit::Kill(1))?;
+        let trapped = credit(wolves, Credit::TrappedWolves(1))?;
+        assert_eq!(trapped.counts[1], killed.counts[1] * 10);
+        assert_eq!(save(killed, 3)?.stage, 2);
+        assert_eq!(trapped.stage, 2);
+        assert_eq!(save(trapped, 3)?.stage, 1);
+        Ok(())
+    }
 }

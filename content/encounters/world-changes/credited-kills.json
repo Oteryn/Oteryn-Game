@@ -7,7 +7,7 @@
   },
   "native_authoring": {
     "deepling_points": "Native binding:200 World points; retained reference does not specify the stage-one threshold.",
-    "deer_kills": "Native binding:1000 deer kills per save; source explicitly leaves numeric threshold unknown.",
+    "deer_kills": "Open fact: 1000 White Deer kills per save is a retained native choice; TibiaWiki spoiler revision 1084984 leaves the numeric threshold unknown.",
     "wolf_recovery": "Native binding:100 weighted recovery credits per save;1 trapped-wolf return equals10 kills, as sourced.",
     "geometry": "Explicit native bounded eligibility regions. Seacrest Grounds uses retained discovery_geometry.lua:1307. Demon and Mage bounds cover the retained native populations with eight-cell margins. Goroma volcano footprint and Overhunting hunting region are native-authored bindings rather than claimed donor polygons.",
     "spawn_composition": "Native phase composition over bounded existing source points: Demon faction strength replaces the same points by prince/lord/base/lord/prince; Seacrest Grounds aquatic population becomes Seacrest Serpents then Renegade Quara; Hive stage-two admits Kollos/Spidris and stage-three admits Elite. These point-to-phase assignments are explicit native authoring, not a claim that donor inventory encoded stage membership. Existing source delays/caps remain owned by Spawn.",
@@ -517,18 +517,6 @@
       "key": "overhunting",
       "kind": "overhunting",
       "sources": [
-        {
-          "creature": "oteryn:creature.deer",
-          "lane": 0,
-          "area": [
-            32440,
-            32770,
-            31670,
-            31950,
-            7,
-            7
-          ]
-        },
         {
           "creature": "oteryn:creature.white_deer",
           "lane": 0,
@@ -1362,7 +1350,7 @@
     },
     {
       "kind": "overhunting",
-      "creature": "oteryn:creature.deer",
+      "creature": "oteryn:creature.white_deer",
       "area": [
         32440,
         32770,
@@ -1373,7 +1361,7 @@
       ],
       "stages": [
         null,
-        "oteryn:creature.deer",
+        "oteryn:creature.white_deer",
         null,
         null,
         null,

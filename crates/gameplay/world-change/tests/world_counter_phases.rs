@@ -153,6 +153,15 @@ fn worldchg_phase_population_and_eruption_suppress_dormant_points() {
             (32596, 31745, 7),
             stages(K::Overhunting, 2)
         ),
+        None,
+        "ordinary deer retain their homes during overhunting"
+    );
+    assert_eq!(
+        b.spawn_projection(
+            "oteryn:creature.white_deer",
+            (32596, 31745, 7),
+            stages(K::Overhunting, 2)
+        ),
         Some(None)
     );
     assert_eq!(
