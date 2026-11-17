@@ -431,7 +431,7 @@ async fn resting_deficits(
 ) -> TestResult {
     // A real credited kill debits stamina. No combat/minute override is used.
     let before = progress(client).await?;
-    travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await?;
+    travel_to_careful_rat(client, world, spawns).await?;
     client_hunt::hunt_rat(client, world).await.map_err(|error| {
         format!("P10 earned stamina/HP deficit prerequisite: real rat hunt: {error}")
     })?;
@@ -1511,7 +1511,7 @@ async fn earn_death_prerequisites(
         if tokio::time::Instant::now() >= deadline {
             return Err(format!("player prerequisite blocked: rat hunting/loot budget exhausted; required level={level} carried_gold={gold}; observed XP={} level={} carried_gold={money}", build.0, build.1).into());
         }
-        travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await
+        travel_to_careful_rat(client, world, spawns).await
             .map_err(|error| format!("player prerequisite blocked: required level={level} carried_gold={gold}, observed XP={} level={} carried_gold={money}; rat route: {error}", build.0, build.1))?;
         client_hunt::hunt_rat(client, world).await.map_err(|error| format!("player prerequisite blocked: real rat kill/loot: {error}; required level={level} carried_gold={gold}; before XP={} level={} carried_gold={money}", build.0, build.1))?;
     }

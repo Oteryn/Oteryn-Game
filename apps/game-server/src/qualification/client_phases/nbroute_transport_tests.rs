@@ -197,6 +197,7 @@ fn qualification_nbroute_map_use_crosses_tls_without_capability_15() -> TestResu
 enum HuntReplay {
     Relocation,
     MovingCorpse,
+    Pack,
 }
 async fn hunt_replay(scenario: HuntReplay) -> TestResult {
     use wire::{attack, cyclopedia_character as stats, world_spatial_entities as entities};
@@ -239,7 +240,7 @@ async fn hunt_replay(scenario: HuntReplay) -> TestResult {
         },
     )?;
     let mut visible = vec![own, rat];
-    if matches!(scenario, HuntReplay::Relocation) {
+    if matches!(scenario, HuntReplay::Relocation | HuntReplay::Pack) {
         visible.insert(
             1,
             actor(
@@ -247,6 +248,12 @@ async fn hunt_replay(scenario: HuntReplay) -> TestResult {
                 "Poison Spider",
                 entities::EntityKind::Creature,
                 ActorPosition {
+                    x: origin.x
+                        + if matches!(scenario, HuntReplay::Pack) {
+                            1
+                        } else {
+                            6
+                        },
                     y: origin.y + 1,
                     ..origin
                 },
@@ -311,6 +318,16 @@ async fn hunt_replay(scenario: HuntReplay) -> TestResult {
                 tiles: vec![],
             })
             .map_err(|error| format!("map: {error:?}"))?;
+        let vitals = wire::actor_spell::encode_actor_vitals(&wire::actor_spell::ActorVitals {
+            health: 150,
+            max_health: 150,
+            mana: 55,
+            max_mana: 55,
+            soul: 100,
+            harmony: 0,
+            serene: false,
+        })
+        .map_err(|error| format!("vitals: {error:?}"))?;
         let combat = attack::encode_actor_combat_state(&attack::ActorCombatState {
             target: None,
             modes: attack::FightModes::DEFAULT,
@@ -327,6 +344,12 @@ async fn hunt_replay(scenario: HuntReplay) -> TestResult {
                     revision: 0,
                     snapshot_type: entities::SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2,
                     payload: &payload,
+                },
+                DomainSnapshot {
+                    domain_id: wire::actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                    revision: 0,
+                    snapshot_type: wire::actor_spell::SNAPSHOT_TYPE_ACTOR_VITALS_V1,
+                    payload: &vitals,
                 },
                 DomainSnapshot {
                     domain_id: attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
@@ -373,6 +396,10 @@ async fn hunt_replay(scenario: HuntReplay) -> TestResult {
                 }
                 attack::COMMAND_TYPE_ATTACK_TARGET_INTENT => {
                     if begins_attack {
+                        assert!(
+                            !matches!(scenario, HuntReplay::Pack),
+                            "unsafe pack must not receive ATTACK"
+                        );
                         if matches!(scenario, HuntReplay::Relocation) {
                             assert!(chasing, "hunt must enable native chase before attacking");
                         }
@@ -400,7 +427,7 @@ async fn hunt_replay(scenario: HuntReplay) -> TestResult {
             .await?;
             if begins_attack {
                 let (at, enter, update) = match scenario {
-                    HuntReplay::Relocation => {
+                    HuntReplay::Relocation | HuntReplay::Pack => {
                         let at = ActorPosition {
                             x: 32536,
                             y: 32514,
@@ -438,7 +465,7 @@ async fn hunt_replay(scenario: HuntReplay) -> TestResult {
                     ),
                 };
                 let mut leave = vec![rat.entity];
-                if matches!(scenario, HuntReplay::Relocation) {
+                if matches!(scenario, HuntReplay::Relocation | HuntReplay::Pack) {
                     leave.push(entities::EntityRef {
                         identity: v7(9, 1),
                         generation: 1,
@@ -506,6 +533,7 @@ async fn hunt_replay(scenario: HuntReplay) -> TestResult {
     match scenario {
         HuntReplay::Relocation => assert!(error.contains("relocat"), "{error}"),
         HuntReplay::MovingCorpse => assert!(error.contains("hunt corpse USE refused"), "{error}"),
+        HuntReplay::Pack => assert!(error.contains("safe engagement"), "{error}"),
     }
     Ok(())
 }
@@ -532,4 +560,9 @@ fn qualification_nbroute_hunt_chases_rat_and_stops_on_relocation() -> TestResult
 #[test]
 fn qualification_nbroute_hunt_proves_moving_one_hit_corpse() -> TestResult {
     run_hunt_replay(HuntReplay::MovingCorpse)
+}
+
+#[test]
+fn qualification_nbroute_care_refuses_pack_on_wire() -> TestResult {
+    run_hunt_replay(HuntReplay::Pack)
 }

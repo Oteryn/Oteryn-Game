@@ -13,6 +13,7 @@ include!("character_release.rs");
 include!("e2e_row_batch.rs");
 include!("floor_journey.rs");
 include!("npc_routes.rs");
+include!("rat_routes.rs");
 include!("full_e2ef7_mount.rs");
 include!("full_row_c03_mount.rs");
 include!("full_row_c12_mount.rs");
@@ -393,6 +394,7 @@ fn boot_world(
     // Prewarm before the world pass admits its first client.
     native_spell_book()?;
     native_creature_name("oteryn:creature.rat")?;
+    native_food_references()?;
     let room = crate::content::qualify_selected_native_gameplay_room(world, input)?;
     let issuance = crate::content::NativeEntryActivationIssuance {
         world_id: world,
@@ -487,6 +489,18 @@ fn plan_route(
     include_uses: bool,
     goal: impl Fn(TilePos) -> bool,
 ) -> Option<Vec<WalkAction>> {
+    plan_route_filtered(world, from, target, include_uses, |_| true, goal)
+}
+
+#[track_caller]
+fn plan_route_filtered(
+    world: &BundleWorld,
+    from: TilePos,
+    target: impl std::fmt::Debug,
+    include_uses: bool,
+    allowed: impl Fn(TilePos) -> bool,
+    goal: impl Fn(TilePos) -> bool,
+) -> Option<Vec<WalkAction>> {
     let mut queue = VecDeque::from([from]);
     let mut parents = BTreeMap::from([(from, None)]);
     while let Some(at) = queue.pop_front() {
@@ -519,6 +533,7 @@ fn plan_route(
             if next.x.abs_diff(from.x) > 160
                 || next.y.abs_diff(from.y) > 160
                 || next.floor.abs_diff(from.floor) > 2
+                || !allowed(next)
                 || parents.contains_key(&next)
             {
                 continue;
@@ -841,6 +856,10 @@ pub(super) async fn approach_hunt_corpse(
         )
     })?;
     walk(client, world, &path).await
+}
+
+pub(super) fn rat_recovery_wait(until: tokio::time::Instant) {
+    verdict::Harness::global().bounded_wait(until, "rat-hunt-recovery");
 }
 
 pub(super) fn hunt_observation_wait(until: tokio::time::Instant) {
@@ -3455,7 +3474,8 @@ pub(crate) fn smoke() -> TestResult {
     use oteryn_world_bundle_compiler::{bundle::BuildClass, compile, source};
     let started = std::time::Instant::now();
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let project = source::project_regions(&root, &[(126, 125), (126, 126), (127, 127)])?;
+    let project =
+        source::project_regions(&root, &[(126, 125), (126, 126), (127, 126), (127, 127)])?;
     let (registry, palette) = source::registry(&root, &project)?;
     let identity = serde_json::from_slice(&std::fs::read(
         root.join("content/world/pins/oteryn.identity.json"),

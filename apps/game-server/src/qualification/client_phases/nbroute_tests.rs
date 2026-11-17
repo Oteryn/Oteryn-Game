@@ -111,7 +111,8 @@ fn compiled_town() -> TestResult<&'static CompiledTown> {
         std::sync::OnceLock::new();
     TOWN_WORLD
         .get_or_init(|| {
-            compile_town(&[(126, 125), (126, 126), (127, 127)]).map_err(|error| error.to_string())
+            compile_town(&[(126, 125), (126, 126), (127, 126), (127, 127)])
+                .map_err(|error| error.to_string())
         })
         .as_ref()
         .map_err(|error| error.clone().into())
@@ -320,7 +321,8 @@ fn qualification_nbroute_compiled_near_temple_returns() -> TestResult {
 #[test]
 fn qualification_nbroute_preflight_shared_respawn_return() -> TestResult {
     on_route_thread(|| {
-        let (world, _, _) = compiled_town()?;
+        let (world, _, _) = compile_town(&[(126, 125), (126, 126), (127, 127)])?;
+        let world = &world;
         let towns = &world.base().subareas;
         let home = towns
             .default_town
@@ -395,7 +397,7 @@ fn qualification_nbroute_newhaven_exit_requires_existing_northern_region() -> Te
     on_route_thread(|| {
         // Same source and native facts; include the existing B3 region cut off
         // by node boot's three-region compile. No content or profile is authored.
-        let (world, _, _) = compile_town(&[(126, 125), (126, 126), (127, 126), (127, 127)])?;
+        let (world, _, _) = compiled_town()?;
         let home = TilePos {
             x: 32536,
             y: 32514,
@@ -408,7 +410,7 @@ fn qualification_nbroute_newhaven_exit_requires_existing_northern_region() -> Te
                 .is_some_and(|tile| !tile.protection_zone())
         );
         let path = route_toward(
-            &world,
+            world,
             home,
             "Newhaven outside PZ with northern region",
             |at| {
@@ -419,11 +421,57 @@ fn qualification_nbroute_newhaven_exit_requires_existing_northern_region() -> Te
             },
         )
         .ok_or("northern region did not open an ordinary player route outside Newhaven PZ")?;
-        let landed = endpoint(&world, home, &path)?;
+        let landed = endpoint(world, home, &path)?;
         evidence(&format!(
             "nbroute_newhaven_exit additional_region=127,126 endpoint={landed:?} steps={}",
             path.len()
         ));
+        Ok(())
+    })
+}
+
+#[test]
+fn qualification_nbroute_care_avoids_the_reported_sewer_pack() -> TestResult {
+    on_route_thread(|| {
+        let (world, _, spawns) = compiled_town()?;
+        let path = careful_rat_route(world, TOWN, spawns).ok_or("isolated rat route missing")?;
+        let at = endpoint(world, TOWN, &path)?;
+        let prey: Vec<_> = spawns
+            .sources
+            .iter()
+            .flat_map(|source| source.points.iter().map(move |point| (source.floor, point)))
+            .filter(|(floor, point)| {
+                *floor == at.floor && point.x.abs_diff(at.x).max(point.y.abs_diff(at.y)) <= 1
+            })
+            .collect();
+        assert_eq!(
+            prey.len(),
+            1,
+            "isolated approach must not put the starter beside a pack"
+        );
+        let refuge = rat_refuge_route(world, at).ok_or("isolated hunt has no refuge")?;
+        assert!(refuge.len() <= 32);
+        let inside = endpoint(world, at, &refuge)?;
+        assert!(
+            world
+                .base()
+                .tile(inside.x, inside.y, inside.floor)
+                .is_some_and(|tile| tile.protection_zone())
+        );
+        evidence(&format!(
+            "rat_care_plan arena={at:?} steps={} retreat_steps={} refuge={inside:?}",
+            path.len(),
+            refuge.len()
+        ));
+        assert_ne!(
+            at,
+            TilePos {
+                x: 32369,
+                y: 32223,
+                floor: -8
+            },
+            "the reported fatal pack must not be the default hunt"
+        );
         Ok(())
     })
 }

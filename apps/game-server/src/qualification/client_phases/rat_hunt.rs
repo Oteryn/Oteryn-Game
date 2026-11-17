@@ -5,6 +5,8 @@ use oteryn_protocol_oteryn::{attack, cyclopedia_character as stats};
 #[path = "hunt_observation.rs"]
 mod observation;
 use observation::HuntObservation;
+#[path = "rat_care.rs"]
+mod care;
 
 async fn experience(client: &mut DevClientSession) -> TestResult<u64> {
     let tab = stats::CharacterTab::GeneralStats as u8;
@@ -28,10 +30,42 @@ async fn experience(client: &mut DevClientSession) -> TestResult<u64> {
     ))
 }
 
+pub(crate) use care::recover_rat_health;
+
 pub(crate) async fn hunt_rat(
     client: &mut DevClientSession,
     world: &crate::map::boot::BundleWorld,
 ) -> TestResult {
+    let arena = client.world_spatial().actor_position;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(300);
+    for attempt in 1..=3 {
+        if tokio::time::Instant::now() >= deadline {
+            break;
+        }
+        care::recover_rat_health(client, world, deadline).await?;
+        client_world::rat_return_to_arena(client, world, arena).await?;
+        let vitals = *client
+            .actor_vitals()
+            .ok_or("rat engagement vitals absent")?;
+        if !care::ready_to_fight(vitals.health, vitals.max_health) {
+            continue;
+        }
+        evidence(&format!(
+            "rat_care phase=engagement attempt={attempt} vitals={vitals:?}"
+        ));
+        if fight_once(client, world, deadline).await? {
+            return Ok(());
+        }
+    }
+    client_world::rat_retreat(client, world).await?;
+    Err("rat hunt exhausted safe engagement/recovery budget; hunter returned to PZ without claiming a kill".into())
+}
+
+async fn fight_once(
+    client: &mut DevClientSession,
+    world: &crate::map::boot::BundleWorld,
+    until: tokio::time::Instant,
+) -> TestResult<bool> {
     let name = client_world::native_creature_name("oteryn:creature.rat")?;
     let origin = client.world_spatial().actor_position;
     let target = client
@@ -51,22 +85,36 @@ pub(crate) async fn hunt_rat(
                         <= 1
             })
         })
-        .copied()
-        .ok_or_else(|| format!("rat hunt has no verified adjacent {name} at {origin:?}"))?;
+        .copied();
+    let Some(target) = target else {
+        client_world::rat_retreat(client, world).await?;
+        return Err(format!(
+            "rat hunt has no verified adjacent {name} at {origin:?}; hunter returned to PZ"
+        )
+        .into());
+    };
+    if care::other_threats(client, target.entity) > 0 {
+        client_world::rat_retreat(client, world).await?;
+        return Ok(false);
+    }
     let modes = attack::FightModes {
         chase: attack::ChaseMode::Chase,
         ..attack::FightModes::DEFAULT
     };
     let reply = client.session_mut().set_fight_modes(&modes).await?;
     if reply.disposition != attack::AttackIntentDisposition::Ok {
+        client_world::rat_retreat(client, world).await?;
         return Err(format!("rat hunt chase refused: {reply:?}").into());
     }
     let xp_before = experience(client).await?;
-    let target = client
+    let refreshed = client
         .world_entities()
         .and_then(|entities| entities.get(&target.entity))
-        .copied()
-        .ok_or("rat left visibility before ATTACK")?;
+        .copied();
+    let Some(target) = refreshed else {
+        client_world::rat_retreat(client, world).await?;
+        return Err("rat left visibility before ATTACK; hunter returned to PZ".into());
+    };
     let excluded = client
         .world_entities()
         .into_iter()
@@ -86,10 +134,12 @@ pub(crate) async fn hunt_rat(
         target.entity, target.position
     ));
     if attack.disposition != attack::AttackIntentDisposition::Ok {
+        client_world::rat_retreat(client, world).await?;
         return Err(format!("rat hunt ATTACK refused: {attack:?}").into());
     }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
+    let deadline = until.min(tokio::time::Instant::now() + Duration::from_secs(120));
     client_world::hunt_observation_wait(deadline);
+    let mut refuge_checked_at = actor_position;
     let mut xp_after = xp_before;
     let mut last_xp_query: Option<tokio::time::Instant> = None;
     let corpse = loop {
@@ -115,6 +165,21 @@ pub(crate) async fn hunt_rat(
                 return Err(format!("rat hunt player died before kill proof; start={origin:?} observation={observed:?}").into());
             }
         }
+        let vitals = *client.actor_vitals().ok_or("rat combat vitals absent")?;
+        let others = care::other_threats(client, target.entity);
+        let escaped_refuge = if actor_position != refuge_checked_at {
+            refuge_checked_at = actor_position;
+            !client_world::rat_escape_available(client, world)?
+        } else {
+            false
+        };
+        if care::should_retreat(vitals.health, vitals.max_health, others) || escaped_refuge {
+            evidence(&format!(
+                "rat_care phase=reserve-retreat vitals={vitals:?} other_threats={others}"
+            ));
+            client_world::rat_retreat(client, world).await?;
+            return Ok(false);
+        }
         let alive = client
             .world_entities()
             .is_some_and(|entities| entities.get(&target.entity).is_some());
@@ -136,7 +201,7 @@ pub(crate) async fn hunt_rat(
             break corpse;
         }
         if tokio::time::Instant::now() >= deadline {
-            client.session_mut().attack_target(None).await?;
+            client_world::rat_retreat(client, world).await?;
             return Err(format!("rat hunt produced no proven corpse before deadline; start={origin:?} actual={actor_position:?} target={:?} target_present={alive} observation={observed:?} xp_before={xp_before} xp_after={xp_after} vitals={:?}",target.entity,client.actor_vitals()).into());
         }
     };
@@ -146,5 +211,14 @@ pub(crate) async fn hunt_rat(
     ));
     client.session_mut().attack_target(None).await?;
     client_world::approach_hunt_corpse(client, world, corpse.position).await?;
-    loot_corpse(client, target, corpse).await
+    if let Err(error) = loot_corpse(client, target, corpse).await {
+        // These business refusals follow completed replies. A transport error
+        // must retain the existing poisoned-session/drop path.
+        if error.to_string().starts_with("hunt ") {
+            client_world::rat_retreat(client, world).await?;
+        }
+        return Err(error);
+    }
+    client_world::rat_retreat(client, world).await?;
+    Ok(true)
 }

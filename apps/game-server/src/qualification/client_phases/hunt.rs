@@ -180,4 +180,4 @@ async fn loot_corpse(
 
 #[path = "rat_hunt.rs"]
 mod rat;
-pub(super) use rat::hunt_rat;
+pub(super) use rat::{hunt_rat, recover_rat_health};
