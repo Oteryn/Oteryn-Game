@@ -252,25 +252,55 @@ pub(super) async fn walk_bot(
     path: &[StepDirection],
 ) -> TestResult {
     for &direction in path {
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
-        let before = bots[index].client()?.world_spatial().actor_position;
-        let expected = destination(world, tile(before)?, direction)
-            .ok_or("MP step has no world destination")?;
-        tokio::time::timeout_at(deadline, async {
-            loop {
-                let outcome = bots[index].client()?.step(direction).await?;
-                let after = tile(bots[index].client()?.world_spatial().actor_position)?;
-                if outcome.disposition == StepDisposition::Moved && after == expected { return TestResult::Ok(()); }
-                if outcome.disposition != StepDisposition::Rejected || after != tile(before)? {
-                    return Err(format!("MP movement refused:{outcome:?};source:apps/game-server/src/qualification/client_phases/world.rs:553").into());
-                }
-                pump(bots).await?;
-            }
-        }).await.map_err(|_| "MP movement deadline")??;
-        // A server-confirmed tile change is real progress of the running row.
-        verdict::Harness::global().progress("walk");
+        step_confirmed(bots, index, world, direction).await?;
         pump(bots).await?;
     }
+    Ok(())
+}
+
+/// Walks several bots along their own paths in lockstep: one confirmed step per bot per round, so
+/// each bot's step cooldown elapses while the others step and a round costs about one cooldown
+/// instead of one per bot.
+pub(super) async fn walk_group(
+    bots: &mut [Bot<'_, '_>],
+    world: &BundleWorld,
+    paths: &[(usize, Vec<StepDirection>)],
+) -> TestResult {
+    let rounds = paths.iter().map(|(_, path)| path.len()).max().unwrap_or(0);
+    for round in 0..rounds {
+        for (index, path) in paths {
+            if let Some(&direction) = path.get(round) {
+                step_confirmed(bots, *index, world, direction).await?;
+            }
+        }
+        pump(bots).await?;
+    }
+    Ok(())
+}
+
+async fn step_confirmed(
+    bots: &mut [Bot<'_, '_>],
+    index: usize,
+    world: &BundleWorld,
+    direction: StepDirection,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    let before = bots[index].client()?.world_spatial().actor_position;
+    let expected =
+        destination(world, tile(before)?, direction).ok_or("MP step has no world destination")?;
+    tokio::time::timeout_at(deadline, async {
+        loop {
+            let outcome = bots[index].client()?.step(direction).await?;
+            let after = tile(bots[index].client()?.world_spatial().actor_position)?;
+            if outcome.disposition == StepDisposition::Moved && after == expected { return TestResult::Ok(()); }
+            if outcome.disposition != StepDisposition::Rejected || after != tile(before)? {
+                return Err(format!("MP movement refused:{outcome:?};source:apps/game-server/src/qualification/client_phases/world.rs:553").into());
+            }
+            pump(bots).await?;
+        }
+    }).await.map_err(|_| "MP movement deadline")??;
+    // A server-confirmed tile change is real progress of the running row.
+    verdict::Harness::global().progress("walk");
     Ok(())
 }
 

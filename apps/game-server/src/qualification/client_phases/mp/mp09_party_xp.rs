@@ -565,16 +565,16 @@ async fn encounter(
         spawns.len(),
         path.len()
     ));
-    bots::walk_bot(bots, 0, world, &path).await?;
-    let leader = tile(bots[0].client()?.world_spatial().actor_position)?;
+    let leader = path
+        .iter()
+        .try_fold(from, |at, &direction| destination(world, at, direction))
+        .ok_or("hunt route leaves the walkable world")?;
+    let mut walks = vec![(0, path)];
+    let mut parked = vec![leader];
     for actor in [1, 2] {
         let here = tile(bots[actor].client()?.world_spatial().actor_position)?;
-        let occupied: Vec<TilePos> = (0..bots.len())
-            .filter(|index| *index != actor)
-            .map(|index| tile(bots[index].client()?.world_spatial().actor_position))
-            .collect::<TestResult<_>>()?;
         let near = |at: TilePos| {
-            !occupied.contains(&at)
+            !parked.contains(&at)
                 && at.floor == leader.floor
                 && at.x.abs_diff(leader.x).max(at.y.abs_diff(leader.y)) <= 1
                 && world
@@ -584,8 +584,15 @@ async fn encounter(
         };
         let path = far_route(world, here, near)
             .map_err(|reached| format!("MP peer approach has no reachable tile;walkable_reached={};start={here:?};leader={leader:?}", reached.len()))?;
-        bots::walk_bot(bots, actor, world, &path).await?;
+        parked.push(
+            path.iter()
+                .try_fold(here, |at, &direction| destination(world, at, direction))
+                .ok_or("peer route leaves the walkable world")?,
+        );
+        walks.push((actor, path));
     }
+    // One lockstep walk: sequential walks of three ~200-step routes exceeded the 240 s encounter budget.
+    bots::walk_group(bots, world, &walks).await?;
     evidence(&format!(
         "MP_CHECK MP09 hunt-arrived PASS leader={leader:?} peers within 1 tile outside protection zone"
     ));
