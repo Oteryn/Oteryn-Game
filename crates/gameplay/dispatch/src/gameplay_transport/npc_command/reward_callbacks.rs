@@ -239,7 +239,10 @@ pub(super) fn prepare(
                     && c.keywords.contains(&text)
             });
             let callback = matching.next()?;
-            if matching.next().is_some() {
+            if matching.next().is_some()
+                || callback.key == oteryn_gameplay_npc::greeting::ORC_KING_GREETING_TRANSITION
+            {
+                // Later greetings use the Orc King's ordinary dialogue.
                 return None;
             }
             if (!meets_level(callback.minimum_level)

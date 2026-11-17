@@ -74,9 +74,12 @@ pub fn soulfire_on_greeting(
     .then_some((1_500, 10, 5_000))
 }
 
+/// The generated first-greeting transition for the Orc King.
+pub const ORC_KING_GREETING_TRANSITION: &str = "oteryn:quest-reward/l2-efreet-orc-king-greeting";
+
 /// Crystal's Orc King greets each character with this wave once.
 pub fn orc_king_guards(transition: &str, newly_committed: bool) -> &'static [&'static str] {
-    if !newly_committed || transition != "oteryn:quest-reward/l2-efreet-orc-king-greeting" {
+    if !newly_committed || transition != ORC_KING_GREETING_TRANSITION {
         return &[];
     }
     &[

@@ -242,7 +242,11 @@ fn orc_king_guards_postgres_npc_talk() -> TestResult {
                 let result =
                     super::qengine_rewards::talk(&mut owner, &mut admitted, npc, command_id, "hi")
                         .await?;
-                assert_eq!(result, NpcIntentDisposition::Ok);
+                assert_eq!(
+                    result,
+                    NpcIntentDisposition::Ok,
+                    "Orc King greeting {command_id}"
+                );
                 let mut runtime = deps.runtime.lock().await;
                 let creatures = runtime.visible_entities().creatures;
                 if command_id == 1 {
