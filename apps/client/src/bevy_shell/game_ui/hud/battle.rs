@@ -1,14 +1,31 @@
-//! Live battle rows retain both the admitted session and target generation.
+//! The Battle List widget (BattleList.qml): a row of 20x20 filter buttons, a menu with the
+//! saved lists and the list editor (which holds the sort order), and 22 px creature rows. Live rows retain both the
+//! admitted session and target generation.
 use super::*;
+use crate::play::feature_0017_attack::view::BattleListPreferences;
 use oteryn_session::{EntityDetail, WorldSpatialEntity};
 #[derive(Default)]
 pub(super) struct Snapshot {
     generation: Option<u64>,
     rows: Vec<WorldSpatialEntity>,
     active: usize,
-    names: Vec<String>,
-    pvp: String,
+    lists: Vec<BattleListPreferences>,
+    menu: bool,
 }
+/// Whether the battle list menu is open.
+#[derive(Resource, Default)]
+pub(super) struct Menu(pub bool);
+/// The type filters the protocol can tell apart: players and monsters. Tibia's NPC, skull and
+/// party filters need entity data the session does not carry yet.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(super) enum Filter {
+    Players,
+    Monsters,
+}
+/// The size of a filter button and of the creature icon.
+const FILTER: f32 = 20.;
+const CREATURE_ICON: f32 = 18.;
+
 #[derive(Component)]
 pub(super) struct HealthFill(EntityRef);
 #[derive(Component)]
@@ -161,6 +178,7 @@ pub(super) fn project(
     owner: NonSend<HostOwner>,
     regions: Res<super::super::GameRegions>,
     skins: Res<Skins>,
+    menu: Res<Menu>,
     mut shown: Local<Snapshot>,
     actions: Query<(Entity, &HudAction, Has<InteractionDisabled>)>,
     mut health: Query<(&HealthFill, &mut Node, &mut BackgroundColor)>,
@@ -176,23 +194,16 @@ pub(super) fn project(
     let generation = owner.generation();
     let panel = play.link.battle_panel();
     let pvp = play.link.pvp_expert_panel();
-    let pvp_state = format!(
-        "{:?}:{}:{}:{}",
-        pvp.confirmed, pvp.pending, pvp.feedback, pvp.selected
-    );
     let active = play.link.active_battle_list();
     let rows = play.link.filtered_battle_rows(active);
     let modal = owner.modal_active() || play.view.gameplay_input_blocked(&play.link);
-    let names = owner
-        .settings
-        .preferences
-        .battle_lists
-        .iter()
-        .map(|list| list.name.clone())
-        .collect::<Vec<_>>();
+    let lists = owner.settings.preferences.battle_lists.clone();
     let disabled =
         panel.pending || pvp.pending || panel.combat.is_none() || panel.shutdown || modal;
     for (entity, action, was_disabled) in &actions {
+        let disabled = disabled
+            || matches!(action.command, Command::Secure(_) | Command::Expert(_))
+                && pvp.confirmed.filter(|_| pvp.selected).is_none();
         if matches!(
             action.command,
             Command::Attack(_)
@@ -257,88 +268,87 @@ pub(super) fn project(
     if shown.generation == Some(generation)
         && same_rows
         && shown.active == active
-        && shown.names == names
-        && shown.pvp == pvp_state
+        && shown.lists == lists
+        && shown.menu == menu.0
     {
         return;
     }
     commands.entity(regions.battle).despawn_children();
-    let title = commands
-        .spawn(source::text(
-            "Battle",
-            source::font(skins.font.clone(), false),
-        ))
-        .id();
-    commands.entity(regions.battle).add_child(title);
-    for (index, name) in names.iter().enumerate() {
-        let label = if index == active {
-            format!("• {name}")
-        } else {
-            name.clone()
-        };
-        let selector = button(
-            &mut commands,
-            &skins,
-            generation,
-            Command::BattleList(index),
-            &label,
-            174.,
-        );
-        commands.entity(regions.battle).add_child(selector);
-    }
-    let editor = button(
-        &mut commands,
-        &skins,
-        generation,
-        Command::BattleListEditor,
-        "Edit lists",
-        174.,
-    );
-    commands.entity(regions.battle).add_child(editor);
-    let modes = commands
+    let current = lists.get(active);
+    let filters = commands
         .spawn(Node {
             width: percent(100.),
-            flex_wrap: FlexWrap::Wrap,
+            height: px(FILTER),
+            flex_shrink: 0.,
             column_gap: px(2.),
-            row_gap: px(2.),
             ..default()
         })
         .id();
-    for (command, label) in [
-        (Command::Stop, "Stop"),
-        (Command::Fight(FightMode::Offensive), "Attack"),
-        (Command::Fight(FightMode::Balanced), "Balance"),
-        (Command::Fight(FightMode::Defensive), "Defend"),
-        (Command::Chase(ChaseMode::Stand), "Stand"),
-        (Command::Chase(ChaseMode::Chase), "Chase"),
+    commands.entity(regions.battle).add_child(filters);
+    for (command, key, on) in [
+        (
+            Command::BattleFilter(Filter::Players),
+            "battle-filter-players",
+            current.is_some_and(|list| list.players),
+        ),
+        (
+            Command::BattleFilter(Filter::Monsters),
+            "battle-filter-monsters",
+            current.is_some_and(|list| list.creatures),
+        ),
+        (Command::BattleMenu, "battle-sort", menu.0),
     ] {
-        let button = button(&mut commands, &skins, generation, command, label, 56.);
-        if disabled {
-            commands.entity(button).insert(InteractionDisabled);
-        }
-        commands.entity(modes).add_child(button);
-    }
-    commands.entity(regions.battle).add_child(modes);
-    if let Some(confirmed) = pvp.confirmed.filter(|_| pvp.selected) {
-        for (command, label, selected) in pvp_controls(confirmed) {
-            let label = if selected {
-                format!("• {label}")
+        let slot = super::super::art::fixed(&mut commands, &skins.font, key, Vec2::splat(FILTER));
+        commands.entity(slot).insert((
+            HudAction {
+                generation,
+                command,
+            },
+            bevy::ui_widgets::Button,
+            BorderColor::all(if on {
+                Color::srgb_u8(230, 230, 230)
             } else {
-                label.into()
-            };
-            let control = button(&mut commands, &skins, generation, command, &label, 174.);
-            if disabled || pvp.pending {
-                commands.entity(control).insert(InteractionDisabled);
+                Color::NONE
+            }),
+        ));
+        let menu_button = matches!(command, Command::BattleMenu);
+        commands.entity(slot).entry::<Node>().and_modify(move |mut node| {
+            node.border = UiRect::all(px(1.));
+            if menu_button {
+                node.margin = UiRect::left(Val::Auto);
             }
-            commands.entity(regions.battle).add_child(control);
-        }
-        let status = commands
-            .spawn(source::text(
-                &pvp.feedback,
-                source::font(skins.font.clone(), false),
+        });
+        commands.entity(filters).add_child(slot);
+    }
+    if menu.0 {
+        let entries = commands
+            .spawn((
+                Name::new("Battle list menu"),
+                source::frame(skins.frame.clone(), [4.; 4]),
+                Node {
+                    width: percent(100.),
+                    flex_shrink: 0.,
+                    flex_direction: FlexDirection::Column,
+                    padding: UiRect::all(px(3.)),
+                    row_gap: px(1.),
+                    ..default()
+                },
             ))
             .id();
-        commands.entity(regions.battle).add_child(status);
+        commands.entity(regions.battle).add_child(entries);
+        let mut items: Vec<(Command, String)> = lists
+            .iter()
+            .enumerate()
+            .map(|(index, list)| {
+                let mark = if index == active { "• " } else { "" };
+                (Command::BattleList(index), format!("{mark}{}", list.name))
+            })
+            .collect();
+        items.push((Command::BattleListEditor, "Edit Lists…".to_owned()));
+        for (command, caption) in items {
+            let entry = button(&mut commands, &skins, generation, command, &caption, 156.);
+            commands.entity(entries).add_child(entry);
+        }
     }
     // BattleListEntry.qml: 22px rows, 20px outfit slot, 2px gap, 5px slim bar.
     for row in &rows {
@@ -373,8 +383,9 @@ pub(super) fn project(
             .spawn((
                 TargetFrame(row.entity),
                 Node {
-                    width: px(20.),
-                    height: px(20.),
+                    width: px(CREATURE_ICON),
+                    height: px(CREATURE_ICON),
+                    margin: UiRect::all(px(1.)),
                     border: UiRect::all(px(1.)),
                     ..default()
                 },
@@ -450,11 +461,11 @@ pub(super) fn project(
     shown.generation = Some(generation);
     shown.rows = rows;
     shown.active = active;
-    shown.names = names;
-    shown.pvp = pvp_state;
+    shown.lists = lists;
+    shown.menu = menu.0;
 }
 
-fn pvp_controls(
+pub(super) fn pvp_controls(
     state: oteryn_client_runtime::pvp_expert::ExpertFightModes,
 ) -> [(Command, &'static str, bool); 5] {
     use oteryn_client_runtime::pvp_expert::ExpertMode;

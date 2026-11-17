@@ -10,6 +10,13 @@ use oteryn_session::{ChaseMode, EntityRef, FightMode};
 mod battle;
 #[path = "hud/blessings.rs"]
 mod blessings;
+/// The inventory widget state: minimised to the Soul and Cap boxes, and the blessings panel
+/// opened from its Blessings button (closed by default).
+#[derive(Resource, Default, Clone, Copy, PartialEq, Eq, Debug)]
+pub(super) struct EquipmentWidget {
+    pub minimised: bool,
+    pub blessings: bool,
+}
 #[path = "hud/skills.rs"]
 mod skills;
 #[path = "hud/status_icons.rs"]
@@ -31,8 +38,20 @@ enum Command {
     Expert(u8),
     BattleList(usize),
     BattleListEditor,
+    /// Opens or closes the battle list menu (sort, lists, list editor).
+    BattleMenu,
+    /// Toggles a type filter of the active battle list.
+    BattleFilter(battle::Filter),
     Analyser(oteryn_client_ui::analyser::Tool),
 }
+/// A combat control of the inventory widget; it is kept across frames, so its generation and
+/// secure target follow the live session.
+#[derive(Component)]
+struct CombatControl;
+/// The combat column of the inventory widget (Inventory.qml): a 42 px column with the Stop
+/// button over 20x20 buttons in three rows, filled top to bottom.
+const COMBAT_COLUMN: f32 = 42.;
+const COMBAT_BUTTON: f32 = 20.;
 #[derive(Component)]
 struct VitalLabel(bool);
 #[derive(Component)]
@@ -46,7 +65,9 @@ enum InfoText {
 pub(super) fn install(app: &mut App) {
     blessings::spawn(app);
     skills::install(app);
-    app.init_resource::<DevOverlay>();
+    app.init_resource::<DevOverlay>()
+        .init_resource::<battle::Menu>()
+        .init_resource::<EquipmentWidget>();
     vip::install(app);
     app.add_systems(
         Startup,
@@ -179,6 +200,7 @@ fn setup(
         .add_children(&[harmony, label, serene]);
     commands.entity(regions.vitals).add_child(monk);
     status_icons::setup(&mut commands, regions.vitals);
+    combat_column(&mut commands, &skins, regions.equipment);
     if overlay.0 {
         let status = commands
             .spawn((
@@ -237,6 +259,80 @@ fn setup(
         .entity(sidebar.analytics)
         .add_children(&[tools, text]);
 }
+/// The combat column of the inventory widget, docked at the right of the equipment.
+fn combat_column(commands: &mut Commands, skins: &Skins, equipment: Entity) {
+    commands.entity(equipment).insert(Node {
+        width: percent(100.),
+        min_height: px(142.),
+        flex_shrink: 0.,
+        flex_direction: FlexDirection::Column,
+        padding: UiRect::right(px(COMBAT_COLUMN + 2.)),
+        ..default()
+    });
+    let column = commands
+        .spawn((
+            Name::new("Combat controls"),
+            Node {
+                position_type: PositionType::Absolute,
+                right: px(0.),
+                top: px(0.),
+                width: px(COMBAT_COLUMN),
+                flex_direction: FlexDirection::Column,
+                row_gap: px(2.),
+                ..default()
+            },
+        ))
+        .id();
+    commands.entity(equipment).add_child(column);
+    let stop = button(commands, skins, 0, Command::Stop, "Stop", COMBAT_COLUMN);
+    commands
+        .entity(stop)
+        .insert((CombatControl, BorderColor::all(Color::NONE)));
+    commands.entity(column).add_child(stop);
+    let grid = |commands: &mut Commands, rows: u16| {
+        commands
+            .spawn(Node {
+                display: Display::Grid,
+                grid_auto_flow: GridAutoFlow::Column,
+                grid_template_rows: RepeatedGridTrack::px(rows, COMBAT_BUTTON),
+                grid_auto_columns: vec![GridTrack::px(COMBAT_BUTTON)],
+                column_gap: px(2.),
+                row_gap: px(2.),
+                ..default()
+            })
+            .id()
+    };
+    let modes = grid(commands, 3);
+    let pvp = grid(commands, 2);
+    commands.entity(column).add_children(&[modes, pvp]);
+    for (parent, command, key) in [
+        (modes, Command::Fight(FightMode::Offensive), "combat-offensive"),
+        (modes, Command::Fight(FightMode::Balanced), "combat-balanced"),
+        (modes, Command::Fight(FightMode::Defensive), "combat-defensive"),
+        (modes, Command::Chase(ChaseMode::Stand), "combat-stand"),
+        (modes, Command::Chase(ChaseMode::Chase), "combat-chase"),
+        (modes, Command::Secure(true), "combat-secure"),
+        (pvp, Command::Expert(0), "combat-pvp-dove"),
+        (pvp, Command::Expert(1), "combat-pvp-whitehand"),
+        (pvp, Command::Expert(2), "combat-pvp-yellowhand"),
+        (pvp, Command::Expert(3), "combat-pvp-redfist"),
+    ] {
+        let slot = super::art::fixed(commands, &skins.font, key, Vec2::splat(COMBAT_BUTTON));
+        commands.entity(slot).insert((
+            CombatControl,
+            HudAction {
+                generation: 0,
+                command,
+            },
+            bevy::ui_widgets::Button,
+            BorderColor::all(Color::NONE),
+        ));
+        commands.entity(slot).entry::<Node>().and_modify(|mut node| {
+            node.border = UiRect::all(px(1.));
+        });
+        commands.entity(parent).add_child(slot);
+    }
+}
 fn button(
     commands: &mut Commands,
     skins: &Skins,
@@ -264,7 +360,8 @@ fn activate(
     event: On<Activate>,
     guard: ModalGuard,
     actions: Query<&HudAction>,
-    owner: NonSend<HostOwner>,
+    mut owner: NonSendMut<HostOwner>,
+    mut menu: ResMut<battle::Menu>,
 ) {
     if !guard.allows(event.entity) {
         return;
@@ -274,6 +371,32 @@ fn activate(
     };
     if owner.modal_active() || action.generation != owner.generation() {
         return;
+    }
+    // Battle list filters edit the saved active list; the session mailbox
+    // takes them over on the next settings sync.
+    match action.command {
+        Command::BattleMenu => {
+            menu.0 = !menu.0;
+            return;
+        }
+        Command::BattleFilter(filter) => {
+            let Some(active) = owner.play.as_ref().map(|play| play.link.active_battle_list())
+            else {
+                return;
+            };
+            let mut preferences = owner.settings.preferences.clone();
+            let Some(list) = preferences.battle_lists.get_mut(active) else {
+                return;
+            };
+            match filter {
+                battle::Filter::Players => list.players = !list.players,
+                battle::Filter::Monsters => list.creatures = !list.creatures,
+            }
+            owner.settings.apply(preferences);
+            return;
+        }
+        Command::BattleList(_) | Command::BattleListEditor => menu.0 = false,
+        _ => {}
     }
     let Some(play) = &owner.play else { return };
     if play.view.gameplay_input_blocked(&play.link) {
@@ -301,6 +424,7 @@ fn activate(
             let _ = play.link.battle_select_list(index);
         }
         Command::BattleListEditor => play.link.battle_list_editor_open(),
+        Command::BattleMenu | Command::BattleFilter(_) => {}
         Command::Analyser(tool) => {
             super::analyser::open(&owner, tool);
         }
@@ -321,7 +445,14 @@ fn project(
         Query<&mut Node, (With<MonkRow>, Without<VitalFill>)>,
     ),
     mut fills: Query<(&VitalFill, &mut Node, &mut BackgroundColor), Without<MonkRow>>,
-    mut actions: Query<(Entity, &mut HudAction, Has<InteractionDisabled>)>,
+    mut actions: Query<
+        (Entity, &mut HudAction, Has<InteractionDisabled>),
+        Without<CombatControl>,
+    >,
+    mut controls: Query<
+        (&mut HudAction, &mut BorderColor, &mut Node),
+        (With<CombatControl>, Without<VitalFill>, Without<MonkRow>),
+    >,
     mut entered: Local<Option<u64>>,
 ) {
     let Some(play) = &owner.play else {
@@ -408,6 +539,43 @@ fn project(
     }
     let blocked = owner.modal_active() || play.view.gameplay_input_blocked(&play.link);
     let analyser_blocked = !play.link.analyser_panel().selected;
+    let combat = play.link.battle_panel().combat;
+    let pvp = play.link.pvp_expert_panel();
+    let expert = pvp.confirmed.filter(|_| pvp.selected);
+    for (mut action, mut border, mut node) in &mut controls {
+        action.generation = generation;
+        let (selected, shown) = match action.command {
+            Command::Fight(mode) => (combat.is_some_and(|c| c.modes.fight_mode == mode), true),
+            Command::Chase(mode) => (combat.is_some_and(|c| c.modes.chase == mode), true),
+            Command::Secure(_) | Command::Expert(_) => match expert {
+                Some(state) => {
+                    let controls = battle::pvp_controls(state);
+                    let index = match action.command {
+                        Command::Expert(mode) => usize::from(mode) + 1,
+                        _ => 0,
+                    };
+                    if index == 0 {
+                        action.command = controls[0].0;
+                    }
+                    (controls.get(index).is_some_and(|control| control.2), true)
+                }
+                None => (false, false),
+            },
+            _ => (false, true),
+        };
+        let next = BorderColor::all(if selected {
+            Color::srgb_u8(230, 230, 230)
+        } else {
+            Color::NONE
+        });
+        if *border != next {
+            *border = next;
+        }
+        let display = if shown { Display::Flex } else { Display::None };
+        if node.display != display {
+            node.display = display;
+        }
+    }
     for (entity, mut action, disabled) in &mut actions {
         if matches!(action.command, Command::Analyser(_)) {
             action.generation = generation;

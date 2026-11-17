@@ -286,15 +286,33 @@ fn inventory_panel_shows_server_capacity_as_tibia_cap() -> TestResult {
     app.add_systems(Update, super::super::project);
     install(&mut app);
     app.update();
+    // The Cap box: an 8 px "Cap" caption over the free capacity in oz.
     let texts = |app: &mut App| -> Vec<String> {
-        app.world_mut()
-            .query::<&Text>()
+        let boxes: Vec<Entity> = app
+            .world_mut()
+            .query::<(Entity, &Name)>()
             .iter(app.world())
-            .map(|text| text.0.clone())
+            .filter(|(_, name)| name.as_str() == "Cap")
+            .map(|(entity, _)| entity)
+            .collect();
+        boxes
+            .into_iter()
+            .flat_map(|entity| {
+                app.world()
+                    .get::<Children>(entity)
+                    .into_iter()
+                    .flatten()
+                    .filter_map(|child| app.world().get::<Text>(*child))
+                    .map(|text| text.0.clone())
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>()
+            .chunks(2)
+            .map(|pair| pair.join(": "))
             .collect()
     };
-    // A session without capability 508 never receives a capacity: no Cap is shown.
-    assert!(!texts(&mut app).iter().any(|text| text.starts_with("Cap")));
+    // A session without capability 508 never receives a capacity: the box shows no value.
+    assert_eq!(texts(&mut app), ["Cap: —"]);
     let capacity = |free| {
         vec![SessionEvent::InventoryCapacity(AppliedDelta {
             server_sequence: 2,
@@ -678,5 +696,101 @@ fn equipment_and_open_container_cells_receive_tooltips() -> TestResult {
             "Count: 3\nRight-click for Look and item actions",
         ]
     );
+    Ok(())
+}
+
+#[test]
+fn inventory_widget_has_silhouettes_soul_and_cap_and_minimises() -> TestResult {
+    use bevy::asset::AssetPlugin;
+    let (link, _commands, outbox) = play_channel();
+    inventory(&outbox, vec![entry(11, 1)?]);
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        AssetPlugin::default(),
+        oteryn_client_ui_bevy::GlobalUiPlugin,
+    ))
+    .init_asset::<Font>()
+    .init_asset::<Image>()
+    .init_resource::<ButtonInput<KeyCode>>()
+    .init_resource::<ButtonInput<MouseButton>>()
+    .init_resource::<super::super::hud::EquipmentWidget>()
+    .insert_non_send(host(link)?)
+    .add_systems(
+        Startup,
+        (super::super::super::ui::setup, super::super::setup).chain(),
+    );
+    install(&mut app);
+    app.update();
+    let mut roots = app
+        .world_mut()
+        .query_filtered::<&mut Node, With<super::super::GameRoot>>();
+    for mut root in roots.iter_mut(app.world_mut()) {
+        root.display = Display::Flex;
+    }
+    app.update();
+    let named = |app: &mut App, wanted: &str| -> Vec<Entity> {
+        app.world_mut()
+            .query::<(Entity, &Name)>()
+            .iter(app.world())
+            .filter(|(_, name)| name.as_str() == wanted)
+            .map(|(entity, _)| entity)
+            .collect()
+    };
+    let size = |app: &App, entity: Entity| {
+        app.world()
+            .get::<Node>(entity)
+            .map(|node| (node.width, node.height))
+    };
+    let equipment = *named(&mut app, "Equipment").first().ok_or("equipment")?;
+    assert_eq!(size(&app, equipment), Some((px(108.), px(142.))));
+    for caption in ["Soul", "Cap"] {
+        let stat = *named(&mut app, caption).first().ok_or("stat box")?;
+        assert_eq!(size(&app, stat), Some((px(34.), px(20.))));
+    }
+    let mut keys: Vec<String> = app
+        .world_mut()
+        .query::<&super::super::art::ArtSlot>()
+        .iter(app.world())
+        .map(|slot| slot.key.clone())
+        .filter(|key| key.starts_with("slot-") || key.starts_with("inventory-"))
+        .collect();
+    keys.sort();
+    // The test equipment list has no slots; the widget buttons are always there.
+    assert!(
+        ["inventory-blessings", "inventory-minimise", "inventory-purse"]
+            .iter()
+            .all(|key| keys.iter().any(|shown| shown == key)),
+        "{keys:?}"
+    );
+    let texts: Vec<String> = app
+        .world_mut()
+        .query::<&Text>()
+        .iter(app.world())
+        .map(|text| text.0.clone())
+        .collect();
+    assert!(!texts.iter().any(|text| text == "Browse ground"));
+    let button = |app: &mut App, wanted: super::view::WidgetButton| {
+        app.world_mut()
+            .query::<(Entity, &super::view::WidgetButton)>()
+            .iter(app.world())
+            .find(|(_, button)| **button == wanted)
+            .map(|(entity, _)| entity)
+            .ok_or("widget button")
+    };
+    let blessings = button(&mut app, super::view::WidgetButton::Blessings)?;
+    app.world_mut()
+        .trigger(bevy::ui_widgets::Activate { entity: blessings });
+    assert!(
+        app.world()
+            .resource::<super::super::hud::EquipmentWidget>()
+            .blessings
+    );
+    let minimise = button(&mut app, super::view::WidgetButton::Minimise)?;
+    app.world_mut()
+        .trigger(bevy::ui_widgets::Activate { entity: minimise });
+    app.update();
+    let equipment = *named(&mut app, "Equipment").first().ok_or("equipment")?;
+    assert_eq!(size(&app, equipment), Some((px(46.), px(42.))));
     Ok(())
 }

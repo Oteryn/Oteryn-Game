@@ -567,6 +567,14 @@ fn parity_a_battle_chord_and_stacked_row_preserve_exact_target() -> TestResult {
 #[test]
 fn edit_lists_button_opens_the_battle_list_editor_form() -> TestResult {
     let (mut app, _, _) = app()?;
+    let menu = app
+        .world_mut()
+        .query::<(Entity, &HudAction)>()
+        .iter(app.world())
+        .find_map(|(entity, action)| matches!(action.command, Command::BattleMenu).then_some(entity))
+        .ok_or("battle list menu button")?;
+    app.world_mut().trigger(Activate { entity: menu });
+    app.update();
     let button = app
         .world_mut()
         .query::<(Entity, &HudAction)>()

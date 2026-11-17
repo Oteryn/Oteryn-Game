@@ -17,6 +17,9 @@ struct Snapshot {
     sort_available: bool,
     windows: std::collections::BTreeMap<u8, presentation::Window>,
     browse: bool,
+    /// The soul points of the status widget's vitals and the inventory widget state.
+    soul: Option<u32>,
+    widget: super::super::hud::EquipmentWidget,
     /// The writing (115) and timed item (39) windows the item menu can open.
     write: bool,
     timed: bool,
@@ -36,6 +39,7 @@ pub(super) fn project(
     skins: Res<Skins>,
     regions: Res<GameRegions>,
     mut ui: ResMut<InventoryUi>,
+    widget: Option<Res<super::super::hud::EquipmentWidget>>,
     mut previous: Local<ProjectionState>,
     roots: Query<Entity, With<Projection>>,
     mut cells: Query<(&Slot, &mut BorderColor)>,
@@ -96,6 +100,8 @@ pub(super) fn project(
         containers,
         windows: ui.windows.clone(),
         browse: play.link.browse_field_panel().selected,
+        soul: play.link.actor_vitals().map(|vitals| vitals.soul),
+        widget: widget.as_deref().copied().unwrap_or_default(),
         write: play.link.mail_panel().selected,
         timed: play.link.timed_item_panel().selected,
         slots: play.link.equipment_slots(),
@@ -132,6 +138,8 @@ pub(super) fn project(
             && old.sort_available == snapshot.sort_available
             && old.windows == snapshot.windows
             && old.browse == snapshot.browse
+            && old.soul == snapshot.soul
+            && old.widget == snapshot.widget
             && old.write == snapshot.write
             && old.timed == snapshot.timed
             && old.manual_sort == snapshot.manual_sort
@@ -142,11 +150,20 @@ pub(super) fn project(
     for entity in &roots {
         commands.entity(entity).despawn();
     }
-    let equipment = panel(&mut commands, &skins, regions.equipment, "Inventory");
+    let equipment = commands
+        .spawn((
+            Projection,
+            Node {
+                width: percent(100.),
+                flex_direction: FlexDirection::Column,
+                flex_shrink: 0.,
+                row_gap: px(2.),
+                ..default()
+            },
+        ))
+        .id();
+    commands.entity(regions.equipment).add_child(equipment);
     equipment_grid(&mut commands, &skins, equipment, &snapshot);
-    if snapshot.browse {
-        presentation::browse_entry(&mut commands, &skins, equipment, snapshot.generation);
-    }
     if snapshot.inventory.inventory.is_none() {
         label(&mut commands, &skins, equipment, "Inventory unavailable");
     }
@@ -259,21 +276,167 @@ pub(super) fn label(commands: &mut Commands, skins: &Skins, parent: Entity, text
         .id();
     commands.entity(parent).add_child(entity);
 }
+/// Inventory.qml: the 108x142 equipment (46x42 minimised) with 32x32 slot silhouettes, the
+/// 34x20 Soul and Cap boxes beside the feet and the 34x12 Blessings and Store inbox buttons.
+const EQUIPMENT: Vec2 = Vec2::new(108., 142.);
+const MINIMISED: Vec2 = Vec2::new(46., 42.);
+const STAT_BOX: Vec2 = Vec2::new(34., 20.);
+const SMALL_BUTTON: Vec2 = Vec2::new(34., 12.);
+/// The silhouette of each equipment slot, in the order of the equipment slot list.
+const SILHOUETTES: [&str; 10] = [
+    "slot-head",
+    "slot-necklace",
+    "slot-backpack",
+    "slot-armor",
+    "slot-right-hand",
+    "slot-left-hand",
+    "slot-legs",
+    "slot-feet",
+    "slot-ring",
+    "slot-ammo",
+];
+/// A button of the inventory widget.
+#[derive(Component, Clone, Copy, PartialEq, Eq, Debug)]
+pub(super) enum WidgetButton {
+    Minimise,
+    Blessings,
+    Purse,
+}
+fn widget_button(
+    event: On<bevy::ui_widgets::Activate>,
+    buttons: Query<&WidgetButton>,
+    guard: super::super::modal::ModalGuard,
+    owner: NonSend<HostOwner>,
+    widget: Option<ResMut<super::super::hud::EquipmentWidget>>,
+) {
+    if !guard.allows(event.entity) || owner.modal_active() {
+        return;
+    }
+    let (Ok(button), Some(mut widget)) = (buttons.get(event.entity), widget) else {
+        return;
+    };
+    match button {
+        WidgetButton::Minimise => widget.minimised = !widget.minimised,
+        WidgetButton::Blessings => widget.blessings = !widget.blessings,
+        WidgetButton::Purse => {
+            if let Some(play) = &owner.play {
+                play.link.store_inbox_set_open(true);
+            }
+        }
+    }
+}
+fn art_button(
+    commands: &mut Commands,
+    skins: &Skins,
+    parent: Entity,
+    button: WidgetButton,
+    key: &'static str,
+    size: Vec2,
+) {
+    let slot = super::super::art::fixed(commands, &skins.font, key, size);
+    commands
+        .entity(slot)
+        .insert((button, Button))
+        .observe(widget_button);
+    commands.entity(parent).add_child(slot);
+}
+/// A Soul or Cap box: an 8 px caption over the value.
+fn stat_box(commands: &mut Commands, skins: &Skins, parent: Entity, caption: &str, value: &str) {
+    let entity = commands
+        .spawn((
+            Name::new(caption.to_owned()),
+            source::frame(skins.inset.clone(), [1.; 4]),
+            Node {
+                width: px(STAT_BOX.x),
+                height: px(STAT_BOX.y),
+                flex_shrink: 0.,
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                ..default()
+            },
+            Pickable::IGNORE,
+        ))
+        .id();
+    let caption = commands
+        .spawn(source::text(caption, source::font(skins.font.clone(), true)))
+        .id();
+    let value = commands
+        .spawn(source::text(value, source::font(skins.font.clone(), true)))
+        .id();
+    commands.entity(entity).add_children(&[caption, value]);
+    commands.entity(parent).add_child(entity);
+}
 fn equipment_grid(commands: &mut Commands, skins: &Skins, parent: Entity, snapshot: &Snapshot) {
+    let soul = snapshot
+        .soul
+        .map_or_else(|| "—".to_owned(), |soul| soul.to_string());
+    let cap = snapshot
+        .inventory
+        .capacity
+        .map_or_else(|| "—".to_owned(), |capacity| capacity.free_oz().to_string());
+    let minimised = snapshot.widget.minimised;
+    let size = if minimised { MINIMISED } else { EQUIPMENT };
+    let area = commands
+        .spawn((
+            Name::new("Equipment"),
+            Node {
+                width: px(size.x),
+                height: px(size.y),
+                flex_shrink: 0.,
+                ..default()
+            },
+        ))
+        .id();
+    commands.entity(parent).add_child(area);
+    let toggle = commands
+        .spawn(Node {
+            position_type: PositionType::Absolute,
+            right: px(if minimised { 0. } else { -12. }),
+            top: px(0.),
+            ..default()
+        })
+        .id();
+    commands.entity(area).add_child(toggle);
+    art_button(
+        commands,
+        skins,
+        toggle,
+        WidgetButton::Minimise,
+        if minimised {
+            "inventory-maximise"
+        } else {
+            "inventory-minimise"
+        },
+        Vec2::splat(12.),
+    );
+    if minimised {
+        let column = commands
+            .spawn(Node {
+                flex_direction: FlexDirection::Column,
+                row_gap: px(2.),
+                ..default()
+            })
+            .id();
+        commands.entity(area).add_child(column);
+        stat_box(commands, skins, column, "Soul", &soul);
+        stat_box(commands, skins, column, "Cap", &cap);
+        return;
+    }
     let grid = commands
         .spawn(Node {
-            width: px(108.),
-            align_self: AlignSelf::Center,
+            width: px(EQUIPMENT.x),
             display: Display::Grid,
             grid_template_columns: RepeatedGridTrack::px(3, 34.),
             column_gap: px(3.),
             row_gap: px(3.),
+            align_content: AlignContent::Start,
             ..default()
         })
         .id();
-    commands.entity(parent).add_child(grid);
-    // Necklace / head / backpack, right hand / body / left hand, ring / legs / ammunition, feet.
-    let cap = oteryn_client_ui::inventory_capacity::cap_text(&snapshot.inventory);
+    commands.entity(area).add_child(grid);
+    // Necklace / head / backpack, right hand / body / left hand, ring / legs / ammunition,
+    // Soul / feet / Cap.
     for (position, index) in [
         Some(1),
         Some(0),
@@ -291,7 +454,9 @@ fn equipment_grid(commands: &mut Commands, skins: &Skins, parent: Entity, snapsh
     .into_iter()
     .enumerate()
     {
-        if let Some(slot) = index.and_then(|index| snapshot.slots.get(index)) {
+        if let Some((index, slot)) =
+            index.and_then(|index| snapshot.slots.get(index).map(|slot| (index, slot)))
+        {
             let location = match slot.destination {
                 ItemMoveDestination::Equipment(slot) => Location::Equipment(slot),
                 _ => Location::Inventory,
@@ -307,28 +472,54 @@ fn equipment_grid(commands: &mut Commands, skins: &Skins, parent: Entity, snapsh
                     destination: slot.available.then_some(slot.destination),
                 },
                 snapshot.selection,
-                Some(slot.label),
+                SILHOUETTES.get(index).copied(),
             );
         } else {
-            let spacer = commands
+            let cell = commands
                 .spawn((
                     Node {
                         width: px(34.),
                         height: px(34.),
+                        flex_direction: FlexDirection::Column,
+                        justify_content: JustifyContent::End,
                         ..default()
                     },
                     Pickable::IGNORE,
                 ))
                 .id();
-            commands.entity(grid).add_child(spacer);
-            // Tibia shows Cap in the cell beside the feet slot.
-            if position == 11
-                && let Some(cap) = &cap
-            {
-                label(commands, skins, spacer, cap);
+            commands.entity(grid).add_child(cell);
+            if position == 9 {
+                stat_box(commands, skins, cell, "Soul", &soul);
+            } else {
+                stat_box(commands, skins, cell, "Cap", &cap);
             }
         }
     }
+    let buttons = commands
+        .spawn(Node {
+            width: px(EQUIPMENT.x),
+            column_gap: px(3.),
+            justify_content: JustifyContent::SpaceBetween,
+            ..default()
+        })
+        .id();
+    commands.entity(parent).add_child(buttons);
+    art_button(
+        commands,
+        skins,
+        buttons,
+        WidgetButton::Blessings,
+        "inventory-blessings",
+        SMALL_BUTTON,
+    );
+    art_button(
+        commands,
+        skins,
+        buttons,
+        WidgetButton::Purse,
+        "inventory-purse",
+        SMALL_BUTTON,
+    );
 }
 #[allow(clippy::too_many_arguments)] // One bounded authoritative view is rendered without inventing a second model.
 fn grid(
@@ -383,7 +574,7 @@ fn slot_node(
     parent: Entity,
     slot: Slot,
     selection: Option<Slot>,
-    empty: Option<&str>,
+    silhouette: Option<&'static str>,
 ) {
     let selected = selection.is_some_and(|selected| {
         selected.item.is_some()
@@ -433,8 +624,10 @@ fn slot_node(
             ))
             .id();
         commands.entity(entity).add_child(icon);
-    } else if let Some(empty) = empty {
-        label(commands, skins, entity, empty);
+    } else if let Some(key) = silhouette {
+        let art = super::super::art::fixed(commands, &skins.font, key, Vec2::splat(32.));
+        commands.entity(art).insert(Pickable::IGNORE);
+        commands.entity(entity).add_child(art);
     }
 }
 fn container(

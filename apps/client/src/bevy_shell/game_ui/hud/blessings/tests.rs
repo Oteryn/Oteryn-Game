@@ -69,6 +69,10 @@ fn run(check: impl FnOnce(&mut App) -> TestResult + Send + 'static) -> TestResul
                 .build()?;
             let (mut app, commands, outbox) =
                 super::super::tests::app().map_err(|e| e.to_string())?;
+            // The panel opens from the inventory widget's Blessings button.
+            app.world_mut()
+                .resource_mut::<super::super::EquipmentWidget>()
+                .blessings = true;
             runtime.block_on(async {
                 let (send, receive) = tokio::sync::mpsc::unbounded_channel();
                 let task = tokio::spawn(crate::play::run_session(Feed(receive), commands, outbox));
@@ -247,6 +251,9 @@ fn blessing_tooltip_none() -> TestResult {
 fn blessings_dialog_server_capture_reaches_ankh_bevy_text() -> TestResult {
     std::thread::Builder::new().stack_size(64 << 20).spawn(|| -> Result<(), String> {
         let (mut app, mut commands, outbox) = super::super::tests::app().map_err(|e| e.to_string())?;
+        app.world_mut()
+            .resource_mut::<super::super::EquipmentWidget>()
+            .blessings = true;
         outbox.bevy_cyclopedia_initialize(true, false, false);
         outbox.bevy_blessings_details_initialize();
         app.update();
