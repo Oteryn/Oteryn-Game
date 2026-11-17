@@ -77,3 +77,23 @@ pub(crate) async fn evaluate(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn full_outfit_table_has_thirteen_rows_and_registered_achievements()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_gameplay_progression::achievement_catalogue::{SHARDS, parse_shards};
+        let registry = parse_shards(&SHARDS).map_err(|error| format!("{error:?}"))?;
+        assert_eq!(super::OUTFITS.len(), 13);
+        for (_, male, female) in super::OUTFITS {
+            for slug in [male, female] {
+                assert!(
+                    registry.contains_key(&format!("oteryn:achievement/{slug}")),
+                    "{slug}"
+                );
+            }
+        }
+        Ok(())
+    }
+}
