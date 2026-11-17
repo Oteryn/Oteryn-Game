@@ -4,6 +4,7 @@
     dead_code,
     reason = "spell import candidate; awaits its production owner caller"
 )]
+#[path = "actor_movement/observer_eye.rs"]
 mod observer_eye;
 
 use super::ChannelSpellStates;
@@ -296,7 +297,14 @@ pub fn step_in_channel_with_source_step(
         state.cooldowns = cooldowns;
     }
     observer_eye::mirror_step(
-        runtime, states, cells, actor, expected.position(), result.0.position(), now_us, blocking,
+        runtime,
+        states,
+        cells,
+        actor,
+        expected.position(),
+        result.0.position(),
+        now_us,
+        blocking,
     );
     Ok(result)
 }
@@ -1638,4 +1646,5 @@ mod creature_field_step_tests {
 }
 
 #[cfg(test)]
+#[path = "actor_movement/observer_eye_tests.rs"]
 mod observer_eye_tests;

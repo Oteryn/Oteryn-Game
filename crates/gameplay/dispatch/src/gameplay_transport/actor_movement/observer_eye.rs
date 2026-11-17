@@ -24,12 +24,26 @@ pub(super) fn mirrored_direction(
     }
 }
 
+const TOPAZ: MovementLocalPosition = MovementLocalPosition {
+    x: 32782,
+    y: 32913,
+    floor: 14,
+};
+
 fn control_floor(cell: MovementLocalPosition) -> bool {
-    cell.floor == 14 && (32781..=32783).contains(&cell.x) && (32912..=32914).contains(&cell.y)
+    cell.floor == TOPAZ.floor && cell.x.abs_diff(TOPAZ.x) <= 1 && cell.y.abs_diff(TOPAZ.y) <= 1
 }
 
 fn platform_field(cell: MovementLocalPosition) -> bool {
-    cell.floor == 14 && (32775..=32779).contains(&cell.x) && (32907..=32918).contains(&cell.y)
+    cell.floor == TOPAZ.floor
+        && match cell.y {
+            32907 => cell.x == 32777,
+            32908..=32914 => (32775..=32779).contains(&cell.x),
+            32915..=32916 => (32777..=32779).contains(&cell.x),
+            32917 => (32778..=32779).contains(&cell.x),
+            32918 => cell.x == 32778,
+            _ => false,
+        }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -43,7 +57,9 @@ pub(super) fn mirror_step(
     now_us: u64,
     blocking: &dyn crate::map::floor::CellBlocker,
 ) {
-    if !control_floor(from) || !control_floor(to) {
+    // Each ornament issues a command from the central topaz. Returning to
+    // the topaz lets the controller give the same command again.
+    if from != TOPAZ || !control_floor(to) {
         return;
     }
     let Some(direction) = mirrored_direction(from, to) else {
@@ -60,6 +76,12 @@ pub(super) fn mirror_step(
     let Some((partner, session, position)) = partners.next() else {
         return;
     };
+    if !matches!(
+        runtime.positioned_player_for_session(session),
+        Ok(Some((current, _))) if current == partner
+    ) {
+        return;
+    }
     let (dx, dy) = direction.delta();
     let destination = MovementLocalPosition {
         x: position.x + dx,
@@ -68,7 +90,10 @@ pub(super) fn mirror_step(
     };
     if partners.next().is_some()
         || !platform_field(destination)
-        || !matches!(runtime.position_occupied_by_other(partner, destination), Ok(false))
+        || !matches!(
+            runtime.position_occupied_by_other(partner, destination),
+            Ok(false)
+        )
     {
         return;
     }
