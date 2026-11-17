@@ -1,0 +1,150 @@
+1 1 {"chatText": "exura gran tio", "sendAutomatically": true, "spellCastType": 0}
+1 2 {"useObject": 53162, "useType": "UseOnYourself"}
+1 3 {"chatText": "exori gran mas nia", "sendAutomatically": true, "spellCastType": 0}
+1 4 {"chatText": "exura gran", "sendAutomatically": true, "spellCastType": 0}
+1 5 {"useObject": 49271, "useType": "Use"}
+1 6 {"chatText": "exori infir amp pug", "sendAutomatically": true, "spellCastType": 0}
+1 7 {"chatText": "exura tio sio ", "sendAutomatically": true, "spellCastType": 0}
+1 8 {"chatText": "exura", "sendAutomatically": true, "spellCastType": 0}
+1 9 {"chatText": "exori med pug", "sendAutomatically": true, "spellCastType": 0}
+1 10 {"chatText": "utani gran hur", "sendAutomatically": true, "spellCastType": 0}
+1 11 {"useObject": 3457, "useType": "SelectUseTarget"}
+1 12 {"useObject": 9598, "useType": "SelectUseTarget"}
+1 13 {"chatText": "exiva moe res", "sendAutomatically": true, "spellCastType": 0}
+1 14 {"chatText": "utevo lux", "sendAutomatically": true, "spellCastType": 0}
+1 15 {"useObject": 7642, "useType": "UseOnYourself"}
+1 16 {"chatText": "exiva ", "sendAutomatically": true, "spellCastType": 0}
+1 17 {"useObject": 32093, "useType": "UseOnTarget"}
+1 18 {"useObject": 23374, "useType": "UseOnYourself"}
+1 19 {"useObject": 53162, "useType": "UseOnYourself"}
+1 20 {"chatText": "uteta res tio", "sendAutomatically": true, "spellCastType": 0}
+1 21 {"multiActions": [{"chatText": "exori med pug", "sendAutomatically": true, "spellCastType": 0}, {"chatText": "exori gran mas pug", "sendAutomatically": true, "spellCastType": 0}, {"chatText": "exori mas pug", "sendAutomatically": true, "spellCastType": 0}]}
+1 22 {"chatText": "utevo mas sio", "sendAutomatically": true, "spellCastType": 0}
+1 24 {"useObject": 284, "useType": "SelectUseTarget"}
+1 25 {"useObject": 40523, "useType": "SelectUseTarget"}
+1 26 {"useObject": 16277, "useType": "Use"}
+1 27 {"chatText": "exura mas nia", "sendAutomatically": true, "spellCastType": 0}
+1 28 {"chatText": "uteta tio ", "sendAutomatically": true, "spellCastType": 0}
+1 29 {"useObject": 22516, "useType": "Use"}
+1 30 {"useEquipSmartMode": true, "useObject": 3051, "useType": "Equip"}
+1 31 {"chatText": "hi, port hope, yes", "sendAutomatically": true, "spellCastType": 0}
+1 32 {"chatText": "hi, darashia, yes", "sendAutomatically": true, "spellCastType": 0}
+1 33 {"chatText": "hi, edron, yes", "sendAutomatically": true, "spellCastType": 0}
+1 34 {"chatText": "hi, thais, yes", "sendAutomatically": true, "spellCastType": 0}
+1 35 {"chatText": "hi, passage, east, yes", "sendAutomatically": true, "spellCastType": 0}
+1 36 {"upgradeTier": 0, "useEquipSmartMode": false, "useObject": 50167, "useType": "Equip"}
+1 37 {"upgradeTier": 0, "useEquipSmartMode": false, "useObject": 50161, "useType": "Equip"}
+1 38 {"upgradeTier": 1, "useEquipSmartMode": false, "useObject": 50159, "useType": "Equip"}
+1 39 {"upgradeTier": 0, "useEquipSmartMode": false, "useObject": 50157, "useType": "Equip"}
+1 40 {"useEquipSmartMode": true, "useObject": 50154, "useType": "Equip"}
+1 41 {"useEquipSmartMode": false, "useObject": 25977, "useType": "Equip"}
+1 42 {"useEquipSmartMode": false, "useObject": 51978, "useType": "Equip"}
+1 43 {"useEquipSmartMode": false, "useObject": 43740, "useType": "Equip"}
+1 44 {"useEquipSmartMode": false, "useObject": 28493, "useType": "Equip"}
+1 45 {"useEquipSmartMode": false, "useObject": 25975, "useType": "Equip"}
+1 46 {"useEquipSmartMode": false, "useObject": 25976, "useType": "Equip"}
+1 47 {"useObject": 31297, "useType": "SelectUseTarget"}
+1 48 {"multiActions": [{"chatText": "exori mas nia", "sendAutomatically": true, "spellCastType": 0}, {"chatText": "utevo nia", "sendAutomatically": true, "spellCastType": 0}, {"chatText": "utamo tio", "sendAutomatically": true, "spellCastType": 0}]}
+1 49 {"useObject": 31296, "useType": "SelectUseTarget"}
+1 50 {"useObject": 50292, "useType": "UseOnTarget"}
+2 1 {"multiActions": [{"chatText": "exori med pug", "sendAutomatically": true, "spellCastType": 0}, {"chatText": "exori gran mas pug", "sendAutomatically": true, "spellCastType": 0}, {"chatText": "exori mas amp pug", "sendAutomatically": true, "spellCastType": 2}]}
+2 2 {"useObject": 23374, "useType": "UseOnYourself"}
+2 3 {"chatText": "exura gran tio", "sendAutomatically": true, "spellCastType": 0}
+2 5 {"chatText": "exori gran pug", "sendAutomatically": true, "spellCastType": 0}
+2 6 {"chatText": "exori amp pug", "sendAutomatically": true, "spellCastType": 0}
+2 7 {"chatText": "utani gran hur", "sendAutomatically": true, "spellCastType": 0}
+2 8 {"chatText": "exani tera", "sendAutomatically": true, "spellCastType": 0}
+2 9 {"useObject": 3191, "useType": "UseAtMouseCursor"}
+2 10 {"useObject": 53162, "useType": "UseOnYourself"}
+2 11 {"useObject": 23374, "useType": "UseOnYourself"}
+2 12 {"useObject": 939, "useType": "SelectUseTarget"}
+2 13 {"multiActions": [{"chatText": "utura tio", "sendAutomatically": true, "spellCastType": 0}, {"useObject": 23374, "useType": "UseOnYourself"}, {"chatText": "exura gran tio", "sendAutomatically": true, "spellCastType": 0}]}
+2 14 {"chatText": "exori mas res", "sendAutomatically": true, "spellCastType": 0}
+2 15 {"chatText": "exori mas amp pug", "sendAutomatically": true, "spellCastType": 2}
+2 16 {"multiActions": [{"chatText": "exori med pug", "sendAutomatically": true, "spellCastType": 0}, {"chatText": "exori gran mas pug", "sendAutomatically": true, "spellCastType": 0}, {"chatText": "exori mas pug", "sendAutomatically": true, "spellCastType": 0}]}
+2 17 {"chatText": "exori gran mas nia", "sendAutomatically": true, "spellCastType": 0}
+2 20 {"multiActions": [{"chatText": "exori med pug", "sendAutomatically": true, "spellCastType": 0}, {"chatText": "exori gran mas pug", "sendAutomatically": true, "spellCastType": 0}, {"chatText": "exori mas pug", "sendAutomatically": true, "spellCastType": 0}]}
+2 25 {"chatText": "exani hur up", "sendAutomatically": true, "spellCastType": 0}
+2 26 {"chatText": "exani hur down", "sendAutomatically": true, "spellCastType": 0}
+2 28 {"chatText": "exori med pug", "sendAutomatically": true, "spellCastType": 0}
+2 29 {"chatText": "exori gran mas pug", "sendAutomatically": true, "spellCastType": 0}
+2 30 {"chatText": "exori mas amp pug", "sendAutomatically": true, "spellCastType": 1}
+2 32 {"useObject": 3032, "useType": "SelectUseTarget"}
+2 33 {"useObject": 3155, "useType": "UseOnTarget"}
+2 35 {"useEquipSmartMode": false, "useObject": 51275, "useType": "Equip"}
+2 36 {"useEquipSmartMode": true, "useObject": 3097, "useType": "Equip"}
+2 37 {"useEquipSmartMode": false, "useObject": 5460, "useType": "Equip"}
+2 38 {"useObject": 5908, "useType": "SelectUseTarget"}
+2 39 {"useObject": 11586, "useType": "Use"}
+2 40 {"useObject": 9086, "useType": "Use"}
+2 42 {"useObject": 11586, "useType": "Use"}
+2 44 {"useEquipSmartMode": false, "useObject": 51274, "useType": "Equip"}
+2 45 {"useObject": 53287, "useType": "SelectUseTarget"}
+2 46 {"useObject": 50295, "useType": "SelectUseTarget"}
+2 47 {"useObject": 23374, "useType": "UseOnYourself"}
+2 48 {"useObject": 53162, "useType": "UseOnYourself"}
+2 49 {"chatText": "exura gran tio", "sendAutomatically": true, "spellCastType": 0}
+2 50 {"multiActions": [{"chatText": "exori mas nia", "sendAutomatically": true, "spellCastType": 0}, {}, {}]}
+3 1 {"chatText": "exura gran", "sendAutomatically": true, "spellCastType": 0}
+3 2 {"chatText": "exori mas amp pug", "sendAutomatically": true, "spellCastType": 1}
+3 4 {"useObject": 238, "useType": "UseOnYourself"}
+3 7 {"useObject": 3161, "useType": "SelectUseTarget"}
+3 8 {"useObject": 3192, "useType": "SelectUseTarget"}
+3 9 {"useObject": 3149, "useType": "SelectUseTarget"}
+3 10 {"useObject": 3180, "useType": "SelectUseTarget"}
+3 11 {"useObject": 3166, "useType": "SelectUseTarget"}
+3 12 {"useObject": 22009, "useType": "SelectUseTarget"}
+3 13 {"useObject": 3155, "useType": "UseOnTarget"}
+3 15 {"chatText": "utevo gran res tio", "sendAutomatically": true, "spellCastType": 0}
+3 16 {"chatText": "utito virtu", "sendAutomatically": true, "spellCastType": 0}
+3 17 {"chatText": "utori virtu", "sendAutomatically": true, "spellCastType": 0}
+3 18 {"chatText": "utura tio", "sendAutomatically": true, "spellCastType": 0}
+3 20 {"chatText": "exura mas nia", "sendAutomatically": true, "spellCastType": 0}
+3 21 {"useObject": 3725, "useType": "Use"}
+3 22 {"useEquipSmartMode": false, "useObject": 53288, "useType": "Equip"}
+3 24 {"passiveAbility": 1}
+3 25 {"passiveAbility": 1}
+3 26 {"chatText": "exori med pug", "sendAutomatically": true, "spellCastType": 0}
+3 27 {"chatText": "exori mas pug", "sendAutomatically": true, "spellCastType": 0}
+3 28 {"chatText": "exori gran mas pug", "sendAutomatically": true, "spellCastType": 0}
+3 29 {"multiActions": [{"chatText": "exori mas nia", "sendAutomatically": true, "spellCastType": 0}, {}, {}]}
+3 30 {"chatText": "exura tio sio Brainless Borkita", "sendAutomatically": true, "spellCastType": 0}
+3 31 {"chatText": "exura tio sio Whayz", "sendAutomatically": true, "spellCastType": 0}
+3 32 {"chatText": "exura tio sio Profesores", "sendAutomatically": true, "spellCastType": 0}
+3 34 {"chatText": "utevo nia", "sendAutomatically": true, "spellCastType": 0}
+3 35 {"chatText": "utamo tio", "sendAutomatically": true, "spellCastType": 0}
+3 36 {"useEquipSmartMode": false, "useObject": 16108, "useType": "Equip"}
+3 37 {"useEquipSmartMode": true, "useObject": 50147, "useType": "Equip"}
+3 38 {"useEquipSmartMode": true, "useObject": 50150, "useType": "Equip"}
+3 39 {"useEquipSmartMode": true, "useObject": 50152, "useType": "Equip"}
+3 40 {"useEquipSmartMode": false, "useObject": 3081, "useType": "Equip"}
+3 41 {"useEquipSmartMode": false, "useObject": 3048, "useType": "Equip"}
+3 42 {"useEquipSmartMode": false, "useObject": 16113, "useType": "Equip"}
+3 43 {"useEquipSmartMode": true, "useObject": 16114, "useType": "Equip"}
+3 46 {"chatText": "exura infir", "sendAutomatically": true, "spellCastType": 0}
+3 47 {"chatText": "exori infir pug", "sendAutomatically": true, "spellCastType": 0}
+3 48 {"chatText": "exori infir nia", "sendAutomatically": true, "spellCastType": 0}
+3 49 {"multiActions": [{"chatText": "exura gran tio", "sendAutomatically": true, "spellCastType": 0}, {}, {}]}
+7 1 {"upgradeTier": 1, "useEquipSmartMode": false, "useObject": 50274, "useType": "Equip"}
+7 2 {"upgradeTier": 0, "useEquipSmartMode": false, "useObject": 50188, "useType": "Equip"}
+7 3 {"upgradeTier": 0, "useEquipSmartMode": false, "useObject": 50146, "useType": "Equip"}
+7 4 {"upgradeTier": 0, "useEquipSmartMode": false, "useObject": 50290, "useType": "Equip"}
+7 5 {"upgradeTier": 0, "useEquipSmartMode": false, "useObject": 50291, "useType": "Equip"}
+7 6 {"upgradeTier": 0, "useEquipSmartMode": false, "useObject": 52354, "useType": "Equip"}
+7 10 {"upgradeTier": 0, "useEquipSmartMode": false, "useObject": 50274, "useType": "Equip"}
+7 16 {"useEquipSmartMode": false, "useObject": 3048, "useType": "Equip"}
+7 17 {"chatText": "exori med pug", "sendAutomatically": true, "spellCastType": 0}
+7 18 {"chatText": "exori mas nia", "sendAutomatically": true, "spellCastType": 0}
+7 19 {"chatText": "exori infir pug", "sendAutomatically": true, "spellCastType": 0}
+8 1 {"upgradeTier": 0, "useEquipSmartMode": false, "useObject": 50276, "useType": "Equip"}
+8 2 {"upgradeTier": 0, "useEquipSmartMode": false, "useObject": 50254, "useType": "Equip"}
+8 3 {"upgradeTier": 0, "useEquipSmartMode": false, "useObject": 50255, "useType": "Equip"}
+8 4 {"upgradeTier": 0, "useEquipSmartMode": false, "useObject": 52349, "useType": "Equip"}
+8 5 {"upgradeTier": 0, "useEquipSmartMode": false, "useObject": 50262, "useType": "Equip"}
+8 6 {"upgradeTier": 0, "useEquipSmartMode": false, "useObject": 50260, "useType": "Equip"}
+8 7 {"upgradeTier": 0, "useEquipSmartMode": false, "useObject": 50264, "useType": "Equip"}
+8 9 {"upgradeTier": 0, "useEquipSmartMode": false, "useObject": 50161, "useType": "Equip"}
+8 10 {"upgradeTier": 0, "useEquipSmartMode": false, "useObject": 50190, "useType": "Equip"}
+8 11 {"upgradeTier": 0, "useEquipSmartMode": false, "useObject": 50183, "useType": "Equip"}
+8 12 {"upgradeTier": 0, "useEquipSmartMode": false, "useObject": 53233, "useType": "Equip"}
+8 19 {"multiActions": [{}, {}, {}]}

@@ -316,11 +316,39 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     generated[manifest_path] = canonical(manifest)
 
 
+def refresh_canonical_inputs(root, base):
+    """Repin definition digests whose only change since base is a client weight."""
+    from import_cyclopedia_global import only_weight_changed
+    path = root / PATH
+    overlay = json.loads(path.read_bytes())
+    definitions = canonical_definitions(root, cohort_ids(root))
+    for entry in overlay['canonical_inputs']:
+        current = definitions[entry['key']][1]
+        if digest(canonical_bytes(current)) == entry['definition_sha256']:
+            continue
+        shard = json.loads(subprocess.check_output(
+            ['git', '-C', str(root), 'show', f"{base}:{entry['path']}"]))
+        previous, = [row['definition'] for row in shard['records']
+                     if row['definition']['identity']['key'] == entry['key']]
+        if (digest(canonical_bytes(previous)) != entry['definition_sha256']
+                or definitions[entry['key']][0] != entry['path']
+                or not only_weight_changed(previous, current)):
+            raise ValueError('TASK_BOARD_REPIN_SELECTED_DEFINITION_CHANGED:' + entry['key'])
+        entry['definition_sha256'] = digest(canonical_bytes(current))
+    path.write_text(json.dumps(overlay, indent=2, ensure_ascii=False) + '\n')
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--crystal', type=Path, required=True)
+    parser.add_argument('--crystal', type=Path)
     parser.add_argument('--check', action='store_true')
+    parser.add_argument('--refresh-canonical-inputs-from', metavar='GIT_REF')
     args = parser.parse_args()
+    if args.refresh_canonical_inputs_from:
+        refresh_canonical_inputs(ROOT, args.refresh_canonical_inputs_from)
+        raise SystemExit(0)
+    if args.crystal is None:
+        parser.error('--crystal is required')
     raw = (json.dumps(capture(args.crystal), indent=2, ensure_ascii=False) + '\n').encode()
     path = ROOT / PATH
     if args.check:

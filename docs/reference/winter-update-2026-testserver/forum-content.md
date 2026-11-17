@@ -1,4 +1,4 @@
-# Winter Update 2026: official forum posts on new content (read 2026-11-14)
+# Winter Update 2026: official forum posts on new content (read 2026-11-14, updated 2026-11-16)
 
 Source: the official test-server forum (board "Winter Update 2026"), threads 561-564 and 566-570, all pages, CipSoft Game Content Designer posts only. Dates are dd.mm.yyyy. Entries in each group run from oldest to newest, so a later entry replaces an earlier value.
 
@@ -50,6 +50,12 @@ Source: the official test-server forum (board "Winter Update 2026"), threads 561
   - Dying or logging out does not reset the kill count, and blood cinders are kept either way.
   - Trapping and blocking at the entrance are being fixed.
   - Fix in the next patch: Captain Banner stayed at 1 HP for most of the fight (reported at difficulty 2).
+- 16.11 (Ilyndor), with one of the next test-server patches:
+  - Scorch Level 4 is needed only to unlock access the first time, no longer for every entry.
+  - Damage of Banner's Nemesis and the Omega Shades about +30%; Captain Banner as an ally about +40%, as an enemy about +15%.
+  - Omega Shades are faster. Volcanic charge and eruption damage is unchanged but watched.
+  - Captain Banner's maximum HP drops from 95,000 to 75,000.
+  - The damage boost the Nemesis gets when Captain Banner retreats at low health is higher.
 
 ### Gear: Corrupted Moonsilver (thread 570)
 - 09.11: Every item needs level 700 and has upgrade classification 4.
@@ -64,6 +70,7 @@ Source: the official test-server forum (board "Winter Update 2026"), threads 561
 
 - 10.11: The boots description now says "speed" instead of "go strength".
 - 12.11: The Scorchsteps augment changed from Divine Barrage to Ethereal Barrage, Critical Extra Damage +8%.
+- 16.11 (Ilyndor), with one of the next test-server patches: holy protection on all five items rises from 2% to 4%.
 
 ## I Smell a Rat
 
@@ -95,6 +102,12 @@ Source: the official test-server forum (board "Winter Update 2026"), threads 561
   - Boss bonus does not apply to chest loot; chest loot chances are somewhat higher instead.
   - Levers now explain why the player cannot proceed.
 - 13.11, next patch, Greedking: damage is spread more evenly (fewer spikes), mana drain is reduced, and its effective health pool is lower because some sensitivities were raised.
+- 16.11 (Shazaya), with the next update:
+  - Ratasha, Rathilda and Rathena join the Bane boss category. The Aristocrats and the Greedking show cooldown information.
+  - Ratasha: HP about -33%; ratinue guard HP about -25% and slightly less damage.
+  - Rathilda: HP about -33%.
+  - Rathena: HP about -33%. Stationary cheese now deals agony damage. Moving cheese still deals earth damage, reduced for lower levels. Damage rises at starve level 5 and higher.
+  - The HP cuts are experimental, so that low-level teams deal enough damage in time. Greedking damage stays under watch.
 
 ### Gear (thread 561)
 - 09.11: Every item needs level 150 and has upgrade classification 3.

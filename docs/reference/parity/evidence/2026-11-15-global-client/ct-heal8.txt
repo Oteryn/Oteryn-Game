@@ -1,0 +1,410 @@
+BATCH PROBE-light k=2 hp0=3609 hp1=4121 sum=500 got=2
+PROBE-light 17:17:09 heal=249
+PROBE-light 17:17:11 heal=251
+DONE PROBE-light
+BATCH PROBE-intense k=1 hp0=4133 hp1=4525 sum=386 got=1
+PROBE-intense 17:17:26 heal=386
+DONE PROBE-intense
+BATCH PROBE-mass k=1 hp0=4537 hp1=5228 sum=673 got=1
+PROBE-mass 17:17:36 heal=673
+DONE PROBE-mass
+BATCH PROBE-restore k=1 hp0=5240 hp1=5246 sum=0 got=0
+DONE PROBE-restore
+BATCH ML54-none/light k=9 hp0=5349 hp1=7654 sum=2269 got=9
+ML54-none/light 17:18:41 heal=251
+ML54-none/light 17:18:43 heal=254
+ML54-none/light 17:18:46 heal=242
+ML54-none/light 17:18:48 heal=256
+ML54-none/light 17:18:50 heal=242
+ML54-none/light 17:18:53 heal=247
+ML54-none/light 17:18:55 heal=259
+ML54-none/light 17:18:58 heal=259
+ML54-none/light 17:19:00 heal=259
+BATCH ML54-none/light k=2 hp0=7660 hp1=8172 sum=506 got=2
+ML54-none/light 17:19:07 heal=259
+ML54-none/light 17:19:09 heal=247
+BATCH ML54-none/light k=19 hp0=51 hp1=4997 sum=4874 got=19
+ML54-none/light 17:19:28 heal=254
+ML54-none/light 17:19:30 heal=266
+ML54-none/light 17:19:33 heal=256
+ML54-none/light 17:19:35 heal=264
+ML54-none/light 17:19:38 heal=242
+ML54-none/light 17:19:40 heal=266
+ML54-none/light 17:19:42 heal=247
+ML54-none/light 17:19:45 heal=261
+ML54-none/light 17:19:47 heal=251
+ML54-none/light 17:19:50 heal=249
+ML54-none/light 17:19:52 heal=264
+ML54-none/light 17:19:54 heal=256
+ML54-none/light 17:19:57 heal=264
+ML54-none/light 17:19:59 heal=264
+ML54-none/light 17:20:02 heal=261
+ML54-none/light 17:20:04 heal=247
+ML54-none/light 17:20:06 heal=249
+ML54-none/light 17:20:09 heal=249
+ML54-none/light 17:20:11 heal=264
+DONE ML54-none/light
+BATCH ML54-none/intense k=6 hp0=5003 hp1=7582 sum=2555 got=6
+ML54-none/intense 17:20:21 heal=461
+ML54-none/intense 17:20:23 heal=374
+ML54-none/intense 17:20:26 heal=391
+ML54-none/intense 17:20:28 heal=507
+ML54-none/intense 17:20:30 heal=423
+ML54-none/intense 17:20:33 heal=399
+BATCH ML54-none/intense k=14 hp0=51 hp1=6501 sum=6402 got=14
+ML54-none/intense 17:20:52 heal=386
+ML54-none/intense 17:20:54 heal=454
+ML54-none/intense 17:20:56 heal=459
+ML54-none/intense 17:20:59 heal=485
+ML54-none/intense 17:21:01 heal=490
+ML54-none/intense 17:21:04 heal=447
+ML54-none/intense 17:21:06 heal=490
+ML54-none/intense 17:21:08 heal=418
+ML54-none/intense 17:21:11 heal=471
+ML54-none/intense 17:21:13 heal=459
+ML54-none/intense 17:21:16 heal=449
+ML54-none/intense 17:21:18 heal=505
+ML54-none/intense 17:21:20 heal=384
+ML54-none/intense 17:21:23 heal=505
+BATCH ML54-none/intense k=3 hp0=6507 hp1=7791 sum=1272 got=3
+ML54-none/intense 17:21:29 heal=401
+ML54-none/intense 17:21:32 heal=468
+ML54-none/intense 17:21:34 heal=403
+BATCH ML54-none/intense k=7 hp0=1 hp1=3266 sum=3235 got=7
+ML54-none/intense 17:21:52 heal=485
+ML54-none/intense 17:21:55 heal=447
+ML54-none/intense 17:21:57 heal=497
+ML54-none/intense 17:22:00 heal=483
+ML54-none/intense 17:22:02 heal=406
+ML54-none/intense 17:22:04 heal=468
+ML54-none/intense 17:22:07 heal=449
+DONE ML54-none/intense
+BATCH ML54-none/patch k=30 hp0=3272 hp1=4819 sum=1211 got=30
+ML54-none/patch 17:22:22 heal=38
+ML54-none/patch 17:22:30 heal=43
+ML54-none/patch 17:22:37 heal=46
+ML54-none/patch 17:22:44 heal=41
+ML54-none/patch 17:22:52 heal=46
+ML54-none/patch 17:22:59 heal=39
+ML54-none/patch 17:23:07 heal=41
+ML54-none/patch 17:23:14 heal=35
+ML54-none/patch 17:23:21 heal=44
+ML54-none/patch 17:23:29 heal=36
+ML54-none/patch 17:23:36 heal=37
+ML54-none/patch 17:23:44 heal=35
+ML54-none/patch 17:23:51 heal=39
+ML54-none/patch 17:23:58 heal=38
+ML54-none/patch 17:24:06 heal=36
+ML54-none/patch 17:24:13 heal=39
+ML54-none/patch 17:24:21 heal=39
+ML54-none/patch 17:24:28 heal=44
+ML54-none/patch 17:24:35 heal=41
+ML54-none/patch 17:24:43 heal=39
+ML54-none/patch 17:24:50 heal=42
+ML54-none/patch 17:24:58 heal=44
+ML54-none/patch 17:25:05 heal=38
+ML54-none/patch 17:25:13 heal=44
+ML54-none/patch 17:25:20 heal=46
+ML54-none/patch 17:25:27 heal=44
+ML54-none/patch 17:25:35 heal=37
+ML54-none/patch 17:25:42 heal=39
+ML54-none/patch 17:25:50 heal=38
+ML54-none/patch 17:25:57 heal=43
+DONE ML54-none/patch
+BATCH ML54-none/patch k=30 hp0=156 hp1=1557 sum=1215 got=30
+ML54-none/patch 18:03:36 heal=35
+ML54-none/patch 18:03:40 heal=46
+ML54-none/patch 18:03:45 heal=39
+ML54-none/patch 18:03:49 heal=45
+ML54-none/patch 18:03:53 heal=36
+ML54-none/patch 18:03:57 heal=35
+ML54-none/patch 18:04:01 heal=43
+ML54-none/patch 18:04:05 heal=35
+ML54-none/patch 18:04:09 heal=36
+ML54-none/patch 18:04:13 heal=35
+ML54-none/patch 18:04:18 heal=35
+ML54-none/patch 18:04:22 heal=43
+ML54-none/patch 18:04:26 heal=46
+ML54-none/patch 18:04:30 heal=38
+ML54-none/patch 18:04:34 heal=45
+ML54-none/patch 18:04:38 heal=45
+ML54-none/patch 18:04:43 heal=38
+ML54-none/patch 18:04:47 heal=45
+ML54-none/patch 18:04:51 heal=36
+ML54-none/patch 18:04:55 heal=46
+ML54-none/patch 18:04:59 heal=41
+ML54-none/patch 18:05:03 heal=42
+ML54-none/patch 18:05:07 heal=37
+ML54-none/patch 18:05:12 heal=37
+ML54-none/patch 18:05:16 heal=37
+ML54-none/patch 18:05:20 heal=42
+ML54-none/patch 18:05:24 heal=45
+ML54-none/patch 18:05:28 heal=44
+ML54-none/patch 18:05:32 heal=42
+ML54-none/patch 18:05:36 heal=46
+DONE ML54-none/patch
+BATCH ML54-none/mass k=7 hp0=1563 hp1=6507 sum=4806 got=7
+ML54-none/mass 18:05:46 heal=656
+ML54-none/mass 18:05:59 heal=693
+ML54-none/mass 18:06:11 heal=697
+ML54-none/mass 18:06:24 heal=719
+ML54-none/mass 18:06:37 heal=656
+ML54-none/mass 18:06:49 heal=678
+ML54-none/mass 18:07:02 heal=707
+BATCH ML54-none/mass k=2 hp0=6513 hp1=7875 sum=1320 got=2
+ML54-none/mass 18:07:20 heal=652
+ML54-none/mass 18:07:33 heal=668
+BATCH ML54-none/mass k=9 hp0=1 hp1=6348 sum=6173 got=9
+ML54-none/mass 18:07:56 heal=652
+ML54-none/mass 18:08:09 heal=717
+ML54-none/mass 18:08:22 heal=697
+ML54-none/mass 18:08:34 heal=678
+ML54-none/mass 18:08:47 heal=697
+ML54-none/mass 18:09:00 heal=717
+ML54-none/mass 18:09:12 heal=678
+ML54-none/mass 18:09:25 heal=688
+ML54-none/mass 18:09:38 heal=649
+BATCH ML54-none/mass k=2 hp0=6354 hp1=7780 sum=1390 got=2
+ML54-none/mass 18:09:55 heal=726
+ML54-none/mass 18:10:07 heal=664
+BATCH ML54-none/mass k=9 hp0=51 hp1=919 sum=700 got=1
+ML54-none/mass 18:10:31 heal=700
+BATCH ML54-none/mass k=8 hp0=925 hp1=1081 sum=0 got=0
+BATCH ML54-none/mass k=8 hp0=1087 hp1=1243 sum=0 got=0
+BATCH ML54-none/mass k=8 hp0=1243 hp1=1399 sum=0 got=0
+BATCH ML54-none/mass k=7 hp0=1405 hp1=2234 sum=697 got=1
+ML54-none/mass 18:18:12 heal=697
+BATCH ML54-none/mass k=6 hp0=2240 hp1=2354 sum=0 got=0
+BATCH ML54-none/mass k=8 hp0=51 hp1=294 sum=0 got=0
+BATCH ML54-none/mass k=8 hp0=294 hp1=450 sum=0 got=0
+BATCH ML54-none/mass k=8 hp0=456 hp1=612 sum=0 got=0
+BATCH ML54-none/mass k=8 hp0=618 hp1=768 sum=0 got=0
+BATCH ML54-none/mass k=8 hp0=774 hp1=1577 sum=647 got=1
+ML54-none/mass 18:28:18 heal=647
+BATCH ML54-none/mass k=7 hp0=1577 hp1=1715 sum=0 got=0
+BATCH ML54-none/mass k=7 hp0=1721 hp1=1853 sum=0 got=0
+BATCH ML54-none/mass k=7 hp0=1859 hp1=1997 sum=0 got=0
+BATCH ML54-none/mass k=7 hp0=2003 hp1=2135 sum=0 got=0
+BATCH ML54-none/mass k=7 hp0=2153 hp1=6370 sum=4085 got=6
+ML54-none/mass 18:36:13 heal=647
+ML54-none/mass 18:36:26 heal=685
+ML54-none/mass 18:36:38 heal=676
+ML54-none/mass 18:36:51 heal=700
+ML54-none/mass 18:37:04 heal=680
+ML54-none/mass 18:37:16 heal=697
+BATCH ML54-none/mass k=7 hp0=2147 hp1=7065 sum=4768 got=7
+ML54-none/mass 18:36:13 heal=647
+ML54-none/mass 18:36:26 heal=685
+ML54-none/mass 18:36:38 heal=676
+ML54-none/mass 18:36:51 heal=700
+ML54-none/mass 18:37:04 heal=680
+ML54-none/mass 18:37:16 heal=697
+ML54-none/mass 18:37:33 heal=683
+DONE ML54-none/mass
+VIRTUE utura tio
+DONE ML54
+BATCH ML54-none/mass k=1 hp0=6376 hp1=7083 sum=683 got=1
+ML54-none/mass 18:37:33 heal=683
+DONE ML54-none/mass
+BATCH ML54-sustain/light k=2 hp0=7083 hp1=7426 sum=331 got=1
+ML54-sustain/light 18:37:51 heal=331
+BATCH ML54-sustain/light k=1 hp0=7426 hp1=7744 sum=312 got=1
+ML54-sustain/light 18:37:58 heal=312
+BATCH ML54-sustain/light k=16 hp0=51 hp1=5220 sum=5109 got=16
+ML54-sustain/light 18:38:12 heal=317
+ML54-sustain/light 18:38:14 heal=333
+ML54-sustain/light 18:38:17 heal=312
+ML54-sustain/light 18:38:19 heal=329
+ML54-sustain/light 18:38:22 heal=309
+ML54-sustain/light 18:38:24 heal=314
+ML54-sustain/light 18:38:26 heal=319
+ML54-sustain/light 18:38:29 heal=329
+ML54-sustain/light 18:38:31 heal=309
+ML54-sustain/light 18:38:34 heal=314
+ML54-sustain/light 18:38:36 heal=314
+ML54-sustain/light 18:38:38 heal=329
+ML54-sustain/light 18:38:41 heal=324
+ML54-sustain/light 18:38:43 heal=309
+ML54-sustain/light 18:38:46 heal=329
+ML54-sustain/light 18:38:48 heal=319
+BATCH ML54-sustain/light k=6 hp0=5226 hp1=7183 sum=1933 got=6
+ML54-sustain/light 18:38:55 heal=329
+ML54-sustain/light 18:38:57 heal=326
+ML54-sustain/light 18:39:00 heal=314
+ML54-sustain/light 18:39:02 heal=324
+ML54-sustain/light 18:39:04 heal=314
+ML54-sustain/light 18:39:07 heal=326
+BATCH ML54-sustain/light k=2 hp0=7183 hp1=7828 sum=633 got=2
+ML54-sustain/light 18:39:14 heal=312
+ML54-sustain/light 18:39:16 heal=321
+BATCH ML54-sustain/light k=4 hp0=1 hp1=1339 sum=1276 got=4
+ML54-sustain/light 18:39:30 heal=312
+ML54-sustain/light 18:39:32 heal=321
+ML54-sustain/light 18:39:35 heal=314
+ML54-sustain/light 18:39:37 heal=329
+DONE ML54-sustain/light
+BATCH ML54-sustain/intense k=9 hp0=1351 hp1=72811 sum=5900 got=9 CAPPED?
+ML54-sustain/intense 18:39:47 heal=717
+ML54-sustain/intense 18:39:49 heal=608
+ML54-sustain/intense 18:39:52 heal=717
+ML54-sustain/intense 18:39:54 heal=661
+ML54-sustain/intense 18:39:56 heal=594
+ML54-sustain/intense 18:39:59 heal=656
+ML54-sustain/intense 18:40:01 heal=642
+ML54-sustain/intense 18:40:04 heal=596
+REJECT ML54-sustain/intense 18:40:06 heal=709 (possible overheal)
+BATCH ML54-sustain/intense k=10 hp0=51 hp1=3287 sum=3200 got=5
+ML54-sustain/intense 18:40:20 heal=608
+ML54-sustain/intense 18:40:23 heal=707
+ML54-sustain/intense 18:40:25 heal=654
+ML54-sustain/intense 18:40:27 heal=577
+ML54-sustain/intense 18:40:30 heal=654
+BATCH ML54-sustain/intense k=6 hp0=3293 hp1=3317 sum=0 got=0
+BATCH ML54-sustain/intense k=6 hp0=3325 hp1=3347 sum=0 got=0
+BATCH ML54-sustain/intense k=6 hp0=3353 hp1=3992 sum=615 got=1
+ML54-sustain/intense 18:41:32 heal=615
+BATCH ML54-sustain/intense k=5 hp0=3998 hp1=4016 sum=0 got=0
+BATCH ML54-sustain/intense k=5 hp0=4022 hp1=4046 sum=0 got=0
+BATCH ML54-sustain/intense k=5 hp0=4052 hp1=4070 sum=0 got=0
+BATCH ML54-sustain/intense k=5 hp0=4076 hp1=4100 sum=0 got=0
+BATCH ML54-sustain/intense k=5 hp0=4100 hp1=4124 sum=0 got=0
+BATCH ML54-sustain/intense k=5 hp0=4130 hp1=4377 sum=229 got=1
+ML54-sustain/intense 18:43:21 heal=229
+BATCH ML54-sustain/intense k=4 hp0=4653 hp1=4957 sum=0 got=0
+BATCH ML54-sustain/intense k=4 hp0=4963 hp1=5251 sum=0 got=0
+BATCH ML54-sustain/intense k=3 hp0=5257 hp1=5487 sum=212 got=1
+ML54-sustain/intense 18:44:07 heal=212
+BATCH ML54-sustain/intense k=3 hp0=5493 hp1=5505 sum=0 got=0
+BATCH ML54-sustain/intense k=3 hp0=5511 hp1=5523 sum=0 got=0
+BATCH ML54-sustain/intense k=3 hp0=5529 hp1=5541 sum=0 got=0
+BATCH ML54-sustain/intense k=3 hp0=5547 hp1=5559 sum=0 got=0
+BATCH ML54-sustain/intense k=3 hp0=5565 hp1=5577 sum=0 got=0
+BATCH ML54-sustain/intense k=3 hp0=5583 hp1=5595 sum=704 got=1
+ML54-sustain/intense 18:45:28 heal=704
+BATCH ML54-sustain/intense k=2 hp0=6305 hp1=6311 sum=0 got=0
+BATCH ML54-sustain/intense k=2 hp0=6535 hp1=65411 sum=212 got=1 CAPPED?
+REJECT ML54-sustain/intense 18:45:42 heal=212 (possible overheal)
+BATCH ML54-sustain/intense k=2 hp0=6547 hp1=6812 sum=253 got=1
+ML54-sustain/intense 18:45:55 heal=253
+BATCH ML54-sustain/intense k=1 hp0=6818 hp1=6824 sum=0 got=0
+BATCH ML54-sustain/intense k=1 hp0=6830 hp1=6830 sum=0 got=0
+BATCH ML54-sustain/intense k=2 hp0=6536 hp1=6848 sum=0 got=0
+BATCH ML54-sustain/intense k=1 hp0=6854 hp1=6860 sum=0 got=0
+BATCH ML54-sustain/intense k=1 hp0=6860 hp1=6866 sum=0 got=0
+BATCH ML54-sustain/intense k=1 hp0=6872 hp1=6878 sum=0 got=0
+BATCH ML54-sustain/intense k=1 hp0=6884 hp1=6890 sum=0 got=0
+DONE ML54-sustain/intense
+VIRTUE ON sustain
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+VIRTUE ON sustain (toggled 23:2x)
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+BATCH ML54-sustain/patch k=1 hp0=8400 hp1=8400 sum=0 got=0 CAPPED?
+VIRTUE ON sustain (toggled 23:2x)
+BATCH ML54-sustain/patch k=30 hp0=156 hp1=1989 sum=1635 got=30
+ML54-sustain/patch 23:39:30 heal=53
+ML54-sustain/patch 23:39:34 heal=60
+ML54-sustain/patch 23:39:39 heal=55
+ML54-sustain/patch 23:39:43 heal=57
+ML54-sustain/patch 23:39:47 heal=51
+ML54-sustain/patch 23:39:52 heal=50
+ML54-sustain/patch 23:39:56 heal=60
+ML54-sustain/patch 23:40:00 heal=52
+ML54-sustain/patch 23:40:05 heal=58
+ML54-sustain/patch 23:40:09 heal=55
+ML54-sustain/patch 23:40:13 heal=51
+ML54-sustain/patch 23:40:18 heal=54
+ML54-sustain/patch 23:40:22 heal=59
+ML54-sustain/patch 23:40:26 heal=57
+ML54-sustain/patch 23:40:30 heal=52
+ML54-sustain/patch 23:40:35 heal=56
+ML54-sustain/patch 23:40:39 heal=56
+ML54-sustain/patch 23:40:43 heal=54
+ML54-sustain/patch 23:40:47 heal=51
+ML54-sustain/patch 23:40:52 heal=54
+ML54-sustain/patch 23:40:56 heal=60
+ML54-sustain/patch 23:41:00 heal=50
+ML54-sustain/patch 23:41:04 heal=51
+ML54-sustain/patch 23:41:09 heal=60
+ML54-sustain/patch 23:41:13 heal=51
+ML54-sustain/patch 23:41:17 heal=52
+ML54-sustain/patch 23:41:22 heal=58
+ML54-sustain/patch 23:41:26 heal=51
+ML54-sustain/patch 23:41:31 heal=52
+ML54-sustain/patch 23:41:35 heal=55
+DONE ML54-sustain/patch
+BATCH ML54-sustain/mass k=4 hp0=1995 hp1=6378 sum=4299 got=4
+ML54-sustain/mass 23:41:46 heal=1088
+ML54-sustain/mass 23:41:59 heal=1064
+ML54-sustain/mass 23:42:13 heal=1088
+ML54-sustain/mass 23:42:26 heal=1059
+BATCH ML54-sustain/mass k=6 hp0=51 hp1=6520 sum=6349 got=6
+ML54-sustain/mass 23:42:52 heal=1088
+ML54-sustain/mass 23:43:05 heal=1095
+ML54-sustain/mass 23:43:19 heal=1032
+ML54-sustain/mass 23:43:32 heal=1047
+ML54-sustain/mass 23:43:46 heal=1028
+ML54-sustain/mass 23:43:59 heal=1059
+BATCH ML54-sustain/mass k=6 hp0=51 hp1=64511 sum=6274 got=6 CAPPED?
+ML54-sustain/mass 23:44:25 heal=1030
+ML54-sustain/mass 23:44:39 heal=1064
+ML54-sustain/mass 23:44:52 heal=1042
+ML54-sustain/mass 23:45:05 heal=1032
+ML54-sustain/mass 23:45:19 heal=1071
+REJECT ML54-sustain/mass 23:45:32 heal=1035 (possible overheal)
+BATCH ML54-sustain/mass k=6 hp0=1 hp1=6514 sum=6343 got=6
+ML54-sustain/mass 23:45:58 heal=1059
+ML54-sustain/mass 23:46:12 heal=1083
+ML54-sustain/mass 23:46:25 heal=1076
+ML54-sustain/mass 23:46:39 heal=1037
+ML54-sustain/mass 23:46:52 heal=1020
+ML54-sustain/mass 23:47:05 heal=1068
+BATCH ML54-sustain/mass k=6 hp0=51 hp1=6502 sum=6331 got=6
+ML54-sustain/mass 23:47:32 heal=1083
+ML54-sustain/mass 23:47:45 heal=1097
+ML54-sustain/mass 23:47:59 heal=1030
+ML54-sustain/mass 23:48:12 heal=1054
+ML54-sustain/mass 23:48:25 heal=1025
+ML54-sustain/mass 23:48:39 heal=1042
+BATCH ML54-sustain/mass k=3 hp0=51 hp1=3338 sum=3128 got=3
+ML54-sustain/mass 23:49:12 heal=1040
+ML54-sustain/mass 23:49:26 heal=1044
+ML54-sustain/mass 23:49:39 heal=1044
+DONE ML54-sustain/mass
+BATCH ML54-sustain/intense k=6 hp0=3350 hp1=3374 sum=0 got=0
+BATCH ML54-sustain/intense k=6 hp0=3380 hp1=3404 sum=0 got=0
+BATCH ML54-sustain/intense k=5 hp0=3410 hp1=3434 sum=0 got=0
+BATCH ML54-sustain/intense k=5 hp0=3440 hp1=3464 sum=0 got=0
+BATCH ML54-sustain/intense k=5 hp0=3464 hp1=3488 sum=0 got=0
+BATCH ML54-sustain/intense k=5 hp0=3494 hp1=3512 sum=0 got=0
+BATCH ML54-sustain/intense k=5 hp0=3518 hp1=3542 sum=0 got=0
+BATCH ML54-sustain/intense k=5 hp0=3548 hp1=3566 sum=0 got=0
+BATCH ML54-sustain/intense k=5 hp0=3572 hp1=3596 sum=0 got=0
+BATCH ML54-sustain/intense k=5 hp0=3602 hp1=3620 sum=0 got=0
+BATCH ML54-sustain/intense k=5 hp0=3626 hp1=3650 sum=0 got=0
+BATCH ML54-sustain/intense k=5 hp0=3656 hp1=3674 sum=0 got=0
+BATCH ML54-sustain/intense k=5 hp0=3680 hp1=3704 sum=0 got=0
+BATCH ML54-sustain/intense k=5 hp0=3710 hp1=3728 sum=0 got=0
+BATCH ML54-sustain/intense k=5 hp0=3734 hp1=3758 sum=0 got=0
+DONE ML54-sustain/intense
+VIRTUE OFF sustain

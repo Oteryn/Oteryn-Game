@@ -247,10 +247,11 @@ fn i14_global_consumables_are_admitted() {
         .expect("native gameplay");
     use ReferenceRestoreResource::{Health, Mana};
     for (id, restores, level, allowed) in [
-        // Great Spirit Potion rev 1183259.
+        // Great Spirit Potion rev 1183259; mana measured on the Global client
+        // (owner 2026-11-16, docs/reference/parity/evidence/2026-11-15-global-client).
         (
             7642,
-            vec![(Health, 250, 350), (Mana, 125, 185)],
+            vec![(Health, 250, 350), (Mana, 100, 200)],
             80,
             vec![Vocation::Paladin, Vocation::Monk],
         ),
@@ -308,6 +309,26 @@ fn i14_global_consumables_are_admitted() {
                 "{id} below level"
             );
         }
+    }
+    // Great Mana Potion rev 1190635 (2026-06-20): all vocations, level 80.
+    let great_mana = policy_of(state, 238).expect("item 238 is admitted");
+    for vocation in [
+        Vocation::None,
+        Vocation::Knight,
+        Vocation::Paladin,
+        Vocation::Monk,
+        Vocation::Druid,
+        Vocation::Sorcerer,
+    ] {
+        let requirements = &great_mana.record().semantics.use_requirements;
+        assert!(
+            requirements_met(requirements, facts_at(vocation, 80)),
+            "238 {vocation:?}"
+        );
+        assert!(
+            !requirements_met(requirements, facts_at(vocation, 79)),
+            "238 {vocation:?} below level"
+        );
     }
     for (id, seconds) in [
         (3250, 96),   // The Carrot of Doom rev 1016926.

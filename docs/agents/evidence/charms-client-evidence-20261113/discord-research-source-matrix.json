@@ -1,0 +1,321 @@
+{
+  "schema": "OTERYN_CHARMS_DISCORD_UI_PASS/v1",
+  "created_utc": "2026-11-13T11:49:50.074019+00:00",
+  "compared_main": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+  "predecessor_pr_head": "6fc9600b8a849af85936bd7485d13ea89263afbe",
+  "browser_access": "Existing authorized Discord tab via CUA UI only; no Discord API, token, hidden store or message sending.",
+  "servers": [
+    {
+      "id": "1431612466818977814",
+      "name": "Tibia Analysers"
+    },
+    {
+      "id": "836592213327609957",
+      "name": "Kusnier's server"
+    }
+  ],
+  "source_priority": "Owner-prioritized Global Tibia community sources; no automatic reclassification as OTS. Evidence kind and author uncertainty remain explicit.",
+  "result_windows": [
+    {
+      "server_id": "1431612466818977814",
+      "intended_keyword": "parry",
+      "result_count_displayed": null,
+      "reviewed_scope": "Two-page navigation shown; first25 matching messages read. Header parry verified; no precise total retained. Mainly choices, hunting experience and questions.",
+      "exhaustive": false,
+      "absence_established": false,
+      "submitted_normalized_query_independently_captured": false,
+      "status": "MATCHING_RESULT_WINDOW_OBSERVED"
+    },
+    {
+      "server_id": "1431612466818977814",
+      "intended_keyword": "cleanse",
+      "result_count_displayed": 1,
+      "reviewed_scope": "Single matching result read:20Aug2026 Patric asks whether Cleanse works on Root. No test result in matching message.",
+      "exhaustive": false,
+      "absence_established": false,
+      "submitted_normalized_query_independently_captured": false,
+      "status": "MATCHING_RESULT_WINDOW_OBSERVED"
+    },
+    {
+      "server_id": "1431612466818977814",
+      "intended_keyword": "carnage",
+      "result_count_displayed": 1,
+      "reviewed_scope": "Single25Aug2026 comparison of proposed mage auto-attack reach with Carnage, not a chain test.",
+      "exhaustive": false,
+      "absence_established": false,
+      "submitted_normalized_query_independently_captured": false,
+      "status": "MATCHING_RESULT_WINDOW_OBSERVED"
+    },
+    {
+      "server_id": "1431612466818977814",
+      "intended_keyword": "leech",
+      "result_count_displayed": 75,
+      "reviewed_scope": "First25 result window read; equipment/sustain discussion, no integer-boundary test qualified.",
+      "exhaustive": false,
+      "absence_established": false,
+      "submitted_normalized_query_independently_captured": false,
+      "status": "MATCHING_RESULT_WINDOW_OBSERVED"
+    },
+    {
+      "server_id": "1431612466818977814",
+      "intended_keyword": "dodge",
+      "result_count_displayed": 15,
+      "reviewed_scope": "Displayed15 result window inspected; mainly charm choices and gem discussion; no same-hit Minor order measurement.",
+      "exhaustive": false,
+      "absence_established": false,
+      "submitted_normalized_query_independently_captured": false,
+      "status": "MATCHING_RESULT_WINDOW_OBSERVED"
+    },
+    {
+      "server_id": "836592213327609957",
+      "intended_keyword": "parry",
+      "result_count_displayed": 683,
+      "reviewed_scope": "First25 matching results read, including questions about reflection and leech/prey; no armor-isolated or mana-only experiment qualified.",
+      "exhaustive": false,
+      "absence_established": false,
+      "submitted_normalized_query_independently_captured": false,
+      "status": "MATCHING_RESULT_WINDOW_OBSERVED"
+    },
+    {
+      "server_id": "836592213327609957",
+      "intended_keyword": "cleanse",
+      "result_count_displayed": 227,
+      "reviewed_scope": "First25 matching results inspected; selected Root/Hex/Fear question opened with adjacent channel context through unrelated follow-up.",
+      "exhaustive": false,
+      "absence_established": false,
+      "submitted_normalized_query_independently_captured": false,
+      "status": "MATCHING_RESULT_WINDOW_OBSERVED"
+    },
+    {
+      "server_id": "836592213327609957",
+      "intended_keyword": "carnage",
+      "result_count_displayed": 204,
+      "reviewed_scope": "First25 matching messages read; selected no-chain assertion opened in full homing-missile discussion context.",
+      "exhaustive": false,
+      "absence_established": false,
+      "submitted_normalized_query_independently_captured": false,
+      "status": "MATCHING_RESULT_WINDOW_OBSERVED"
+    },
+    {
+      "server_id": "836592213327609957",
+      "intended_keyword": "leech",
+      "result_count_displayed": 3089,
+      "reviewed_scope": "First rendered result window searched for relevant test/formula/target excerpts; no exact rounding measurement qualified. Not all matching messages or pages read.",
+      "exhaustive": false,
+      "absence_established": false,
+      "submitted_normalized_query_independently_captured": false,
+      "status": "MATCHING_RESULT_WINDOW_OBSERVED"
+    },
+    {
+      "server_id": "836592213327609957",
+      "intended_keyword": "numb",
+      "result_count_displayed": 47,
+      "reviewed_scope": "First25 result window inspected; selected Danashi Cleanse/Itexo reference opened with adjacent8Sep2026 discussion.",
+      "exhaustive": false,
+      "absence_established": false,
+      "submitted_normalized_query_independently_captured": false,
+      "status": "MATCHING_RESULT_WINDOW_OBSERVED"
+    }
+  ],
+  "invalid_attempts": [
+    {
+      "server_id": "836592213327609957",
+      "intended_query": "parry mana",
+      "status": "INVALID_QUERY_NOT_ABSENCE_EVIDENCE",
+      "usable_result_count": null,
+      "reason": "Later visual/DOM inspection found combobox edits could concatenate prior text (observed dodgenumb, then dodgdodgenumb). These zero-result attempts are not retained as valid keyword searches."
+    },
+    {
+      "server_id": "836592213327609957",
+      "intended_query": "immunity",
+      "status": "INVALID_QUERY_NOT_ABSENCE_EVIDENCE",
+      "usable_result_count": null,
+      "reason": "Later visual/DOM inspection found combobox edits could concatenate prior text (observed dodgenumb, then dodgdodgenumb). These zero-result attempts are not retained as valid keyword searches."
+    },
+    {
+      "server_id": "836592213327609957",
+      "intended_query": "round",
+      "status": "INVALID_QUERY_NOT_ABSENCE_EVIDENCE",
+      "usable_result_count": null,
+      "reason": "Later visual/DOM inspection found combobox edits could concatenate prior text (observed dodgenumb, then dodgdodgenumb). These zero-result attempts are not retained as valid keyword searches."
+    },
+    {
+      "server_id": "836592213327609957",
+      "intended_query": "leech has:link",
+      "status": "INVALID_QUERY_NOT_ABSENCE_EVIDENCE",
+      "usable_result_count": null,
+      "reason": "Later visual/DOM inspection found combobox edits could concatenate prior text (observed dodgenumb, then dodgdodgenumb). These zero-result attempts are not retained as valid keyword searches."
+    },
+    {
+      "server_id": "836592213327609957",
+      "intended_query": "dodge",
+      "status": "INVALID_QUERY_NOT_ABSENCE_EVIDENCE",
+      "usable_result_count": null,
+      "reason": "Later visual/DOM inspection found combobox edits could concatenate prior text (observed dodgenumb, then dodgdodgenumb). These zero-result attempts are not retained as valid keyword searches."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DC-CLEANSE-REPLACEMENT",
+      "server_id": "836592213327609957",
+      "channel_id": "1381954407716884630",
+      "message_id": "1546820737547903007",
+      "permalink": "https://discord.com/channels/836592213327609957/1381954407716884630/1546820737547903007",
+      "author_display_name": "Danashi",
+      "published_local": "2026-09-08 11:53",
+      "timezone_basis": "Discord UI rendered time, host Europe/Warsaw; no invented UTC conversion",
+      "source_domain": "GLOBAL_TIBIA_COMMUNITY",
+      "evidence_kind": "SECOND_HAND_OLD_TEST_WITH_EXPLICIT_VERSION_CAVEAT",
+      "derived_summary": "Reports Itexo saying that immunity to another negative status replaces the previous immunity.",
+      "context": "Earlier reference1546819969638080602 at11:50 names Itexo tests of Cleanse/Numb/LowBlow. Next message1546820880733048863 at11:53 explicitly says the video is6years old, before charm rework, and may no longer be true. No direct video URL appears in inspected context. Initial printed example was ambiguous; follow-up clarifies replacement.",
+      "comparison_with_oteryn": "Native commit_cleanse removes only matching-key immunity before adding new expiry, preserving other keys. This is a specific historical single-slot-vs-per-type candidate conflict; no proof of current Global behavior.",
+      "source_pointers": [
+        [
+          "crates/gameplay/foundation/src/foundation/condition.rs",
+          1463
+        ]
+      ],
+      "current_global_measured_proof": false,
+      "runtime_defect_reproduced": false
+    },
+    {
+      "id": "DC-CLEANSE-HIT-LIMIT",
+      "server_id": "836592213327609957",
+      "channel_id": "1381954407716884630",
+      "message_id": "1546813947854856233",
+      "permalink": "https://discord.com/channels/836592213327609957/1381954407716884630/1546813947854856233",
+      "author_display_name": "Arwa",
+      "published_local": "2026-09-08 11:26",
+      "timezone_basis": "Discord UI rendered time, host Europe/Warsaw; no invented UTC conversion",
+      "source_domain": "GLOBAL_TIBIA_COMMUNITY",
+      "evidence_kind": "QUESTION_WITH_EXPLICIT_NO_PROOF_REPLY",
+      "derived_summary": "Asks whether each hit or each2sec turn may trigger Cleanse, including a5-hit combo.",
+      "context": "Danashi1546817718571769886 at11:41 interprets description as each hit but explicitly says he has no proof. Question and answer are not an experiment.",
+      "comparison_with_oteryn": "Current progression evaluator and separate incoming-hit dispatch seam are inspected-source behavior only; this thread does not settle a Global per-turn cap or Dodge+Minor ordering.",
+      "source_pointers": [
+        [
+          "crates/gameplay/progression/src/charm_effects.rs",
+          264
+        ],
+        [
+          "crates/gameplay/dispatch/src/gameplay_transport/attack/player_block.rs",
+          153
+        ]
+      ],
+      "current_global_measured_proof": false,
+      "runtime_defect_reproduced": false
+    },
+    {
+      "id": "DC-ADRENALINE-DOT",
+      "server_id": "836592213327609957",
+      "channel_id": "1381954407716884630",
+      "message_id": "1546819613734604920",
+      "permalink": "https://discord.com/channels/836592213327609957/1381954407716884630/1546819613734604920",
+      "author_display_name": "Myrkz",
+      "published_local": "2026-09-08 11:48",
+      "timezone_basis": "Discord UI rendered time, host Europe/Warsaw; no invented UTC conversion",
+      "source_domain": "GLOBAL_TIBIA_COMMUNITY",
+      "evidence_kind": "TENTATIVE_PERSONAL_OBSERVATION",
+      "derived_summary": "Believes scorpion poison ticks can trigger Adrenaline Burst.",
+      "context": "Observed Danashi1546822262207029308 at11:59 agrees tentatively while scorpion is alive. No logs, controlled sample or clip attached in inspected context.",
+      "comparison_with_oteryn": "Candidate question for source attribution and DoT eligibility, separate from Dodge ordering. Existing incoming_conditions accepts retained source/magnitude; no full DoT caller graph or current Global result qualified here.",
+      "source_pointers": [
+        [
+          "crates/gameplay/dispatch/src/gameplay_transport/attack/charm_combat.rs",
+          345
+        ]
+      ],
+      "current_global_measured_proof": false,
+      "runtime_defect_reproduced": false
+    },
+    {
+      "id": "DC-CARNAGE-NO-CHAIN",
+      "server_id": "836592213327609957",
+      "channel_id": "1480885195711189022",
+      "message_id": "1537516674633310269",
+      "permalink": "https://discord.com/channels/836592213327609957/1480885195711189022/1537516674633310269",
+      "author_display_name": "Danashi",
+      "published_local": "2026-08-13 19:42",
+      "timezone_basis": "Discord UI rendered time, host Europe/Warsaw; no invented UTC conversion",
+      "source_domain": "GLOBAL_TIBIA_COMMUNITY",
+      "evidence_kind": "ASSUMPTION_BY_ANALOGY",
+      "derived_summary": "Uses no Carnage-on-Carnage triggering as an analogy while assuming homing missiles do not trigger charms.",
+      "context": "Tom1537475922876305559 at17:00 is unsure about homing-missile charm procs; Mathyous1537479031631515809 plans a later test. A20:26 reply1537527683494182932 recalls a clip of missile procs. These adjacent messages concern missiles, not a supplied Carnage chain test.",
+      "comparison_with_oteryn": "Compatible with explicit CharmDamage no-reentry rule in current evaluator, but this message is an analogy, not independent measured proof of chain/reward attribution.",
+      "source_pointers": [
+        [
+          "crates/gameplay/progression/src/charm_effects.rs",
+          86
+        ],
+        [
+          "crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs",
+          1028
+        ]
+      ],
+      "current_global_measured_proof": false,
+      "runtime_defect_reproduced": false
+    },
+    {
+      "id": "DC-LOWBLOW-AOE",
+      "server_id": "1431612466818977814",
+      "channel_id": "1431632652603232397",
+      "message_id": "1566097294812520590",
+      "permalink": "https://discord.com/channels/1431612466818977814/1431632652603232397/1566097294812520590",
+      "author_display_name": "Wojtek Agresja",
+      "published_local": "2026-10-31 15:31",
+      "timezone_basis": "Discord UI rendered time, host Europe/Warsaw; no invented UTC conversion",
+      "source_domain": "GLOBAL_TIBIA_COMMUNITY",
+      "evidence_kind": "DIRECT_COMMUNITY_ASSERTION",
+      "derived_summary": "Says all monsters hit receive a crit when LowBlow activates.",
+      "context": "Preceding parys90 question at15:24 asks specifically about all hit mobs of the same type versus one elemental proc. Worker independently read both visible channel messages; no attached test recording in this context.",
+      "comparison_with_oteryn": "Current offence bonus and equipped critical calculation need correlated-roll scope tracing; catalogue percentage alone cannot qualify same-type versus cross-type AoE scope.",
+      "source_pointers": [
+        [
+          "crates/gameplay/dispatch/src/gameplay_transport/attack/charm_combat.rs",
+          195
+        ],
+        [
+          "crates/gameplay/combat-rules/src/resolution/equipped_offence.rs",
+          21
+        ]
+      ],
+      "current_global_measured_proof": false,
+      "runtime_defect_reproduced": false
+    },
+    {
+      "id": "DC-CLEANSE-ROOT-HEX-FEAR",
+      "server_id": "836592213327609957",
+      "channel_id": "836593610811768833",
+      "message_id": "1552735078306807860",
+      "permalink": "https://discord.com/channels/836592213327609957/836593610811768833/1552735078306807860",
+      "author_display_name": "monka tonka",
+      "published_local": "2026-09-24 19:34",
+      "timezone_basis": "Discord UI rendered time, host Europe/Warsaw; no invented UTC conversion",
+      "source_domain": "GLOBAL_TIBIA_COMMUNITY",
+      "evidence_kind": "QUESTION_CONTEXT_CHECKED",
+      "derived_summary": "Asks for confirmation of Cleanse on Root/Hex/Fear.",
+      "context": "Follow-ups1552735136313909340 and1552735204336996433 at19:35 clarify the question; the inspected adjacent window then moves to unrelated imbuement discussion. No answer/test in that inspected window.",
+      "comparison_with_oteryn": "Does not change official Hex corroboration or existing condition owner; neither confirms nor refutes Root/Fear/Cleanse immunity edge cases.",
+      "source_pointers": [
+        [
+          "crates/gameplay/foundation/src/foundation/condition.rs",
+          1417
+        ]
+      ],
+      "current_global_measured_proof": false,
+      "runtime_defect_reproduced": false
+    }
+  ],
+  "runtime_changes": false,
+  "game_actions": false,
+  "mechanic_status_promotions": [],
+  "complete_server_archive_reviewed": false,
+  "original_media_published": false,
+  "limitations": [
+    "Both servers actually opened/read; bounded result windows, not all pages.",
+    "Some combobox replacement attempts concatenated prior text. Invalid zero-result probes excluded; even valid no-results would not prove absence.",
+    "No original Itexo video linked in inspected context, no new clip arithmetic or current Global controlled test qualified.",
+    "Discord result snippets and channel context are mutable; permalinks/date/context retained, no raw chat dump.",
+    "Nine existing public-research source receipts bind the same fresh main and are reused by source pointers."
+  ]
+}

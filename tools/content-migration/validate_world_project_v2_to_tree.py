@@ -809,6 +809,12 @@ def _main() -> int:
     apply_encounter_loot_admissions(legacy_items, ROOT)
     from itemhold_q import apply_admissions as apply_quest_item_holds
     apply_quest_item_holds(legacy_items, ROOT)
+    # ITEMGLOB: replay the producer's captured Global client weights.
+    from import_cyclopedia_global import apply_admissions as apply_client_weights
+    apply_client_weights(legacy_items, ROOT)
+    # HEALPAR: replay the producer's Global healing potion facts.
+    from healing_global_overrides import apply_definitions as apply_global_potions
+    apply_global_potions(legacy_items)
     require(migrated_items == legacy_items and expected_start == 34111, "ITEM_DEFINITION_ROUNDTRIP")
 
     require(isinstance(mount_index["shards"][0], str), "MOUNT_SHARD_REF")

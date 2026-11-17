@@ -29,6 +29,7 @@ pub(super) async fn stash(client: &mut oteryn_dev_client::DevClientSession) -> T
         return Ok(());
     };
     let before: u64 = panel.rows.iter().map(|row| u64::from(row.quantity)).sum();
+    panel.carried = vec![item];
     let command = ui::request(&mut panel, ui::Intent::Stow(item.handle)).ok_or("stash stow")?;
     let reply = stash::send(client.session_mut(), &command).await?;
     ui::apply_result(&mut panel, &reply);

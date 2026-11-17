@@ -1,0 +1,216 @@
+name: PostgreSQL test rerun
+
+# Reruns chosen PostgreSQL tests on the archives an existing PR PostgreSQL harness run already
+# built, so a fix or a suspected flake can be checked in minutes without a new build or all
+# twenty-four partitions. Paste the filters the harness printed under "Failed PostgreSQL tests".
+# It never qualifies a merge: heavy-gate and the Merge Queue gate stay the only merge checks.
+# The harness keeps its archives for one day, so the run must be younger than that.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Run id of the PR PostgreSQL harness run whose archives to reuse
+        required: true
+        type: string
+      filters:
+        description: "One per line: --filterset 'binary_id(=crate::target) & test(=path::name)'"
+        required: true
+        type: string
+      repeat:
+        description: Times to run each chosen test (1-5)
+        required: false
+        default: '1'
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: pg-test-rerun-${{ inputs.run_id }}-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  rerun:
+    name: PostgreSQL test rerun
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read
+    services:
+      postgres:
+        image: postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
+        env:
+          POSTGRES_USER: oteryn_test_admin
+          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U oteryn_test_admin -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      # Inputs reach the shell only through the environment and each filter must have the exact
+      # shape the harness prints, so no input is ever evaluated.
+      - name: Validate inputs and the source run
+        id: source
+        env:
+          RUN_ID: ${{ inputs.run_id }}
+          FILTERS: ${{ inputs.filters }}
+          REPEAT: ${{ inputs.repeat }}
+          REPOSITORY: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ "$RUN_ID" =~ ^[1-9][0-9]{0,19}$ ]] || { echo 'run_id must be a run number' >&2; exit 1; }
+          [[ "$REPEAT" =~ ^[1-5]$ ]] || { echo 'repeat must be 1 to 5' >&2; exit 1; }
+          pattern="^--filterset[ =]'?binary_id\(=[A-Za-z0-9_:-]+\) & test\(=[A-Za-z0-9_:]+\)'?$"
+          : > "$RUNNER_TEMP/filters"
+          count=0
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            line="${line%$'\r'}"
+            line="$(sed -E 's/^[[:space:]]+|[[:space:]]+$//g' <<< "$line")"
+            [[ -z "$line" ]] && continue
+            [[ "$line" =~ $pattern ]] || { echo "filter has an unexpected shape: $line" >&2; exit 1; }
+            expr="$(sed -E "s/^--filterset[ =]'?//; s/'?$//" <<< "$line")"
+            printf '%s\n' "--filterset=$expr" >> "$RUNNER_TEMP/filters"
+            count=$((count + 1))
+          done <<< "$FILTERS"
+          (( count > 0 && count <= 200 )) || { echo 'give 1 to 200 filters' >&2; exit 1; }
+          run="$(gh api "repos/$REPOSITORY/actions/runs/$RUN_ID")"
+          path="$(jq -r '.path' <<< "$run")"
+          event="$(jq -r '.event' <<< "$run")"
+          head_repo="$(jq -r '.head_repository.full_name' <<< "$run")"
+          head_sha="$(jq -r '.head_sha' <<< "$run")"
+          test "$path" = '.github/workflows/pr-postgres-harness.yml' || { echo "run $RUN_ID is not a PR PostgreSQL harness run ($path)" >&2; exit 1; }
+          test "$event" = 'pull_request' || { echo "run $RUN_ID came from $event" >&2; exit 1; }
+          test "$head_repo" = "$REPOSITORY" || { echo 'only runs of branches in this repository can be rerun' >&2; exit 1; }
+          [[ "$head_sha" =~ ^[0-9a-f]{40}$ ]]
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
+          echo "Rerunning $count test filter(s) x$REPEAT from run $RUN_ID at $head_sha"
+
+      # The test binaries read repository files through their compile-time workspace path, which is
+      # this same path on every hosted runner of this repository.
+      - name: Check out the head the archives were built from
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.source.outputs.head_sha }}
+          persist-credentials: false
+
+      - name: Verify exact head SHA
+        env:
+          EXPECTED_SHA: ${{ steps.source.outputs.head_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Install pinned cargo-nextest
+        env:
+          NEXTEST_VERSION: 0.9.146
+          NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/cargo-nextest.tar.gz"
+          curl --proto '=https' --tlsv1.2 -fsSL --retry 40 --retry-delay 15 --retry-all-errors --retry-max-time 600 --connect-timeout 30 -o "$archive" \
+            "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-${NEXTEST_VERSION}/cargo-nextest-${NEXTEST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${NEXTEST_SHA256}  ${archive}" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/nextest-bin"
+          tar -xzf "$archive" -C "$RUNNER_TEMP/nextest-bin"
+          echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
+
+      - name: Download the source run's PostgreSQL test archives
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: pr-postgres-test-archives-*
+          merge-multiple: false
+          path: ${{ runner.temp }}/pg-download
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Verify the archives were built for this head
+        env:
+          EXPECTED_SHA: ${{ steps.source.outputs.head_sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/pg-archives"
+          # With one artifact left the download action extracts it straight into pg-download, with
+          # two it makes one directory per artifact: verify whichever layout arrived.
+          download="$RUNNER_TEMP/pg-download"
+          dirs=()
+          [[ -f "$download/SHA256SUMS" ]] && dirs+=("$download")
+          for dir in "$download"/pr-postgres-test-archives-*; do [[ -d "$dir" ]] && dirs+=("$dir"); done
+          (( ${#dirs[@]} > 0 )) || { echo 'the source run has no PostgreSQL test archives left' >&2; exit 1; }
+          for dir in "${dirs[@]}"; do
+            (
+              cd "$dir"
+              sha256sum -c SHA256SUMS
+              test "$(cat head-sha)" = "$EXPECTED_SHA"
+            )
+            for archive in e2e lib; do
+              if grep -qx "[0-9a-f]\{64\}  \./pg-$archive\.tar\.zst" "$dir/SHA256SUMS"; then
+                test ! -e "$RUNNER_TEMP/pg-archives/pg-$archive.tar.zst"
+                mv -- "$dir/pg-$archive.tar.zst" "$RUNNER_TEMP/pg-archives/pg-$archive.tar.zst"
+              fi
+            done
+          done
+          ls "$RUNNER_TEMP"/pg-archives/*.tar.zst
+
+      - name: Run the chosen PostgreSQL tests
+        env:
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          REPEAT: ${{ inputs.repeat }}
+        run: |
+          set -euo pipefail
+          export OTERYN_TEST_POSTGRES_ADMIN_URL="postgresql://oteryn_test_admin:ci-${RUN_ID}-${RUN_ATTEMPT}@127.0.0.1:5432/postgres"
+          mapfile -t filters < "$RUNNER_TEMP/filters"
+          shopt -s nullglob
+          archives=("$RUNNER_TEMP"/pg-archives/*.tar.zst)
+          (( ${#archives[@]} > 0 )) || { echo 'no verified archive to run' >&2; exit 1; }
+          # Every filter names one exact test: list what each archive matches and fail before
+          # running anything if a requested test is in no archive (a typo must not pass silently).
+          for archive in "${archives[@]}"; do
+            cargo-nextest nextest list --archive-file "$archive" --workspace-remap "$GITHUB_WORKSPACE" \
+              --message-format json "${filters[@]}" > "$archive.list.json"
+          done
+          python3 - "$RUNNER_TEMP/filters" "${archives[@]}" <<'PY'
+          import json
+          import re
+          import sys
+
+          wanted = set()
+          for line in open(sys.argv[1]):
+              m = re.fullmatch(r'--filterset=binary_id\(=([^)]+)\) & test\(=([^)]+)\)', line.strip())
+              wanted.add((m.group(1), m.group(2)))
+          found = set()
+          for archive in sys.argv[2:]:
+              listing = json.load(open(archive + '.list.json'))
+              matches = {
+                  (suite['binary-id'], name)
+                  for suite in listing['rust-suites'].values()
+                  for name, case in suite['testcases'].items()
+                  if case['filter-match']['status'] == 'matches'
+              }
+              print(f'{archive.rsplit("/", 1)[-1]}: {len(matches)} matching test(s)')
+              open(archive + '.count', 'w').write(str(len(matches)))
+              found |= matches
+          missing = sorted(wanted - found)
+          for binary, test in missing:
+              print(f'no test in the archives for binary_id(={binary}) & test(={test})', file=sys.stderr)
+          sys.exit(1 if missing else 0)
+          PY
+          matched=0
+          status=0
+          for archive in "${archives[@]}"; do
+            n="$(cat "$archive.count")"
+            (( n > 0 )) || continue
+            matched=$((matched + n))
+            for attempt in $(seq 1 "$REPEAT"); do
+              echo "::group::$(basename "$archive") pass $attempt of $REPEAT"
+              cargo-nextest nextest run --archive-file "$archive" --workspace-remap "$GITHUB_WORKSPACE" \
+                --no-fail-fast "${filters[@]}" || status=1
+              echo '::endgroup::'
+            done
+          done
+          echo "### PostgreSQL test rerun: $matched test(s) x$REPEAT, $([[ $status == 0 ]] && echo passed || echo FAILED)" >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
