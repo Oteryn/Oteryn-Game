@@ -154,13 +154,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .contains(&at.y)
         };
         let personal_entry = callback.personal_room_entry().map(local);
-        if census.iter().any(|(who, pos, occupant_session)| {
-            occupant_session.is_some()
-                && in_room(pos.position())
-                && !(Some(pos.position()) == personal_entry
-                    && *who == actor
-                    && *occupant_session == Some(session))
-        }) {
+        if encounter.spectators.is_none()
+            && census.iter().any(|(who, pos, occupant_session)| {
+                occupant_session.is_some()
+                    && in_room(pos.position())
+                    && !(Some(pos.position()) == personal_entry
+                        && *who == actor
+                        && *occupant_session == Some(session))
+            })
+        {
             return UseDisposition::Occupied;
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);
@@ -288,7 +290,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     tile(monster.position),
                     false,
                 )
-                || census.iter().any(|(_, pos, _)| pos.position() == at)
+                || census.iter().any(|(_, pos, session)| {
+                    pos.position() == at && (encounter.spectators.is_none() || session.is_none())
+                })
             {
                 return UseDisposition::Occupied;
             }

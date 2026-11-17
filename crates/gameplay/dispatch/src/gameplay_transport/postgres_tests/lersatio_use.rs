@@ -203,6 +203,26 @@ pub(super) async fn exercise(
             .ok_or("spectator player state")?;
         present.push(actor);
     }
+    let destination = crate::foundation::MovementLocalPosition {
+        x: 32967,
+        y: 31459,
+        floor: 1,
+    };
+    let destination_player = {
+        let mut runtime = owner.runtime.lock().await;
+        let session = crate::foundation::GameSessionId::decode(&super::fixture::id(110))
+            .map_err(super::fixture::debug)?;
+        let reservation = runtime
+            .reserve_fresh_session(session)
+            .map_err(super::fixture::debug)?;
+        let actor = runtime
+            .commit_fresh_session(reservation)
+            .map_err(super::fixture::debug)?;
+        runtime
+            .initialize_pinned_test_position(actor, destination)
+            .map_err(super::fixture::debug)?;
+        actor
+    };
     let restored = object_target(
         owner,
         TilePos {
@@ -238,11 +258,6 @@ pub(super) async fn exercise(
         "replay returns the original committed result"
     );
     let runtime = owner.runtime.lock().await;
-    let destination = crate::foundation::MovementLocalPosition {
-        x: 32967,
-        y: 31459,
-        floor: 1,
-    };
     assert_eq!(
         runtime
             .read_actor_position(admitted.runtime_actor.ok_or("actor")?)
@@ -275,6 +290,14 @@ pub(super) async fn exercise(
             .position(),
         departed_position,
         "a player who left the room must remain outside"
+    );
+    assert_eq!(
+        runtime
+            .read_actor_position(destination_player)
+            .map_err(super::fixture::debug)?
+            .position(),
+        destination,
+        "a player already at the destination neither joins the source census nor blocks it"
     );
     let census = runtime
         .positioned_melee_census()
