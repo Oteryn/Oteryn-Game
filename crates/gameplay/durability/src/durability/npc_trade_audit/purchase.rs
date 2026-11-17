@@ -80,17 +80,23 @@ pub(super) fn check(
         return Err(bad());
     }
     let count = purchase.offer_count.max(1);
-    if count > 100 || !value.quantity.is_multiple_of(count) { return Err(bad()); }
+    if count > 100 || !value.quantity.is_multiple_of(count) {
+        return Err(bad());
+    }
     let stacks = value.quantity.div_ceil(purchase.stack_size);
     let bags = if purchase.in_backpacks {
         stacks.div_ceil(SHOPPING_BAG_SLOTS)
     } else {
         0
     };
-    if (if purchase.currency.is_some() { Some(0) } else { value
-        .unit_price
-        .checked_mul(u64::from(value.quantity / count)) })
-        .and_then(|cost| cost.checked_add(u64::from(bags) * SHOPPING_BAG_PRICE))
+    if (if purchase.currency.is_some() {
+        Some(0)
+    } else {
+        value
+            .unit_price
+            .checked_mul(u64::from(value.quantity / count))
+    })
+    .and_then(|cost| cost.checked_add(u64::from(bags) * SHOPPING_BAG_PRICE))
         != Some(value.total_gold_units)
         || purchase.outputs.len() != usize::try_from(stacks + bags).map_err(|_| bad())?
     {
@@ -106,21 +112,49 @@ pub(super) fn check(
     } else if purchase.bag_definition.is_some() {
         return Err(bad());
     }
-    let burns: Vec<_> = value.lines.iter().filter(|line| line.kind == LINE_ITEM_BURN).collect();
+    let burns: Vec<_> = value
+        .lines
+        .iter()
+        .filter(|line| line.kind == LINE_ITEM_BURN)
+        .collect();
     if let Some(currency) = &purchase.currency {
         check_definition(currency.definition.as_ref())?;
         let definition = currency.definition.as_ref().ok_or_else(bad)?;
-        if definition.family != "Item" || Coin::from_production_key(&definition.production_key).is_some() || burns.len() != currency.inputs.len() { return Err(bad()); }
+        if definition.family != "Item"
+            || Coin::from_production_key(&definition.production_key).is_some()
+            || burns.len() != currency.inputs.len()
+        {
+            return Err(bad());
+        }
         let mut spent = 0_u64;
-        for (line,input) in burns.iter().zip(&currency.inputs) {
+        for (line, input) in burns.iter().zip(&currency.inputs) {
             check_uuid_v7(&input.parent)?;
             let before = line.before.as_ref().ok_or_else(bad)?;
-            if before.item_instance_id != input.item_instance_id || before.definition.as_ref() != Some(definition)
-                || value.lines.iter().filter(|other| line_item(other) == line_item(line)).count() != 1 { return Err(bad()); }
-            spent = spent.checked_add(u64::from(check_burn(line,&value.world_id)?)).ok_or_else(bad)?;
+            if before.item_instance_id != input.item_instance_id
+                || before.definition.as_ref() != Some(definition)
+                || value
+                    .lines
+                    .iter()
+                    .filter(|other| line_item(other) == line_item(line))
+                    .count()
+                    != 1
+            {
+                return Err(bad());
+            }
+            spent = spent
+                .checked_add(u64::from(check_burn(line, &value.world_id)?))
+                .ok_or_else(bad)?;
         }
-        if Some(spent) != value.unit_price.checked_mul(u64::from(value.quantity/count)) { return Err(bad()); }
-    } else if !burns.is_empty() { return Err(bad()); }
+        if Some(spent)
+            != value
+                .unit_price
+                .checked_mul(u64::from(value.quantity / count))
+        {
+            return Err(bad());
+        }
+    } else if !burns.is_empty() {
+        return Err(bad());
+    }
     let first_item = value
         .lines
         .iter()
@@ -229,7 +263,9 @@ pub(super) fn check(
     normalized.purchase = None;
     normalized.quantity = 1;
     normalized.unit_price = value.total_gold_units;
-    normalized.lines.retain(|line| !matches!(line.kind, LINE_ITEM_MINT | LINE_ITEM_BURN));
+    normalized
+        .lines
+        .retain(|line| !matches!(line.kind, LINE_ITEM_MINT | LINE_ITEM_BURN));
     let mut output = (*item_lines.last().ok_or_else(bad)?).clone();
     output.placement_ordinal = normalized
         .lines
