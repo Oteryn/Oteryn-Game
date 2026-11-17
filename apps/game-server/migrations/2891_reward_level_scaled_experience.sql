@@ -5,6 +5,7 @@ DO $migration$
 DECLARE body TEXT; declaration TEXT; anchor TEXT; scaled TEXT;
 BEGIN
     body := pg_get_functiondef('game_quest_carried_repeatable_complete(game_quest_reward_sources)'::regprocedure);
+    IF strpos(body,'scaled_xp NUMERIC;')>0 THEN RETURN; END IF;
     declaration := 'expected_xp_amount BIGINT; consumed BIGINT;';
     anchor := '    IF p.plan->''give''=''null''::jsonb THEN';
     IF (length(body)-length(replace(body,declaration,'')))/length(declaration)<>1

@@ -399,6 +399,13 @@ fn reward_callback_level_scaled_experience_overflow_refuses() -> TestResult {
 }
 
 async fn overflow(h: &fixture::Harness) -> TestResult {
+    // The forward migration can be reapplied without changing its proof again.
+    sqlx::raw_sql(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/migrations/2891_reward_level_scaled_experience.sql"
+    )))
+    .execute(&h.pool)
+    .await?;
     use crate::durability::quest_state::{
         QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
     };
