@@ -87,6 +87,9 @@ impl OrientalTraderTown {
     }
 }
 
+/// EVENTS-WORLD-1 W15 and the Bored owner catalogue.
+const BORED_PERMILLE: u16 = 82;
+
 /// The draws a day takes, in this order, each its own purpose.
 pub const DRAW_PURPOSES: [&str; 9] = [
     "thawing",
@@ -183,6 +186,8 @@ pub struct DailyWorldChanges {
     pub fire_from_the_earth: bool,
     #[serde(default)]
     pub world_counters: bool,
+    #[serde(default)]
+    pub bored: bool,
     /// Current counter projection, loaded through the owner; not an immutable daily draw.
     #[serde(skip)]
     pub counter_stages: [u8; 8],
@@ -252,9 +257,11 @@ impl DailyWorldChanges {
         let fury_exit = FURY_LAYERS[choice(draw(fury_town), 10) as usize];
         let fury_gates = fury_active.then_some(fury_exit);
         let nightmare_isles = NIGHTMARE_LAYERS[choice(draw(nightmare), 3) as usize];
+        let bored = reset_epoch != 0 && choice(draw("bored"), 1000) < u64::from(BORED_PERMILLE);
         Self {
             stampede,
             fire_from_the_earth,
+            bored,
             world_counters: true,
             counter_stages: [1, 3, u8::from(fire_from_the_earth), 1, 1, 1, 1, 1],
             counter_generations: [1; 8],
@@ -359,6 +366,27 @@ mod tests {
     }
 
     #[test]
+    fn bored_roll_is_82_permille_and_legacy_days_stay_inactive() -> Result<(), serde_json::Error> {
+        let roll = |epoch, sample| {
+            DailyWorldChanges::roll(epoch, 1, 1, |purpose| {
+                if purpose == "bored" { sample } else { u64::MAX }
+            })
+        };
+        let threshold = at(82, 1000);
+        let active = serde_json::to_value(roll(7, threshold - 1))?;
+        assert_eq!(active["bored"], true);
+        assert_eq!(serde_json::to_value(roll(8, threshold))?["bored"], false);
+        assert!(!roll(0, 0).bored);
+        let mut legacy = active;
+        if let Some(fields) = legacy.as_object_mut() {
+            fields.remove("bored");
+        }
+        let restored: DailyWorldChanges = serde_json::from_value(legacy)?;
+        assert_eq!(serde_json::to_value(restored)?["bored"], false);
+        Ok(())
+    }
+
+    #[test]
     fn w05b_chances_follow_the_donor_percentages() {
         assert!(percent_roll(at(9, 100), 10) && percent_roll(at(10, 100) - 1, 10));
         assert!(!percent_roll(at(10, 100), 10));
@@ -410,6 +438,7 @@ mod tests {
                 flower_month: true,
                 stampede: true,
                 fire_from_the_earth: false,
+                bored: false,
                 world_counters: true,
                 counter_stages: [1, 3, 0, 1, 1, 1, 1, 1],
                 counter_generations: [1; 8],

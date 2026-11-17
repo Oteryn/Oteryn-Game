@@ -14,6 +14,8 @@ pub struct NativeDecision {
     oriental_trader: Option<u8>,
     grimvale_full_moon: bool,
     flower_month: bool,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    bored: bool,
 }
 
 impl NativeDecision {
@@ -32,6 +34,7 @@ impl NativeDecision {
             }),
             grimvale_full_moon: day.grimvale_full_moon,
             flower_month: day.flower_month,
+            bored: day.bored,
         }
     }
     pub fn restore(&self) -> Result<DailyWorldChanges, crate::rules::RuleError> {
@@ -71,6 +74,7 @@ impl NativeDecision {
             oriental_trader,
             grimvale_full_moon: self.grimvale_full_moon,
             flower_month: self.flower_month,
+            bored: self.bored,
             stampede: false,
             fire_from_the_earth: false,
             world_counters: false,

@@ -454,6 +454,7 @@ fn bootstrap_world_changes() -> oteryn_gameplay_world_change::daily::DailyWorldC
         grimvale_full_moon: false,
         flower_month: false,
         stampede: false,
+        bored: false,
         fire_from_the_earth: false,
         world_counters: false,
         counter_stages: [0; 8],
