@@ -18,6 +18,8 @@
 //! damage to the death is the DPS (`creature_sweep calibration ...`). A species whose authored health
 //! exceeds `dps * KILL_SECONDS * 80%` is not spawned: its rows are `SKIPPED` with
 //! `not_attempted:hp_X>budget_Y;dps_Z`. Kill rows carry hp, budget and dps.
+//! After three failed calibration attempts, every selected species runs without a DPS budget;
+//! each kill retains `kill_seconds()` and reports `dps=unmeasured budget=none`.
 //!
 //! Rows per species: `CS.<key>.spawn|kill|xp|corpse|loot|full`. `spawn` carries the node answer, or
 //! the rejected token with cause=precondition. A FAIL row makes `run` return Err, which `journeys`
@@ -159,10 +161,11 @@ struct Rows<'a> {
     kill_seconds: Option<f64>,
     /// The error of a failed setup (logout, release or admission); the sweep recovers from it.
     setup_error: Option<String>,
+    dps: Option<f64>,
 }
 
 impl<'a> Rows<'a> {
-    fn new(short: &'a str) -> Self {
+    fn new(short: &'a str, dps: Option<f64>) -> Self {
         Self {
             short,
             emitted: [false; 5],
@@ -170,6 +173,7 @@ impl<'a> Rows<'a> {
             counts: Tally::default(),
             kill_seconds: None,
             setup_error: None,
+            dps,
         }
     }
 
@@ -185,8 +189,13 @@ impl<'a> Rows<'a> {
             _ => self.counts.fail += 1,
         }
         let cause = cause.map_or_else(String::new, |cause| format!(" cause={cause}"));
+        let budget = if step == "kill" && self.dps.is_none() {
+            " dps=unmeasured budget=none"
+        } else {
+            ""
+        };
         evidence(&format!(
-            "e2e_all scenario=CS.{}.{step} status={status} seconds={seconds:.3} evidence={}{cause}",
+            "e2e_all scenario=CS.{}.{step} status={status} seconds={seconds:.3} evidence={}{budget}{cause}",
             self.short,
             token(detail)
         ));
@@ -225,6 +234,16 @@ fn failure(step: &'static str, cause: &'static str, detail: impl std::fmt::Displ
     }
 }
 
+/// Preserve the primary spawn evidence even when setup's last phase was fixture-release.
+fn spawn_error(stop: &Failure) -> Box<dyn std::error::Error> {
+    verdict::HarnessError::boxed(
+        verdict::Cause::Precondition {
+            name: format!("spawn/{}", token(&stop.detail)),
+        },
+        format!("spawn:{}:{}", stop.cause, stop.detail),
+    )
+}
+
 struct Definition {
     name: String,
     health: u64,
@@ -251,7 +270,7 @@ struct Species {
     definition: Option<Definition>,
     key: String,
     loot: LootBinding,
-    /// The measured sweep DPS; `None` for the calibration species itself.
+    /// The measured sweep DPS; `None` during calibration and for the unbudgeted fallback.
     dps: Option<f64>,
 }
 
@@ -262,6 +281,32 @@ fn budget(dps: f64) -> u64 {
 
 fn budget_for(dps: f64, seconds: u64) -> u64 {
     (dps * seconds as f64 * BUDGET_PERCENT / 100.0).floor() as u64
+}
+
+/// No measurement means no HP budget: deadlines and all row assertions still apply.
+fn row_budget(dps: Option<f64>, seconds: u64) -> Option<u64> {
+    dps.map(|value| budget_for(value, seconds))
+}
+
+#[derive(Debug, PartialEq)]
+enum CalibrationDecision {
+    Measured(f64),
+    Retry,
+    Fallback,
+}
+
+const fn calibration_decision(
+    attempt: u32,
+    seconds: Option<f64>,
+    health: u64,
+) -> CalibrationDecision {
+    match seconds {
+        Some(seconds) if seconds.is_finite() && seconds > 0.0 && health > 0 => {
+            CalibrationDecision::Measured(health as f64 / seconds)
+        }
+        _ if attempt < 3 => CalibrationDecision::Retry,
+        _ => CalibrationDecision::Fallback,
+    }
 }
 
 fn read_shards(directory: &Path, prefix: &str) -> TestResult<Vec<serde_json::Value>> {
@@ -470,58 +515,99 @@ pub(super) async fn run(
         .into());
     }
     let calibration = species_of(CALIBRATION_KEY, &definitions, &tables, None);
-    let mut measured = None;
-    let before = tally.fail;
-    let started = std::time::Instant::now();
-    verdict::indexed(
-        Box::leak(format!("CS.{}.full", calibration.short).into_boxed_str()),
-        Box::pin(sweep_species(
-            clients,
-            world,
-            &items,
-            &calibration,
-            &mut session,
-            &mut tally,
-            &mut measured,
-            &mut None,
-        )),
-    )
-    .await;
-    seconds.push(started.elapsed().as_secs_f64());
     let health = calibration
         .definition
         .as_ref()
         .map_or(0, |found| found.health);
-    let dps = match measured {
-        // Only the kill time calibrates; loot or corpse failures stay ordinary rows.
-        Some(kill) if kill > 0.0 && health > 0 => health as f64 / kill,
-        _ => {
-            return Err(format!(
-                "creature sweep calibration on {CALIBRATION_KEY} failed: kill_seconds={measured:?} hp={health} fail_rows={}",
-                tally.fail - before
-            )
-            .into());
+    let mut dps = None;
+    let mut last = String::new();
+    for attempt in 1..=3 {
+        last = "no-kill-measurement".to_owned();
+        let mut outcome = SweepOutcome::default();
+        let started = std::time::Instant::now();
+        verdict::indexed(
+            Box::leak(format!("CS.{}.full", calibration.short).into_boxed_str()),
+            Box::pin(async {
+                let result = sweep_species(
+                    clients,
+                    world,
+                    &items,
+                    &calibration,
+                    &mut session,
+                    &mut tally,
+                    &mut outcome,
+                )
+                .await;
+                if let Err(error) = &result {
+                    last = recover_cause(&error.to_string());
+                }
+                result
+            }),
+        )
+        .await;
+        seconds.push(started.elapsed().as_secs_f64());
+        let measured = outcome.kill_seconds;
+        let setup_error = outcome.setup_error;
+        let decision = calibration_decision(attempt, measured, health);
+        evidence(&format!(
+            "creature_sweep calibration attempt={attempt} result={}",
+            match decision {
+                CalibrationDecision::Measured(_) => "measured".to_owned(),
+                _ => format!(
+                    "failed;kill_seconds:{measured:?};setup:{}",
+                    setup_error
+                        .as_deref()
+                        .map_or_else(|| "none".to_owned(), recover_cause)
+                ),
+            }
+        ));
+        // A setup failure must release and re-admit even on the last attempt, so fallback
+        // rows do not immediately reuse the dead transport. Recovery failures remain evidence;
+        // each subsequent calibration or batch row still attempts its own setup.
+        if let Some(error) = setup_error {
+            let outcome = recover(clients, &mut session).await;
+            evidence(&format!(
+                "creature_sweep recover species={} cause={} outcome={}",
+                calibration.short,
+                recover_cause(&error),
+                outcome
+                    .as_ref()
+                    .map_or_else(|error| token(error), |()| "ok".to_owned())
+            ));
         }
-    };
-    evidence(&format!(
-        "creature_sweep calibration key={CALIBRATION_KEY} hp={health} seconds={:.3} dps={dps:.2} budget_seconds={KILL_SECONDS} budget_percent={BUDGET_PERCENT}",
-        health as f64 / dps
-    ));
+        match decision {
+            CalibrationDecision::Measured(value) => {
+                dps = Some(value);
+                evidence(&format!(
+                    "creature_sweep calibration key={CALIBRATION_KEY} hp={health} seconds={:.3} dps={value:.2} budget_seconds={KILL_SECONDS} budget_percent={BUDGET_PERCENT}",
+                    health as f64 / value
+                ));
+                break;
+            }
+            CalibrationDecision::Retry | CalibrationDecision::Fallback => {}
+        }
+    }
+    if dps.is_none() {
+        evidence(&format!(
+            "creature_sweep calibration fallback attempts=3 last={last}"
+        ));
+    }
     let long = long_seconds()?;
     for key in &keys[start..end] {
-        if key.as_str() == CALIBRATION_KEY {
+        if key.as_str() == CALIBRATION_KEY && dps.is_some() {
             continue;
         }
-        let species = species_of(key, &definitions, &tables, Some(dps));
+        let species = species_of(key, &definitions, &tables, dps);
         let hp = species.definition.as_ref().map_or(0, |found| found.health);
-        if long.is_some() && hp <= budget(dps) {
+        if long.is_some() && dps.is_some_and(|value| hp <= budget(value)) {
             // Within the normal budget: the normal sweep owns this species' rows.
             continue;
         }
-        let limit = budget_for(dps, long.unwrap_or(KILL_SECONDS));
-        if hp > limit {
-            let mut rows = Rows::new(&species.short);
-            let detail = format!("not_attempted:hp_{hp}>budget_{limit};dps_{dps:.2}");
+        if let (Some(value), Some(limit)) = (dps, row_budget(dps, long.unwrap_or(KILL_SECONDS)))
+            && hp > limit
+        {
+            let mut rows = Rows::new(&species.short, species.dps);
+            let detail = format!("not_attempted:hp_{hp}>budget_{limit};dps_{value:.2}");
             for step in STEPS {
                 rows.emit(step, "SKIPPED", &detail, None);
             }
@@ -529,7 +615,7 @@ pub(super) async fn run(
             continue;
         }
         if let Some(cause) = &blocked {
-            let mut rows = Rows::new(&species.short);
+            let mut rows = Rows::new(&species.short, species.dps);
             let detail = format!("blocked-by-recovery:{cause}");
             for step in STEPS {
                 rows.emit(step, "FAIL", &detail, Some(detail.as_str()));
@@ -540,7 +626,7 @@ pub(super) async fn run(
         let scenario: &'static str =
             Box::leak(format!("CS.{}.full", species.short).into_boxed_str());
         let started = std::time::Instant::now();
-        let mut setup_error = None;
+        let mut outcome = SweepOutcome::default();
         verdict::indexed(
             scenario,
             Box::pin(sweep_species(
@@ -550,13 +636,12 @@ pub(super) async fn run(
                 &species,
                 &mut session,
                 &mut tally,
-                &mut None,
-                &mut setup_error,
+                &mut outcome,
             )),
         )
         .await;
         seconds.push(started.elapsed().as_secs_f64());
-        let Some(error) = setup_error else {
+        let Some(error) = outcome.setup_error else {
             setup_failures = 0;
             continue;
         };
@@ -649,6 +734,13 @@ fn species_of(
     }
 }
 
+/// Per-species observations consumed by calibration and setup recovery.
+#[derive(Default)]
+struct SweepOutcome {
+    kill_seconds: Option<f64>,
+    setup_error: Option<String>,
+}
+
 async fn sweep_species(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
@@ -656,17 +748,25 @@ async fn sweep_species(
     species: &Species,
     session: &mut Option<DevClientSession>,
     tally: &mut Tally,
-    kill_seconds: &mut Option<f64>,
-    setup_error: &mut Option<String>,
+    outcome: &mut SweepOutcome,
 ) -> TestResult {
     let started = std::time::Instant::now();
-    let mut rows = Rows::new(&species.short);
+    let mut rows = Rows::new(&species.short, species.dps);
+    let mut journey_error = None;
     if let Err(stop) = Box::pin(hunt(clients, world, items, species, session, &mut rows)).await {
+        journey_error = Some(if stop.step == "spawn" {
+            spawn_error(&stop)
+        } else {
+            format!("{}:{}:{}", stop.step, stop.cause, stop.detail).into()
+        });
+        if stop.step == "spawn" && rows.setup_error.is_none() {
+            rows.setup_error = Some(stop.detail.clone());
+        }
         rows.fail(stop.step, stop.cause, &stop.detail);
         rows.block_rest(stop.step);
     }
-    *kill_seconds = rows.kill_seconds;
-    *setup_error = rows.setup_error.take();
+    outcome.kill_seconds = rows.kill_seconds;
+    outcome.setup_error = rows.setup_error.take();
     let failed = rows.counts.fail > 0;
     // The `.full` verdict line is the indexed Watch's own; this line carries the species counts.
     evidence(&format!(
@@ -680,6 +780,9 @@ async fn sweep_species(
     tally.pass += rows.counts.pass;
     tally.fail += rows.counts.fail;
     tally.skipped += rows.counts.skipped;
+    if let Some(error) = journey_error {
+        return Err(error);
+    }
     if failed {
         return Err(format!("creature {} has FAIL rows", species.short).into());
     }
@@ -763,12 +866,13 @@ async fn recover(
     let mut attempt = 0usize;
     loop {
         verdict::Harness::global().progress("sweep-recover");
-        let error = match recover_once(clients).await {
-            Ok(client) => {
+        let error = match tokio::time::timeout_at(deadline, recover_once(clients)).await {
+            Ok(Ok(client)) => {
                 *session = Some(client);
                 return Ok(());
             }
-            Err(error) => error,
+            Ok(Err(error)) => error,
+            Err(_) => return Err(format!("recovery-{RECOVER_SECONDS}s:deadline")),
         };
         let now = tokio::time::Instant::now();
         if now >= deadline {
@@ -783,12 +887,22 @@ async fn recover(
 }
 
 async fn recover_once(clients: &SeamClients<'_>) -> Result<DevClientSession, String> {
-    wait_fixture_released(clients, CORE_CHARACTER)
-        .await
-        .map_err(|error| format!("release-wait:{error}"))?;
-    admit_character(clients, 0x80, CORE_CHARACTER)
-        .await
-        .map_err(|error| format!("admission:{error}"))
+    let admission = async {
+        wait_fixture_released(clients, CORE_CHARACTER)
+            .await
+            .map_err(|error| format!("release-wait:{error}"))?;
+        admit_character(clients, 0x80, CORE_CHARACTER)
+            .await
+            .map_err(|error| format!("admission:{error}"))
+    };
+    tokio::pin!(admission);
+    loop {
+        verdict::Harness::global().progress("sweep-recover-release-admit");
+        tokio::select! {
+            result = &mut admission => return result,
+            () = tokio::time::sleep(Duration::from_secs(1)) => {}
+        }
+    }
 }
 
 fn is_low(session: &Option<DevClientSession>) -> bool {
@@ -1105,10 +1219,9 @@ async fn hunt(
         ));
     }
     rows.kill_seconds = first_damage.map(|first| first.elapsed().as_secs_f64());
-    let budget_detail = species.dps.map_or_else(
-        || "budget:calibration;dps:measured-by-this-kill".to_owned(),
-        |dps| format!("budget:{};dps:{dps:.2}", budget(dps)),
-    );
+    let budget_detail = species.dps.map_or_else(String::new, |dps| {
+        format!("budget:{};dps:{dps:.2}", budget(dps))
+    });
     rows.pass(
         "kill",
         &format!(
@@ -1523,3 +1636,49 @@ async fn release(client: &mut DevClientSession) -> TestResult {
         }
     }
 }
+
+// This module is mounted inside journeys(), where #[test] functions cannot register with the
+// lib harness. Compile-time cases still run whenever the lib test target is built, without
+// changing the shared mount or adding a second copy of the qualification module.
+#[cfg(test)]
+const _: () = {
+    let mut attempt = 1;
+    while attempt <= 3 {
+        assert!(matches!(
+            calibration_decision(attempt, Some(2.0), 260),
+            CalibrationDecision::Measured(130.0)
+        ));
+        if attempt < 3 {
+            assert!(matches!(
+                calibration_decision(attempt, None, 260),
+                CalibrationDecision::Retry
+            ));
+        } else {
+            assert!(matches!(
+                calibration_decision(attempt, None, 260),
+                CalibrationDecision::Fallback
+            ));
+        }
+        attempt += 1;
+    }
+    assert!(matches!(
+        calibration_decision(3, Some(0.0), 260),
+        CalibrationDecision::Fallback
+    ));
+    assert!(matches!(
+        calibration_decision(3, Some(-1.0), 260),
+        CalibrationDecision::Fallback
+    ));
+    assert!(matches!(
+        calibration_decision(3, Some(f64::NAN), 260),
+        CalibrationDecision::Fallback
+    ));
+    assert!(matches!(
+        calibration_decision(3, Some(f64::INFINITY), 260),
+        CalibrationDecision::Fallback
+    ));
+    assert!(matches!(
+        calibration_decision(3, Some(2.0), 0),
+        CalibrationDecision::Fallback
+    ));
+};
