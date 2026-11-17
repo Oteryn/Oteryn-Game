@@ -930,6 +930,7 @@ fn scenario_case(
                 name,
                 "catalogue-npc" | "catalogue-npc-inventory" | "catalogue-npc-scoped"
             )
+            || name == "koshei-amulet"
             || name == "srv7-reliable-ram"
             || name.starts_with("m09-treasure-")
             || name.starts_with("engoutfit-")
@@ -1255,7 +1256,9 @@ fn scenario_case(
         } else {
             world
         };
-        let world = if name == "qengine-rewards-smith-story" {
+        let world = if name == "koshei-amulet" {
+            world_with_native_items(&callback, trigger, &[], generation.native_gameplay().ok_or("native")?, &[(trigger, 7535)])?
+        } else if name == "qengine-rewards-smith-story" {
             world_with_native_items(
                 &callback,
                 trigger,
@@ -2517,6 +2520,8 @@ fn scenario_case(
                 &authority,
             ))
             .await?;
+        } else if name == "koshei-amulet" {
+            Box::pin(super::super::koshei_amulet::exercise(&mut owner, &mut admitted, &h, trigger)).await?;
         } else if name == "engitem-native-seal-paint" {
             Box::pin(super::super::engitem_seal_paint::exercise(
                 &mut owner,

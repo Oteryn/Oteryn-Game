@@ -823,7 +823,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
 
 mod selector_gates;
 
-pub(crate) fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
+pub fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
     parse(&serde_json::json!({"schema":1,"callbacks":callbacks}).to_string()).map(|_| ())
 }
 
