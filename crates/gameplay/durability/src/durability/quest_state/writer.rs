@@ -1748,7 +1748,7 @@ impl DurabilityRoot {
                     // inserts and consumption of this Character's XP obligations. Count them
                     // before any write; FOR UPDATE here would require the UPDATE privilege
                     // intentionally absent from the runtime role. At RL-10 refuse whole.
-                    let callback_experience = match &reward_callback {
+                    let callback_experience = match reward_callback.as_ref().filter(|callback| callback.experience_per_level.is_some()) {
                         Some(callback) => match callback.experience_at_level(state.try_get("level")?) {
                             Ok(amount) => amount,
                             Err(_) => {

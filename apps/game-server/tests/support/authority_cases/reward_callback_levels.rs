@@ -291,9 +291,10 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
             &[&callback.npc],
         ),
     ));
-    owner.states.chat.admit(
+    owner.states.chat.admit_as(
         session,
         "Reward witness",
+        Some(id(41)),
         oteryn_simulation_determinism::SemanticTimeMicros::from_micros(1),
     );
     owner.states.chat.set_npc_service(session);
@@ -366,6 +367,122 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
             assert_eq!(amount, 50 * level);
         } else {
             assert_eq!(gold, 2000);
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn reward_callback_level_scaled_experience_overflow_refuses() -> TestResult {
+    let Some(admin) = fixture::configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            fixture::runtime()
+                .map_err(debug)?
+                .block_on(async {
+                    let h = fixture::Harness::create(admin, "reward_level_overflow", true).await?;
+                    let result = overflow(&h).await;
+                    let cleanup = h.cleanup().await;
+                    result?;
+                    cleanup?;
+                    eprintln!("PG_EXECUTED reward_level_overflow");
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                })
+                .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "reward overflow PG thread failed")?
+        .map_err(Into::into)
+}
+
+async fn overflow(h: &fixture::Harness) -> TestResult {
+    use crate::durability::quest_state::{
+        QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
+    };
+    use crate::durability::reward_claim_mint::QuestRewardAdmission;
+    use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack};
+    let mut callback: reward_callbacks::RewardCallback = serde_json::from_value(
+        serde_json::json!({
+            "key":"oteryn:quest-reward/level-overflow", "quest":"oteryn:quest.level_overflow",
+            "npc":"oteryn:npc.fixture", "keywords":["reward"], "topic":0, "next_topic":0,
+            "storage":[{"track":"oteryn:quest-progress/level-overflow","minimum":0,"maximum":0,"set":0,"preserve":true}],
+            "repeatable":true, "take":[{"item":"oteryn:item.tibia.i3031","count":1}], "give":null, "outfit":null, "achievement":null,
+            "experience_per_level":i64::MAX, "reply":["Reward."], "sources":["overflow boundary fixture"]
+        }),
+    )?;
+    let (controller, _) =
+        oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables(
+            fixture::scope()?.world_id(),
+            None,
+        );
+    let native = controller
+        .active()
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native")?;
+    super::engnpc2_live_transport::seed_tool(h, native, "oteryn:item.tibia.i3031").await?;
+    let weights = super::engitem_reward_text::Weights(native);
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    for (factor, command, commits) in [(i64::MAX, 17010, false), (50, 17011, true)] {
+        callback.experience_per_level = Some(factor);
+        let catalogue = Arc::new(
+            QuestStateCatalogue::new(
+                "content-1",
+                vec![QuestTrack {
+                    key: callback.storage[0].track.clone(),
+                    quest: callback.quest.clone(),
+                    initial: 0,
+                    min: 0,
+                    max: 1,
+                }],
+                vec![reward_callbacks::primary_transition(&callback)?],
+            )
+            .map_err(debug)?,
+        );
+        let outcome = h
+            .root
+            .commit_fixture_quest_reward(
+                &authority,
+                &h.node,
+                fixture::fence(1)?,
+                QuestTransitionRequest {
+                    transition_key: callback.key.clone(),
+                    cause: QuestCause::Command(super::engitem_reward_text::command(command)?),
+                },
+                catalogue,
+                QuestRewardAdmission {
+                    native,
+                    weights: &weights,
+                    fee_payment: None,
+                    actor_conditions: None,
+                    carried_use: None,
+                    creature_use: None,
+                    peer_use: None,
+                },
+                callback.clone(),
+            )
+            .await
+            .map_err(debug)?;
+        if commits {
+            assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
+            let amount: i64 =
+                sqlx::query_scalar("SELECT amount FROM game_character_quest_xp_obligations")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert_eq!(amount, 2500);
+        } else {
+            assert!(matches!(outcome, QuestTransitionOutcome::Refused(_)));
+            assert_eq!(h.root_revision().await?, "1");
+            assert_eq!(h.count("game_character_quest_receipts").await?, 0);
+            assert_eq!(h.count("game_character_quest_xp_obligations").await?, 0);
+            assert_eq!(h.count("game_quest_reward_sources").await?, 0);
         }
     }
     Ok(())
