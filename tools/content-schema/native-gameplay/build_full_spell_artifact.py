@@ -491,7 +491,7 @@ def item_facts(definitions: Path = ITEM_DEFINITIONS, appearances: Path = APPEARA
     return facts
 
 
-def corruptor_loot_projection(tables: dict, facts: dict, item_definitions: Path) -> list[dict]:
+def corruptor_loot_projection(tables: dict, facts: dict, profiles: dict) -> list[dict]:
     """Current named drops and the corpse's source48 capacity (CORPSE48, owner 2026-11-17).
 
     Crystal201189f8 the_corruptor.lua:68-77 supplies chance/count fields; current
@@ -515,7 +515,6 @@ def corruptor_loot_projection(tables: dict, facts: dict, item_definitions: Path)
     table['entries'].append({'item': facts['oteryn:item.tibia.i51760']['item'],
                              'min_count': 1, 'max_count': 1, 'probability_ppm': 47600})
     tables[key] = table
-    _, profiles = read(item_definitions / 'spell-native-profiles.json')
     # Include every guaranteed-vocation item and each durable decay stage, even
     # when the ordinary table cannot roll that item.
     selected = (3359, 3285, 3375, 3571, 51760, 3074, 7991, 3066, 50195, 51119, 3338,
@@ -698,7 +697,7 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
 
     if any(record['profile']['target']['key'] == 'oteryn:creature.the_corruptor'
            for record in creatures['records']):
-        for ref in corruptor_loot_projection(tables, facts, item_definitions):
+        for ref in corruptor_loot_projection(tables, facts, native_profiles):
             name(ref)
 
     for record in creatures['records']:
