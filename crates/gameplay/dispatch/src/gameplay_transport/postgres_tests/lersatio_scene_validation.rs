@@ -2,6 +2,36 @@
 use oteryn_gameplay_quests::quest::world_callbacks::SceneRelocation;
 
 #[test]
+fn lersatio_scene_validator_requires_cross_floor_opt_in() -> Result<(), String> {
+    use oteryn_gameplay_quests::quest::world_callbacks::load;
+    let mut callback = load()?
+        .into_iter()
+        .find(|callback| callback.key == "oteryn:quest-callback/authored-life-ring-bridge")
+        .ok_or("bridge")?;
+    let scene = callback.effects.scene.as_mut().ok_or("scene")?;
+    let from = scene.open.first().ok_or("scene edit")?.position;
+    scene.relocations = vec![SceneRelocation {
+        from: vec![from],
+        to: oteryn_gameplay_quests::quest::world_callbacks::Position {
+            floor: from.floor - 1,
+            ..from
+        },
+        cross_floor: false,
+        players_only: true,
+    }];
+    assert!(
+        !callback.has_valid_effects(),
+        "legacy scenes reject cross-floor relocation"
+    );
+    callback.effects.scene.as_mut().ok_or("scene")?.relocations[0].cross_floor = true;
+    assert!(
+        callback.has_valid_effects(),
+        "explicitly admitted scenes permit cross-floor relocation"
+    );
+    Ok(())
+}
+
+#[test]
 fn lersatio_scene_cross_floor_requires_explicit_admission() -> Result<(), serde_json::Error> {
     let legacy = serde_json::json!({
         "from": [{"x":32963,"y":31456,"floor":-2}],
