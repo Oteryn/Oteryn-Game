@@ -52,7 +52,7 @@ Validation recorded so far:
 | `python3 tools/content-schema/validate_full_game_content_tree.py` | Passed: 19 domains, 39 systems, 100 nodes; no unassigned entries |
 | Initial focused dispatch regression | Build killed by SIGKILL before tests; no behavioral red result claimed |
 | Focused retry | Fixed a test calling a private parser by using the public binding validator; corrected build running with `CARGO_BUILD_JOBS=1` and normal profiles |
-| Quest-authoring checks | First run ended with a killed subprocess; rerun separately after Rust build |
+| Quest-authoring checks | Passed: full `--part checks` runner, including source lowering, binding and final content-tree authoring check |
 | Quest-authoring unit-tests runner | Passed: 1464 tests, 8 existing skips |
 | Direct donor/data comparison | Passed: both inputs, output item/count/tile, storage gates, AID, native control stacks and literal feedback |
 | Clippy: quests | Passed, all targets, warnings denied |
