@@ -4,6 +4,7 @@ use super::*;
 mod bots;
 mod diagnostics;
 mod mp01_party_pvp;
+mod mp09_party_xp;
 mod mp05_npc_trade;
 mod mp03_p2p_trade;
 
@@ -18,6 +19,7 @@ pub(super) async fn run(
         mp01_party_pvp::run(core, packets, world, towns),
     )
     .await;
+    verdict::indexed("MP09.full", mp09_party_xp::run(core, packets, world)).await;
     verdict::indexed(
         "MP05.full",
         mp05_npc_trade::run(core, packets, world, towns),
