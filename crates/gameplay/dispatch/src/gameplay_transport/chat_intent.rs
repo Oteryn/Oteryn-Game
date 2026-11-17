@@ -1019,16 +1019,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> Option<(String, [u8; 16], u32)> {
         let retry = super::AdmissionRetryBudget::for_foreground_command(self.root).ok()?;
-        self.chat_speaker_name_with_budget(session, &retry).await
+        self.chat_speaker_name_with_budget(session, &retry)
+            .await
+            .ok()
     }
 
     /// Named visibility shares one budget across its bounded interest set. Only
-    /// holder contention retries; absent names and invalid authority fail closed.
+    /// holder contention retries, and an exhausted retry stays `Unavailable`; absent
+    /// names and invalid authority are `Rejected`.
     pub(super) async fn chat_speaker_name_with_budget(
         &self,
         session: GameSessionId,
         retry: &super::AdmissionRetryBudget<'_>,
-    ) -> Option<(String, [u8; 16], u32)> {
+    ) -> Result<(String, [u8; 16], u32), super::connection::AdmissionRefusal> {
         use super::connection::AdmissionRefusal;
         use crate::durability::DurabilityError;
         use crate::durability::character_authority::CharacterAuthorityError;
@@ -1045,10 +1048,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         _ => AdmissionRefusal::Rejected,
                     })
             })
-            .await
-            .ok()?;
+            .await?;
         let character = *current.commit().character_id().as_bytes();
-        let character_id = domain::CharacterId::from_bytes(character).ok()?;
+        let character_id =
+            domain::CharacterId::from_bytes(character).map_err(|_| AdmissionRefusal::Rejected)?;
         let name = retry
             .retry_unavailable(async || {
                 self.root
@@ -1061,8 +1064,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         _ => AdmissionRefusal::Rejected,
                     })
             })
-            .await
-            .ok()??;
+            .await?
+            .ok_or(AdmissionRefusal::Rejected)?;
         let level = retry
             .retry_unavailable(async || {
                 self.root
@@ -1075,10 +1078,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         _ => AdmissionRefusal::Rejected,
                     })
             })
-            .await
-            .ok()?
+            .await?
             .map_or(1, |progression| progression.level);
-        Some((name.as_str().to_owned(), character, level))
+        Ok((name.as_str().to_owned(), character, level))
     }
 
     /// Opens (or keeps) the chat state of `session` and answers its open rooms (the snapshot).

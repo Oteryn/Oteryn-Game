@@ -82,7 +82,7 @@ pub(super) async fn run(
     spawns: &oteryn_world_bundle::spawn::Table,
     npcs: &oteryn_world_bundle::npc::Table,
 ) {
-    use verdict::Need::{Fixture, Row as After};
+    use verdict::Need::Fixture;
     // Own a connection per row: an error/timeout cannot prevent the next row's verdict.
     let mut temple = Row::new("C20d", TEMPLE).needs(&[Fixture(1)]);
     let watch = temple.0.watch();
@@ -95,19 +95,13 @@ pub(super) async fn run(
         .await;
     temple.finish(result);
 
-    let mut vocation = Row::new("S16a", VOCATION).needs(&[Fixture(1)]);
-    let watch = vocation.0.watch();
-    let result = watch
-        .bound(
-            Duration::from_secs(420),
-            "Oressa journey deadline; remaining actions unproven",
-            first_vocation(&mut vocation, clients, world, spawns, npcs),
-        )
-        .await;
-    vocation.finish(result);
+    // Owner excludes Dawnport: retain its implementation for separately scoped runs.
+    let _ = (VOCATION, first_vocation);
+    evidence("E2EF6_GAP S16a out-of-scope dawnport-excluded");
+    evidence("e2e_all scenario=S16a.full status=SKIPPED seconds=0.000 evidence=content:oteryn:npc.oressa");
 
     // Promotion starts from the knight the first-vocation row produces.
-    let mut loss = Row::new("C20a", EXPERIENCE_LOSS).needs(&[Fixture(1), After("S16a")]);
+    let mut loss = Row::new("C20a", EXPERIENCE_LOSS).needs(&[Fixture(1)]);
     let watch = loss.0.watch();
     let result = watch
         .bound(
@@ -1484,6 +1478,10 @@ async fn earn_death_prerequisites(
     level: u32,
     gold: u64,
 ) -> TestResult {
+    let earned = progress(client).await?;
+    if level >= 8 && earned.1 < 8 {
+        return Err(format!("OWNER_GAP Newhaven completion required before level-{level} advancement; observed_level={}; merged Newhaven leg has no completion/vocation stage; source:apps/game-server/src/qualification/client_phases/world.rs:3273", earned.1).into());
+    }
     let index = provisioning::item_index()?;
     let coins = [
         (provisioning::item_reference(&index, 3031)?, 1),
@@ -1507,6 +1505,9 @@ async fn earn_death_prerequisites(
             .sum();
         if build.1 >= level && money >= gold {
             return Ok(());
+        }
+        if level >= 8 {
+            return Err(format!("OWNER_GAP earned Newhaven/post-Newhaven advancement required; required_level={level} observed_level={} required_gold={gold} observed_gold={money}; rat hunting is not the level-eight/vocation journey", build.1).into());
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!("player prerequisite blocked: rat hunting/loot budget exhausted; required level={level} carried_gold={gold}; observed XP={} level={} carried_gold={money}", build.0, build.1).into());

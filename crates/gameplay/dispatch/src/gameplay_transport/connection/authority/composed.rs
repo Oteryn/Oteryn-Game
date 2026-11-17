@@ -771,7 +771,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     async fn observe_named_visible_entities(
         &self,
         actor: ExactActorRef,
-    ) -> Option<world_spatial::ChannelEntities> {
+    ) -> Result<
+        world_spatial::ChannelEntities,
+        crate::gameplay_transport::appearance_change::observation::ObservationError,
+    > {
         self.named_channel_entities(actor).await
     }
 

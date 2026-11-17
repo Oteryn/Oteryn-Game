@@ -532,7 +532,17 @@ async fn hunt_replay(scenario: HuntReplay) -> TestResult {
         .to_string();
     match scenario {
         HuntReplay::Relocation => assert!(error.contains("relocat"), "{error}"),
-        HuntReplay::MovingCorpse => assert!(error.contains("hunt corpse USE refused"), "{error}"),
+        HuntReplay::MovingCorpse => {
+            for field in [
+                "hunt corpse USE refused",
+                "status=",
+                "disposition=",
+                "handle=",
+                "type=",
+            ] {
+                assert!(error.contains(field), "missing {field}: {error}");
+            }
+        }
         HuntReplay::Pack => assert!(error.contains("safe engagement"), "{error}"),
     }
     Ok(())

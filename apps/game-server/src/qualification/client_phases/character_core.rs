@@ -133,7 +133,8 @@ async fn character_core(
         "e2e_all scenario=M01.step-relogin status=PASS seconds={:.3}",
         started.elapsed().as_secs_f64()
     ));
-    let back = route(world, tile(saved)?, |at| at == TOWN).ok_or("core return route")?;
-    walk(&mut client, world, &back).await?;
+    // Keep this freshly verified non-spawn cell for E2EF3's exact-position relog.
+    // Returning to the temple can stack us with the profile peer (including a
+    // dropped peer still in control-loss grace), so fresh admission would move us.
     Ok(client)
 }

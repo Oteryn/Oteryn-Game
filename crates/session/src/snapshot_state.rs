@@ -69,8 +69,16 @@ impl SnapshotState {
                     world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
                     world_spatial::SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
                 ) if !entities_selected => {
-                    state.world_spatial_observation =
-                        Some(world_spatial::decode_world_spatial(domain.payload)?);
+                    state.world_spatial_observation = Some(
+                        world_spatial::decode_world_spatial(domain.payload).inspect_err(
+                            |error| {
+                                eprintln!(
+                                    "[DBG-ws] snapshot kind={:?} payload={:02x?}",
+                                    error, domain.payload
+                                );
+                            },
+                        )?,
+                    );
                     state.spatial_revision = domain.revision;
                 }
                 (

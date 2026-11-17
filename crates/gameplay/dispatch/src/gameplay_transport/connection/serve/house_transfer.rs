@@ -356,6 +356,15 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 let (status, payload) = house_hireling::result(selected, &dispatch)?;
                 effects = Some(dispatch);
                 (None, payload, status)
+            } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT
+                && selected.command_selected(command.command_type)
+            {
+                // NBREL3: the step decoder requires field 1; never an empty step result.
+                (
+                    None,
+                    encode_step_outcome(selected.as_slice(), StepDisposition::Rejected, 0),
+                    CommandStatus::Rejected,
+                )
             } else {
                 (None, Vec::new(), CommandStatus::Rejected)
             };

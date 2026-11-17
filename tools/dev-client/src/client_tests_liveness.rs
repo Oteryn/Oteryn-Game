@@ -46,6 +46,63 @@ async fn run_idle_liveness_case() -> Result<(), BoxError> {
     Ok(())
 }
 
+#[test]
+fn with_liveness_answers_probes_while_peer_operation_waits() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                let (ready, wait) = tokio::sync::oneshot::channel();
+                let (mut session, server) =
+                    joined_session(TEST_DEADLINE, |mut stream| async move {
+                        for probe_id in [5, 6, 7] {
+                            send(
+                                &mut stream,
+                                &[oteryn_protocol_oteryn::encode_liveness_probe(
+                                    GENERATION, probe_id,
+                                )?],
+                            )
+                            .await?;
+                            let frame = read_frame(&mut stream).await?;
+                            assert_eq!(
+                                decode_wire_envelope(&frame)?
+                                    .liveness_ack(GENERATION)?
+                                    .probe_id,
+                                probe_id
+                            );
+                        }
+                        ready.send(()).map_err(|_| "peer operation cancelled")?;
+                        expect_step(&mut stream, 7, StepDirection::East).await?;
+                        send(
+                            &mut stream,
+                            &[step_result_frame(41, 7, StepDisposition::Blocked)?],
+                        )
+                        .await?;
+                        wait_for_client_close(&mut stream).await;
+                        Ok(())
+                    })
+                    .await?;
+                tokio::time::timeout(
+                    TEST_DEADLINE,
+                    session.with_liveness(async {
+                        wait.await?;
+                        Ok::<_, BoxError>(())
+                    }),
+                )
+                .await??;
+                assert_eq!(
+                    session.step(StepDirection::East).await?,
+                    step_outcome(7, 41, StepDisposition::Blocked, None)
+                );
+                drop(session);
+                server.await??;
+                Ok(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "idle peer regression thread panicked")?
+}
+
 /// `service_liveness` fails closed on a reused probe ID, and the session is then unusable.
 #[test]
 fn service_liveness_rejects_a_reused_probe_id() -> Result<(), BoxError> {

@@ -102,6 +102,16 @@ if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "${NODE_BOOT_SKIP_B
   && "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
   NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
 fi
+# The Newhaven leg: a separate disposable pass whose node starts new players on the tutorial
+# islet, so vocationless character 1 plays the real new-player start, hunt and death there.
+NODE_BOOT_NEWHAVEN="${NODE_BOOT_NEWHAVEN:-0}"
+case "$NODE_BOOT_NEWHAVEN" in 0|1) ;; *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_newhaven_mode'; exit 2 ;; esac
+if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "$NODE_BOOT_NEWHAVEN" == 0 \
+  && "${NODE_BOOT_SKIP_NEWHAVEN:-0}" != 1 && -z "${NODE_BOOT_LIFECYCLE:-}" \
+  && "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
+  NODE_BOOT_NEWHAVEN=1 NODE_BOOT_SKIP_BASIC=1 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
+fi
+export NODE_BOOT_NEWHAVEN
 if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
 BOOTSTRAP_ACCOUNTS=("$ACCOUNT_ID" "$SECOND_ACCOUNT_ID")
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
@@ -458,13 +468,17 @@ if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   # Thais plus the Newhaven native-hometown exit: region 127,126 opens the
   # proven 49-step PZ exit after an ordinary home respawn.
   cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler -- compile-regions "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" '126,125;126,126;127,126;127,127' > "$WORK/world-compile.json"
+
   PIN="$WORK/world.json"
   python3 - "$GAME_SOURCE/content/world/pins/oteryn.json" "$WORK/world-compile.json" "$PIN" <<'PY_REGION_PIN'
-import json, sys
+import json, os, sys
 pin = json.load(open(sys.argv[1]))
 pin["schema"] = "OTERYN_QUALIFICATION_WORLD/v1"
 pin["digest"] = json.load(open(sys.argv[2]))["digest"]
 pin["entry_start"] = {"x": 32369, "y": 32238, "floor": -7}
+if os.environ.get("NODE_BOOT_NEWHAVEN") == "1":
+    # The tutorial islet temple: the configured start enables the tutorial rules.
+    pin["entry_start"] = {"x": 32534, "y": 32513, "floor": -7}
 with open(sys.argv[3], "w") as output:
     json.dump(pin, output, sort_keys=True)
 PY_REGION_PIN
@@ -590,9 +604,9 @@ project_format_version = "{pin['project_format_version']}"
 world_schema_version = "{pin['world_schema_version']}"
 content_revision = "{pin['content_revision']}"
 production = false
-start_x = 32369
-start_y = 32238
-start_floor = -7''')
+start_x = {pin['entry_start']['x']}
+start_y = {pin['entry_start']['y']}
+start_floor = {pin['entry_start']['floor']}''')
 PY_WORLD
   fi
   if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then

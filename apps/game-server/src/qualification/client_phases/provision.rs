@@ -73,7 +73,11 @@ pub(super) async fn provision(
     if response.status != CommandStatus::Accepted
         || response.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
     {
-        return Err("provisioned axe equip refused".into());
+        return Err(format!(
+            "provisioned axe equip refused: status={:?} outcome={:?}",
+            response.status, response.outcome
+        )
+        .into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {

@@ -197,7 +197,7 @@ impl<S: SessionStream> Session<S> {
                     world_spatial::DELTA_TYPE_WORLD_SPATIAL_V1,
                     self.spatial_revision,
                 )?;
-                let observation = world_spatial::decode_world_spatial(delta.payload)?;
+                let observation = world_spatial::decode_world_spatial(delta.payload).inspect_err(|error| { eprintln!("[DBG-ws] dispatch kind={:?} payload={:02x?}", error, delta.payload); })?;
                 if observation.content_generation != self.world_spatial.content_generation {
                     return Err(SessionError::ContentGenerationMismatch { domain_id });
                 }

@@ -399,6 +399,47 @@ impl DevClientSession {
             .map_err(|error| self.command_error(error, "liveness", sequence))
     }
 
+    /// Keep this idle peer responsive while another connection's operation completes.
+    /// Preserve pushed events and finish in-progress frames before returning. If this
+    /// peer fails, let the operation finish its cleanup before propagating the error.
+    pub async fn with_liveness<T, E>(
+        &mut self,
+        operation: impl std::future::Future<Output = Result<T, E>>,
+    ) -> Result<T, E>
+    where
+        E: From<DevClientError>,
+    {
+        let mut operation = std::pin::pin!(operation);
+        let mut completed = None;
+        loop {
+            let mut service = std::pin::pin!(self.service_liveness(Duration::from_millis(50)));
+            let serviced = std::future::poll_fn(|context| {
+                if completed.is_none()
+                    && let std::task::Poll::Ready(result) = operation.as_mut().poll(context)
+                {
+                    completed = Some(result);
+                }
+                // Finish an in-progress frame even when the operation completed;
+                // cancelling service_liveness mid-frame would corrupt this socket.
+                service.as_mut().poll(context)
+            })
+            .await;
+            if let Err(error) = serviced {
+                // In particular, let peer cleanup finish if the idle connection
+                // failed. Do not cancel a logout/return operation with its observer.
+                if let Some(result) = completed.take() {
+                    result?;
+                } else {
+                    operation.await?;
+                }
+                return Err(error.into());
+            }
+            if let Some(result) = completed.take() {
+                return result;
+            }
+        }
+    }
+
     /// Wait for pushed domain events while retaining qualification diagnostics on failure.
     pub async fn wait_for_events(
         &mut self,

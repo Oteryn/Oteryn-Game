@@ -977,3 +977,35 @@ fn a_pushed_item_delta_with_a_wrong_revision_or_a_duplicate_handle_fails_closed(
 
 #[path = "tests/item_appearance.rs"]
 mod item_appearance;
+
+#[test]
+fn move_item_encodes_the_ground_drop_its_negotiated_capabilities_admit() -> Result<(), BoxError> {
+    std::thread::Builder::new().stack_size(64 << 20).spawn(|| block_on(async {
+        let selected: &[u32] = &[4, 6, 12];
+        let position = item_view::WorldTilePosition { x: 100, y: 200, floor: 7 };
+        let (client, mut server) = tokio::io::duplex(65536);
+        let peer = tokio::spawn(async move {
+            join_peer_with(&mut server, selected, selected, &[], item_snapshot(vec![])?, &[]).await?;
+            let wire = read_frame(&mut server).await?;
+            let envelope = decode_wire_envelope(&wire)?;
+            let command = envelope.client_command(1)?;
+            let intent = item_view::decode_item_move_intent_for(
+                command.payload,
+                item_view::ItemMoveSelection { equip_drop: true, container_tree: false, world_interaction: false },
+            )
+            .map_err(|e| format!("{e:?}"))?;
+            assert_eq!(intent.destination, ItemMoveDestination::Ground(position));
+            write_frame(&mut server, &encode_command_result(1, 41, command.command_id, CommandStatus::Accepted, &[8, 1])?).await?;
+            Ok::<(), BoxError>(())
+        });
+        let mut admission = item_admission()?;
+        admission.supported_capabilities = selected;
+        let mut session = Session::admit(client, admission).await?;
+        let moved = session
+            .move_item(&ItemMoveIntent { source: handle(51), destination: ItemMoveDestination::Ground(position) })
+            .await?;
+        assert_eq!(moved.outcome, ItemMoveOutcome::Moved);
+        peer.await??;
+        Ok(())
+    }))?.join().map_err(|_| "ground move test panicked")??
+}

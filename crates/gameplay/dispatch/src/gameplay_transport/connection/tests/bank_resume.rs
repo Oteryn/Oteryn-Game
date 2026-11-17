@@ -217,3 +217,46 @@ fn fresh_session_first_command_skips_retained_bank_lookup() -> Result<(), Box<dy
         Ok(())
     })
 }
+
+/// NBREL3: a step refused for a closed input gate is `Dispatch::Unregistered`. Its result
+/// still carries a typed step refusal, because the client's strict step decoder requires
+/// field 1 and an empty payload would fail the session closed.
+#[test]
+fn closed_input_gate_step_result_decodes_as_rejected_step() -> Result<(), Box<dyn Error>> {
+    run(async {
+        let authority = RetainedBankOutcomeFixture {
+            commands: RefCell::new(Vec::new()),
+            replacement_steps: RefCell::new(0),
+            unknown: false,
+            closed_gate: true,
+            guard_deferred: false,
+        };
+        let (_, frames) = drive_session(
+            &authority,
+            positioned()?,
+            &[command(
+                ADMITTED_GENERATION,
+                1,
+                u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT),
+                StepDirection::East,
+            )],
+        )
+        .await?;
+        assert_eq!(*authority.replacement_steps.borrow(), 0);
+        let results: Vec<_> = frames
+            .iter()
+            .map(|frame| decode_wire_envelope(frame))
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .filter(|envelope| envelope.message_type() == MessageType::CommandResult)
+            .map(|envelope| oteryn_protocol_oteryn::decode_command_result(envelope.payload()))
+            .collect::<Result<Vec<_>, _>>()?;
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].status, CommandStatus::Rejected);
+        assert_eq!(
+            oteryn_protocol_oteryn::world_spatial::decode_step_result(&results[0].payload),
+            Ok(oteryn_protocol_oteryn::world_spatial::StepDisposition::Rejected)
+        );
+        Ok(())
+    })
+}

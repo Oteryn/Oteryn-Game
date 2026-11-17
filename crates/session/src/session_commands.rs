@@ -103,8 +103,10 @@ impl<S: SessionStream> Session<S> {
     }
 
     /// Sends the FND-02 `ClientCommand` type 9 `ITEM_MOVE_INTENT` (capability 4) and decodes its
-    /// `CommandResult`. Only the capability-4 destination (the main backpack) is encodable: the
-    /// codec refuses the others before anything is sent. Every outcome but `Moved` (`Stale`
+    /// `CommandResult`. The destinations the negotiated capabilities admit (the main backpack, and
+    /// with 11, 12 or 14 the ground, equipment or a container) are encodable, the same selection
+    /// the result decoder uses; the codec refuses the others before anything is sent. Every
+    /// outcome but `Moved` (`Stale`
     /// included) is a normal result that changes no local state.
     pub async fn move_item(
         &mut self,
@@ -112,7 +114,15 @@ impl<S: SessionStream> Session<S> {
     ) -> Result<ItemMoveOutcomeResult, SessionError> {
         self.ensure_usable()?;
         self.ensure_item_view()?;
-        let payload = item_view::encode_item_move_intent(intent).map_err(SessionError::ItemView)?;
+        let payload = item_view::encode_item_move_intent_for(
+            intent,
+            item_view::ItemMoveSelection {
+                equip_drop: self.is_selected(12),
+                container_tree: self.is_selected(14),
+                world_interaction: self.is_selected(11),
+            },
+        )
+        .map_err(SessionError::ItemView)?;
         let outcome = self.exchange_move(&payload).await;
         self.poison_on_error(outcome)
     }
