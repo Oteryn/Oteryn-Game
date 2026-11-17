@@ -39,25 +39,27 @@ pub struct SeasonalWindow {
 
 impl SeasonalWindow {
     pub fn contains(self, month: u8, day: u8) -> bool {
-        let valid = |(m, d): (u8, u8)| {
-            (1..=12).contains(&m)
-                && d > 0
-                && d <= match m {
-                    2 => 29,
-                    4 | 6 | 9 | 11 => 30,
-                    _ => 31,
-                }
-        };
         let date = (month, day);
-        valid(date)
-            && valid(self.start)
-            && valid(self.end)
+        valid_month_day(date)
+            && valid_month_day(self.start)
+            && valid_month_day(self.end)
             && if self.start <= self.end {
                 self.start <= date && date < self.end
             } else {
                 self.start <= date || date < self.end
             }
     }
+}
+
+pub(crate) fn valid_month_day((month, day): (u8, u8)) -> bool {
+    (1..=12).contains(&month)
+        && day > 0
+        && day
+            <= match month {
+                2 => 29,
+                4 | 6 | 9 | 11 => 30,
+                _ => 31,
+            }
 }
 
 /// Only donor-backed, physically composed daily changes can qualify an active gate.

@@ -32,6 +32,11 @@ pub enum Schedule {
         months: Vec<u8>,
         days: Vec<u8>,
     },
+    /// Annual interval with inclusive endpoints. The start may follow the end.
+    CalendarRange {
+        start: (u8, u8),
+        end: (u8, u8),
+    },
     Rotation {
         period_epochs: u16,
         active_epoch: u16,
@@ -119,6 +124,12 @@ impl Definition {
             {
                 Err(RuleError::Schedule)
             }
+            Schedule::CalendarRange { start, end }
+                if !crate::owner::valid_month_day(*start)
+                    || !crate::owner::valid_month_day(*end) =>
+            {
+                Err(RuleError::Schedule)
+            }
             Schedule::Rotation {
                 period_epochs,
                 active_epoch,
@@ -164,6 +175,15 @@ impl Definition {
             Schedule::Calendar { months, days } => {
                 (months.is_empty() || months.contains(&month))
                     && (days.is_empty() || days.contains(&day))
+            }
+            Schedule::CalendarRange { start, end } => {
+                let date = (month, day);
+                crate::owner::valid_month_day(date)
+                    && if start <= end {
+                        *start <= date && date <= *end
+                    } else {
+                        *start <= date || date <= *end
+                    }
             }
             Schedule::Rotation {
                 period_epochs,
@@ -237,6 +257,31 @@ impl Catalogue {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn calendar_range_includes_both_chyllfroest_boundaries() -> Result<(), String> {
+        let definition: Definition = serde_json::from_value(serde_json::json!({
+            "key": "chyllfroest",
+            "schedule": {"kind": "calendar_range", "start": [4, 1], "end": [5, 1]},
+            "sources": ["tibia.fandom.com/?oldid=797728"]
+        }))
+        .map_err(|error| error.to_string())?;
+        for (month, day, active) in [
+            (3, 31, false),
+            (4, 1, true),
+            (4, 30, true),
+            (4, 31, false),
+            (5, 1, true),
+            (5, 2, false),
+        ] {
+            let native = DailyWorldChanges::roll(7, month, day, |_| 0);
+            assert_eq!(
+                definition.selected(&[0; 16], 7, month, day, &native),
+                active
+            );
+        }
+        Ok(())
+    }
 
     #[test]
     fn catalogue_order_does_not_change_persisted_identity() -> Result<(), String> {
