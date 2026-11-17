@@ -35,7 +35,7 @@ fn lersatio_scene_admission_options_reject_mistyped_flags() {
 fn lersatio_encounter_accepts_bounded_current_spectator_input() -> Result<(), serde_json::Error> {
     use oteryn_gameplay_quests::quest::world_callbacks::Encounter;
     let encounter: Encounter = serde_json::from_value(serde_json::json!({
-        "minimum_level":1,
+        "minimum_level":0,
         "players":[],
         "monsters":[{"creature":"oteryn:creature.lersatio","position":{"x":32967,"y":31459,"floor":-1}}],
         "room_min":{"x":32963,"y":31456,"floor":-1},
@@ -47,6 +47,7 @@ fn lersatio_encounter_accepts_bounded_current_spectator_input() -> Result<(), se
         }
     }))?;
     assert!(encounter.players.is_empty());
+    assert_eq!(encounter.minimum_level, 0);
     let spectators = encounter.spectators.ok_or_else(|| {
         <serde_json::Error as serde::de::Error>::custom("spectator input missing")
     })?;

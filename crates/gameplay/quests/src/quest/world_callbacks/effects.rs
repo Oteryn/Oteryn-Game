@@ -869,7 +869,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || (u64::from(spectators.maximum.x.saturating_sub(spectators.minimum.x)) + 1)
                     * (u64::from(spectators.maximum.y.saturating_sub(spectators.minimum.y)) + 1)
                     > 4096
-        }) || (encounter.minimum_level == 0 && !source_party)
+        }) || (encounter.minimum_level == 0 && !source_party && encounter.spectators.is_none())
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()
