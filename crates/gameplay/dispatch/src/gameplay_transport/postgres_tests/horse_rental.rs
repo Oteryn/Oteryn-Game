@@ -7,6 +7,7 @@ use crate::foundation::{
 };
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use crate::gameplay_transport::npc_talk::NpcTalkBook;
+use oteryn_protocol_oteryn::appearance as wire;
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
@@ -220,16 +221,49 @@ fn scenario() -> TestResult {
             .read_current_character_appearance_state(&authority, &h.node, fence, Vec::new())
             .await
             .map_err(debug)?;
-        assert!(appearance.rental_mount.is_some());
+        let mount = appearance.rental_mount.ok_or("rental entitlement")?;
+        let (context, cosmetics) = owner.appearance_context().ok_or("native cosmetics")?;
+        let (look, _, _) = cosmetics
+            .mount_metadata(mount)
+            .ok_or("rental mount binding")?;
+        let starter = cosmetics.fallback(appearance.sex);
+        let mounted = owner
+            .appearance_change(
+                dependencies.actor,
+                UseCommand {
+                    game_session_id: session,
+                    command_id: 101,
+                    item_fence: Some(fence.item_fence()),
+                },
+                wire::Change {
+                    context,
+                    expected_root_revision: fence.expected_character_revision.get(),
+                    prior: None,
+                    selection: wire::Selection {
+                        outfit_key: starter.outfit_key,
+                        colours: starter.colours,
+                        addons: starter.addons,
+                        mount_key: Some(mount.into()),
+                    },
+                    content_revision: cosmetics.content_revision().into(),
+                },
+            )
+            .await;
+        assert!(
+            matches!(mounted, Some(wire::ChangeResult::Committed(_))),
+            "{mounted:?}"
+        );
+        assert_eq!(
+            owner.current_mount(dependencies.actor, session).await,
+            Some(look)
+        );
         sqlx::query("UPDATE game_horse_rental_receipts SET rented_at_ms=1,expires_at_ms=86400001")
             .execute(&h.pool)
             .await?;
-        let expired = h
-            .root
-            .read_current_character_appearance_state(&authority, &h.node, fence, Vec::new())
-            .await
-            .map_err(debug)?;
-        assert_eq!(expired.rental_mount, None);
+        assert_eq!(
+            owner.current_mount(dependencies.actor, session).await,
+            Some(0)
+        );
         Ok(())
     })
 }
