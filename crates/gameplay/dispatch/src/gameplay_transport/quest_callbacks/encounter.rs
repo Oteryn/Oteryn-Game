@@ -163,10 +163,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let mut players = Vec::new();
         let mut proofs = Vec::new();
-        let mut members = encounter.players.clone();
+        let mut members: Vec<_> = encounter
+            .players
+            .iter()
+            .cloned()
+            .map(|member| (member, None))
+            .collect();
         if let Some(spectators) = &encounter.spectators {
             members.clear();
-            for (_, position, member_session) in &census {
+            for (who, position, member_session) in &census {
                 let at = position.position();
                 if member_session.is_some()
                     && at.floor == -i16::from(spectators.minimum.floor)
@@ -178,7 +183,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if members.len() >= 8 {
                         return UseDisposition::Rejected;
                     }
-                    members.push(
+                    members.push((
                         oteryn_gameplay_quests::quest::world_callbacks::EncounterPlayer {
                             from: Position {
                                 x: match at.x.try_into() {
@@ -193,14 +198,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             },
                             to: spectators.destination,
                         },
-                    );
+                        Some(*who),
+                    ));
                 }
             }
         }
-        for member in &members {
-            let mut occupants = census
-                .iter()
-                .filter(|(_, pos, _)| pos.position() == local(member.from));
+        for (member, exact) in &members {
+            let mut occupants = census.iter().filter(|(who, pos, _)| {
+                pos.position() == local(member.from) && exact.is_none_or(|exact| exact == *who)
+            });
             let Some(&(who, expected, Some(member_session))) = occupants.next() else {
                 // Cults collects whoever stands on the five source staging tiles.
                 if encounter.phase
