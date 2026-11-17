@@ -394,6 +394,15 @@ impl PlayerSpellState {
         super::food_regeneration::step_due(self, now, facts.in_protection_zone);
         self.conditions.take_due(now, facts)
     }
+    /// Step the food clock and select one condition occurrence for complete settlement.
+    pub fn source_take_next_due(
+        &mut self,
+        now: u64,
+        facts: native::TickFacts,
+    ) -> Option<native::ConditionTick<String>> {
+        super::food_regeneration::step_due(self, now, facts.in_protection_zone);
+        self.conditions.take_next_due(now, facts)
+    }
     pub fn source_set_batch_revision(&mut self, revision: u64) {
         self.revision = revision;
     }

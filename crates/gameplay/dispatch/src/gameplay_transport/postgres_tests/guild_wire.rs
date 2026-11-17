@@ -519,23 +519,42 @@ pub(super) async fn capture_activity_return(
         drop(server);
         ended
     };
-    let driving = async {
-        loop {
-            let frame = read_frame(&mut client).await?;
-            let complete = decode_wire_envelope(&frame).map_err(debug)?.message_type()
-                == MessageType::SnapshotCommit;
-            capture.push(frame);
-            if complete {
-                break;
-            }
-        }
-        action.await?;
+    // The action may drive the owner for seconds; the client keeps answering liveness probes
+    // meanwhile (as a real client does), or IDLE_LIVENESS ends the session as control lost.
+    let generation = before.continuity.connection_generation;
+    let (snapshot_tx, snapshot_rx) = tokio::sync::oneshot::channel::<()>();
+    let acting = async {
+        snapshot_rx
+            .await
+            .map_err(|_| "initial snapshot before the return action")?;
+        action.await
+    };
+    let reading = async {
+        let mut snapshot_tx = Some(snapshot_tx);
         let mut barrier: Option<oteryn_protocol_oteryn::activity_scope::ActivityScopeSnapshot> =
             None;
         let mut commits = 0;
         loop {
             let frame = read_frame(&mut client).await?;
             let env = decode_wire_envelope(&frame).map_err(debug)?;
+            if env.message_type() == MessageType::LivenessProbe {
+                let probe =
+                    oteryn_protocol_oteryn::decode_liveness_probe(env.payload()).map_err(debug)?;
+                let ack = oteryn_protocol_oteryn::encode_liveness_ack(generation, probe, 0)
+                    .map_err(debug)?;
+                write_frame(&mut client, &ack).await?;
+                continue;
+            }
+            if let Some(tx) = snapshot_tx.take() {
+                let complete = env.message_type() == MessageType::SnapshotCommit;
+                capture.push(frame);
+                if complete {
+                    tx.send(()).map_err(|_| "return action dropped")?;
+                } else {
+                    snapshot_tx = Some(tx);
+                }
+                continue;
+            }
             if env.message_type() == MessageType::SnapshotChunk {
                 let (_, domains) =
                     oteryn_protocol_oteryn::decode_snapshot_chunk(env.payload()).map_err(debug)?;
@@ -568,6 +587,10 @@ pub(super) async fn capture_activity_return(
         }
         client.shutdown().await?;
         barrier.ok_or("autonomous scope barrier".into())
+    };
+    let driving = async {
+        let ((), barrier) = tokio::try_join!(acting, reading)?;
+        Ok(barrier)
     };
     let (ended, result): (_, TestResult<_>) = tokio::time::timeout(
         std::time::Duration::from_secs(30),

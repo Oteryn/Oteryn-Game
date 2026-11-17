@@ -21,6 +21,10 @@
       "sha256": "41e560708ca123dd7aba34b1e54adf73b843e61fe3eb72fa33ad380a92282a7e"
     },
     {
+      "path": "data-global/startup/tables/item.lua",
+      "sha256": "7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+    },
+    {
       "path": "data/libs/tables/doors.lua",
       "sha256": "6b22b5c4c213ef5a3f18fab43ea61acca7be227c06eb99bbc25d1a8d3e75112c"
     }
@@ -109,6 +113,30 @@
       "action": 1070,
       "source": "data-global/startup/tables/door_level.lua",
       "line": 152
+    },
+    {
+      "position": [
+        33290,
+        31785,
+        13
+      ],
+      "item": 776,
+      "attribute": "action",
+      "action": 9715,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 1689
+    },
+    {
+      "position": [
+        33498,
+        32613,
+        8
+      ],
+      "item": 10840,
+      "attribute": "unique",
+      "action": 35020,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 596
     }
   ]
 }
