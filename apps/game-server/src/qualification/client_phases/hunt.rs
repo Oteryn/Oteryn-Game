@@ -76,6 +76,15 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
     {
         return Err("hunt did not observe damage and target removal".into());
     }
+    loot_corpse(client, target, corpse).await
+}
+
+async fn loot_corpse(
+    client: &mut oteryn_dev_client::DevClientSession,
+    target: oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntity,
+    corpse: oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntity,
+) -> TestResult {
+    use oteryn_dev_client::EntityDetail;
     let EntityDetail::Object {
         item_handle: Some(handle),
         ..
@@ -168,3 +177,7 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
     ));
     Ok(())
 }
+
+#[path = "rat_hunt.rs"]
+mod rat;
+pub(super) use rat::hunt_rat;

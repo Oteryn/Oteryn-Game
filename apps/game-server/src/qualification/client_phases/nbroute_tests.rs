@@ -49,6 +49,12 @@ fn qualification_nbroute_native_decoration_profiles() -> TestResult {
             );
             assert!(!definition.pickupable, "fixed donor decoration {key}");
         }
+        let portal = crate::map::boot::native_item_definition(native, "oteryn:item.tibia.i37001");
+        assert_eq!(
+            portal.and_then(|definition| definition.solid),
+            Some(false),
+            "donor forcefield is not solid"
+        );
         Ok(())
     })
 }
@@ -59,64 +65,53 @@ fn endpoint(world: &BundleWorld, from: TilePos, path: &[WalkAction]) -> TestResu
     })
 }
 
-fn compiled_town() -> TestResult<&'static (
+type CompiledTown = (
     BundleWorld,
     oteryn_world_bundle::npc::Table,
     oteryn_world_bundle::spawn::Table,
-)> {
-    static TOWN_WORLD: std::sync::OnceLock<
-        Result<
-            (
-                BundleWorld,
-                oteryn_world_bundle::npc::Table,
-                oteryn_world_bundle::spawn::Table,
-            ),
-            String,
-        >,
-    > = std::sync::OnceLock::new();
+);
+fn compile_town(regions: &[(u16, u16)]) -> TestResult<CompiledTown> {
+    use oteryn_world_bundle_compiler::{bundle::BuildClass, compile, source};
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    // The same compile-regions inputs and equivalence proof as node boot.
+    let project = source::project_regions(&root, regions)?;
+    let (registry, palette) = source::registry(&root, &project)?;
+    let input = compile::Input {
+        regions: &project.regions,
+        palette: &palette,
+        identity: serde_json::from_slice(&std::fs::read(
+            root.join("content/world/pins/oteryn.identity.json"),
+        )?)?,
+        world: source::world_extent(&root)?,
+        build_class: BuildClass::NonProduction,
+        draft_areas: oteryn_world_bundle_compiler::project::draft_areas(&project.index)?,
+        families: &project.families,
+    };
+    let compiled = compile::compile(&input, &registry)?;
+    compile::equivalence(&input, &registry, &compiled.bytes)?;
+    let mut pin: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(root.join("content/world/pins/oteryn.json"))?)?;
+    pin["digest"] = compiled
+        .digest
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>()
+        .into();
+    let metadata = oteryn_world_bundle::bundle::visit(&compiled.bytes, |_, _| Ok(()))?;
+    let world = boot_world(
+        compiled.bytes,
+        &pin,
+        WorldId::decode(&v7(1, 2))?,
+        ChannelId::decode(&v7(1, 3))?,
+    )?;
+    Ok((world, metadata.npcs, metadata.spawns))
+}
+fn compiled_town() -> TestResult<&'static CompiledTown> {
+    static TOWN_WORLD: std::sync::OnceLock<Result<CompiledTown, String>> =
+        std::sync::OnceLock::new();
     TOWN_WORLD
         .get_or_init(|| {
-            (|| -> TestResult<(BundleWorld, oteryn_world_bundle::npc::Table, oteryn_world_bundle::spawn::Table)> {
-                use oteryn_world_bundle_compiler::{bundle::BuildClass, compile, source};
-                let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-                // The same compile-regions inputs and equivalence proof as node boot.
-                let project =
-                    source::project_regions(&root, &[(126, 125), (126, 126), (127, 127)])?;
-                let (registry, palette) = source::registry(&root, &project)?;
-                let input = compile::Input {
-                    regions: &project.regions,
-                    palette: &palette,
-                    identity: serde_json::from_slice(&std::fs::read(
-                        root.join("content/world/pins/oteryn.identity.json"),
-                    )?)?,
-                    world: source::world_extent(&root)?,
-                    build_class: BuildClass::NonProduction,
-                    draft_areas: oteryn_world_bundle_compiler::project::draft_areas(
-                        &project.index,
-                    )?,
-                    families: &project.families,
-                };
-                let compiled = compile::compile(&input, &registry)?;
-                compile::equivalence(&input, &registry, &compiled.bytes)?;
-                let mut pin: serde_json::Value = serde_json::from_slice(&std::fs::read(
-                    root.join("content/world/pins/oteryn.json"),
-                )?)?;
-                pin["digest"] = compiled
-                    .digest
-                    .iter()
-                    .map(|byte| format!("{byte:02x}"))
-                    .collect::<String>()
-                    .into();
-                let metadata = oteryn_world_bundle::bundle::visit(&compiled.bytes, |_, _| Ok(()))?;
-                let world = boot_world(
-                    compiled.bytes,
-                    &pin,
-                    WorldId::decode(&v7(1, 2))?,
-                    ChannelId::decode(&v7(1, 3))?,
-                )?;
-                Ok((world, metadata.npcs, metadata.spawns))
-            })()
-            .map_err(|error| error.to_string())
+            compile_town(&[(126, 125), (126, 126), (127, 127)]).map_err(|error| error.to_string())
         })
         .as_ref()
         .map_err(|error| error.clone().into())
@@ -345,6 +340,37 @@ fn qualification_nbroute_preflight_shared_respawn_return() -> TestResult {
                 floor: -7
             }
         );
+        // Crystal's scripted Newhaven forcefield is present in the bundle.
+        // Both the native forcefield collision and the teleport edge are admitted.
+        let exit = TilePos {
+            x: 32538,
+            y: 32514,
+            floor: -7,
+        };
+        assert_eq!(
+            world.floors().teleport(exit),
+            Some(TilePos {
+                x: 32544,
+                y: 32515,
+                floor: -7
+            })
+        );
+        assert!(
+            world.enterable(exit),
+            "forcefield native collision is passable"
+        );
+        let arrival = world
+            .floors()
+            .teleport(exit)
+            .ok_or("forcefield destination")?;
+        assert!(
+            route_toward(world, home, arrival, |at| at == arrival).is_some(),
+            "the authored forcefield exit is reachable"
+        );
+        assert!(
+            world.base().tile(32561, 32485, -7).is_none(),
+            "tutorial hunting cell is outside selected regions"
+        );
         assert!(home.y.abs_diff(TOWN.y) > 160);
         assert!(route_toward(world, home, TOWN, |at| at == TOWN).is_none());
         assert!(
@@ -360,6 +386,44 @@ fn qualification_nbroute_preflight_shared_respawn_return() -> TestResult {
         );
         // Staying at the real native home requires no fake relocation.
         assert_eq!(respawn_return_plan(world, home)?, home);
+        Ok(())
+    })
+}
+
+#[test]
+fn qualification_nbroute_newhaven_exit_requires_existing_northern_region() -> TestResult {
+    on_route_thread(|| {
+        // Same source and native facts; include the existing B3 region cut off
+        // by node boot's three-region compile. No content or profile is authored.
+        let (world, _, _) = compile_town(&[(126, 125), (126, 126), (127, 126), (127, 127)])?;
+        let home = TilePos {
+            x: 32536,
+            y: 32514,
+            floor: -7,
+        };
+        assert!(
+            world
+                .base()
+                .tile(32561, 32485, -7)
+                .is_some_and(|tile| !tile.protection_zone())
+        );
+        let path = route_toward(
+            &world,
+            home,
+            "Newhaven outside PZ with northern region",
+            |at| {
+                world
+                    .base()
+                    .tile(at.x, at.y, at.floor)
+                    .is_some_and(|tile| !tile.protection_zone())
+            },
+        )
+        .ok_or("northern region did not open an ordinary player route outside Newhaven PZ")?;
+        let landed = endpoint(&world, home, &path)?;
+        evidence(&format!(
+            "nbroute_newhaven_exit additional_region=127,126 endpoint={landed:?} steps={}",
+            path.len()
+        ));
         Ok(())
     })
 }

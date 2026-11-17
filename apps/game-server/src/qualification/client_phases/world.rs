@@ -392,6 +392,7 @@ fn boot_world(
     let input = native_input()?;
     // Prewarm before the world pass admits its first client.
     native_spell_book()?;
+    native_creature_name("oteryn:creature.rat")?;
     let room = crate::content::qualify_selected_native_gameplay_room(world, input)?;
     let issuance = crate::content::NativeEntryActivationIssuance {
         world_id: world,
@@ -819,6 +820,27 @@ fn town_route_retry_delay(
 ) -> Option<Duration> {
     (disposition == StepDisposition::Rejected && stationary && attempt <= 5)
         .then_some(Duration::from_millis(500))
+}
+
+pub(super) async fn approach_hunt_corpse(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    corpse: ActorPosition,
+) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let target = tile(corpse)?;
+    let path = route_toward(world, from, ("earned rat corpse", target), |at| {
+        at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1
+    })
+    .ok_or_else(|| {
+        route_gap(
+            world,
+            client.world_spatial().actor_position,
+            target,
+            "earned rat corpse has no player-walk approach",
+        )
+    })?;
+    walk(client, world, &path).await
 }
 
 pub(super) fn hunt_observation_wait(until: tokio::time::Instant) {
@@ -3393,6 +3415,7 @@ async fn travel_to_spawn(
         )
     })?;
     walk(client, world, &path).await?;
+    let expected_name = native_creature_name(creature)?;
     for _ in 0..32 {
         let here = client.world_spatial().actor_position;
         let target = client
@@ -3402,6 +3425,7 @@ async fn travel_to_spawn(
                     .iter()
                     .filter(|entry| {
                         entry.kind == oteryn_dev_client::EntityKind::Creature
+                            && entry.display_name.is_some_and(|name| name.as_str() == Ok(expected_name))
                             && entry.position.floor == here.floor
                     })
                     .min_by_key(|entry| {
@@ -3413,7 +3437,7 @@ async fn travel_to_spawn(
                     })
             })
             .copied()
-            .ok_or("spawn route has no visible creature")?;
+            .ok_or_else(|| format!("spawn route has no visible {expected_name} ({creature}); start={from:?} actual={here:?}"))?;
         let target = tile(target.position)?;
         let path = route(world, tile(here)?, |at| {
             at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1

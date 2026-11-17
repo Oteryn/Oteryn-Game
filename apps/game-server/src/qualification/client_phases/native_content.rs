@@ -63,3 +63,40 @@ mod native_content_tests {
         Ok(())
     }
 }
+
+/// Match served creature names against the same pinned native profiles as the server.
+pub(super) fn native_creature_name(key: &str) -> TestResult<&'static str> {
+    use crate::content::ProjectV2AuthoringProfileData;
+    use crate::content::native_gameplay::CreatureProfilesDocument;
+    static NAMES: OnceLock<Result<std::collections::BTreeMap<String, String>, String>> =
+        OnceLock::new();
+    let names = NAMES
+        .get_or_init(|| {
+            (|| -> TestResult<std::collections::BTreeMap<String, String>> {
+                let profiles: CreatureProfilesDocument =
+                    serde_json::from_slice(&native_input()?.creature_profiles.bytes)?;
+                Ok(profiles
+                    .records
+                    .into_iter()
+                    .filter_map(|record| {
+                        if let ProjectV2AuthoringProfileData::Creature(profile) =
+                            record.profile.data
+                        {
+                            profile
+                                .details
+                                .map(|details| (record.profile.target.key, details.display_name))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect())
+            })()
+            .map_err(|error| error.to_string())
+        })
+        .as_ref()
+        .map_err(|error| error.clone())?;
+    names
+        .get(key)
+        .map(String::as_str)
+        .ok_or_else(|| format!("native creature display name unavailable: {key}").into())
+}
