@@ -67,6 +67,14 @@ impl NativeBindings {
     pub fn compile(day: &DailyWorldChanges) -> Result<Self, InvalidNativeBinding> {
         let bindings = [
             StateBinding {
+                key: "fury_gates",
+                inactive: Phase::default(),
+                active: Phase {
+                    layer: Some(day.fury_exit),
+                    ..Phase::default()
+                },
+            },
+            StateBinding {
                 key: "grimvale",
                 inactive: Phase {
                     spawn_variant: Some("ordinary"),
@@ -113,12 +121,34 @@ impl NativeBindings {
         if day.reset_epoch == 0 {
             return Ok(result);
         }
-        for key in day.layers() {
-            result.bindings.push(Binding::Layer {
-                key: key.into(),
-                exit_only: false,
-            });
+        let mut keys = std::collections::BTreeSet::new();
+        let mut spawns = Vec::new();
+        for state in states {
+            if !crate::rules::valid_key(state.key) || !keys.insert(state.key) {
+                return Err(InvalidNativeBinding);
+            }
+            let phase = if active(state.key) {
+                state.active
+            } else {
+                state.inactive
+            };
+            if let Some(key) = phase.layer {
+                result.bindings.push(Binding::Layer {
+                    key: key.into(),
+                    exit_only: false,
+                });
+            }
+            if let Some(variant) = phase.spawn_variant {
+                spawns.push(Binding::SpawnPolicy {
+                    key: state.key.into(),
+                    variant: variant.into(),
+                });
+            }
         }
+        result.bindings.push(Binding::Layer {
+            key: day.nightmare_isles.into(),
+            exit_only: false,
+        });
         for key in day.exit_layers() {
             result.bindings.push(Binding::Layer {
                 key: key.into(),
@@ -147,29 +177,7 @@ impl NativeBindings {
                 position,
             });
         }
-        let mut keys = std::collections::BTreeSet::new();
-        for state in states {
-            if !crate::rules::valid_key(state.key) || !keys.insert(state.key) {
-                return Err(InvalidNativeBinding);
-            }
-            let phase = if active(state.key) {
-                state.active
-            } else {
-                state.inactive
-            };
-            if let Some(key) = phase.layer {
-                result.bindings.push(Binding::Layer {
-                    key: key.into(),
-                    exit_only: false,
-                });
-            }
-            if let Some(variant) = phase.spawn_variant {
-                result.bindings.push(Binding::SpawnPolicy {
-                    key: state.key.into(),
-                    variant: variant.into(),
-                });
-            }
-        }
+        result.bindings.extend(spawns);
         if day.stampede {
             result.bindings.push(Binding::SpawnPolicy {
                 key: "stampede".into(),
@@ -303,7 +311,7 @@ mod tests {
                         binding, Binding::Layer { key, exit_only: false } if key == day.fury_exit
                     ))
                     .count(),
-                usize::from(day.fury_gates.is_some()) + usize::from(active)
+                usize::from(active)
             );
             assert!(compiled.bindings.contains(&Binding::SpawnPolicy {
                 key: "grimvale".into(),
