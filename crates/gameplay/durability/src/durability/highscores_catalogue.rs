@@ -18,8 +18,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
-                    super::db::lock_admission_relations(&mut tx).await?;
+                    let mut tx = super::db::begin_observation_transaction(holder, deadline).await?;
                     let store = AdmissionGuardStore::from_root(root.clone());
                     let mut worlds = BTreeMap::new();
                     let mut after: Vec<u8> = Vec::new();

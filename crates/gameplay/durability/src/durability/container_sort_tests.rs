@@ -137,3 +137,33 @@ fn container_sort_recursive_permutations_conserve_every_parent_and_ordinal()
     }
     Ok(())
 }
+
+#[test]
+fn slotted_move_reads_newest_numeric_ordinal_first() -> Result<(), Box<dyn std::error::Error>> {
+    use sqlx::{Connection, PgConnection};
+    let Ok(url) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    const FIXTURE: &str = "CREATE TEMP TABLE game_item_container_entries (parent_item_instance_id uuid, item_instance_id uuid, placed_transaction_id uuid, placement_ordinal numeric);
+        CREATE TEMP TABLE game_item_nested_entries (LIKE game_item_container_entries);
+        INSERT INTO game_item_container_entries(parent_item_instance_id,placement_ordinal) VALUES ('00000000-0000-0000-0000-000000000000',9);
+        INSERT INTO game_item_nested_entries(parent_item_instance_id,placement_ordinal) VALUES ('00000000-0000-0000-0000-000000000000',10)";
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let mut conn = PgConnection::connect(&url).await?;
+            sqlx::raw_sql(FIXTURE).execute(&mut conn).await?;
+            let rows = sqlx::query(SLOT_ENTRIES_SQL)
+                .bind([0_u8; 16].as_slice())
+                .bind(2_i64)
+                .fetch_all(&mut conn)
+                .await?;
+            let ordinals = rows
+                .iter()
+                .map(|row| row.try_get::<String, _>("placement_ordinal"))
+                .collect::<Result<Vec<_>, _>>()?;
+            assert_eq!(ordinals, ["10", "9"]);
+            Ok(())
+        })
+}
