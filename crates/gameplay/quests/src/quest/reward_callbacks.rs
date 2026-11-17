@@ -1541,6 +1541,75 @@ pub(super) fn retain_outfit_reward_predecessor(
     Ok(())
 }
 
+/// Admit unfinished Kormarak journals pinned to the original once-only corpse claim.
+pub(super) fn retain_kormarak_once_predecessor(
+    catalogue: &mut QuestStateCatalogue,
+) -> Result<(), String> {
+    use sha2::{Digest, Sha256};
+
+    const CLAIM: &str = "oteryn:reward-claim.authored.kingdom_of_kormarak.corpse";
+    const CLAIMS: &str =
+        include_str!("../../../../../content/interactions/reward_claims/engclaim-native.json");
+    let mut callback = parse(include_str!(
+        "../../../../../content/quests/native-reward-callbacks/engclaim.json"
+    ))?
+    .into_iter()
+    .find(|callback| {
+        callback.world_claim.as_ref().is_some_and(|binding| {
+            binding.key == CLAIM && binding.revision == "engclaim-r1" && binding.daily
+        })
+    });
+    let Some(callback) = callback.as_mut() else {
+        return Ok(());
+    };
+    let binding = callback
+        .world_claim
+        .as_mut()
+        .ok_or("Kormarak claim binding")?;
+    let shard: serde_json::Value =
+        serde_json::from_str(CLAIMS).map_err(|error| error.to_string())?;
+    let definition = shard["records"]
+        .as_array()
+        .and_then(|rows| {
+            rows.iter()
+                .map(|row| &row["definition"])
+                .find(|definition| definition["identity"]["key"] == CLAIM)
+        })
+        .ok_or("Kormarak claim definition")?;
+    let original = serde_json::json!({
+        "identity": definition["identity"],
+        "claim": {"per": "character", "repeat": {"kind": "once"}},
+        "placements": definition["placements"],
+    });
+    let digest = Sha256::digest(serde_json::to_vec(&original).map_err(|error| error.to_string())?);
+    binding.daily = false;
+    binding.authority_sha256 = digest.iter().map(|byte| format!("{byte:02x}")).collect();
+    for state in &mut callback.storage {
+        state.maximum = 0;
+    }
+    let prior = primary_transition(callback)?;
+    let mut transitions: BTreeMap<_, _> = catalogue
+        .transitions
+        .iter()
+        .filter(|(_, transition)| transition.quest == prior.quest)
+        .map(|(key, transition)| (key.clone(), transition.clone()))
+        .collect();
+    let quest = prior.quest.clone();
+    if transitions.insert(prior.key.clone(), prior).is_none() {
+        return Err("Kormarak daily transition missing".into());
+    }
+    let hash = super::definition_hash(&quest, &catalogue.tracks, &transitions);
+    catalogue
+        .predecessors
+        .entry(quest)
+        .or_default()
+        .push(super::NpcDefinitionPredecessor {
+            hash,
+            defaults: BTreeMap::new(),
+        });
+    Ok(())
+}
+
 /// Exact primary state operation shared by lowering and bound admission validation.
 pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, String> {
     let binding = gated_binding(callback)?;
