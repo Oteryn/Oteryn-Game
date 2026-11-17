@@ -1,4 +1,4 @@
-//! Selected ordered contacts at original native NPC centers; no SQL progress seeds.
+//! Selected ordered contacts at native NPC centers; legacy shapes use real fenced writes.
 use super::{
     AdmittedSession, ComposedFreshAdmission, TestResult,
     fixture::{Harness, debug},
@@ -115,6 +115,10 @@ fn l6_paradox_story_native_lesson_guard_and_replay() -> TestResult {
 #[test]
 fn l6_paradox_story_native_legacy_progress_and_catch_up() -> TestResult {
     run("qengine-rewards-questpc4-paradox-story-legacy")
+}
+#[test]
+fn l6_paradox_story_native_legacy_completed_catch_up() -> TestResult {
+    run("qengine-rewards-questpc4-paradox-story-legacy-completed")
 }
 pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot::BundleWorld> {
     super::l6_world_pickups::native_scene(native, crops()?, &[])
@@ -401,15 +405,139 @@ async fn source_tracks(h: &Harness) -> TestResult<std::collections::BTreeMap<Str
     Ok(rows.into_iter().collect())
 }
 
-async fn legacy_source_gap(h: &Harness) -> TestResult {
-    // Prior main wrote the same trusted personal story and receipts, but no
-    // source tracks. Recreate that stored gap without changing those receipts.
-    sqlx::query("DELETE FROM game_character_quest_tracks WHERE track_key IN ($1,$2,$3)")
-        .bind(SOURCE_HUGO)
-        .bind(SOURCE_MATH)
-        .bind(SOURCE_SYNCED)
-        .execute(&h.pool)
-        .await?;
+fn install_legacy_callbacks(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    completed: bool,
+) -> TestResult {
+    // Model the old stored shape by committing its original effects from the
+    // outset. Keep the current lesson in the story4 case and the current
+    // catch-up in the story5 case. No receipt or track is removed or rewritten.
+    use oteryn_gameplay_quests::quest::reward_callbacks;
+    let mut catalogue = owner
+        .quest_catalogue
+        .as_ref()
+        .ok_or("quest catalogue")?
+        .as_ref()
+        .clone();
+    let mut callbacks = reward_callbacks::load()?;
+    for callback in &mut callbacks {
+        if callback.key.starts_with("oteryn:quest-reward/l6-paradox-")
+            && callback.key != "oteryn:quest-reward/l6-paradox-source-catch-up"
+            && (completed || callback.key != "oteryn:quest-reward/l6-paradox-prisoner-lesson")
+        {
+            callback.storage.retain(|storage| storage.track == STORY);
+            callback.key = callback
+                .key
+                .replacen("/l6-paradox-", "/test-paradox-legacy-", 1);
+            catalogue = catalogue
+                .with_fixture_transition(
+                    reward_callbacks::primary_transition(callback).map_err(debug)?,
+                )
+                .map_err(debug)?;
+        }
+    }
+    if completed {
+        // A later source stage is committed through the same fenced writer and
+        // receipt machinery, before checking that compatibility preserves it.
+        let mut later = callbacks
+            .iter()
+            .find(|callback| callback.key == "oteryn:quest-reward/l6-paradox-source-catch-up")
+            .ok_or("compatibility callback")?
+            .clone();
+        later.key = "oteryn:quest-reward/test-paradox-later-source".into();
+        later.keywords = vec!["later-source-fixture".into()];
+        for storage in &mut later.storage {
+            match storage.track.as_str() {
+                SOURCE_SYNCED => {
+                    storage.minimum = 1;
+                    storage.maximum = 1;
+                }
+                SOURCE_MATH => {
+                    storage.minimum = 1;
+                    storage.maximum = 1;
+                    storage.set = 2;
+                }
+                _ => {}
+            }
+        }
+        catalogue = catalogue
+            .with_fixture_transition(reward_callbacks::primary_transition(&later).map_err(debug)?)
+            .map_err(debug)?;
+        callbacks.push(later);
+    }
+    owner.quest_catalogue = Some(Arc::new(catalogue));
+    owner
+        .states
+        .npc_conversations
+        .fixture_reward_callbacks(callbacks)?;
+    Ok(())
+}
+
+async fn legacy_achievement(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult {
+    use crate::durability::account_achievement::{
+        AchievementGrantOutcome, AchievementGrantRequest, AchievementSourceEvent,
+    };
+    // The historical lesson's durable-value result is prepared through the
+    // existing fenced achievement test owner. This models a stored shape,
+    // without claiming migration from a predecessor definition hash.
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "legacy achievement fence")?
+        .ok_or("legacy achievement fence")?;
+    let grants = h
+        .root
+        .commit_test_achievement_grants(
+            authority,
+            &h.node,
+            fence,
+            vec![AchievementGrantRequest {
+                catalogue: owner.achievements.lookup(ACHIEVEMENT),
+                achievement_key: ACHIEVEMENT.into(),
+                source: AchievementSourceEvent {
+                    kind: "oteryn:paradox-legacy-test".into(),
+                    event_id: vec![1],
+                },
+            }],
+        )
+        .await
+        .map_err(debug)?;
+    assert!(matches!(
+        grants.as_slice(),
+        [AchievementGrantOutcome::Granted(_)]
+    ));
+    Ok(())
+}
+
+fn assert_existing_receipts_preserved(before: &serde_json::Value, after: &serde_json::Value) {
+    if let Some(receipts) = before["receipts"].as_array() {
+        assert!(
+            after["receipts"]
+                .as_array()
+                .is_some_and(|preserved| receipts
+                    .iter()
+                    .all(|receipt| preserved.contains(receipt))),
+            "existing story receipts remain byte-for-byte unchanged"
+        );
+    }
+}
+
+async fn assert_legacy_source_gap(h: &Harness) -> TestResult {
+    assert!(
+        source_tracks(h).await?.is_empty(),
+        "legacy Hugo/Math tracks are absent"
+    );
+    let synced: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM game_character_quest_tracks WHERE track_key=$1")
+            .bind(SOURCE_SYNCED)
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(synced, 0, "legacy source-synced track is absent");
     Ok(())
 }
 
@@ -499,6 +627,11 @@ pub(super) async fn exercise(
         .fetch_one(&h.pool)
         .await?;
     eprintln!("POSTGRES_DATABASE_READY l6_paradox_story version={version}");
+    let legacy = name.ends_with("-legacy") || name.ends_with("-legacy-completed");
+    let legacy_completed = name.ends_with("-legacy-completed");
+    if legacy {
+        install_legacy_callbacks(owner, legacy_completed)?;
+    }
     let npcs = install(owner, admitted).await?;
     let mut selected = admitted
         .continuity
@@ -534,9 +667,10 @@ pub(super) async fn exercise(
             .all(|r| r.disposition == NpcIntentDisposition::Ok)
     );
     assert_eq!(progress(h).await?, 1);
-    assert_eq!(source_tracks(h).await?.get(SOURCE_HUGO), Some(&1));
-    if name.ends_with("-legacy") {
-        legacy_source_gap(h).await?;
+    if legacy {
+        assert_legacy_source_gap(h).await?;
+    } else {
+        assert_eq!(source_tracks(h).await?.get(SOURCE_HUGO), Some(&1));
     }
     if name.ends_with("lesson-guard") {
         let before = snapshot(h).await?;
@@ -572,9 +706,10 @@ pub(super) async fn exercise(
             expected,
             "only the exact ordered contact advances the story"
         );
-        assert_eq!(source_tracks(h).await?.get(SOURCE_HUGO), Some(&expected));
-        if name.ends_with("-legacy") {
-            legacy_source_gap(h).await?;
+        if legacy {
+            assert_legacy_source_gap(h).await?;
+        } else {
+            assert_eq!(source_tracks(h).await?.get(SOURCE_HUGO), Some(&expected));
         }
     }
     let before = snapshot(h).await?;
@@ -611,7 +746,12 @@ pub(super) async fn exercise(
             .collect::<Vec<_>>()
     );
     assert_eq!(progress(h).await?, 5);
-    assert_riddler_accepts_learned_story(h).await?;
+    if legacy_completed {
+        legacy_achievement(owner, admitted, h, authority).await?;
+        assert_legacy_source_gap(h).await?;
+    } else {
+        assert_riddler_accepts_learned_story(h).await?;
+    }
     let achievements: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1",
     )
@@ -630,6 +770,7 @@ pub(super) async fn exercise(
         "lesson and account achievement commit exactly once"
     );
     let committed = snapshot(h).await?;
+    assert_existing_receipts_preserved(&before, &committed);
     let last = lesson.last().ok_or("lesson reply")?;
     assert_eq!(
         super::quest_world_callbacks::wire(owner, admitted, last.id, 7, last.payload.clone())
@@ -641,35 +782,56 @@ pub(super) async fn exercise(
         committed,
         "original command replay repeats no story or achievement write"
     );
-    conversation(
-        owner,
-        admitted,
-        npcs[4],
-        &["hi", "math", "yes", "green", "yes"],
-    )
-    .await?;
-    assert_eq!(
-        snapshot(h).await?,
-        committed,
-        "a fresh repeated lesson cannot grant another achievement source"
-    );
-    if name.ends_with("-legacy") {
-        legacy_source_gap(h).await?;
+    if !legacy_completed {
+        conversation(
+            owner,
+            admitted,
+            npcs[4],
+            &["hi", "math", "yes", "green", "yes"],
+        )
+        .await?;
+        assert_eq!(
+            snapshot(h).await?,
+            committed,
+            "a fresh repeated lesson cannot grant another achievement source"
+        );
+    }
+    if legacy_completed {
+        assert_legacy_source_gap(h).await?;
         let before = snapshot(h).await?;
         conversation(owner, admitted, npcs[4], &["hi", "math"]).await?;
         let after = snapshot(h).await?;
+        assert_existing_receipts_preserved(&before, &after);
         assert_eq!(after["achievements"], before["achievements"]);
         assert_eq!(after["grants"], before["grants"]);
         assert_eq!(progress(h).await?, 5);
         assert_riddler_accepts_learned_story(h).await?;
+        let synced = snapshot(h).await?;
+        conversation(
+            owner,
+            admitted,
+            npcs[4],
+            &["hi", "math", "yes", "green", "yes"],
+        )
+        .await?;
+        assert_eq!(
+            snapshot(h).await?,
+            synced,
+            "a fresh repeated lesson cannot grant another achievement source"
+        );
         // A later source finale must survive a repeated compatibility contact.
-        sqlx::query("UPDATE game_character_quest_tracks SET value=2 WHERE track_key=$1")
-            .bind(SOURCE_MATH)
-            .execute(&h.pool)
-            .await?;
+        conversation(owner, admitted, npcs[4], &["hi", "later-source-fixture"]).await?;
+        assert_eq!(source_tracks(h).await?.get(SOURCE_MATH), Some(&2));
+        let later = snapshot(h).await?;
         conversation(owner, admitted, npcs[4], &["hi", "math"]).await?;
+        assert_eq!(
+            snapshot(h).await?,
+            later,
+            "compatibility preserves the later source stage and receipts"
+        );
         assert_eq!(source_tracks(h).await?.get(SOURCE_MATH), Some(&2));
         let after = snapshot(h).await?;
+        assert_existing_receipts_preserved(&before, &after);
         assert_eq!(after["achievements"], before["achievements"]);
         assert_eq!(after["grants"], before["grants"]);
     }
