@@ -141,6 +141,40 @@ pub(super) async fn exercise(
         .await
         .admit_pinned_test_creature(spectator_position)
         .map_err(super::fixture::debug)?;
+    let departed_position = crate::foundation::MovementLocalPosition {
+        x: 32973,
+        y: 31460,
+        floor: 2,
+    };
+    let departed = {
+        let mut runtime = owner.runtime.lock().await;
+        let session = crate::foundation::GameSessionId::decode(&super::fixture::id(99))
+            .map_err(super::fixture::debug)?;
+        let reservation = runtime
+            .reserve_fresh_session(session)
+            .map_err(super::fixture::debug)?;
+        let actor = runtime
+            .commit_fresh_session(reservation)
+            .map_err(super::fixture::debug)?;
+        runtime
+            .initialize_pinned_test_position(
+                actor,
+                crate::foundation::MovementLocalPosition {
+                    x: 32972,
+                    y: 31460,
+                    floor: 2,
+                },
+            )
+            .map_err(super::fixture::debug)?;
+        let before = runtime
+            .read_actor_position(actor)
+            .map_err(super::fixture::debug)?;
+        runtime
+            .borrow_movement_position()
+            .commit_cardinal(before, departed_position)
+            .map_err(super::fixture::debug)?;
+        actor
+    };
     let restored = object_target(
         owner,
         TilePos {
