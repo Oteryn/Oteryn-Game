@@ -592,4 +592,4 @@ fn project(
 
 #[cfg(test)]
 #[path = "hud_panes_tests.rs"]
-mod tests;
+pub(super) mod tests;

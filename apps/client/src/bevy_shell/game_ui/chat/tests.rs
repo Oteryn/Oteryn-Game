@@ -676,8 +676,11 @@ fn transcript_rows_are_selectable_and_offer_sender_actions()
         });
         app.update();
         let parent = app.world_mut().query_filtered::<&ChildOf, With<crate::bevy_shell::gameplay_dialogs::popup::PopupEntry>>().iter(app.world()).next().ok_or("popup entry")?.parent();
-        let frame = app.world().get::<Node>(parent).ok_or("popup frame")?;
-        assert_eq!((frame.left, frame.top), (px(200. / 1.5), px(100. / 1.5)));
+        crate::bevy_shell::game_ui::hud_panes::context_menu::assert_anchor(
+            app.world(),
+            parent,
+            Vec2::new(200. / 1.5, 100. / 1.5),
+        );
         let entity = app
             .world_mut()
             .query::<(&Text, &ChildOf)>()

@@ -176,26 +176,13 @@ pub(super) fn message_menu(
         checked: Some(skins.checked.clone()),
         unchecked: Some(skins.unchecked.clone()),
     };
-    let menu = crate::bevy_shell::game_ui::hud_panes::context_menu::spawn(
+    let (menu, layer) = crate::bevy_shell::game_ui::hud_panes::context_menu::spawn(
         &mut commands,
         &look,
         position,
         scale.as_deref(),
         &items,
     );
-    let layer = commands
-        .spawn((
-            super::super::super::GameModal,
-            GlobalZIndex(200),
-            Node {
-                position_type: PositionType::Absolute,
-                width: percent(100.),
-                height: percent(100.),
-                ..default()
-            },
-        ))
-        .add_children(&[menu.scrim, menu.root])
-        .id();
     commands.entity(menu.scrim).observe(message_dismiss);
     for (entity, action) in menu
         .entries

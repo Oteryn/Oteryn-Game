@@ -703,6 +703,14 @@ fn module_zoom_scales_the_content_and_the_title_within_bounds() -> TestResult {
 
 /// The real Taffy layout of the game shell at one physical resolution.
 fn laid_out_app(width: u32, height: u32) -> Result<App, Box<dyn std::error::Error>> {
+    laid_out_app_with(width, height, |_| {})
+}
+
+pub(in crate::bevy_shell::game_ui) fn laid_out_app_with(
+    width: u32,
+    height: u32,
+    configure: impl FnOnce(&mut App),
+) -> Result<App, Box<dyn std::error::Error>> {
     use bevy::{
         app::{HierarchyPropagatePlugin, PropagateSet},
         camera::{ComputedCameraValues, RenderTargetInfo},
@@ -714,6 +722,7 @@ fn laid_out_app(width: u32, height: u32) -> Result<App, Box<dyn std::error::Erro
         },
     };
     let mut app = playing_app_with(preferences("fit"), (width, height), |app| {
+        configure(app);
         app.add_plugins((
             oteryn_client_ui_bevy::GlobalUiPlugin,
             HierarchyPropagatePlugin::<ComputedUiTargetCamera>::new(PostUpdate),
@@ -768,7 +777,10 @@ fn laid_out_app(width: u32, height: u32) -> Result<App, Box<dyn std::error::Erro
     app.update();
     Ok(app)
 }
-fn rect(app: &App, entity: Entity) -> Result<Rect, Box<dyn std::error::Error>> {
+pub(in crate::bevy_shell::game_ui) fn rect(
+    app: &App,
+    entity: Entity,
+) -> Result<Rect, Box<dyn std::error::Error>> {
     let node = app
         .world()
         .get::<ComputedNode>(entity)
@@ -893,32 +905,44 @@ fn scaled_context_menu_keeps_its_last_entry_inside_the_window() -> TestResult {
     let mut app = laid_out_app(1200, 720)?;
     app.insert_resource(UiScale(1.5))
         .add_systems(Update, popup::layout);
-    let frame = app
-        .world_mut()
-        .run_system_once(
-            |mut commands: Commands, skins: Res<Skins>, scale: Res<UiScale>| {
-                let look = popup::Look {
-                    font: skins.font.clone(),
-                    frame: skins.frame.clone(),
-                    checked: None,
-                    unchecked: None,
-                };
-                let menu = context_menu::spawn(
-                    &mut commands,
-                    &look,
-                    Vec2::new(1190., 715.),
-                    Some(&scale),
-                    &[popup::Item::entry("Copy Message")],
-                );
-                menu.root
-            },
-        )
-        .map_err(|error| error.to_string())?;
-    app.world_mut().get_mut::<Node>(frame).ok_or("frame")?.width = px(150.);
-    app.update();
-    app.update();
-    let menu = rect(&app, frame)?;
-    assert!(menu.width() >= 225. && menu.height() > 0.);
-    assert!(menu.max.x <= 1200. && menu.max.y <= 720., "{menu:?}");
+    for (pointer, forced) in [
+        (Vec2::new(1190., 715.), false),
+        (Vec2::new(1190., 715.), true),
+        (Vec2::new(150., 90.), false),
+    ] {
+        let (frame, scrim) = app
+            .world_mut()
+            .run_system_once(
+                move |mut commands: Commands, skins: Res<Skins>, scale: Res<UiScale>| {
+                    let look = popup::Look {
+                        font: skins.font.clone(),
+                        frame: skins.frame.clone(),
+                        checked: None,
+                        unchecked: None,
+                    };
+                    let (menu, _) = context_menu::spawn(
+                        &mut commands,
+                        &look,
+                        pointer,
+                        Some(&scale),
+                        &[popup::Item::entry("Copy Message")],
+                    );
+                    (menu.root, menu.scrim)
+                },
+            )
+            .map_err(|error| error.to_string())?;
+        if forced {
+            app.world_mut().get_mut::<Node>(frame).ok_or("frame")?.width = px(150.);
+        }
+        app.update();
+        let menu = rect(&app, frame)?;
+        assert!(menu.width() > 0. && menu.height() > 0.);
+        assert!(menu.max.x <= 1200. && menu.max.y <= 720., "{menu:?}");
+        assert_eq!(rect(&app, scrim)?, Rect::new(0., 0., 1200., 720.));
+        assert_eq!(menu.min, pointer.min(Vec2::new(1200., 720.) - menu.size()));
+        if forced {
+            assert!(menu.width() >= 225.);
+        }
+    }
     Ok(())
 }

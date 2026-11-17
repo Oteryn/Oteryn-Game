@@ -130,7 +130,8 @@ fn stale_modal_disabled_and_empty_slots_never_dispatch_casts() -> TestResult {
 
 #[test]
 fn visible_slots_follow_real_computed_width_and_saved_scroll_offset() -> TestResult {
-    let (mut app, _) = fixture()?;
+    use super::super::hud_panes::tests::{laid_out_app_with, rect};
+    let mut app = laid_out_app_with(1200, 720, install)?;
     app.world()
         .non_send::<HostOwner>()
         .play
@@ -157,25 +158,42 @@ fn visible_slots_follow_real_computed_width_and_saved_scroll_offset() -> TestRes
             locked: true,
         });
         let side = dock != crate::play::BarDock::Bottom;
-        for (bar, mut computed) in app
+        let anchor = app
             .world_mut()
-            .query::<(&BarRow, &mut ComputedNode)>()
-            .iter_mut(app.world_mut())
-        {
-            if bar.0 == 0 {
-                computed.size = if side {
-                    Vec2::new(34., extent)
-                } else {
-                    Vec2::new(extent, 34.)
-                };
-                computed.inverse_scale_factor = 1.;
-            }
+            .query::<(Entity, &DockAnchor)>()
+            .iter(app.world())
+            .find_map(|(entity, anchor)| (anchor.0 == dock).then_some(entity))
+            .ok_or("dock anchor")?;
+        let mut node = app
+            .world_mut()
+            .get_mut::<Node>(anchor)
+            .ok_or("anchor node")?;
+        if side {
+            node.height = px(extent);
+        } else {
+            node.width = px(extent);
         }
         app.update();
-        let visible = app
+        app.update();
+        let (lock, row) = app
             .world_mut()
-            .query::<(&ActionControl, &Node)>()
+            .query::<(Entity, &ActionControl, &ChildOf)>()
             .iter(app.world())
+            .find_map(|(entity, control, parent)| {
+                matches!(control, ActionControl::Lock(0)).then_some((entity, parent.parent()))
+            })
+            .ok_or("lock")?;
+        let visible = app
+            .world()
+            .get::<Children>(row)
+            .ok_or("row children")?
+            .iter()
+            .filter_map(|child| {
+                Some((
+                    app.world().get::<ActionControl>(child)?,
+                    app.world().get::<Node>(child)?,
+                ))
+            })
             .filter_map(|(control, node)| match control {
                 ActionControl::Slot(index)
                     if *index < ROW_SLOTS && node.display != Display::None =>
@@ -185,12 +203,13 @@ fn visible_slots_follow_real_computed_width_and_saved_scroll_offset() -> TestRes
                 _ => None,
             })
             .collect::<Vec<_>>();
-        let lock_extent = if side { LOCK_SIZE.y } else { LOCK_SIZE.x };
-        let slots = visible.len() as f32;
-        let used = slots * SLOT_SIZE + 2. * SCROLL_SIZE + lock_extent + (slots + 2.) * SLOT_GAP;
+        let row = rect(&app, row)?;
+        let lock = rect(&app, lock)?;
+        assert_eq!(if side { row.height() } else { row.width() }, extent);
+        assert_eq!(lock.size(), LOCK_SIZE);
         assert!(
-            used <= extent,
-            "lock ends at {used} in a {extent}-pixel row"
+            row.contains(lock.min) && row.contains(lock.max),
+            "{lock:?} outside {row:?}"
         );
         assert_eq!(visible, expected.collect::<Vec<_>>());
     }
@@ -200,6 +219,7 @@ fn visible_slots_follow_real_computed_width_and_saved_scroll_offset() -> TestRes
 #[test]
 fn unlocking_and_selecting_slot_opens_shared_editor_without_casting() -> TestResult {
     let (mut app, mut commands) = fixture()?;
+    app.add_plugins(bevy::ui_widgets::ButtonPlugin);
     let lock = app
         .world_mut()
         .query::<(Entity, &ActionControl)>()
@@ -221,7 +241,7 @@ fn unlocking_and_selecting_slot_opens_shared_editor_without_casting() -> TestRes
     let first = slot(&mut app, 0)?;
     app.insert_resource(UiScale(1.5));
     // Editing is an explicit secondary click; ordinary activation still executes.
-    app.world_mut().trigger(PointerClick {
+    let click = PointerClick {
         entity: first,
         pointer: bevy::picking::events::Pointer::new(
             bevy::picking::pointer::PointerId::Mouse,
@@ -237,7 +257,35 @@ fn unlocking_and_selecting_slot_opens_shared_editor_without_casting() -> TestRes
         hit: bevy::picking::backend::HitData::new(Entity::PLACEHOLDER, 0., None, None),
         duration: std::time::Duration::ZERO,
         count: 1,
-    });
+    };
+    for button in [bevy::picking::pointer::PointerButton::Primary, click.button] {
+        app.world_mut()
+            .trigger(bevy::picking::events::PointerPress {
+                entity: first,
+                pointer: click.pointer.clone(),
+                hit: click.hit.clone(),
+                count: 1,
+                button,
+            });
+        app.world_mut().flush();
+        app.world_mut().trigger(PointerClick {
+            button,
+            ..click.clone()
+        });
+        app.world_mut()
+            .trigger(bevy::picking::events::PointerRelease {
+                entity: first,
+                pointer: click.pointer.clone(),
+                hit: click.hit.clone(),
+                button,
+            });
+        app.world_mut().flush();
+        if button == bevy::picking::pointer::PointerButton::Primary {
+            assert!(
+                matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get() == 71)
+            );
+        }
+    }
     app.update();
     let parent = app
         .world_mut()
@@ -246,8 +294,11 @@ fn unlocking_and_selecting_slot_opens_shared_editor_without_casting() -> TestRes
         .next()
         .ok_or("popup entry")?
         .parent();
-    let frame = app.world().get::<Node>(parent).ok_or("popup frame")?;
-    assert_eq!((frame.left, frame.top), (px(200. / 1.5), px(100. / 1.5)));
+    crate::bevy_shell::game_ui::hud_panes::context_menu::assert_anchor(
+        app.world(),
+        parent,
+        Vec2::new(200. / 1.5, 100. / 1.5),
+    );
     // The secondary click opens the Tibia slot menu; its Assign Spell entry opens the editor.
     let mut labels = Vec::new();
     let mut assign = None;

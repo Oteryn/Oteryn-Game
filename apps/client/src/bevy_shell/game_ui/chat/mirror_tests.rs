@@ -205,3 +205,62 @@ fn mirrored_public_channel_shows_its_own_messages() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn outgoing_message_menu_opens_recipient_and_copies_one_multiline_notice() -> TestResult {
+    use bevy::ecs::system::RunSystemOnce;
+    use oteryn_client_ui::chat::{ChannelTab, ChatPanel, NoticeClass};
+    let line = ChatLine::Private {
+        speaker_name: "Alice".into(),
+        text: "outgoing hello".into(),
+    };
+    let mut app = console_app(ChatRoomSet::default(), vec![line.clone()])?;
+    let mut panel = ChatPanel {
+        lines: vec![line],
+        recipients: vec![Some("Bob".into())],
+        ..default()
+    };
+    let mut rows = widgets::transcript_rows(&panel);
+    panel.console.current = Some(ChannelTab::Loot);
+    panel.console.display.time = false;
+    panel
+        .console
+        .notices
+        .push(NoticeClass::Loot, "gold\n[Loot] still gold", 0);
+    panel.console.notices.push(NoticeClass::Loot, "silver", 1);
+    rows.extend(widgets::transcript_rows(&panel));
+    app.world_mut()
+        .run_system_once(
+            move |mut commands: Commands, skins: Res<Skins>, owner: NonSend<HostOwner>| {
+                for row in &rows {
+                    widgets::message_row(&mut commands, &skins, owner.generation(), row);
+                }
+            },
+        )
+        .map_err(|error| error.to_string())?;
+    menu(&mut app, "To Bob", "Message to Bob")?;
+    let owner = app.world().non_send::<HostOwner>();
+    assert_eq!(
+        owner
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .chat_panel()
+            .console
+            .current,
+        Some(ChannelTab::Conversation("Bob".into()))
+    );
+    app.world_mut()
+        .resource_mut::<bevy::clipboard::Clipboard>()
+        .set_text("before Copy Message")?;
+    menu(&mut app, "still gold", "Copy Message")?;
+    let copied = app
+        .world_mut()
+        .resource_mut::<bevy::clipboard::Clipboard>()
+        .fetch_text()
+        .poll_result()
+        .ok_or("clipboard pending")??;
+    assert_eq!(copied, "[Loot] gold\n[Loot] still gold\n");
+    Ok(())
+}
