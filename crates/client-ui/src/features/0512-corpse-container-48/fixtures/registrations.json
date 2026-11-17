@@ -3,29 +3,16 @@
     "mechanic": "0512-corpse-container-48",
     "kind": "handlers",
     "id": "0512-corpse-container-48-open-corpse",
-    "status": "supported",
+    "status": "unsupported",
     "commands": [],
     "direction": "server_to_client",
-    "capability": 512,
-    "entry": "protocol.rs::open_corpse_capacity",
-    "reducer": "protocol.rs::open_corpse_capacity",
-    "push_messages": [
-      "OpenContainerV1"
-    ],
-    "test": "protocol.rs::a_capability_512_corpse_window_holds_forty_eight_entries",
+    "reason": "The native client has no domain-11 open-container view yet (0004-item-view-move is unsupported); the session and dev-client decode up to 48 corpse entries under capability 512.",
     "not_applicable": {
-      "state": "The session retains every decoded OpenContainerV1 entry; capability 512 only raises the bound.",
+      "state": "The session retains every decoded OpenContainerV1 entry; capability 512 only raises the bound to 48.",
       "protocol": "The session selects the capability-512 open-container codec for snapshots and deltas; legacy sessions receive at most 30 entries.",
-      "view": "The existing container window lists the decoded entries; open_corpse_capacity sizes the corpse window.",
+      "view": "No native domain-11 container view exists; the dev-client lists the decoded entries.",
       "input": "The corpse bound is server-owned and takes no client input.",
       "settings": "The corpse container bound has no setting."
     }
-  },
-  {
-    "mechanic": "0512-corpse-container-48",
-    "kind": "panels",
-    "id": "0512-corpse-container-48-window",
-    "status": "supported",
-    "entry": "protocol.rs::open_corpse_capacity"
   }
 ]
