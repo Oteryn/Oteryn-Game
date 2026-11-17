@@ -25,7 +25,7 @@ pub enum LogoutReply {
 }
 
 pub(super) struct LogoutZones {
-    no_logout: bool,
+    pub(super) no_logout: bool,
     pub(super) protection_zone: Option<bool>,
 }
 
@@ -97,7 +97,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// them is settled by the release's own saves, as for a closed client whose deadline just
     /// ended.
     pub(super) async fn logout_session(&self, admitted: AdmittedSession) -> LogoutReply {
-        self.logout_session_as(admitted, false).await
+        self.logout_session_as(admitted, false)
+            .await
+            .unwrap_or(LogoutReply::Result(LogoutResult::Busy))
     }
 
     /// `channel_switch`: the release is the safe exit of a voluntary Channel switch (chsw) and
@@ -106,14 +108,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         admitted: AdmittedSession,
         channel_switch: bool,
-    ) -> LogoutReply {
+    ) -> Result<LogoutReply, oteryn_protocol_oteryn::channel_switch::SwitchLock> {
+        let _trade_hold = channel_switch
+            .then(|| {
+                self.states
+                    .player_trades
+                    .hold_for_switch(admitted.game_session_id)
+            })
+            .transpose()?;
         let Ok(_foreground) = self.root.foreground_demand() else {
             operator_event("event=logout_busy stage=foreground_demand");
-            return LogoutReply::Result(LogoutResult::Busy);
+            return Ok(LogoutReply::Result(LogoutResult::Busy));
         };
         let (actor, controller) = match self.logout_preflight(admitted).await {
             Ok(proven) => proven,
-            Err(reply) => return reply,
+            Err(reply) => return Ok(reply),
         };
         // Every activity participant must return through its durable owner
         // before the ordinary terminal release. No caller may orphan a room.
@@ -122,10 +131,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             crate::foundation::RuntimeScopeRefV1::Instance { .. }
         ) {
             operator_event("event=logout_busy stage=activity_scope");
-            return LogoutReply::Result(LogoutResult::Busy);
+            return Ok(LogoutReply::Result(LogoutResult::Busy));
         }
-        self.release_logout(admitted, actor, controller, channel_switch)
-            .await
+        Ok(self
+            .release_logout(admitted, actor, controller, channel_switch)
+            .await)
     }
 
     pub(super) async fn logout_preflight(

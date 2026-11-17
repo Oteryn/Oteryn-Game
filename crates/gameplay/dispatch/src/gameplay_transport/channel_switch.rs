@@ -90,9 +90,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if matches!(actor.runtime_scope(), RuntimeScopeRefV1::Instance { .. }) {
             return Some(SwitchLock::Event);
         }
+        {
+            let runtime = self.runtime.lock().await;
+            let Ok(position) = runtime.read_actor_position(actor) else {
+                return Some(SwitchLock::Checkpoint);
+            };
+            let at = position.position();
+            if self
+                .callback_content()
+                .iter()
+                .filter_map(|callback| callback.effects.encounter.as_ref())
+                .any(|room| {
+                    super::quest_callbacks::room_contains(room, at)
+                        && runtime.positioned_melee_census().map_or(true, |occupants| {
+                            occupants.iter().any(|(_, pos, controller)| {
+                                controller.is_none()
+                                    && super::quest_callbacks::room_contains(room, pos.position())
+                            })
+                        })
+                })
+            {
+                return Some(SwitchLock::Event);
+            }
+        }
         let Some(zones) = self.logout_zones(actor).await else {
             return Some(SwitchLock::Checkpoint);
         };
+        if zones.no_logout {
+            return Some(SwitchLock::NoLogout);
+        }
         self.logout_in_fight(actor, session, zones.protection_zone)
             .await
             .map(|_| SwitchLock::Combat)
@@ -171,7 +197,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.switch_session_current(admitted, id).await {
             return None;
         }
-        let refuse = |status: SwitchStatus| wire::encode_status(status).map(ChannelSwitchOutcome::Refused);
+        let refuse =
+            |status: SwitchStatus| wire::encode_status(status).map(ChannelSwitchOutcome::Refused);
         if &target == admitted.channel_id.as_bytes() {
             return refuse(status_of(SwitchLock::SameChannel));
         }
@@ -182,11 +209,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if status != SwitchStatus::READY {
             return refuse(status);
         }
-        let reply = self.logout_session_as(admitted, true).await;
+        let reply = match self.logout_session_as(admitted, true).await {
+            Ok(reply) => reply,
+            Err(lock) => return refuse(status_of(lock)),
+        };
         match (reply, logout_lock(reply)) {
             (LogoutReply::Unknown, _) => Some(ChannelSwitchOutcome::Unknown),
             (_, Some(lock)) => refuse(status_of(lock)),
-            (_, None) => wire::encode_status(SwitchStatus::READY).map(ChannelSwitchOutcome::Switched),
+            (_, None) => {
+                wire::encode_status(SwitchStatus::READY).map(ChannelSwitchOutcome::Switched)
+            }
         }
     }
 }
@@ -253,7 +285,10 @@ mod tests {
             logout_lock(LogoutReply::NoLogout),
             Some(SwitchLock::NoLogout)
         );
-        assert_eq!(logout_lock(LogoutReply::Result(LogoutResult::Accepted)), None);
+        assert_eq!(
+            logout_lock(LogoutReply::Result(LogoutResult::Accepted)),
+            None
+        );
         assert_eq!(logout_lock(LogoutReply::Unknown), None);
     }
 }

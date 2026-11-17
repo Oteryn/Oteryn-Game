@@ -14,6 +14,7 @@ mod daily_world_gates;
 mod dreamer_carrot;
 mod effects;
 mod encounter;
+pub(super) use encounter::room_contains;
 mod execute;
 mod goblin_elevator;
 mod ground_stack;

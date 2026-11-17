@@ -3,6 +3,15 @@ use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::view::EntryFacts;
 
+pub(in crate::gameplay_transport) fn room_contains(
+    encounter: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
+    at: MovementLocalPosition,
+) -> bool {
+    at.floor == -i16::from(encounter.room_min.floor)
+        && (i32::from(encounter.room_min.x)..=i32::from(encounter.room_max.x)).contains(&at.x)
+        && (i32::from(encounter.room_min.y)..=i32::from(encounter.room_max.y)).contains(&at.y)
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(
         clippy::too_many_arguments,
@@ -128,17 +137,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };
-        let in_room = |at: MovementLocalPosition| {
-            at.floor == -i16::from(encounter.room_min.floor)
-                && (i32::from(encounter.room_min.x)..=i32::from(encounter.room_max.x))
-                    .contains(&at.x)
-                && (i32::from(encounter.room_min.y)..=i32::from(encounter.room_max.y))
-                    .contains(&at.y)
-        };
         let personal_entry = callback.personal_room_entry().map(local);
         if census.iter().any(|(who, pos, occupant_session)| {
             occupant_session.is_some()
-                && in_room(pos.position())
+                && room_contains(encounter, pos.position())
                 && !(Some(pos.position()) == personal_entry
                     && *who == actor
                     && *occupant_session == Some(session))
