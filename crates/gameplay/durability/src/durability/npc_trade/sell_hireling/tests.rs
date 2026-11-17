@@ -196,7 +196,7 @@ fn high_value_trade_uses_existing_audit_owner_and_refuses_foreign_or_corrupt_coi
         &id(43),
         &request,
         (units, total, false),
-        &plan,
+        (&plan, None),
     );
     message.house_key = Some("oteryn:content.house.fixture".into());
     check_npc_trade(&message).expect("source-derived payout");
