@@ -40,12 +40,9 @@ pub(in crate::play) fn record_look(
     if action != oteryn_client_runtime::world_interaction::Action::Look {
         return;
     }
-    let receipt = mailbox
-        .screen_look
-        .as_ref()
-        .map_or(1, |held| held.receipt.saturating_add(1));
+    mailbox.look_receipt = mailbox.look_receipt.saturating_add(1);
     mailbox.screen_look = Some(LookMessage {
-        receipt,
+        receipt: mailbox.look_receipt,
         text: text.into(),
     });
     let received = std::time::SystemTime::now()

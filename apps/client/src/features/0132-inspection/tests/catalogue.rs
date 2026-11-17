@@ -355,3 +355,61 @@ fn catalogue_next_page_survives_item_details_and_drop_source_requests() -> Resul
     }
     Ok(())
 }
+
+#[test]
+fn catalogue_keeps_search_draft_while_paging_with_trimmed_query()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut commands, outbox) = play_channel();
+    lock(&link.mailbox).discovery.inspection.selected = true;
+    let search = "sword ";
+    link.item_catalogue_filter(search, "");
+    link.item_catalogue_request(0);
+    let PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("browse command".into());
+    };
+    let wire::Request::CatalogueQuery(query) =
+        wire::decode_request(&command.payload).map_err(|error| format!("{error:?}"))?
+    else {
+        return Err("browse query".into());
+    };
+    assert_eq!(
+        wire::catalogue::search(query).map_err(|error| format!("{error:?}"))?,
+        "sword"
+    );
+    outbox.discovery_result(
+        132,
+        &ServerMechanicResponse {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload: wire::encode_reply(&Reply {
+                status: 1,
+                requests: vec![],
+                catalogue: None,
+                items: vec![InspectedItem {
+                    slot: 0,
+                    definition_ref: 7,
+                    count: 1,
+                    tier: 0,
+                    name: "Sword".into(),
+                    attributes: vec![("Catalogue next".into(), "7".into())],
+                }],
+            })
+            .map_err(|error| format!("{error:?}"))?,
+        },
+    );
+    let panel = link.inspection_panel();
+    assert_eq!(panel.catalogue_next, Some(7));
+    // The Bevy Next control restarts the browse if the live draft differs from this field.
+    assert_eq!(panel.search, search);
+    link.item_catalogue_filter(search, "");
+    link.item_catalogue_request(1);
+    let PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("next page command".into());
+    };
+    assert!(matches!(
+        wire::decode_request(&command.payload),
+        Ok(wire::Request::CatalogueQuery(Query::Items { after: 7, .. }))
+    ));
+    Ok(())
+}

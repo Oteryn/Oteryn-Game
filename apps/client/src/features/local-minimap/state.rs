@@ -114,6 +114,7 @@ pub struct Minimap {
     world: Option<String>,
     binding: Option<Binding>,
     dirty: bool,
+    load_failed: bool,
     saved_at: Instant,
 }
 impl Default for Minimap {
@@ -136,6 +137,7 @@ impl Default for Minimap {
             world: None,
             binding: None,
             dirty: false,
+            load_failed: false,
             saved_at: Instant::now(),
         }
     }
@@ -241,7 +243,9 @@ impl Minimap {
             self.markers.clear();
             self.dirty = false;
             self.binding = Some(binding);
+            self.load_failed = false;
             if let Err(error) = self.load() {
+                self.load_failed = true;
                 self.feedback = lfmt!("Could not load minimap: {error}", error = error);
             }
         }
@@ -433,8 +437,8 @@ impl Minimap {
         let Some(path) = self.path() else {
             return Ok(());
         };
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)?;
+        if self.load_failed {
+            return Err(io::Error::other(tr!("Invalid minimap file")));
         }
         let saved = Saved {
             version: 1,
@@ -469,12 +473,11 @@ impl Minimap {
         }
         let saved: Saved = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
         saved.validate()?;
-        // Older caches recorded gray item-only cells. They are not persistent terrain.
-        self.dirty |= saved.cells.iter().any(|cell| cell[3] == 86);
+        // Version 1 uses the same value for old item-only cells and real gray terrain.
+        // Only an authoritative observation can tell which remembered cells to clear.
         self.cells = saved
             .cells
             .into_iter()
-            .filter(|cell| cell[3] == 55)
             .map(|[f, x, y, c]| ((f as i16, x, y), c as u8))
             .collect();
         self.markers = saved.markers;

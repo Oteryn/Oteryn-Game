@@ -1,9 +1,14 @@
 // Ordinary asset lights follow the same positions and lifetimes as their rendered cues.
 impl Scene {
-    pub(crate) fn presentation_lights(&self, cues: &[VisualCue], now: Instant, floor: i16) -> Vec<oteryn_renderer::lighting::PointLight> {
+    pub(crate) fn presentation_lights<'a>(
+        &self,
+        cues: impl Iterator<Item = &'a VisualCue>,
+        now: Instant,
+        floor: i16,
+    ) -> Vec<oteryn_renderer::lighting::PointLight> {
         let view = self.view();
         let tile_px = view.tile_px() as f32;
-        cues.iter().filter_map(|cue| {
+        cues.filter_map(|cue| {
             let age = now.saturating_duration_since(cue.received);
             let (light, at) = match cue.kind {
                 PresentationEventKind::MagicEffect { position, effect_id, .. } if position.floor == floor => {

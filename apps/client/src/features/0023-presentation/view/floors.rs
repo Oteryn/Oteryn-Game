@@ -3,12 +3,22 @@ use super::*;
 type FloorVisuals = Vec<(i16, Vec<QuadInstance>, u8)>;
 pub(super) fn project(play: &PlayView, frames: &[Option<Vec<crate::map::Draw>>], now: Instant) -> Result<FloorVisuals, BatchError> {
     let mut result = Vec::new();
-    if !play.preferences().show_effects { return Ok(result); }
+    if !play.preferences().show_effects {
+        return Ok(result);
+    }
     let floors = play.local.world().draw_floors();
+    let visibility = play.preferences().game_window;
     for (cue, frame) in play.visuals.iter().zip(frames) {
+        if !visibility.visible(&cue.kind) {
+            continue;
+        }
         let (floor, source) = match cue.kind {
-            PresentationEventKind::MagicEffect { position, source, .. } => (position.floor, source),
-            PresentationEventKind::Missile { from, to, source, .. } if from.floor == to.floor => (from.floor, source),
+            PresentationEventKind::MagicEffect {
+                position, source, ..
+            } => (position.floor, source),
+            PresentationEventKind::Missile {
+                from, to, source, ..
+            } if from.floor == to.floor => (from.floor, source),
             _ => continue,
         };
         if floor == play.floor || !floors.contains(&floor) { continue; }

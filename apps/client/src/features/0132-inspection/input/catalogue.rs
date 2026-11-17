@@ -64,7 +64,6 @@ pub(in crate::play) fn submit(
     if !panel.selected || panel.pending {
         return;
     }
-    panel.search = panel.search.trim().into();
     panel.category = panel.category.trim().into();
     let selected = panel
         .catalogue_definition
@@ -136,9 +135,13 @@ pub(in crate::play) fn submit(
             };
             let after = if action == 1 {
                 let same_filters = match panel.catalogue_items_query {
-                    Some(query @ catalogue::Query::Items { category: previous, .. }) => {
+                    Some(
+                        query @ catalogue::Query::Items {
+                            category: previous, ..
+                        },
+                    ) => {
                         previous == category
-                            && catalogue::search(query).ok().as_deref() == Some(panel.search.as_str())
+                            && catalogue::search(query).ok().as_deref() == Some(panel.search.trim())
                     }
                     _ => false,
                 };

@@ -132,6 +132,15 @@ impl SettingsState {
                 self.request_page(SettingsPage::Hotkeys);
                 return true;
             }
+            UtilityAction::ToggleVipWidget => {
+                if preferences.panel_visible("vip") || link.vip_is_open() {
+                    preferences.visible_panels.retain(|panel| panel != "vip");
+                    link.vip_close();
+                } else {
+                    preferences.visible_panels.push("vip".into());
+                    link.utility_action(action);
+                }
+            }
             _ => return link.utility_action(action),
         }
         self.apply(preferences);

@@ -44,7 +44,9 @@ impl PlayView {
                         }),
                 )
         {
-            let EntityDetail::Actor { health_percent, .. } = entity.detail else {
+            let (EntityDetail::Actor { health_percent, .. }
+            | EntityDetail::ActorWithIcons { health_percent, .. }) = entity.detail
+            else {
                 continue;
             };
             let is_own = own_identity == Some(entity.entity.identity);
