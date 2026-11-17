@@ -140,8 +140,7 @@ impl RespawnSchedule {
         timing: PointTiming,
         now: u64,
     ) -> Result<u64, SpawnScheduleError> {
-        let due = after(now, timing.respawn_delay_micros)?;
-        self.schedule_gone(point, due, RespawnStep::Due)
+        self.schedule_gone(point, now, timing.respawn_delay_micros, RespawnStep::Due)
     }
 
     /// A world-change resurrection uses the ordinary admission and occupancy checks.
@@ -150,13 +149,14 @@ impl RespawnSchedule {
         point: SpawnPoint,
         now: u64,
     ) -> Result<u64, SpawnScheduleError> {
-        self.schedule_gone(point, now, RespawnStep::Admit)
+        self.schedule_gone(point, now, 0, RespawnStep::Admit)
     }
 
     fn schedule_gone(
         &mut self,
         point: SpawnPoint,
-        due_micros: u64,
+        now: u64,
+        delay: u64,
         step: RespawnStep,
     ) -> Result<u64, SpawnScheduleError> {
         if self.pending.contains_key(&point) {
@@ -165,6 +165,7 @@ impl RespawnSchedule {
         if self.pending.len() >= RESPAWN_PENDING_PER_CHANNEL_MAX {
             return Err(SpawnScheduleError::CapacityExceeded);
         }
+        let due_micros = after(now, delay)?;
         self.pending.insert(
             point,
             PendingRespawn {

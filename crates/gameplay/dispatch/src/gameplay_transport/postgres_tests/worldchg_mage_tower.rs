@@ -118,15 +118,34 @@ async fn scenario(admin: String) -> TestResult {
     let credited: i64 = sqlx::query_scalar("SELECT count(*) FROM game_world_change_credit_receipts WHERE world_id=encode($1,'hex')::uuid AND source_kind=1")
         .bind(world.as_bytes().as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(credited, 1);
+    let now = owner.owner_now().get();
+    let (mut job, replacement) = {
+        let mut runtime = owner.runtime.lock().await;
+        assert!(runtime.spawn_point_creatures()[0].2.is_none());
+        let mut job = MonsterRespawnJob::new(&runtime).map_err(debug)?;
+        job.pass(&mut runtime, now).map_err(debug)?;
+        let replacement = runtime.spawn_point_creatures()[0]
+            .2
+            .ok_or("immediate resurrection")?;
+        assert_ne!(replacement, target);
+        assert!(runtime.matches_live_creature_identity(replacement, key.as_bytes()));
+        (job, replacement)
+    };
+
+    // Seed prior Yielothax deaths, then cross the existing transition through the same
+    // native kill caller. The Energized form must stay gone as the World enters Raging.
+    sqlx::query("UPDATE game_world_change_counters SET state=jsonb_set(state,'{counts,0}','2000') WHERE world_id=encode($1,'hex')::uuid AND change_key=$2")
+        .bind(world.as_bytes().as_slice()).bind(kind.key()).execute(&h.pool).await?;
+    super::engworldchg_journals::kill_actor(&owner, &admitted, replacement, 9002).await?;
+    let day = h
+        .root
+        .world_changes(world, epoch)
+        .await?
+        .ok_or("active day")?;
+    assert_eq!(day.counter_stages[kind.index()], 2);
     let mut runtime = owner.runtime.lock().await;
-    assert!(runtime.spawn_point_creatures()[0].2.is_none());
-    let mut job = MonsterRespawnJob::new(&runtime).map_err(debug)?;
-    job.pass(&mut runtime, owner.owner_now().get())
+    job.pass(&mut runtime, owner.owner_now().get().max(now + 50_000))
         .map_err(debug)?;
-    let replacement = runtime.spawn_point_creatures()[0]
-        .2
-        .ok_or("immediate resurrection")?;
-    assert_ne!(replacement, target);
-    assert!(runtime.matches_live_creature_identity(replacement, key.as_bytes()));
+    assert!(runtime.spawn_point_creatures()[0].2.is_none());
     Ok(())
 }

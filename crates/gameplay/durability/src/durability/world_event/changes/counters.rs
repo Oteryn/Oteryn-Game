@@ -30,6 +30,8 @@ pub fn bindings() -> Result<&'static Bindings, DurabilityError> {
 pub enum CreditOutcome {
     Applied { phase_changed: bool },
     AlreadyApplied,
+    /// The accepted Energized death left the World in its Energized phase.
+    ResurrectEnergizedMage,
     Refused,
 }
 /// Source events are emitted by native death, quest-receipt or item-burn adapters.
@@ -302,11 +304,21 @@ pub async fn credit(
     let binding: Vec<u8> = Sha256::digest(serialized).to_vec();
     let previous:Option<Vec<u8>>=sqlx::query_scalar("SELECT binding_digest FROM game_world_change_credit_receipts WHERE world_id=encode($1,'hex')::uuid AND source_kind=$2 AND occurrence=$3")
         .bind(world.as_bytes().as_slice()).bind(i16::from(event.source_kind)).bind(&event.occurrence).fetch_optional(&mut **tx).await?;
+    let mage = CounterKind::MagesTower;
+    let energized_death = event.credits.contains(&(mage, Credit::Kill(1)));
+    let should_resurrect = |state: CounterState| {
+        energized_death
+            && state.epoch == authority.epoch
+            && state.credit_generation == event.counter_generations[mage.index()]
+            && state.stage == 1
+    };
     if let Some(previous) = previous {
-        return Ok(if previous == binding {
-            CreditOutcome::AlreadyApplied
-        } else {
+        return Ok(if previous != binding {
             CreditOutcome::Refused
+        } else if should_resurrect(values[mage.index()]) && authority.current(tx).await? {
+            CreditOutcome::ResurrectEnergizedMage
+        } else {
+            CreditOutcome::AlreadyApplied
         });
     }
     // Recheck live authority after any wait for Character/counter row locks.
@@ -364,6 +376,9 @@ pub async fn credit(
                 .await?;
             }
         }
+    }
+    if should_resurrect(values[mage.index()]) {
+        return Ok(CreditOutcome::ResurrectEnergizedMage);
     }
     Ok(CreditOutcome::Applied {
         phase_changed: changed,

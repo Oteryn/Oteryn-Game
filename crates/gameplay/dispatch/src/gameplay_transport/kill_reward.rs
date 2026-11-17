@@ -3618,6 +3618,12 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             match admission.root.credit_world_change_event(admission.character, admission.holder, scope, generation, *epoch, event.clone()).await {
                 Ok(crate::durability::world_event::changes::counters::CreditOutcome::Applied { .. } |
                    crate::durability::world_event::changes::counters::CreditOutcome::AlreadyApplied) => {},
+                Ok(crate::durability::world_event::changes::counters::CreditOutcome::ResurrectEnergizedMage) => {
+                    let mut runtime = admission.runtime.lock().await;
+                    if runtime.resurrect_energized_mage(entry.target, admission.owner_now().get()).is_err() {
+                        return SettleReport { verdict: SettleVerdict::Retry, no_progression: false };
+                    }
+                }
                 Ok(crate::durability::world_event::changes::counters::CreditOutcome::Refused) => {
                     operator_event("world_change_credit_refused reason=stale_source_or_cycle");
                 },

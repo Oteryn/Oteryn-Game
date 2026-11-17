@@ -47,6 +47,51 @@ impl ChannelRuntimeV1 {
             },
         ))
     }
+    /// Queue the World owner's resurrection decision for this exact dead home actor.
+    /// The next spawn drive still owns occupancy checks and actor admission.
+    pub fn resurrect_energized_mage(
+        &mut self,
+        actor: ExactActorRef,
+        now_micros: u64,
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        let Some((source, ordinal)) = self.carrier.locate_spawn_cell(actor) else {
+            return Ok(());
+        };
+        let index = self
+            .carrier
+            .spawn_index(source)
+            .ok_or(CarrierError::UnknownSpawnSource)?;
+        let definition = self.carrier.spawns[index].definition.point(ordinal)?;
+        if !definition.enabled
+            || definition.creature_target_identity != "oteryn:creature.energized_raging_mage"
+            || definition
+                .world_change
+                .as_ref()
+                .is_none_or(|(key, _)| key != "the_mage_s_tower")
+            || self.contains_live_creature(actor)
+        {
+            return Ok(());
+        }
+        let point = spawn::SpawnPoint {
+            source: source.0,
+            ordinal: u8::try_from(ordinal).map_err(|_| CarrierError::UnknownSpawnCell)?,
+        };
+        if let Some(pending) = self.spawn_schedule.pending(point) {
+            if pending.step != spawn::RespawnStep::Due {
+                return Ok(());
+            }
+            self.spawn_schedule.cancel(point);
+            self.spawn_deadlines.remove(&(pending.due_micros, point));
+        }
+        let due = self
+            .spawn_schedule
+            .resurrect_now(point, now_micros)
+            .map_err(|_| CarrierError::CapacityExceeded)?;
+        self.spawn_deadlines.insert((due, point));
+        Ok(())
+    }
+
     /// Exact base identity and home cell define membership; None leaves a point alone.
     /// Administrative retirement produces no combat death, loot or XP. Source/ordinal,
     /// placement, normal timing and per-window budgets remain owned by Spawn.
@@ -255,6 +300,15 @@ mod tests {
             assert!(runtime.kill_creature_for_test(actor.ok_or(CarrierError::PlanConflict)?));
         }
         let now = 50_000;
+        assert!(
+            runtime
+                .drive_spawn_respawns(now, |_, _| true)?
+                .admitted
+                .is_empty()
+        );
+        for (_, _, actor) in &points {
+            runtime.resurrect_energized_mage(actor.ok_or(CarrierError::PlanConflict)?, now)?;
+        }
         let report = runtime.drive_spawn_respawns(now, |_, _| true)?;
         assert!(report.warnings.is_empty());
         assert_eq!(report.admitted.len(), 1);
