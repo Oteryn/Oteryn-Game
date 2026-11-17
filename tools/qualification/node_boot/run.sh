@@ -67,7 +67,10 @@ GAME_SOURCE="$(git rev-parse --show-toplevel)"
 # The separately pinned portal-rs lane owns only Platform lifecycle and its stages.
 # A fixed repository path prevents an environment variable from sourcing arbitrary code.
 case "${NODE_BOOT_LIFECYCLE:-}" in
-  '') ;;
+  ''|native_reference)
+    NODE_BOOT_LIFECYCLE=native_reference
+    source "$GAME_SOURCE/tools/qualification/game_platform/lifecycle.sh"
+    ;;
   game_platform)
     # shellcheck source=tools/qualification/game_platform/lifecycle.sh
     source "$GAME_SOURCE/tools/qualification/game_platform/lifecycle.sh"
@@ -77,7 +80,7 @@ case "${NODE_BOOT_LIFECYCLE:-}" in
 esac
 NODE_BOOT_PLATFORM_PIN="$PLATFORM_SHA"
 NODE_BOOT_TOPOLOGY="$TOPOLOGY_REVISION"
-if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
+if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
   # portal-rs pin is owned by game_platform/lifecycle.sh (includes Platform #1833).
   NODE_BOOT_PLATFORM_PIN="$GAME_PLATFORM_SHA"
   NODE_BOOT_TOPOLOGY=portal-rs-game-platform-v1
@@ -262,7 +265,7 @@ cleanup() {
   else
     [[ -z "$NODE_PID" ]] || sudo kill -TERM "$NODE_PID" 2>/dev/null || true
     sudo pkill -TERM -u "$SERVICE_USER" 2>/dev/null || true
-    if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
+    if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
       game_platform_cleanup
     else
       compose down --volumes --remove-orphans --timeout 15 >/dev/null 2>&1 || true
@@ -366,21 +369,9 @@ echo "CREATE EXTENSION pg_stat_statements" | psql_admin postgres
 [[ "$(echo 'SHOW ssl' | psql_admin oteryn_node_boot)" == on ]] || fail "postgres_tls"
 ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_PORT/oteryn_node_boot"
 
-# The Platform topology.
-if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
-  game_platform_start
-else
-compose config --quiet
-compose build --pull platform
-compose up --detach --wait db platform nginx
-# Platform output is kept: a failing operator command must be diagnosable.
-php_exec() { compose exec --no-TTY --user www-data platform php -r "$1"; }
-php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"$ACCOUNT_ID"'","nb-one@example.invalid"],["'"$SECOND_ACCOUNT_ID"'","nb-two@example.invalid"]] as [$accountId,$email]) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); } app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","'"$FRESH_KEY_ID"'",hex2bin("'"$FRESH_PUBLIC_HEX"'")); app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey("urn:oteryn:platform:game-recovery","oteryn-reauth-recovery-v1","existing_actor_recovery","'"$RECOVERY_KEY_ID"'",hex2bin("'"$RECOVERY_PUBLIC_HEX"'"));'
-if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
-  php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"$PACKET_ACCOUNT_ID"'","nb-three@example.invalid"],["'"$SECOND_PACKET_ACCOUNT_ID"'","nb-four@example.invalid"]] as [$accountId,$email]) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); }'
-fi
-evidence "platform_seed=synthetic_accounts=${#BOOTSTRAP_ACCOUNTS[@]} fresh_trust=published_public_key_only client_identities=1"
-fi # Platform lifecycle
+# Use the merged native producer for every shard; the PHP producer is retired.
+game_platform_start
+
 
 # The accelerated build is disposable: production binaries omit its file input.
 # Real-clock qualification deliberately builds the ordinary shipping binary.
@@ -596,7 +587,7 @@ start_y = 32238
 start_floor = -7''')
 PY_WORLD
   fi
-  if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
+  if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
     game_platform_config "$WORK/node.toml"
   fi
   sudo install -o root -m 0644 "$WORK/node.toml" "$BASE/node/node.toml"
@@ -1016,7 +1007,7 @@ configuration_negatives() { # exit before binding, no secret in output
 node_deployment_grants() {
   [[ "$(echo "SELECT current_user = pg_get_userbyid(datdba) FROM pg_database WHERE datname=current_database()" | psql_admin oteryn_node_boot)" == t ]] || fail "deployment issuer is not the database owner"
   local operations=1,2,3,4
-  [[ "${NODE_BOOT_LIFECYCLE:-}" != game_platform ]] || operations=1,4
+  [[ "${NODE_BOOT_LIFECYCLE:-}" != game_platform && "${NODE_BOOT_LIFECYCLE:-}" != native_reference ]] || operations=1,4
   psql_admin oteryn_node_boot <<SQL
 INSERT INTO game_control_scope_grants SELECT 'nb_control', '$WORLD_ID', '$CHANNEL_ID', op FROM unnest(ARRAY[$operations]::smallint[]) op;
 INSERT INTO game_control_field_policy_grants VALUES ('nb_control', '$WORLD_ID', 'policy-s3b-1');
@@ -1059,7 +1050,7 @@ node_complete_assignment() {
   ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty
   ops content activate --request content-1.json
   local -a report_args=()
-  if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
+  if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
     report_args=(--report-config "$BASE/ops/assignment-report.toml" --node-config "$BASE/node/node.toml"
       --node-identity "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["clients"]["runtime-status"]["san"])' "$WORK/portal-report.json")")
   fi
@@ -1115,7 +1106,8 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
     operation="${INTENT_OPERATIONS[$index]}"
     name="${INTENT_NAMES[$index]}"
     index=$((index + 1))
-    if ! php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $id=Illuminate\Support\Facades\DB::table("identities")->where("account_id","'"$account"'")->value("id"); $code=Illuminate\Support\Facades\Artisan::call("game-auth:character-bootstrap-intent:issue",["--identity-id"=>(string)$id,"--operation-id"=>"'"$operation"'","--target-world-id"=>"'"$WORLD_ID"'","--requested-name"=>"'"$name"'","--requested-sex"=>"Female","--requested-vocation"=>"Knight","--profile-revision"=>"'"${INTERPRETATION[0]}"'","--ruleset-revision"=>"'"${INTERPRETATION[1]}"'","--content-revision"=>"'"${INTERPRETATION[2]}"'","--starter-template-revision"=>"'"${INTERPRETATION[3]}"'"]); fwrite(STDERR, Illuminate\Support\Facades\Artisan::output()); exit($code);'; then
+    if ! python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
+      "$WORK" "$account" "$WORLD_ID" "$operation" "${INTERPRETATION[@]}" "$name"; then
       echo "platform intent issue failed for operation $operation"
       failed=1
       continue

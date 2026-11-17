@@ -65,14 +65,14 @@ def configure(work, node, base, uid):
     install(temporary, base / "ops/assignment-report.toml", "root", "0644")
 
 
-def bootstrap(work, account, world, operation, revisions):
+def bootstrap(work, account, world, operation, revisions, name="Qualification Two"):
     env = json.loads((work / "portal/secrets/env.json").read_text())
     binary = json.loads((work / "identity.json").read_text())["portal_binary"]
     if len(revisions) != 4:
         raise ValueError("intent_context_missing")
     args = dict(zip(["profileRevision", "rulesetRevision", "contentRevision", "starterTemplateRevision"], revisions))
     args.update(accountId=account, targetWorldId=world, operationId=operation,
-                requestedName="Qualification Two", requestedSex="Female", requestedVocation="Knight")
+                requestedName=name, requestedSex="Female", requestedVocation="Knight")
     result = subprocess.run([binary, "seed", "bootstrap-intent", json.dumps(args)],
                             env=env, capture_output=True, timeout=20, check=True)
     value = json.loads(result.stdout)
@@ -85,7 +85,7 @@ if __name__ == "__main__":
         if sys.argv[1] == "configure":
             configure(Path(sys.argv[2]), Path(sys.argv[3]), Path(sys.argv[4]), sys.argv[5])
         elif sys.argv[1] == "bootstrap":
-            bootstrap(Path(sys.argv[2]), *sys.argv[3:6], sys.argv[6:])
+            bootstrap(Path(sys.argv[2]), *sys.argv[3:6], sys.argv[6:10], *sys.argv[10:])
         else:
             raise ValueError("unknown_step")
     except (OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError):

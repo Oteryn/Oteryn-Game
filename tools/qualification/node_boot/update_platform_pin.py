@@ -17,8 +17,6 @@ def update(root: Path, platform: Path) -> str:
             raise ValueError(f"missing current producer version: {directory}")
     for relative, name in (
         ("tools/qualification/node_boot/run.sh", "PLATFORM_SHA"),
-        ("tools/qualification/wp5_s3b/run.sh", "PLATFORM_SHA"),
-        ("tools/qualification/login_local/run.sh", "PLATFORM_SHA"),
         ("tools/qualification/game_platform/lifecycle.sh", "GAME_PLATFORM_SHA"),
         ("tools/qualification/game_platform/run.sh", "GAME_PLATFORM_SHA"),
     ):

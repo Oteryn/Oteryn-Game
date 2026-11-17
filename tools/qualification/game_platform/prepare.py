@@ -10,7 +10,7 @@ from pathlib import Path
 
 def main():
     work = Path(sys.argv[1])
-    account_a, account_b, world, channel, fresh, recovery, fresh_id, recovery_id = sys.argv[2:]
+    account_a, account_b, world, channel, fresh, recovery, fresh_id, recovery_id = sys.argv[2:10]
     binary = Path(json.loads((work / "portal-meta.json").read_text())["target_directory"]) / "debug/oteryn-portal"
     if not binary.is_file() or not os.access(binary, os.X_OK):
         raise ValueError("real_portal_binary_missing")
@@ -27,7 +27,12 @@ def main():
         {"accountId": account_a, "email": f"gpe2e-a-{suffix}@example.invalid", "password": secrets.token_urlsafe(48)},
         {"accountId": account_b, "email": f"gpe2e-b-{suffix}@example.invalid", "password": secrets.token_urlsafe(48)},
     ]
-    steps = [{"name": name, "entity": "account", "args": args} for name, args in zip(["accountA", "accountB"], accounts)]
+    extra_accounts = sys.argv[10:]
+    if len(extra_accounts) not in (0, 2):
+        raise ValueError("reference_accounts_missing")
+    for label, account in zip(("c", "d"), extra_accounts):
+        accounts.append({"accountId": account, "email": f"gpe2e-{label}-{suffix}@example.invalid", "password": secrets.token_urlsafe(48)})
+    steps = [{"name": name, "entity": "account", "args": args} for name, args in zip(["accountA", "accountB", "accountC", "accountD"], accounts)]
     steps += [
         {"name": "world", "entity": "world", "args": {"worldId": world, "name": "Entry", "region": "local"}},
         {"name": "nativeClient", "entity": "oauth-native-client", "args": {"clientId": client}},
