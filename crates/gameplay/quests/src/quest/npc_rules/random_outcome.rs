@@ -14,6 +14,34 @@ pub struct RandomItemExchange {
 }
 
 impl RandomItemExchange {
+    /// Resolve the inventory effects before handing them to the existing atomic
+    /// NPC item participant. Missing input refuses before consuming an RNG draw.
+    pub fn effects(
+        &self,
+        available: u32,
+        draw: impl FnOnce(u32) -> u32,
+    ) -> Option<Vec<super::NpcRuleEffect>> {
+        if available == 0 {
+            return None;
+        }
+        let total = self.total_weight()?;
+        let item = self.draw(draw(total))?;
+        let mut effects = vec![super::NpcRuleEffect::TakeItem {
+            item: self.input.into(),
+            count: 1,
+            subtype: None,
+            optional: false,
+        }];
+        if let Some(item) = item {
+            effects.push(super::NpcRuleEffect::GiveItem {
+                item: item.into(),
+                count: 1,
+                subtype: None,
+            });
+        }
+        Some(effects)
+    }
+
     /// Reject empty, zero-weight or overflowing tables before requesting a draw.
     pub fn total_weight(&self) -> Option<u32> {
         if self.outcomes.is_empty() {

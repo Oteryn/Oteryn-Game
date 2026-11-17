@@ -1,5 +1,36 @@
 //! Donor odds and boundary draws shared with the durable NPC exchange.
 use oteryn_gameplay_quests::quest::npc_rules::random_outcome::SANDRA_LOTTERY;
+use oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect;
+
+#[test]
+fn sandra_lottery_missing_input_refuses_without_drawing() {
+    let called = std::cell::Cell::new(false);
+    assert_eq!(SANDRA_LOTTERY.effects(0, |_| {
+        called.set(true);
+        0
+    }), None);
+    assert!(!called.get());
+}
+
+#[test]
+fn sandra_lottery_resolves_exact_input_and_selected_output() {
+    let take = NpcRuleEffect::TakeItem {
+        item: "oteryn:item.tibia.i5957".into(),
+        count: 1,
+        subtype: None,
+        optional: false,
+    };
+    assert_eq!(SANDRA_LOTTERY.effects(1, |total| {
+        assert_eq!(total, 98);
+        0
+    }), Some(vec![take.clone(), NpcRuleEffect::GiveItem {
+        item: "oteryn:item.tibia.i5958".into(),
+        count: 1,
+        subtype: None,
+    }]));
+    assert_eq!(SANDRA_LOTTERY.effects(1, |_| 97), Some(vec![take]));
+    assert_eq!(SANDRA_LOTTERY.effects(1, |_| 98), None);
+}
 
 #[test]
 fn sandra_lottery_odds_equal_crystal_201189f8() {
