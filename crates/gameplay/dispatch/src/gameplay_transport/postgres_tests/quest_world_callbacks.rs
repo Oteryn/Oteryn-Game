@@ -11,14 +11,14 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::collections::BTreeMap;
 
 fn callback(name: &str) -> TestResult<Callback> {
-    // The Stampede entry is an authored binding of the content catalogue.
-    if name == "m01b/asura-palace/s1/entry" || name == super::m01c_stampede_entry::CALLBACK {
-        let label = if name == super::m01c_stampede_entry::CALLBACK {
-            "content-1"
-        } else {
-            "asura-dispatch"
-        };
-        let loaded = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state(label)
+    if name == super::m01c_stampede_entry::CALLBACK {
+        return oteryn_gameplay_quests::quest::world_callbacks::load_for(&super::m01c_stampede_entry::catalogue()?)?
+            .into_iter().find(|callback| callback.key.ends_with(name))
+            .ok_or_else(|| "historical trial callback".into());
+    }
+    // Asura remains an authored binding of the production catalogue.
+    if name == "m01b/asura-palace/s1/entry" {
+        let loaded = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("asura-dispatch")
             .map_err(debug)?;
         return oteryn_gameplay_quests::quest::world_callbacks::load_for(loaded.catalogue())?
             .into_iter()

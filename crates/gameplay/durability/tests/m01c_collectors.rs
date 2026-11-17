@@ -308,17 +308,32 @@ async fn stampede(h: &f::Harness) -> f::TestResult {
         .await
         .map_err(f::debug)?;
     reward_fixture::equip_backpack(h, &authority, native, &weights).await?;
-    let catalogue = Arc::new(
-        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
-            .map_err(f::debug)?
+    let production = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(f::debug)?;
+    assert!(
+        production
             .catalogue()
-            .clone(),
+            .transition("oteryn:quest-reward/m01c-stampede-collector")
+            .is_none()
+    );
+    let bindings = oteryn_gameplay_quests::quest::authored_bindings::Bindings::parse(
+        include_bytes!(
+            "../../../../tools/content-schema/quest-authoring/samples/stampede-personal-trial-test-fixture.json"
+        ),
+    )?;
+    let catalogue = Arc::new(
+        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state_with_bindings(
+            "content-1",
+            &bindings,
+        )
+        .map_err(f::debug)?
+        .catalogue()
+        .clone(),
     );
     assert!(
         catalogue
             .transition("oteryn:quest-reward/m01c-stampede-collector")
-            .is_some(),
-        "production collector must be registered"
+            .is_some()
     );
     let account:Vec<u8>=sqlx::query_scalar("SELECT uuid_send(account_id) FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
         .bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;

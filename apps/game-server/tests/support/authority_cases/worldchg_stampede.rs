@@ -1,8 +1,9 @@
-//! Accepted W15 daily predicate gates the unmodified native Stampede raid.
+//! Global Stampede day starts at save (TibiaWiki Spoiler oldid=887155),
+//! overriding donor XML random timing while preserving the native sixteen-actor wave.
 use crate::bestiary_postgres_harness as fixture;
 use crate::durability::world_event::changes;
 use oteryn_gameplay_content::content::ProductionKey;
-use oteryn_gameplay_encounter_rules::raid::{RaidAction, RaidCatalogue, RaidSchedule};
+use oteryn_gameplay_encounter_rules::raid::{RaidCatalogue, RaidSchedule};
 use oteryn_gameplay_world_change::owner::is_active;
 
 #[test]
@@ -17,7 +18,7 @@ fn worldchg_postgres_stampede_daily_gate_reaches_existing_raid_runner() -> fixtu
             let result = exercise(&h).await;
             h.cleanup().await?;
             result?;
-            println!("WORLDCHG-Q PG EXECUTED: Stampede inactive/active epochs, native raid RNG,16-elephant wave,reload,inactive Furyosa denied; elapsed={:?}", start.elapsed());
+            println!("WORLDCHG-Q PG EXECUTED: Stampede inactive/active epochs, immediate save firing without raid RNG,16-elephant wave,reload,inactive Furyosa denied; elapsed={:?}", start.elapsed());
             Ok::<(), Box<dyn std::error::Error>>(())
         }).map_err(fixture::debug)
     })?.join().map_err(|_| "stampede PG thread failed")?.map_err(Into::into)
@@ -58,35 +59,11 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         .select([7; 32], fixture::id(88))
         .map_err(fixture::debug)?;
     assert_eq!(selected.definition.waves[0].entries[0].count, 16);
-    // Compute the native RNG's first winning check in memory. Seed only the
-    // independently validated pre-check fixture, so PostgreSQL needs one due pass.
-    // The sourced definition, random policy, 24h interval and 6h margin are unchanged.
-    let mut before = RaidSchedule::initial(active, 0).map_err(fixture::debug)?;
-    let (before, now) = (0..100_000)
-        .find_map(|ordinal| {
-            let now = 21_600_000 + i64::from(ordinal) * 60_000;
-            let transition = before
-                .plan(
-                    world,
-                    &key,
-                    &selected.definition,
-                    RaidAction::Check {
-                        now_ms: now,
-                        eligible: true,
-                        calendar: None,
-                        firing_id: fixture::id(88),
-                        bundle_digest: [7; 32],
-                    },
-                )
-                .ok()?;
-            if transition.after().latest_firing.is_some() {
-                Some((before.clone(), now))
-            } else {
-                before = transition.after().clone();
-                None
-            }
-        })
-        .ok_or("native winning check")?;
+    assert_eq!(selected.definition.announcements[0].delay_ms, 0);
+    assert_eq!(selected.definition.waves[0].delay_ms, 0);
+    // At the save itself, despite the retained donor six-hour global margin.
+    let before = RaidSchedule::initial(active, 0).map_err(fixture::debug)?;
+    let now = 0;
     before.validate().map_err(fixture::debug)?;
     let channel = ChannelId::decode(&fixture::id(fixture::CHANNEL)).map_err(fixture::debug)?;
     let mut request = RaidSchedulerCheck {
@@ -189,7 +166,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             channel,
             generation,
             selected.definition.clone(),
-            now + 1000,
+            now,
         )
         .await?
         .ok_or("source announcement")?;
@@ -198,7 +175,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         CommittedRaidAction::Announcement { .. }
     ));
     h.root
-        .acknowledge_raid_effect(&h.node, notice.identity, vec![], now + 1000)
+        .acknowledge_raid_effect(&h.node, notice.identity, vec![], now)
         .await?;
     let wave = h
         .root
@@ -208,7 +185,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             channel,
             generation,
             selected.definition,
-            now + 2000,
+            now,
         )
         .await?
         .ok_or("native wave")?;

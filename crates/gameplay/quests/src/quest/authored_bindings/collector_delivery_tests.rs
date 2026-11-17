@@ -58,7 +58,19 @@ fn pilgrimage_collector_requires_all_ordered_visits_and_delivers_only_at_complet
 
 #[test]
 fn stampede_collector_is_bound_to_personal_trial_and_five_elephant_kills() -> Result<(), String> {
-    let loaded = loader::load_embedded_quest_state("content-1").map_err(|e| format!("{e:?}"))?;
+    let production =
+        loader::load_embedded_quest_state("content-1").map_err(|e| format!("{e:?}"))?;
+    assert!(
+        production
+            .catalogue()
+            .transition("oteryn:quest-reward/m01c-stampede-collector")
+            .is_none()
+    );
+    let bindings = super::Bindings::parse(include_bytes!(
+        "../../../../../../tools/content-schema/quest-authoring/samples/stampede-personal-trial-test-fixture.json"
+    ))?;
+    let loaded = loader::load_embedded_quest_state_with_bindings("content-1", &bindings)
+        .map_err(|e| format!("{e:?}"))?;
     let catalogue = loaded.catalogue();
     let quest = catalogue
         .authored_bindings()

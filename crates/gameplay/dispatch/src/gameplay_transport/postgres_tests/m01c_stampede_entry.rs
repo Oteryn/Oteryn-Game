@@ -1,4 +1,4 @@
-//! A timed personal trial STEP passes its encounter preflight, commits and schedules.
+//! Historical personal-trial owner regression; this fixture is absent from production.
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
@@ -200,4 +200,16 @@ async fn counts(h: &Harness) -> TestResult<(i64, i64)> {
     .bind(TRACK)
     .fetch_one(&h.pool)
     .await?)
+}
+
+/// Load the historical approximation only for owner regression tests.
+pub(super) fn catalogue() -> TestResult<oteryn_gameplay_quests::quest::QuestStateCatalogue> {
+    let production = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(debug)?;
+    assert!(production.catalogue().transition(KEY).is_none());
+    let bindings = oteryn_gameplay_quests::quest::authored_bindings::Bindings::parse(include_bytes!(
+        "../../../../../../tools/content-schema/quest-authoring/samples/stampede-personal-trial-test-fixture.json"
+    ))?;
+    Ok(oteryn_gameplay_quests::quest::loader::load_embedded_quest_state_with_bindings("content-1", &bindings)
+        .map_err(debug)?.catalogue().clone())
 }

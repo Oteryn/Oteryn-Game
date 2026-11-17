@@ -1677,6 +1677,9 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
+        if name == super::super::m01c_stampede_entry::NAME {
+            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::m01c_stampede_entry::catalogue()?));
+        }
         if draconia_escape {
             owner.quest_catalogue =
                 Some(super::super::draconia_escape::catalogue(&callback, name)?);

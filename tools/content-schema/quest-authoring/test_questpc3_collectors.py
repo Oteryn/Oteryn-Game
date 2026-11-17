@@ -23,8 +23,11 @@ class CollectorDelivery(unittest.TestCase):
                 self.assertIsNone(callback['give'])
 
 
+    def test_stampede_is_a_global_change_without_a_personal_programme(self):
+        self.assertEqual(source.build_stampede(), {'schema': 1, 'quests': []})
+
     def test_stampede_personal_trial_has_five_kills_before_collector_achievement(self):
-        quest = source.build_stampede()['quests'][0]
+        quest = source.build_stampede_trial_fixture()['quests'][0]
         self.assertEqual(quest['quest'], 'oteryn:quest.stampede_mini_world_change')
         self.assertEqual([s['trigger']['kind'] for s in quest['stages']], ['step_in', 'kill', 'npc_dialogue'])
         entry, kill, finish = [s['trigger'] for s in quest['stages']]

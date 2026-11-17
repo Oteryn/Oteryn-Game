@@ -1523,7 +1523,7 @@
         },
         {
           "path": "content/encounters/raids/catalogue.json",
-          "locator": "raid:porthope.stampede;16;32825,32667,7-32888,32675,7;2000ms;86400s;21600000ms"
+          "locator": "raid:porthope.stampede;16;32825,32667,7-32888,32675,7;server_save;donor_XML_timing_overridden_by_Global"
         },
         {
           "path": "crates/gameplay/progression/src/bestiary_achievement.rs",
@@ -1548,7 +1548,7 @@
           "url": "https://tibia.fandom.com/index.php?curid=76266&oldid=887155"
         }
       ],
-      "reason": "Accepted W 15 daily 125-permille gate composed with the existing Stampede raid schedule, 16 Terrified Elephants and bound Tiquanda area; existing fifth-credited-kill achievement path. The raid keeps its own native interval/margin and until-reset creature lifetime.",
+      "reason": "Accepted W 15 daily 125-permille gate selects the server-save day. TibiaWiki spoiler rev 887155 and infobox rev 845239 override donor XML interval/margin: the bound Tiquanda wave of up to 16 Terrified Elephants is due immediately and persists until reset. The existing fifth-credited-kill achievement path needs no personal programme or collector.",
       "trigger": {
         "kind": "at_reset",
         "chance_permille": 125,

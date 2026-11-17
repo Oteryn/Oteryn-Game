@@ -57,6 +57,14 @@ pub enum RaidAction {
         firing_id: [u8; 16],
         bundle_digest: [u8; 32],
     },
+    /// A committed daily world-change decision fires at save, including before
+    /// the ordinary first check interval. The durable owner proves the day.
+    ResetDayCheck {
+        now_ms: i64,
+        selected: bool,
+        firing_id: [u8; 16],
+        bundle_digest: [u8; 32],
+    },
     /// Metadata-only close at the deadline. Live runs/LOST reconciliation must
     /// be composed by their future owner before any runtime activation.
     Close {
@@ -94,6 +102,17 @@ impl RaidTransition {
 }
 
 impl RaidSchedule {
+    /// TibiaWiki Stampede Mini World Change/Spoiler oldid=887155: one
+    /// server-save day, selected once by the daily owner, with no raid RNG.
+    /// A finished/cancelled firing must not replenish the day's sixteen actors.
+    pub fn reset_day_selected(&self, active: bool) -> bool {
+        active
+            && self
+                .latest_firing
+                .as_ref()
+                .is_none_or(|f| f.reset_epoch != self.reset_epoch)
+    }
+
     pub fn initial(reset_epoch: u64, now_ms: i64) -> Result<Self, RaidError> {
         if reset_epoch == 0 {
             return Err(RaidError::InvalidState);
@@ -270,6 +289,12 @@ impl RaidSchedule {
                 selected,
                 firing_id,
                 bundle_digest,
+            }
+            | RaidAction::ResetDayCheck {
+                now_ms,
+                selected,
+                firing_id,
+                bundle_digest,
             } => {
                 if definition.policy != RaidPolicy::SourceScheduled {
                     return Err(RaidError::InvalidDefinition);
@@ -277,7 +302,10 @@ impl RaidSchedule {
                 if now_ms < 0 {
                     return Err(RaidError::InvalidTime);
                 }
-                if !self.retired && now_ms >= self.next_check_at_ms {
+                let at_reset = matches!(action, RaidAction::ResetDayCheck { .. });
+                let selected = selected && (!at_reset || self.reset_day_selected(true));
+                let reset_due = at_reset && selected;
+                if !self.retired && (now_ms >= self.next_check_at_ms || reset_due) {
                     after.next_check_at_ms = now_ms
                         .checked_add(CHECK_INTERVAL_MS)
                         .ok_or(RaidError::Exhausted)?;

@@ -1,4 +1,9 @@
-//! Pin the authored precondition to the already admitted raid and native map anchor.
+//! Global Stampede: TibiaWiki Stampede Mini World Change/Spoiler oldid=887155,
+//! infobox oldid=845239; Trail of the Ape God oldid=845280.
+//! Loot cross-check: Terrified Elephant creature page (TibiaWiki BR
+//! https://www.tibiawiki.com.br/index.php?title=Terrified_Elephant&oldid=443841),
+//! retained at imports/tibiawiki/facts/creatures/creatures-00500-00999.json.
+//! Existing tusk chances are 83,882 ppm versus the Elephant's 11,377 ppm.
 #[test]
 fn worldchg_stampede_content_qualifies_native_wave_region_and_achievement()
 -> Result<(), Box<dyn std::error::Error>> {
@@ -11,10 +16,7 @@ fn worldchg_stampede_content_qualifies_native_wave_region_and_achievement()
     let selected = raid.select([7; 32], [8; 16])?;
     assert_eq!(
         selected.definition.policy,
-        RaidPolicy::Random {
-            mean_interval_s: 86400,
-            min_gap_s: 0
-        }
+        RaidPolicy::SourceScheduled
     );
     assert!(matches!(
         raid.schedule,
@@ -24,8 +26,8 @@ fn worldchg_stampede_content_qualifies_native_wave_region_and_achievement()
         }
     ));
     assert_eq!(selected.end_policy, RaidEndPolicy::UntilReset);
-    assert_eq!(selected.definition.announcements[0].delay_ms, 1000);
-    assert_eq!(selected.definition.waves[0].delay_ms, 2000);
+    assert_eq!(selected.definition.announcements[0].delay_ms, 0);
+    assert_eq!(selected.definition.waves[0].delay_ms, 0);
     let entry = &selected.definition.waves[0].entries[0];
     assert_eq!(entry.count, 16);
     assert_eq!(
@@ -42,6 +44,16 @@ fn worldchg_stampede_content_qualifies_native_wave_region_and_achievement()
     );
     assert_eq!((area.to.x, area.to.y, area.to.floor), (32888, 32675, 7));
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let tusks = |path: &str, creature: &str| -> Result<u64, Box<dyn std::error::Error>> {
+        let document: serde_json::Value = serde_json::from_slice(&std::fs::read(root.join(path))?)?;
+        let record = document["records"].as_array().ok_or("loot records")?.iter()
+            .find(|row| row["definition"]["identity"]["key"] == creature).ok_or("creature loot")?;
+        record["definition"]["entries"].as_array().ok_or("loot entries")?.iter()
+            .find(|entry| entry["item"]["key"] == "oteryn:item.tibia.i3044")
+            .and_then(|entry| entry["probability_ppm"].as_u64()).ok_or_else(|| "tusk chance".into())
+    };
+    assert_eq!(tusks("content/loot/loot-01000-01291.json", "oteryn:loot.creature.terrified_elephant")?, 83_882);
+    assert_eq!(tusks("content/loot/loot-00000-00499.json", "oteryn:loot.creature.elephant")?, 11_377);
     for region in &raid.variants[0].waves[0].entries[0].area.regions {
         let bytes = std::fs::read(root.join(&region.path))?;
         assert_eq!(

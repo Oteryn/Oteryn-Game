@@ -178,7 +178,7 @@ async fn scenario(
     if flower { assert_eq!(selected.definition.announcements.len(), 4); }
     else if key.as_str() == "raid:porthope.stampede" {
         assert_eq!(selected.definition.announcements.len(), 1);
-        assert_eq!(selected.definition.announcements[0].delay_ms, 1_000);
+        assert_eq!(selected.definition.announcements[0].delay_ms, 0);
         assert_eq!(selected.definition.announcements[0].text,
             "Stampede! The Ape God has stirred up Tiquanda's elephants again!");
     } else {
@@ -324,10 +324,10 @@ async fn scenario(
     let now = i64::from(selected.definition.waves.first().ok_or("wave")?.delay_ms);
     if key.as_str() == "raid:porthope.stampede" {
         let announcement = harness.root.advance_raid_run(
-            &harness.node, firing, owner.channel_id, generation, selected.definition.clone(), 1_000,
+            &harness.node, firing, owner.channel_id, generation, selected.definition.clone(), 0,
         ).await?.ok_or("Stampede announcement")?;
         assert!(matches!(announcement.action, CommittedRaidAction::Announcement { .. }));
-        harness.root.acknowledge_raid_effect(&harness.node, announcement.identity, vec![], 1_000).await?;
+        harness.root.acknowledge_raid_effect(&harness.node, announcement.identity, vec![], 0).await?;
     }
     let mut wave = harness.root.advance_raid_run(
         &harness.node, firing, owner.channel_id, generation, selected.definition.clone(), now,

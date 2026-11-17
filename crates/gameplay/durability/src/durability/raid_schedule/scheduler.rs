@@ -75,7 +75,9 @@ impl DurabilityRoot {
                 .map_err(|_| DurabilityError::InvalidStoredState)?;
             if !keys.insert(candidate.key.as_str())
                 || (candidate.lua.is_some() && candidate.calendar_window.is_some())
-                || ((candidate.lua.is_some() || candidate.calendar_window.is_some())
+                || ((candidate.lua.is_some()
+                    || candidate.calendar_window.is_some()
+                    || candidate.key.as_str() == "raid:porthope.stampede")
                     != (candidate.definition.policy == RaidPolicy::SourceScheduled))
             {
                 return Err(DurabilityError::InvalidStoredState);
@@ -137,7 +139,7 @@ impl DurabilityRoot {
             crate::durability::raid_runner::reconcile_deadlines(&mut tx, request.world, request.now_ms).await?;
             let last_end: i64 = sqlx::query_scalar("SELECT last_end_at_ms FROM game_world_raid_scheduler_clocks WHERE world_id=encode($1,'hex')::uuid FOR UPDATE")
                 .bind(request.world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
-            let mut legacy_running: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_raid_firings f WHERE f.world_id=encode($1,'hex')::uuid AND f.state=1 AND f.raid_key<>$2 AND NOT EXISTS(SELECT 1 FROM game_world_raid_schedule_sources s WHERE s.world_id=f.world_id AND s.raid_key=f.raid_key AND s.source_kind<>1))")
+            let mut legacy_running: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_raid_firings f WHERE f.world_id=encode($1,'hex')::uuid AND f.state=1 AND f.raid_key<>$2 AND f.raid_key<>'raid:porthope.stampede' AND NOT EXISTS(SELECT 1 FROM game_world_raid_schedule_sources s WHERE s.world_id=f.world_id AND s.raid_key=f.raid_key AND s.source_kind<>1))")
                 .bind(request.world.as_bytes().as_slice()).bind(super::FEROXA_KEY).fetch_one(&mut *tx).await?;
             let world_changes = if request.candidates.iter().any(|candidate| requirements.contains_key(candidate.key.as_str())) {
                 crate::durability::world_event::changes::load(&mut tx, request.world, request.reset_epoch).await?
@@ -151,7 +153,8 @@ impl DurabilityRoot {
                 }
                 let source_kind: i16 = if candidate.lua.is_some() { 2 }
                     else if candidate.calendar_window.is_some() { 3 } else { 1 };
-                let legacy = source_kind == 1 && candidate.key.as_str() != super::FEROXA_KEY;
+                let stampede = candidate.key.as_str() == "raid:porthope.stampede";
+                let legacy = source_kind == 1 && candidate.key.as_str() != super::FEROXA_KEY && !stampede;
                 if (legacy && legacy_running)
                     || (!legacy && !candidate.eligible)
                 { continue; }
@@ -190,7 +193,16 @@ impl DurabilityRoot {
                     definition
                 });
                 let definition = feroxa_definition.as_ref().unwrap_or(&candidate.definition);
-                let action = if feroxa_definition.is_some() {
+                let action = if stampede {
+                    // TibiaWiki Stampede Mini World Change/Spoiler oldid=887155:
+                    // the committed day above is the only selection; bypass the
+                    // legacy global running/margin/random checks at this save.
+                    RaidAction::ResetDayCheck {
+                        now_ms: request.now_ms,
+                        selected: before.reset_day_selected(candidate.eligible),
+                        firing_id: candidate.firing_id, bundle_digest: request.bundle_digest,
+                    }
+                } else if feroxa_definition.is_some() {
                     if request.now_ms < before.next_check_at_ms { continue; }
                     // The runner advances source Active under firing -> occurrence
                     // locks. Match that order before selected() locks the occurrence;
