@@ -65,6 +65,20 @@ pub(super) fn world(
     let from = callback.selector.position.ok_or("stair source")?;
     let to = callback.teleport.ok_or("stair destination")?;
     let tile = |x, y, floor| crate::map::overlay::TilePos { x, y, floor };
+    let start = tile(from.x - 1, from.y, from.floor);
+    let mut route_cells = vec![
+        start,
+        tile(from.x, from.y, from.floor),
+        tile(to.x, to.y, to.floor),
+    ];
+    if let Some((_, opposite, landing)) = ROUTES
+        .iter()
+        .find(|(_, opposite, _)| opposite.x == from.x && opposite.floor == to.floor)
+        .filter(|_| from.x == 32009)
+    {
+        route_cells.push(tile(opposite.x, opposite.y, opposite.floor));
+        route_cells.push(tile(landing.x, landing.y, landing.floor));
+    }
     super::source_world_crop::compiled_region_action_control(
         tile(
             from.x.min(to.x) - 2,
@@ -76,8 +90,9 @@ pub(super) fn world(
             from.y.max(to.y) + 2,
             from.floor.max(to.floor),
         ),
-        tile(from.x - 1, from.y, from.floor),
+        start,
         native,
+        Some(&route_cells),
         action_control.map(|action| (tile(from.x, from.y, from.floor), action)),
     )
 }

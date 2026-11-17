@@ -1,4 +1,4 @@
-//! Selected ordered contacts at native NPC centers; legacy shapes use real fenced writes.
+//! Selected ordered contacts at native NPC centers; legacy shapes use immutable fixture receipts.
 use super::{
     AdmittedSession, ComposedFreshAdmission, TestResult,
     fixture::{Harness, debug},
@@ -21,6 +21,7 @@ use oteryn_protocol_oteryn::npc_service::{
 };
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
+const QUEST: &str = "oteryn:quest.the_paradox_tower_quest";
 const STORY: &str = "oteryn:quest-progress/l6/paradox/story";
 const ACHIEVEMENT: &str = "oteryn:achievement/mathemagician";
 const SOURCE_HUGO: &str = "oteryn:quest-progress/quest/u7_24/the_paradox_tower/the_feared_hugo";
@@ -416,71 +417,166 @@ async fn source_tracks(h: &Harness) -> TestResult<std::collections::BTreeMap<Str
     Ok(rows.into_iter().collect())
 }
 
-fn install_legacy_callbacks(
-    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
-    completed: bool,
+/// Restore one historical track at the fixture boundary. The active writer
+/// correctly rejects a renamed callback that tries to write protected tracks.
+/// The test database is private to this character and session. Reproduce the
+/// immutable storage shape with the normal SQL consistency guards enabled.
+async fn restore_fixture_track(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+    track: &str,
+    value: i64,
 ) -> TestResult {
-    // Model the old stored shape by committing its original effects from the
-    // outset. Keep the current lesson in the story4 case and the current
-    // catch-up in the story5 case. No receipt or track is removed or rewritten.
-    use oteryn_gameplay_quests::quest::reward_callbacks;
-    let mut catalogue = owner
-        .quest_catalogue
-        .as_ref()
-        .ok_or("quest catalogue")?
-        .as_ref()
-        .clone();
-    let mut callbacks = reward_callbacks::load()?;
-    for callback in &mut callbacks {
-        if callback.key.starts_with("oteryn:quest-reward/l6-paradox-")
-            && callback.key != "oteryn:quest-reward/l6-paradox-source-catch-up"
-            && (completed || callback.key != "oteryn:quest-reward/l6-paradox-prisoner-lesson")
-        {
-            callback.storage.retain(|storage| storage.track == STORY);
-            callback.key = callback
-                .key
-                .replacen("/l6-paradox-", "/test-paradox-legacy-", 1);
-            catalogue = catalogue
-                .with_fixture_transition(
-                    reward_callbacks::primary_transition(callback).map_err(debug)?,
-                )
-                .map_err(debug)?;
-        }
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "historical fixture fence")?
+        .ok_or("historical fixture fence")?;
+    let catalogue = owner.quest_catalogue.as_ref().ok_or("quest catalogue")?;
+    let hash = catalogue
+        .definition_hash(QUEST)
+        .ok_or("Paradox definition")?;
+    let pin = catalogue.content_revision();
+    let initial = catalogue.track(track).ok_or("Paradox track")?.initial;
+    let character = fence.character_id.as_bytes().as_slice();
+    let original = fence.expected_character_revision.get();
+    let committed = original.checked_add(1).ok_or("fixture revision")?;
+    let mut tx = h.pool.begin().await?;
+    assert_eq!(
+        sqlx::query_scalar::<_, String>(
+            "SELECT character_revision::text FROM game_character_roots
+               WHERE character_id=encode($1,'hex')::uuid FOR UPDATE",
+        )
+        .bind(character)
+        .fetch_one(&mut *tx)
+        .await?,
+        original.to_string(),
+        "fixture must extend the admitted Character revision"
+    );
+    let before: Option<i64> = sqlx::query_scalar(
+        "SELECT value FROM game_character_quest_tracks
+           WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
+    )
+    .bind(character)
+    .bind(track)
+    .fetch_optional(&mut *tx)
+    .await?;
+    assert_eq!(before, if track == STORY { None } else { Some(1) });
+    let transition = if track == STORY {
+        "oteryn:quest-transition/test-paradox-historical-save"
+    } else {
+        "oteryn:quest-transition/test-paradox-later-source"
+    };
+    // Synthetic fixture occurrences are deliberately distinct from all wire
+    // commands. Production catch-up and its replay use their true bindings.
+    let ordinal = 900_000_u64;
+    let mut binding = [1_u8; 33];
+    use sha2::{Digest, Sha256};
+    let mut request = Sha256::new();
+    request.update(b"oteryn:quest-transition:request-binding\0");
+    request.update([1]);
+    request.update(character);
+    request.update(b"command\0");
+    request.update(admitted.game_session_id.as_bytes());
+    request.update(ordinal.to_be_bytes());
+    request.update(transition.as_bytes());
+    request.update([0]);
+    binding[1..].copy_from_slice(&request.finalize());
+    for update in [
+        "UPDATE game_character_roots SET character_revision=$2::text::numeric
+           WHERE character_id=encode($1,'hex')::uuid AND character_revision=$3::text::numeric",
+        "UPDATE game_character_progression_state SET character_revision=$2::text::numeric
+           WHERE character_id=encode($1,'hex')::uuid AND character_revision=$3::text::numeric",
+    ] {
+        assert_eq!(
+            sqlx::query(update)
+                .bind(character)
+                .bind(committed.to_string())
+                .bind(original.to_string())
+                .execute(&mut *tx)
+                .await?
+                .rows_affected(),
+            1
+        );
     }
-    if completed {
-        // A later source stage is committed through the same fenced writer and
-        // receipt machinery, before checking that compatibility preserves it.
-        let mut later = callbacks
-            .iter()
-            .find(|callback| callback.key == "oteryn:quest-reward/l6-paradox-source-catch-up")
-            .ok_or("compatibility callback")?
-            .clone();
-        later.key = "oteryn:quest-reward/test-paradox-later-source".into();
-        later.keywords = vec!["later-source-fixture".into()];
-        for storage in &mut later.storage {
-            match storage.track.as_str() {
-                SOURCE_SYNCED => {
-                    storage.minimum = 1;
-                    storage.maximum = 1;
-                }
-                SOURCE_MATH => {
-                    storage.minimum = 1;
-                    storage.maximum = 1;
-                    storage.set = 2;
-                }
-                _ => {}
-            }
-        }
-        catalogue = catalogue
-            .with_fixture_transition(reward_callbacks::primary_transition(&later).map_err(debug)?)
-            .map_err(debug)?;
-        callbacks.push(later);
-    }
-    owner.quest_catalogue = Some(Arc::new(catalogue));
+    assert_eq!(
+        sqlx::query(
+            "INSERT INTO game_character_quest_receipts (
+               character_id,cause_kind,cause_id,cause_ordinal,transition_key,quest_key,
+               request_binding,pinned_content_revision,definition_hash,completes,
+               track_keys,values_before,values_after,original_character_revision,
+               committed_character_revision,level_before,level_after,
+               experience_before,experience_after,profile_revision,ruleset_revision,
+               content_revision,simulation_revision,evidence_revision,declaration_revision,
+               policy_revision,reward_revision,committed_at)
+             SELECT character_id,'command',encode($2,'hex')::uuid,$3::text::numeric,$4,$5,
+               $6,$7,$8,false,ARRAY[$9::text],ARRAY[$10::bigint],ARRAY[$11::bigint],
+               $12::text::numeric,$13::text::numeric,level,level,total_experience,total_experience,
+               profile_revision,ruleset_revision,content_revision,simulation_revision,
+               evidence_revision,declaration_revision,policy_revision,reward_revision,
+               floor(extract(epoch FROM statement_timestamp())*1000)::bigint
+             FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(character)
+        .bind(admitted.game_session_id.as_bytes().as_slice())
+        .bind(ordinal.to_string())
+        .bind(transition)
+        .bind(QUEST)
+        .bind(binding.as_slice())
+        .bind(pin)
+        .bind(hash.as_slice())
+        .bind(track)
+        .bind(before.unwrap_or(initial))
+        .bind(value)
+        .bind(original.to_string())
+        .bind(committed.to_string())
+        .execute(&mut *tx)
+        .await?
+        .rows_affected(),
+        1
+    );
+    assert_eq!(
+        sqlx::query(
+            "INSERT INTO game_character_quest_tracks(
+               character_id,track_key,quest_key,value,committed_character_revision)
+             VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5::text::numeric)
+             ON CONFLICT(character_id,track_key) DO UPDATE SET value=EXCLUDED.value,
+               committed_character_revision=EXCLUDED.committed_character_revision",
+        )
+        .bind(character)
+        .bind(track)
+        .bind(QUEST)
+        .bind(value)
+        .bind(committed.to_string())
+        .execute(&mut *tx)
+        .await?
+        .rows_affected(),
+        1
+    );
+    assert_eq!(
+        sqlx::query(
+            "INSERT INTO game_character_quest_states(
+               character_id,quest_key,pinned_content_revision,definition_hash,
+               started_character_revision,committed_character_revision)
+             VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5::text::numeric,$5::text::numeric)
+             ON CONFLICT(character_id,quest_key) DO UPDATE
+               SET committed_character_revision=EXCLUDED.committed_character_revision",
+        )
+        .bind(character)
+        .bind(QUEST)
+        .bind(pin)
+        .bind(hash.as_slice())
+        .bind(committed.to_string())
+        .execute(&mut *tx)
+        .await?
+        .rows_affected(),
+        1
+    );
+    tx.commit().await?;
     owner
-        .states
-        .npc_conversations
-        .fixture_reward_callbacks(callbacks)?;
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
     Ok(())
 }
 
@@ -640,9 +736,6 @@ pub(super) async fn exercise(
     eprintln!("POSTGRES_DATABASE_READY l6_paradox_story version={version}");
     let legacy = name.ends_with("-legacy") || name.ends_with("-legacy-completed");
     let legacy_completed = name.ends_with("-legacy-completed");
-    if legacy {
-        install_legacy_callbacks(owner, legacy_completed)?;
-    }
     let riddler_wire = super::l6_paradox_riddler_wire::selected(name);
     let npcs = install(owner, admitted, riddler_wire).await?;
     let mut selected = admitted
@@ -661,66 +754,69 @@ pub(super) async fn exercise(
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
             .ok_or("NPC capabilities")?;
     super::l6_paradox::raise_level(owner, admitted, authority, h, 30).await?;
-    let initial = snapshot(h).await?;
-    if name.ends_with("out-of-order") {
-        relocate(owner, admitted, 1).await?;
-        conversation(owner, admitted, npcs[1], &["hi", "crunor's caress"]).await?;
-        assert_eq!(
-            snapshot(h).await?,
-            initial,
-            "later NPC cannot begin the protected story"
-        );
-    }
-    relocate(owner, admitted, 0).await?;
-    let replies = conversation(owner, admitted, npcs[0], &["hi", "hugo"]).await?;
-    assert!(
-        replies
-            .iter()
-            .all(|r| r.disposition == NpcIntentDisposition::Ok)
-    );
-    assert_eq!(progress(h).await?, 1);
     if legacy {
+        let saved = if legacy_completed { 5 } else { 4 };
+        assert_eq!(progress(h).await?, -1);
+        restore_fixture_track(owner, admitted, h, STORY, saved).await?;
+        assert_eq!(progress(h).await?, saved);
         assert_legacy_source_gap(h).await?;
+        if legacy_completed {
+            legacy_achievement(owner, admitted, h, authority).await?;
+        }
     } else {
-        assert_eq!(source_tracks(h).await?.get(SOURCE_HUGO), Some(&1));
-    }
-    if name.ends_with("lesson-guard") {
-        let before = snapshot(h).await?;
-        relocate(owner, admitted, 4).await?;
-        conversation(
-            owner,
-            admitted,
-            npcs[4],
-            &["hi", "math", "yes", "green", "yes"],
-        )
-        .await?;
-        assert_eq!(
-            snapshot(h).await?,
-            before,
-            "the selected lesson cannot skip the ordered contacts"
-        );
-    }
-    for (index, word, expected) in [
-        (1, "crunor's caress", 2),
-        (2, "footnote", 3),
-        (3, "stable", 4),
-    ] {
-        relocate(owner, admitted, index).await?;
-        let replies = conversation(owner, admitted, npcs[index], &["hi", word]).await?;
+        let initial = snapshot(h).await?;
+        if name.ends_with("out-of-order") {
+            relocate(owner, admitted, 1).await?;
+            conversation(owner, admitted, npcs[1], &["hi", "crunor's caress"]).await?;
+            assert_eq!(
+                snapshot(h).await?,
+                initial,
+                "later NPC cannot begin the protected story"
+            );
+        }
+        relocate(owner, admitted, 0).await?;
+        let replies = conversation(owner, admitted, npcs[0], &["hi", "hugo"]).await?;
         assert!(
             replies
                 .iter()
-                .all(|r| r.disposition == NpcIntentDisposition::Ok),
-            "selected contact word {word}"
+                .all(|r| r.disposition == NpcIntentDisposition::Ok)
         );
-        assert_eq!(
-            progress(h).await?,
-            expected,
-            "only the exact ordered contact advances the story"
-        );
-        if legacy {
-            assert_legacy_source_gap(h).await?;
-        } else {
+        assert_eq!(progress(h).await?, 1);
+        assert_eq!(source_tracks(h).await?.get(SOURCE_HUGO), Some(&1));
+        if name.ends_with("lesson-guard") {
+            let before = snapshot(h).await?;
+            relocate(owner, admitted, 4).await?;
+            conversation(
+                owner,
+                admitted,
+                npcs[4],
+                &["hi", "math", "yes", "green", "yes"],
+            )
+            .await?;
+            assert_eq!(
+                snapshot(h).await?,
+                before,
+                "the selected lesson cannot skip the ordered contacts"
+            );
+        }
+        for (index, word, expected) in [
+            (1, "crunor's caress", 2),
+            (2, "footnote", 3),
+            (3, "stable", 4),
+        ] {
+            relocate(owner, admitted, index).await?;
+            let replies = conversation(owner, admitted, npcs[index], &["hi", word]).await?;
+            assert!(
+                replies
+                    .iter()
+                    .all(|r| r.disposition == NpcIntentDisposition::Ok),
+                "selected contact word {word}"
+            );
+            assert_eq!(
+                progress(h).await?,
+                expected,
+                "only the exact ordered contact advances the story"
+            );
             assert_eq!(source_tracks(h).await?.get(SOURCE_HUGO), Some(&expected));
         }
     }
@@ -739,13 +835,18 @@ pub(super) async fn exercise(
         before,
         "yes without the source lesson topic grants nothing"
     );
-    let lesson = conversation(
-        owner,
-        admitted,
-        npcs[4],
-        &["hi", "math", "yes", "green", "yes"],
-    )
-    .await?;
+    let lesson = if legacy_completed {
+        assert_legacy_source_gap(h).await?;
+        conversation(owner, admitted, npcs[4], &["hi", "math"]).await?
+    } else {
+        conversation(
+            owner,
+            admitted,
+            npcs[4],
+            &["hi", "math", "yes", "green", "yes"],
+        )
+        .await?
+    };
     eprintln!("PARADOX_STORY_AFTER_LESSON progress={}", progress(h).await?);
     assert!(
         lesson
@@ -758,12 +859,7 @@ pub(super) async fn exercise(
             .collect::<Vec<_>>()
     );
     assert_eq!(progress(h).await?, 5);
-    if legacy_completed {
-        legacy_achievement(owner, admitted, h, authority).await?;
-        assert_legacy_source_gap(h).await?;
-    } else {
-        assert_riddler_accepts_learned_story(h).await?;
-    }
+    assert_riddler_accepts_learned_story(h).await?;
     let achievements: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1",
     )
@@ -783,6 +879,10 @@ pub(super) async fn exercise(
     );
     let committed = snapshot(h).await?;
     assert_existing_receipts_preserved(&before, &committed);
+    if legacy_completed {
+        assert_eq!(committed["achievements"], before["achievements"]);
+        assert_eq!(committed["grants"], before["grants"]);
+    }
     let last = lesson.last().ok_or("lesson reply")?;
     assert_eq!(
         super::quest_world_callbacks::wire(owner, admitted, last.id, 7, last.payload.clone())
@@ -794,45 +894,21 @@ pub(super) async fn exercise(
         committed,
         "original command replay repeats no story or achievement write"
     );
-    if !legacy_completed {
-        conversation(
-            owner,
-            admitted,
-            npcs[4],
-            &["hi", "math", "yes", "green", "yes"],
-        )
-        .await?;
-        assert_eq!(
-            snapshot(h).await?,
-            committed,
-            "a fresh repeated lesson cannot grant another achievement source"
-        );
-    }
+    conversation(
+        owner,
+        admitted,
+        npcs[4],
+        &["hi", "math", "yes", "green", "yes"],
+    )
+    .await?;
+    assert_eq!(
+        snapshot(h).await?,
+        committed,
+        "a fresh repeated lesson cannot grant another achievement source"
+    );
     if legacy_completed {
-        assert_legacy_source_gap(h).await?;
-        let before = snapshot(h).await?;
-        conversation(owner, admitted, npcs[4], &["hi", "math"]).await?;
-        let after = snapshot(h).await?;
-        assert_existing_receipts_preserved(&before, &after);
-        assert_eq!(after["achievements"], before["achievements"]);
-        assert_eq!(after["grants"], before["grants"]);
-        assert_eq!(progress(h).await?, 5);
-        assert_riddler_accepts_learned_story(h).await?;
-        let synced = snapshot(h).await?;
-        conversation(
-            owner,
-            admitted,
-            npcs[4],
-            &["hi", "math", "yes", "green", "yes"],
-        )
-        .await?;
-        assert_eq!(
-            snapshot(h).await?,
-            synced,
-            "a fresh repeated lesson cannot grant another achievement source"
-        );
         // A later source finale must survive a repeated compatibility contact.
-        conversation(owner, admitted, npcs[4], &["hi", "later-source-fixture"]).await?;
+        restore_fixture_track(owner, admitted, h, SOURCE_MATH, 2).await?;
         assert_eq!(source_tracks(h).await?.get(SOURCE_MATH), Some(&2));
         let later = snapshot(h).await?;
         conversation(owner, admitted, npcs[4], &["hi", "math"]).await?;

@@ -1533,6 +1533,8 @@ fn scenario_case(
             } else if name == "questpc7-friends" {
                 // Thirteen selected vendors/priests and one player; charge every actor slot.
                 14
+            } else if super::super::l6_paradox_riddler_wire::selected(name) {
+                7 // One player, five story contacts and the Riddler.
             } else if native_story
                 || (native_upper && name.ends_with("-complete"))
                 || matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped")

@@ -151,16 +151,17 @@ pub(super) fn compiled_region(
     start: crate::map::overlay::TilePos,
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    compiled_region_action_control(minimum, maximum, start, native, None)
+    compiled_region_action_control(minimum, maximum, start, native, None, None)
 }
 
-/// A negative dispatcher case changes one existing source AID after compilation.
+/// A stair control changes the two existing source AIDs on the entered tile.
 /// The ordinary path retains the compiled bytes verbatim.
 pub(super) fn compiled_region_action_control(
     minimum: crate::map::overlay::TilePos,
     maximum: crate::map::overlay::TilePos,
     start: crate::map::overlay::TilePos,
     native: &crate::content::native_gameplay::NativeGameplayState,
+    route_cells: Option<&[crate::map::overlay::TilePos]>,
     action_control: Option<(crate::map::overlay::TilePos, u16)>,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle_compiler::{compile, project};
@@ -196,14 +197,26 @@ pub(super) fn compiled_region_action_control(
         },
         &registry,
     )?;
+    // A cross-floor STEP does not traverse the rectangle between its two
+    // endpoints. A stair route supplies every cell it actually exercises.
+    // Other callers still require their entire rectangular footprint.
+    let unresolved = compiled.diagnostics.iter().find(|d| {
+        route_cells.map_or_else(
+            || {
+                (minimum.floor..=maximum.floor).contains(&d.floor)
+                    && (minimum.x..=maximum.x).contains(&d.x)
+                    && (minimum.y..=maximum.y).contains(&d.y)
+            },
+            |cells| {
+                cells
+                    .iter()
+                    .any(|p| (p.x, p.y, p.floor) == (d.x, d.y, d.floor))
+            },
+        )
+    });
     assert!(
-        compiled
-            .diagnostics
-            .iter()
-            .all(|d| !(minimum.floor..=maximum.floor).contains(&d.floor)
-                || !(minimum.x..=maximum.x).contains(&d.x)
-                || !(minimum.y..=maximum.y).contains(&d.y)),
-        "unresolved source quest geometry"
+        unresolved.is_none(),
+        "unresolved source quest geometry: {unresolved:?}"
     );
     let (bytes, digest) = if let Some((at, action)) = action_control {
         let mut data = bundle::read(&compiled.bytes)?;
@@ -214,16 +227,26 @@ pub(super) fn compiled_region_action_control(
             .flat_map(|sector| &mut sector.tiles)
             .find(|tile| tile.x == at.x && tile.y == at.y)
             .ok_or("source action control tile")?;
-        let mut markers = tile
-            .items
-            .iter_mut()
-            .filter(|item| item.attrs.action == Some(25018));
-        let marker = markers.next().ok_or("missing source AID 25018")?;
-        assert!(
-            markers.next().is_none(),
-            "control changes exactly one source AID"
+        let mut roles = Vec::new();
+        for item in &mut tile.items {
+            if item.attrs.action == Some(25018) {
+                assert_eq!(item.depth, 0, "source stair marker is top-level");
+                let role = data
+                    .manifest
+                    .palette
+                    .get(item.palette as usize)
+                    .ok_or("source stair marker palette")?;
+                roles.push(role.key.as_str());
+                item.attrs.action = Some(action);
+            }
+        }
+        // Both bindings select the same STEP handler. Leaving either original
+        // marker would still let the real dispatcher take the stair.
+        assert_eq!(
+            roles,
+            ["oteryn:item.tibia.i104", "oteryn:item.tibia.i19387"],
+            "control changes precisely the source ground and overlay markers"
         );
-        marker.attrs.action = Some(action);
         let bytes = oteryn_world_bundle::writer::write_with_npcs(
             &data.manifest,
             &data.sectors,
