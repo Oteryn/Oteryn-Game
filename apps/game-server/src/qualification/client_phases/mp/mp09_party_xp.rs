@@ -455,6 +455,46 @@ async fn out_of_range(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestResu
     ))
 }
 
+/// `route` limits its planning box to 160 tiles and two floors around the start; the authored dragon
+/// spawns can lie beyond it, so this plans over the same production collision facts (`destination`)
+/// across the whole map. Err carries every tile the search reached, for the failure message.
+fn far_route(
+    world: &BundleWorld,
+    from: TilePos,
+    goal: impl Fn(TilePos) -> bool,
+) -> Result<Vec<StepDirection>, Vec<TilePos>> {
+    let mut queue = std::collections::VecDeque::from([from]);
+    let mut parents = std::collections::BTreeMap::from([(from, None)]);
+    while let Some(at) = queue.pop_front() {
+        if goal(at) {
+            let mut path = Vec::new();
+            let mut cursor = at;
+            while let Some(Some((previous, direction))) = parents.get(&cursor) {
+                path.push(*direction);
+                cursor = *previous;
+            }
+            path.reverse();
+            return Ok(path);
+        }
+        for direction in [
+            StepDirection::North,
+            StepDirection::East,
+            StepDirection::South,
+            StepDirection::West,
+        ] {
+            let Some(next) = destination(world, at, direction) else {
+                continue;
+            };
+            if parents.contains_key(&next) {
+                continue;
+            }
+            parents.insert(next, Some((at, direction)));
+            queue.push_back(next);
+        }
+    }
+    Err(parents.into_keys().collect())
+}
+
 async fn encounter(
     bots: &mut [Bot<'_, '_>],
     world: &BundleWorld,
@@ -480,10 +520,41 @@ async fn encounter(
         })
         .collect();
     let from = tile(bots[0].client()?.world_spatial().actor_position)?;
-    let path = route(world, from, |at| spawns.iter().any(|p| p.floor == at.floor && p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)) <= 1) && world.base().tile(at.x, at.y, at.floor).is_some_and(|t| !t.protection_zone())).ok_or_else(|| format!("no reachable authored dragon spawn;observed_spawn_count={};source:apps/game-server/src/qualification/client_phases/world.rs:441", spawns.len()))?;
+    let goal = |at: TilePos| {
+        spawns
+            .iter()
+            .any(|p| p.floor == at.floor && p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)) <= 1)
+            && world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|t| !t.protection_zone())
+    };
+    let path = far_route(world, from, goal).map_err(|reached| {
+        let nearest = reached.iter().filter_map(|at| spawns.iter().map(|p| (p.floor == at.floor, p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)))).filter(|(same, _)| *same).map(|(_, d)| d).min()).min();
+        let floors: std::collections::BTreeSet<i8> = reached.iter().map(|at| at.floor).collect();
+        format!("no reachable authored dragon spawn;observed_spawn_count={};walkable_reached={};reached_floors={floors:?};nearest_same_floor_distance={nearest:?};start={from:?};source:apps/game-server/src/qualification/client_phases/world.rs:441", spawns.len(), reached.len())
+    })?;
     bots::walk_bot(bots, 0, world, &path).await?;
-    bots::approach(bots, 1, 0, world, true).await?;
-    bots::approach(bots, 2, 0, world, true).await?;
+    let leader = tile(bots[0].client()?.world_spatial().actor_position)?;
+    for actor in [1, 2] {
+        let here = tile(bots[actor].client()?.world_spatial().actor_position)?;
+        let occupied: Vec<TilePos> = (0..bots.len())
+            .filter(|index| *index != actor)
+            .map(|index| tile(bots[index].client()?.world_spatial().actor_position))
+            .collect::<TestResult<_>>()?;
+        let near = |at: TilePos| {
+            !occupied.contains(&at)
+                && at.floor == leader.floor
+                && at.x.abs_diff(leader.x).max(at.y.abs_diff(leader.y)) <= 1
+                && world
+                    .base()
+                    .tile(at.x, at.y, at.floor)
+                    .is_some_and(|t| !t.protection_zone())
+        };
+        let path = far_route(world, here, near)
+            .map_err(|reached| format!("MP peer approach has no reachable tile;walkable_reached={};start={here:?};leader={leader:?}", reached.len()))?;
+        bots::walk_bot(bots, actor, world, &path).await?;
+    }
     let mut start = [0; 3];
     for (index, bot) in bots.iter_mut().enumerate() {
         start[index] = stats(bot).await?.0;
