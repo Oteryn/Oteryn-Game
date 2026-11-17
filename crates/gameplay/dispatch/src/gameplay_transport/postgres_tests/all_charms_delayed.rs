@@ -1206,9 +1206,14 @@ async fn cast_through_retired_holder(
     intent: actor_spell::SpellCastIntent,
 ) -> TestResult {
     let mut blocker = h.pool.begin().await?;
-    sqlx::query("LOCK TABLE game_durability_admission_account_guards IN ACCESS EXCLUSIVE MODE")
-        .execute(&mut *blocker)
-        .await?;
+    // The spell item transaction's channel lock: only the native cast pass takes it.
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'), 33))",
+    )
+    .bind(id(42).as_slice())
+    .bind(id(43).as_slice())
+    .execute(&mut *blocker)
+    .await?;
     let release = async {
         tokio::time::sleep(crate::durability::DB_PASS_DEADLINE * 2).await;
         blocker.rollback().await
