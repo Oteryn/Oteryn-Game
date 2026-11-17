@@ -256,6 +256,12 @@ def _requested_inputs(root, extra_keys=()):
         item = callback.get('item_on_target')
         if item:
             keys.add(item['item'])
+            # Crystal actions_bait.lua:4-20 consumes the exact portable Bait
+            # input. Its canonical row has no stack facts; qualify the pinned
+            # appearance and custody through the same path as authored inputs.
+            if (callback['key'] == 'oteryn:quest-callback/sea-serpent-crane'
+                    and item['item'] == 'oteryn:item.tibia.i939'):
+                authored_keys.add(item['item'])
             if item.get('replacement'):
                 keys.add(item['replacement'])
     # These source chests also advance a quest track. Their Item definitions
