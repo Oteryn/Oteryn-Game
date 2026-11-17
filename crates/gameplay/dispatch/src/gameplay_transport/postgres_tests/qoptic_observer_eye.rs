@@ -142,6 +142,9 @@ fn qoptic_observer_eye_wire_step_moves_only_the_paired_player() -> TestResult {
                 },
             );
         }
+        drop(owner);
+        drop(authority);
+        drop(seal);
         h.cleanup().await
     })
 }
