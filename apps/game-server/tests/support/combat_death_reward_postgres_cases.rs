@@ -1614,4 +1614,158 @@ mod kill_reward_live {
             harness.cleanup().await
         })
     }
+
+    const FOOTMAN: &str = "oteryn:creature.muglex_clan_footman";
+    /// Corpse wave S1 admitted these loot Items with the footman's corpse `i6002`.
+    const WAVE_S1_LOOT: [&str; 2] = ["oteryn:item.tibia.i50257", "oteryn:item.tibia.i21470"];
+
+    /// Corpse wave S1: a real Muglex clan footman dies once. Its pinned corpse
+    /// `i6002` (Canary capacity 10) is minted on Ground holding gold and the two
+    /// loot Items the wave admitted, and the killer gains the profile's XP once.
+    #[test]
+    fn the_pinned_muglex_footman_row_settles_its_wave_s1_corpse_loot_and_xp() -> TestResult {
+        let profiles = pinned("content/creatures/definitions/spell-native-profiles.json")?;
+        let data = &profiles["records"]
+            .as_array()
+            .ok_or("profile records")?
+            .iter()
+            .find(|record| record["profile"]["target"]["key"] == FOOTMAN)
+            .ok_or("footman profile pinned")?["profile"]["data"]["profile"];
+        let xp = data["experience"].as_i64().ok_or("footman experience")?;
+        assert!(xp > 0);
+        let corpse = &data["details"]["corpse_item"];
+        assert_eq!(corpse["key"], "oteryn:item.tibia.i6002");
+
+        let section = pinned("tools/content-schema/native-gameplay/loot-tables.json")?;
+        let binding = &section["creature_loot"]
+            .as_array()
+            .ok_or("creature_loot")?
+            .iter()
+            .find(|row| row["creature"]["key"] == FOOTMAN)
+            .ok_or("footman binding pinned")?["loot"];
+        let table = section["tables"]
+            .as_array()
+            .ok_or("tables")?
+            .iter()
+            .find(|table| table["identity"] == *binding)
+            .ok_or("footman table pinned")?;
+        let facts = |item: &Value| {
+            section["items"]
+                .as_array()
+                .and_then(|items| items.iter().find(|facts| &facts["item"] == item))
+        };
+        let corpse_facts = facts(corpse).ok_or("corpse admission facts")?;
+        assert_eq!(corpse_facts["materializable"], true);
+        assert_eq!(corpse_facts["container_capacity"], 10);
+        let mut entries = Vec::new();
+        for entry in table["entries"].as_array().ok_or("entries")? {
+            let item_facts = facts(&entry["item"]).ok_or("entry admission facts")?;
+            assert_eq!(
+                item_facts["materializable"], true,
+                "{}",
+                entry["item"]["key"]
+            );
+            let key = entry["item"]["key"].as_str().ok_or("entry key")?;
+            if key == GOLD || WAVE_S1_LOOT.contains(&key) {
+                entries.push(LootTableEntry {
+                    item: reference(&entry["item"])?,
+                    min_count: 1,
+                    max_count: 1,
+                    // A guaranteed single draw keeps the minted plan exact.
+                    probability_ppm: Some(1_000_000),
+                    details: Default::default(),
+                });
+            }
+        }
+        assert_eq!(entries.len(), 3);
+        let corpse = reference(corpse)?;
+        let table_ref = reference(binding)?;
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        runtime()?.block_on(async move {
+            let harness = Harness::create(admin, "livemuglex").await?;
+            let seal = harness.recovery.seal_current().map_err(debug)?;
+            let authority = harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let session = DurabilitySession {
+                root: &harness.root,
+                authority: &authority,
+                node: &harness.node,
+            };
+            let mut fixture = death_fixture()?;
+            fixture
+                .strike_by(
+                    "fixture:reward.strike.lethal",
+                    CombatDeathFixture::HEALTH,
+                    crate::foundation::CharacterId::decode(&id(41)).map_err(debug)?,
+                )
+                .map_err(debug)?;
+            fixture.project_death().map_err(debug)?;
+            let actor = fixture.actor();
+            let mut slot = CharacterRevisionSequencer::new()
+                .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
+                .await;
+            let input = CreatureDeathRewardInput {
+                tutorial_corruptor: None,
+                corpse_item: corpse.clone(),
+                loot_table_ref: table_ref,
+                loot_table: LootTableDefinition {
+                    algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
+                    entries,
+                },
+                ground: ground(),
+                inflight_loot_mints_before_this_death: 0,
+                reward_principals: vec![reward_principal(1, 1)?],
+                xp_amount: ExactI64::new(xp),
+                progression: Some(progression_binding()),
+            };
+            let outcome =
+                settle_on_fresh_lane(capture(&mut fixture, actor)?, &session, &mut slot, input)
+                    .await
+                    .map_err(debug)?;
+            let minted = outcome.loot.map_err(debug)?;
+            assert_eq!(minted.entries.len(), 3);
+            let ExperienceCommitOutcome::Committed(award) = outcome.xp.map_err(debug)? else {
+                return Err("the footman's XP award must be freshly committed".into());
+            };
+            assert_eq!(award.experience_before.get(), 0);
+            assert_eq!(award.experience_after.get(), xp);
+            assert_eq!(harness.ground_items().await?, 1);
+            assert_eq!(harness.corpse_entries().await?, 3);
+            let mut keys = Vec::new();
+            for item in std::iter::once(minted.corpse.item_instance_id)
+                .chain(minted.entries.iter().map(|entry| entry.item_instance_id))
+            {
+                let key: String = sqlx::query_scalar(
+                    "SELECT definition_production_key FROM game_item_instances \
+                      WHERE item_instance_id = encode($1,'hex')::uuid",
+                )
+                .bind(item.as_slice())
+                .fetch_one(&harness.pool)
+                .await?;
+                keys.push(key);
+            }
+            assert_eq!(keys[0], corpse.production_key);
+            let mut loot = keys.split_off(1);
+            loot.sort();
+            let mut expected = vec![GOLD.to_owned()];
+            expected.extend(WAVE_S1_LOOT.map(str::to_owned));
+            expected.sort();
+            assert_eq!(loot, expected);
+            let (winner, materialized) = harness
+                .corpse_receipt(minted.corpse.item_instance_id)
+                .await?;
+            assert_eq!(winner, uuid_text(id(41)));
+            assert!(materialized);
+            assert_eq!(harness.count("game_character_xp_receipts").await?, 1);
+            eprintln!("[corpse-wave-s1] muglex footman death settled: corpse, 3 loot, xp {xp}");
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await
+        })
+    }
 }

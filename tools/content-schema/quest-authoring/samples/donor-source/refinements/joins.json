@@ -2,7 +2,7 @@
   "external_wiki_read": false,
   "input_sha256": {
     "assignment": "aade67503dcb9302940dfa5159f1942b9009c4c9c0917b187925c2860d9e46c1",
-    "boss_descriptor_packet": "a12aebb94627758e7e5ce7a7931dc9ba62f46e2fe2487e7f56d54528f91a4a29",
+    "boss_descriptor_packet": "e76e2f0eba20360f5f758a5cfc1235edd9edfd1cb8f69946a0a034b084ee9bd5",
     "canonical_source_semantic_slice": "0434afc1da160361b2fef0269b0ae341f776384e1fe25a37003ce62b869af79b",
     "corpus_manifest": "9823fd5e25796d5cfcd88a586530a60c0d7a9ca8a4f1130df25afbc2fb21b693",
     "graph_source_provenance_slice": "aa2536422f5b2201e0a9457a32b20cf1a01510fc2a88389efe8bfb849ebe9aec",

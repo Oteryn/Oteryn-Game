@@ -96923,7 +96923,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-32000-32499.json",
-        "canonical_definition_sha256": "4e59b05d5aed2c34f41d16d0b557f84440b36f6ca5d71fbd2e9b7691a86b90e8",
+        "canonical_definition_sha256": "f046e1e2c7e69f58915eaba35f26ce80358ab8416a651cbd707419a14018c273",
         "canonical_name": "terra boots",
         "wiki_observations": [
           {
@@ -98762,7 +98762,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-19500-19999.json",
-        "canonical_definition_sha256": "81c94aebdfc7d2c6586f91e2a2fde5ebdcbf21f0d619e93198b926c037385a93",
+        "canonical_definition_sha256": "71401becda2e62bd2343e1d83d667348f616331f8214dc6db2e80944964ff7e6",
         "canonical_name": "sword",
         "wiki_observations": [
           {
@@ -100910,7 +100910,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20000-20499.json",
-        "canonical_definition_sha256": "931f4e3f32ab2dc625e084a9a0b33b1b38a4624242d2ee04e517d59980562a47",
+        "canonical_definition_sha256": "ce4f7c92b7fc5cfb19371cc603dc124ea1520ca01c00e7bd911cb8725ab32e55",
         "canonical_name": "epee",
         "wiki_observations": [
           {
@@ -115264,7 +115264,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-32000-32499.json",
-        "canonical_definition_sha256": "33fc509820cb0b6d14552e9bff6e21cb8ebe23fedee3570ea092b1c7936c2fcb",
+        "canonical_definition_sha256": "0ccc5ddf845cfa033be578a18f3bb04fe5ed729e8f27343fa74bf2a758ecb197",
         "canonical_name": "underworld rod",
         "wiki_observations": [
           {
@@ -115492,7 +115492,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-32000-32499.json",
-        "canonical_definition_sha256": "9256decf1dda6f14bb17ebb7f0578cd2766832cb05606dbd85ecae2baf169830",
+        "canonical_definition_sha256": "cf4189a2a1c15898ee95378ea816109893eee1d3d59167dd83ab380a6287fd24",
         "canonical_name": "wand of starstorm",
         "wiki_observations": [
           {

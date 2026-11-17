@@ -253,6 +253,8 @@ def apply_encounter_corpse_admissions(definitions, root=ROOT):
     spec.loader.exec_module(module)
     module.apply_admissions(definitions, root)
     sys.path.insert(0, str(root / "tools/content-schema/native-gameplay"))
+    import creature_corpse_items
+    creature_corpse_items.apply_admissions(definitions, root)
     import questpc2_soul_loot_items
     questpc2_soul_loot_items.apply_admissions(definitions, root)
     import questpc2_rotten_loot_items
@@ -811,11 +813,12 @@ def main() -> int:
     # Weight imports may change a shared shard without changing the qualified rod.
     import gathering_item_profiles
     gathering_item_profiles.refresh_qualified_proof(ROOT)
-    # These recipe captures select unchanged records from the same shared shards.
+    # Recipe captures may also select corpse/loot Items admitted above. Only
+    # core facts already held by the unchanged source profile may be qualified.
     from refresh_item_overlay_inputs import refresh
     for name in ('quest-batch3-item-profiles.json', 'qnpcfx-item-profiles.json'):
         relative = 'tools/content-schema/native-gameplay/' + name
-        (ROOT / relative).write_bytes(refresh(relative, root=ROOT))
+        (ROOT / relative).write_bytes(refresh(relative, root=ROOT, native_core=True))
     refresh_bestiary_inventory(ROOT)
     # Model against the source shards just written, then register the same fresh
     # native provider with its generated Prey rules and value table.

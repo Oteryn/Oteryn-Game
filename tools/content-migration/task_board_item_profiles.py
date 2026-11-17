@@ -317,10 +317,19 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
 
 
 def refresh_canonical_inputs(root, base):
-    """Repin definition digests whose only change since base is a client weight."""
+    """Repin definition digests whose only change since base is a client weight, or the
+    native-core facts this overlay's own unchanged profile already holds (a loot admission)."""
     from import_cyclopedia_global import only_weight_changed
+    from refresh_item_overlay_inputs import qualify_native_core
     path = root / PATH
     overlay = json.loads(path.read_bytes())
+    profiles = {r['production_definition']['production_key']: r for r in overlay['records']}
+
+    def qualified(previous, current, key):
+        try:
+            return qualify_native_core(previous, profiles[key]) == current
+        except ValueError:
+            return False
     definitions = canonical_definitions(root, cohort_ids(root))
     for entry in overlay['canonical_inputs']:
         current = definitions[entry['key']][1]
@@ -332,7 +341,8 @@ def refresh_canonical_inputs(root, base):
                      if row['definition']['identity']['key'] == entry['key']]
         if (digest(canonical_bytes(previous)) != entry['definition_sha256']
                 or definitions[entry['key']][0] != entry['path']
-                or not only_weight_changed(previous, current)):
+                or not (only_weight_changed(previous, current)
+                        or qualified(previous, current, entry['key']))):
             raise ValueError('TASK_BOARD_REPIN_SELECTED_DEFINITION_CHANGED:' + entry['key'])
         entry['definition_sha256'] = digest(canonical_bytes(current))
     path.write_text(json.dumps(overlay, indent=2, ensure_ascii=False) + '\n')

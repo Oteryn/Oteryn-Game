@@ -761,7 +761,7 @@
     "Flask of Embalming Fluid": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "d59f72181502575060f0b40517352e1fef2d1184ec7caee33070f2bb1d785620",
+          "definition_sha256": "cf2c269201bc9e01dcb1c41acf31dfad88909a76e50fb44dfbde61f4762330a0",
           "name": "flask of embalming fluid",
           "path": "content/items/definitions/items-01000-01499.json"
         },
