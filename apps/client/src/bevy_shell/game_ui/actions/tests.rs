@@ -40,7 +40,10 @@ pub(super) fn fixture() -> Result<
     Ok((app, commands))
 }
 
-fn slot(app: &mut App, wanted: usize) -> Result<Entity, Box<dyn std::error::Error>> {
+pub(in crate::bevy_shell::game_ui) fn slot(
+    app: &mut App,
+    wanted: usize,
+) -> Result<Entity, Box<dyn std::error::Error>> {
     app.world_mut()
         .query::<(Entity, &ActionControl)>()
         .iter(app.world())
@@ -212,6 +215,98 @@ fn visible_slots_follow_real_computed_width_and_saved_scroll_offset() -> TestRes
             "{lock:?} outside {row:?}"
         );
         assert_eq!(visible, expected.collect::<Vec<_>>());
+        let mut arrows = app.world_mut().query::<(Entity, &ActionControl)>();
+        for by in [1, -1] {
+            let arrow = arrows
+                .iter(app.world())
+                .find_map(|(entity, control)| {
+                    matches!(control, ActionControl::Scroll(0, step) if *step == by)
+                        .then_some(entity)
+                })
+                .ok_or("arrow")?;
+            for _ in 0..if by == 1 { 12 } else { 1 } {
+                app.world_mut().trigger(Activate { entity: arrow });
+            }
+        }
+        let link = &app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link;
+        let offset = link.bar_layout().rows[0].offset;
+        assert_eq!(usize::from(offset), ROW_SLOTS - visible.len() - 1);
+        link.bar_gesture(BarGesture::Scroll {
+            bar: 0,
+            by: 40 - offset as i8,
+        });
+    }
+    Ok(())
+}
+
+fn dispatch_click(app: &mut App, click: &PointerClick, button: PointerButton) {
+    app.world_mut()
+        .trigger(bevy::picking::events::PointerPress {
+            entity: click.entity,
+            pointer: click.pointer.clone(),
+            hit: click.hit.clone(),
+            count: 1,
+            button,
+        });
+    app.world_mut().flush();
+    app.world_mut().trigger(PointerClick {
+        button,
+        ..click.clone()
+    });
+    app.world_mut()
+        .trigger(bevy::picking::events::PointerRelease {
+            entity: click.entity,
+            pointer: click.pointer.clone(),
+            hit: click.hit.clone(),
+            button,
+        });
+    app.world_mut().flush();
+}
+
+#[test]
+fn nonprimary_clicks_leave_lock_and_scroll_arrows_alone() -> TestResult {
+    let (mut app, _) = fixture()?;
+    app.add_plugins(bevy::ui_widgets::ButtonPlugin);
+    let controls: Vec<_> = app
+        .world_mut()
+        .query::<(Entity, &ActionControl)>()
+        .iter(app.world())
+        .filter_map(|(entity, control)| {
+            matches!(
+                control,
+                ActionControl::Lock(0) | ActionControl::Scroll(0, _)
+            )
+            .then_some(entity)
+        })
+        .collect();
+    assert_eq!(controls.len(), 3);
+    let layout = |app: &App| {
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .map(|play| play.link.bar_layout())
+    };
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .bar_gesture(BarGesture::Scroll { bar: 0, by: 5 });
+    let before = layout(&app);
+    for entity in controls {
+        let click = secondary_click(entity);
+        for button in [PointerButton::Secondary, PointerButton::Middle] {
+            dispatch_click(&mut app, &click, button);
+            assert_eq!(layout(&app), before);
+        }
     }
     Ok(())
 }
@@ -241,45 +336,13 @@ fn unlocking_and_selecting_slot_opens_shared_editor_without_casting() -> TestRes
     let first = slot(&mut app, 0)?;
     app.insert_resource(UiScale(1.5));
     // Editing is an explicit secondary click; ordinary activation still executes.
-    let click = PointerClick {
-        entity: first,
-        pointer: bevy::picking::events::Pointer::new(
-            bevy::picking::pointer::PointerId::Mouse,
-            bevy::picking::pointer::Location {
-                target: bevy::camera::NormalizedRenderTarget::None {
-                    width: 1000,
-                    height: 600,
-                },
-                position: Vec2::new(200., 100.),
-            },
-        ),
-        button: bevy::picking::pointer::PointerButton::Secondary,
-        hit: bevy::picking::backend::HitData::new(Entity::PLACEHOLDER, 0., None, None),
-        duration: std::time::Duration::ZERO,
-        count: 1,
-    };
-    for button in [bevy::picking::pointer::PointerButton::Primary, click.button] {
-        app.world_mut()
-            .trigger(bevy::picking::events::PointerPress {
-                entity: first,
-                pointer: click.pointer.clone(),
-                hit: click.hit.clone(),
-                count: 1,
-                button,
-            });
-        app.world_mut().flush();
-        app.world_mut().trigger(PointerClick {
-            button,
-            ..click.clone()
-        });
-        app.world_mut()
-            .trigger(bevy::picking::events::PointerRelease {
-                entity: first,
-                pointer: click.pointer.clone(),
-                hit: click.hit.clone(),
-                button,
-            });
-        app.world_mut().flush();
+    let click = secondary_click(first);
+    for button in [
+        bevy::picking::pointer::PointerButton::Primary,
+        bevy::picking::pointer::PointerButton::Middle,
+        click.button,
+    ] {
+        dispatch_click(&mut app, &click, button);
         if button == bevy::picking::pointer::PointerButton::Primary {
             assert!(
                 matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get() == 71)
@@ -698,7 +761,7 @@ fn slots_show_their_bound_hotkey_and_follow_a_150_percent_bar_zoom() -> TestResu
 #[test]
 fn clear_removes_assigned_fourth_bar_action() -> TestResult {
     let (mut app, mut commands) = fixture()?;
-    let generation = {
+    {
         let owner = app.world().non_send::<HostOwner>();
         owner
             .play
@@ -720,17 +783,17 @@ fn clear_removes_assigned_fourth_bar_action() -> TestResult {
             }
         ));
         assert!(link.spell_slot_tooltips()[150].contains("hello"));
-        owner.generation()
-    };
+    }
+    app.update();
+    let target = slot(&mut app, 150)?;
+    app.world_mut().trigger(secondary_click(target));
+    app.update();
     let entry = app
         .world_mut()
-        .spawn(MenuEntry {
-            slot: 3 * ROW_SLOTS,
-            generation,
-            choice: MenuChoice::Clear,
-        })
-        .observe(menu_action)
-        .id();
+        .query::<(Entity, &MenuEntry)>()
+        .iter(app.world())
+        .find_map(|(entity, entry)| (entry.choice == MenuChoice::Clear).then_some(entity))
+        .ok_or("Clear entry")?;
     app.world_mut().trigger(Activate { entity: entry });
     let link = &app
         .world()
@@ -799,5 +862,58 @@ fn each_side_shows_an_enabled_bar_on_its_own_dock() -> TestResult {
             "only the default and the enabled bar show"
         );
     }
+    Ok(())
+}
+
+pub(in crate::bevy_shell::game_ui) fn secondary_click(entity: Entity) -> PointerClick {
+    PointerClick {
+        entity,
+        pointer: bevy::picking::events::Pointer::new(
+            bevy::picking::pointer::PointerId::Mouse,
+            bevy::picking::pointer::Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: 1000,
+                    height: 600,
+                },
+                position: Vec2::new(200., 100.),
+            },
+        ),
+        button: bevy::picking::pointer::PointerButton::Secondary,
+        hit: bevy::picking::backend::HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    }
+}
+
+#[test]
+fn disabled_bar_tooltips_hide_object_hint() -> TestResult {
+    let (mut app, _) = fixture()?;
+    let first = slot(&mut app, 0)?;
+    {
+        let owner = &mut *app.world_mut().non_send_mut::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        assert!(link.assign_bar_action(
+            0,
+            crate::play::BarAction::Use {
+                definition: 256u32.try_into()?,
+                sub_type: None,
+                mode: crate::play::ItemUseMode::Use,
+            }
+        ));
+        owner.settings.sync_bar_actions(link);
+        owner.settings.preferences.action_bar.tooltips = false;
+        owner.settings.sync_local_preferences(link);
+    }
+    app.world_mut()
+        .entity_mut(first)
+        .insert(bevy::picking::hover::Hovered(true));
+    app.update();
+    assert!(
+        app.world_mut()
+            .query_filtered::<&Text, With<ActionHint>>()
+            .single(app.world())?
+            .0
+            .is_empty()
+    );
     Ok(())
 }

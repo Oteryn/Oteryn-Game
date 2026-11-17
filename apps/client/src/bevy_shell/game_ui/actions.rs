@@ -33,7 +33,7 @@ mod editor;
 mod item_drag_tests;
 mod projection;
 #[cfg(test)]
-mod tests;
+pub(super) mod tests;
 
 // TibiaStyle.actionBarSlotSize / actionBarSlotMargin.
 const SLOT_SIZE: f32 = 34.;
@@ -77,6 +77,8 @@ struct SlotMenu(Option<Entity>);
 struct Generation(u64);
 #[derive(Component)]
 struct BarRow(usize);
+#[derive(Resource, Default)]
+struct BarCapacities([usize; 9]);
 #[derive(Component)]
 struct DockAnchor(crate::play::BarDock);
 #[derive(Component)]
@@ -90,6 +92,7 @@ pub(super) fn install(app: &mut App) {
     editor::install(app);
     app.init_resource::<editor::EditorState>()
         .init_resource::<SlotMenu>()
+        .init_resource::<BarCapacities>()
         .add_systems(Startup, (setup, editor::setup).after(super::setup))
         .add_systems(
             Update,
@@ -190,6 +193,7 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
                     overflow: Overflow::clip(),
                     ..default()
                 })
+                .observe(primary_press)
                 .observe(activate)
                 .observe(edit_click)
                 .observe(dragdrop::drop_slot)
@@ -251,6 +255,7 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
                 align_items: AlignItems::Center,
                 ..default()
             })
+            .observe(primary_press)
             .observe(activate)
             .id();
         let icon = art::icon(
@@ -307,6 +312,7 @@ fn button(
             control,
             Generation(u64::MAX),
         ))
+        .observe(primary_press)
         .observe(activate)
         .id();
     let label = commands
@@ -316,10 +322,18 @@ fn button(
     button
 }
 
+// ButtonPlugin marks every pointer press. Only primary presses arm these controls.
+fn primary_press(event: On<PointerPress>, mut commands: Commands) {
+    if event.button != bevy::picking::pointer::PointerButton::Primary {
+        commands.entity(event.entity).remove::<bevy::ui::Pressed>();
+    }
+}
+
 fn activate(
     event: On<Activate>,
     guard: ModalGuard,
     controls: Query<(&ActionControl, &Generation)>,
+    capacities: Res<BarCapacities>,
     owner: NonSend<HostOwner>,
     editor: Res<editor::EditorState>,
     menu: Res<SlotMenu>,
@@ -358,7 +372,17 @@ fn activate(
         }
         ActionControl::Lock(bar) => configure(&play.link, bar, false, true),
         ActionControl::Scroll(bar, by) => {
-            play.link.bar_gesture(BarGesture::Scroll { bar, by });
+            let row = &layout.rows[bar];
+            let visible = row.visible_slots(capacities.0[bar]);
+            let last = usize::from(row.count) - visible.len();
+            let next = visible
+                .start
+                .saturating_add_signed(isize::from(by))
+                .min(last);
+            let delta = next as i8 - row.offset as i8;
+            if !visible.is_empty() && delta != 0 {
+                play.link.bar_gesture(BarGesture::Scroll { bar, by: delta });
+            }
         }
     }
 }

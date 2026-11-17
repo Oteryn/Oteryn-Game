@@ -70,6 +70,7 @@ pub(super) fn project(
     anchors: Query<(Entity, &DockAnchor)>,
     owner: NonSend<HostOwner>,
     mut ui: Projection,
+    mut page_sizes: ResMut<BarCapacities>,
 ) {
     let Some(play) = &owner.play else {
         return;
@@ -121,6 +122,7 @@ pub(super) fn project(
             node.display = display;
         }
     }
+    page_sizes.0 = capacities;
     for (control, mut generation, mut node) in &mut ui.controls {
         generation.0 = owner.generation();
         if let ActionControl::Scroll(bar, _) = control {
@@ -203,7 +205,9 @@ pub(super) fn project(
         .hovered
         .iter()
         .find_map(|(interaction, control)| match control {
-            ActionControl::Slot(slot) if interaction.get() => {
+            ActionControl::Slot(slot)
+                if interaction.get() && owner.settings.preferences.action_bar.tooltips =>
+            {
                 Some(match owner.settings.preferences.bar_actions.0.get(slot) {
                     Some(
                         crate::play::BarAction::Use { .. } | crate::play::BarAction::Equip { .. },

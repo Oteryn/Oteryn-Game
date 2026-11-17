@@ -246,10 +246,10 @@ pub(super) fn install(app: &mut App) {
     art::install(app);
     app.add_message::<bevy::input::keyboard::KeyboardInput>()
         .init_resource::<SidebarWidgets>()
+        .add_systems(Last, dock::persist)
         .add_systems(
             Update,
             (
-                dock::persist,
                 context_menu::layout,
                 (project, float::project).chain(),
                 float::escape,
