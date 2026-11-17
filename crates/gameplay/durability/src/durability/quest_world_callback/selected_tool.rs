@@ -87,6 +87,7 @@ impl QuestWorldContext {
 pub(super) struct SelectedGroundTarget {
     pub item: [u8; 16],
     pub actor_position: [i32; 3],
+    pub target_position: [i32; 3],
 }
 
 impl QuestWorldContext {
@@ -97,6 +98,7 @@ impl QuestWorldContext {
         intent: Vec<u8>,
         target: [u8; 16],
         actor_position: [i32; 3],
+        target_position: [i32; 3],
     ) -> Option<QuestWorldToolContext> {
         if source == [0; 16] || target == [0; 16] || source == target || intent.len() > 4096 {
             return None;
@@ -119,6 +121,7 @@ impl QuestWorldContext {
                 target: Some(SelectedGroundTarget {
                     item: target,
                     actor_position,
+                    target_position,
                 }),
             }),
         })

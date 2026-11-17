@@ -11,6 +11,7 @@ pub fn callback() -> Result<Callback, String> {
         "lever":null,"reversible":false,"requires_world_admission":true,
         "passages":[],"teleport":null,
         "storage":[{"track":TRACK,"minimum":-1,"maximum":0,"set":1}],
+        "effects":{"target_magic":14},
         "offerings":[],"item_on_target":{"selected_instance":true,"item":"oteryn:item.tibia.i7532","count":1},
         "return_on_failure":false,"failure_message":null,
         "success_message":"At last... I have it back, my precious amulet. I am glad you didn't use it! I allow you to ...ahh... enter door ...ahh",

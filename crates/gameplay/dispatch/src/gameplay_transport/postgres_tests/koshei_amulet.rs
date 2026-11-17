@@ -11,6 +11,7 @@ use oteryn_protocol_oteryn::world_object::{
 #[test]
 fn koshei_validator_accepts_definition_route_and_refuses_appearance_only() -> TestResult {
     let callback = source::callback()?;
+    assert_eq!(callback.effects.target_magic, Some(14));
     world_callbacks::validate_callbacks(std::slice::from_ref(&callback))?;
     let mut appearance = callback.clone();
     appearance.selector.target_definition = None;
@@ -359,6 +360,9 @@ pub(super) async fn exercise_ground(
         before, after,
         "target and contents retain their native lifecycle"
     );
+    let effects = owner.bundle_map().ok_or("map")?.facts.movement_effects_since(0);
+    assert_eq!(effects.iter().filter(|(_,at,effect)| *effect == 14 && at.x == ground_at.x && at.y == ground_at.y && at.floor == ground_at.floor).count(),1);
+
     Ok(())
 }
 

@@ -39,7 +39,8 @@ pub(super) async fn require(
     let cell = super::super::spell_items_abi::decode_ground_cell(&position)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     let [x, y, floor] = target.actor_position;
-    Ok(x.abs_diff(cell.x) <= u32::from(callback.use_range)
+    Ok(target.target_position == [cell.x, cell.y, -cell.z]
+        && x.abs_diff(cell.x) <= u32::from(callback.use_range)
         && y.abs_diff(cell.y) <= u32::from(callback.use_range)
         && floor == -cell.z)
 }

@@ -77,6 +77,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if candidates.next().is_some() {
             return Ok(Some(UseOutcome::rejected()));
         }
+        let Some(ground) = self.root.read_ground_action_source(self.character, fence, target).await.map_err(|_| ())? else {
+            return Ok(Some(UseOutcome::rejected()));
+        };
+        if callback.selector.target_definition.as_deref() != Some(ground.definition().production_key.as_str()) {
+            return Ok(Some(UseOutcome::rejected()));
+        }
+        let target_position = ground.position();
         let Some(catalogue) = self.quest_catalogue.as_ref() else {
             return Ok(Some(UseOutcome::rejected()));
         };
@@ -128,6 +135,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 at.position().y,
                 i32::from(at.position().floor),
             ],
+            [target_position.x, target_position.y, i32::from(target_position.floor)],
         )
         .ok_or(())?;
         let result = revision
@@ -152,10 +160,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| ())?;
         drop(runtime);
         drop(revision);
+        drop(permit);
         let committed = matches!(
             result,
             QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)
         );
+        if matches!(result, QuestTransitionOutcome::Committed(_)) && let Some(effect) = callback.effects.target_magic
+            && let Some(position) = native(target_position) {
+            map.facts.emit_movement_effect(position, effect);
+        }
         if matches!(result, QuestTransitionOutcome::Committed(_))
             && let Some(message) = &callback.success_message
         {

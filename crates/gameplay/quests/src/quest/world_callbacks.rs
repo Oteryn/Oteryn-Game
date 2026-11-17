@@ -956,7 +956,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     || !callback.passages.is_empty()
                     || callback.teleport.is_some()
                     || !callback.offerings.is_empty()
-                    || !callback.effects.is_empty()
+                    || { let mut effects = callback.effects.clone(); effects.target_magic = None; !effects.is_empty() }
                     || callback.native_rule.is_some()
                     || selector.position.is_some()
                     || !selector.position_aliases.is_empty()
