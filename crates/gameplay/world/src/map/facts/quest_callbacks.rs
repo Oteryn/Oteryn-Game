@@ -461,10 +461,14 @@ impl CallbackStates {
                     return false;
                 }
                 if let Some((due, restore)) = reset {
-                    let revision = self
+                    let Some(revision) = self
                         .changed
                         .get(&owner)
-                        .map_or(0, |(revision, _)| *revision);
+                        .map_or(0, |(revision, _)| *revision)
+                        .checked_add(1)
+                    else {
+                        return false;
+                    };
                     self.movement_decays.insert(
                         (*due, owner),
                         MovementDecay {
@@ -1644,9 +1648,12 @@ impl BundleFacts {
                     .saturating_mul(3)
                     .saturating_add(1 + usize::from(source_reset.is_some()))
             }
-            Some(QuestCallbackProjection::Scene { mutations, .. }) => {
-                mutations.len().saturating_mul(3).saturating_add(1)
-            }
+            Some(QuestCallbackProjection::Scene {
+                mutations, reset, ..
+            }) => mutations
+                .len()
+                .saturating_mul(3)
+                .saturating_add(1 + usize::from(reset.is_some())),
             _ => usize::from(projection.is_some()) * 8,
         };
         if states

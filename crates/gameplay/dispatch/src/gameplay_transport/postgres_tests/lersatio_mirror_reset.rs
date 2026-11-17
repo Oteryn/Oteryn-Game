@@ -30,6 +30,20 @@ fn lersatio_mirror_reset_waits_thirty_seconds_and_fences_newer_revision() {
     assert_eq!(facts.object_revision(1), 1);
     assert_eq!(facts.expire_movement_items(30_000_000), 1);
     assert_eq!(facts.object_revision(1), 2);
+    let scene_reset = QuestCallbackProjection::Scene {
+        mutations: Vec::new(),
+        remove_self: false,
+        reset: Some((45_000_000, intact)),
+    };
+    assert!(facts.apply_quest_callback(2, 0, broken, &[], &[], false, Some(&scene_reset)));
+    assert_eq!(facts.expire_movement_items(44_999_999), 0);
+    assert_eq!(facts.object_revision(2), 1);
+    assert_eq!(facts.expire_movement_items(45_000_000), 1);
+    assert_eq!(
+        facts.object_revision(2),
+        2,
+        "current scene reset must publish"
+    );
     let later = QuestCallbackProjection::Scene {
         mutations: Vec::new(),
         remove_self: false,
