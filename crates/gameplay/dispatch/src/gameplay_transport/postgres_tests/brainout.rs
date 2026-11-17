@@ -1,8 +1,5 @@
 //! Crystal brain mission through framed production USE and durable Ground custody.
-use super::{
-    AdmittedSession, ComposedFreshAdmission, TestResult,
-    fixture::{Harness, debug},
-};
+use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::Harness};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use oteryn_gameplay_quests::quest::{
     self,
@@ -11,6 +8,10 @@ use oteryn_gameplay_quests::quest::{
 use oteryn_gameplay_world::map;
 use oteryn_gameplay_world::map::view::MapFacts;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+
+fn debug(error: impl std::fmt::Debug) -> String {
+    format!("{error:?}")
+}
 
 pub(super) const NAME: &str = "brainout";
 pub(super) const SOURCE: Position = Position {
