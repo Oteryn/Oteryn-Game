@@ -59,6 +59,8 @@ mod pvp_expert;
 pub use events::SessionEvent;
 mod gated_command;
 pub use gated_command::world_context;
+/// The in-game Channel switch (capability 512).
+pub use oteryn_protocol_oteryn::channel_switch;
 /// Server-owned highscores query and result codecs.
 pub use oteryn_protocol_oteryn::highscores;
 /// The own Platform sanction record (capability 497).

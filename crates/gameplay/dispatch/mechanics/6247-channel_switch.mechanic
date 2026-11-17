@@ -1,0 +1,7 @@
+name=channel_switch
+commands=6247,6248
+transport=channel_switch
+composed=channel_switch
+authority=channel_switch
+[route]
+routing::channel_switch::route(authority, &session.admitted, command).await

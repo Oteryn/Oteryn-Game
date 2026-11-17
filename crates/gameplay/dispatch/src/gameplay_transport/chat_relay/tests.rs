@@ -320,6 +320,23 @@ fn node(url: &str, session: GameSessionId, name: &str, character: [u8; 16]) -> C
     chat
 }
 
+/// A Channel node of `world`: one Channel runtime of that World, or of another World.
+fn node_in(
+    world: [u8; 16],
+    url: &str,
+    session: GameSessionId,
+    name: &str,
+    character: [u8; 16],
+) -> ChatRuntime {
+    let chat = ChatRuntime::default();
+    let options = PgConnectOptions::from_str(url).expect("options");
+    chat.install_relay(Arc::new(
+        ChatRelay::new(ring(), world, options).expect("relay"),
+    ));
+    chat.admit_as(session, name, Some(character), BASE);
+    chat
+}
+
 fn relay_of(chat: &ChatRuntime) -> &ChatRelay {
     chat.relay().expect("installed relay")
 }
@@ -432,6 +449,94 @@ fn two_nodes_of_a_world_exchange_room_and_private_lines() -> TestResult {
         let finished = first_of(Box::pin(exchange), Box::pin(listeners)).await;
         shutdown.cancel();
         drop((first, second));
+        database.cleanup().await?;
+        finished.ok_or("the relays stopped")?;
+        Ok(())
+    })
+}
+
+/// chsw (owner, 2026-11-17): World Chat is shared by every Channel of one World and never
+/// reaches another World. Each Channel is its own node; the relay is keyed by the World only.
+#[test]
+fn world_chat_reaches_another_channel_of_the_world_and_never_another_world() -> TestResult {
+    run_postgres_test(async {
+        let (database, url) = relay_database("chat_relay_channels", &all_pinned()).await?;
+        let mut other_world = WORLD;
+        other_world[15] ^= 0x01;
+        let (aela, bryn, cato) = (session_of(0x73), session_of(0x74), session_of(0x75));
+        let channel_a = node_in(WORLD, &url, aela, "Aela", character(0x33));
+        let channel_b = node_in(WORLD, &url, bryn, "Bryn", character(0x34));
+        let elsewhere = node_in(other_world, &url, cato, "Cato", character(0x35));
+        let shutdown = CancellationToken::new();
+        let listeners = async {
+            let window = || Some(ReplayWindow::starting_at(0));
+            let _ = first_of(
+                relay_of(&channel_a).run_from(window(), &channel_a, &shutdown),
+                async {
+                    let _ = first_of(
+                        relay_of(&channel_b).run_from(window(), &channel_b, &shutdown),
+                        async {
+                            let _ = relay_of(&elsewhere)
+                                .run_from(window(), &elsewhere, &shutdown)
+                                .await;
+                        },
+                    )
+                    .await;
+                },
+            )
+            .await;
+        };
+        let exchange = async {
+            assert!(
+                wait_for(10, || [&channel_a, &channel_b, &elsewhere]
+                    .iter()
+                    .all(|chat| relay_of(chat).is_ready()))
+                .await,
+                "every relay listens"
+            );
+            for (chat, session) in [(&channel_a, aela), (&channel_b, bryn), (&elsewhere, cato)] {
+                assert!(
+                    chat.pre_gate(session, &ChatIntent::OpenRoom(ChatRoom::World), BASE)
+                        .is_some_and(|done| done.disposition == ChatDisposition::Ok)
+                );
+            }
+            relay_of(&channel_a)
+                .send(
+                    RelayDestination::Room {
+                        room: ChatRoom::World,
+                    },
+                    CharacterName::parse("Aela").expect("name"),
+                    ChatText::parse("trade at the depot").expect("text"),
+                )
+                .await
+                .expect("sent");
+            let mut heard = Vec::new();
+            assert!(
+                wait_for(10, || {
+                    heard.extend(channel_b.drain(bryn));
+                    !heard.is_empty()
+                })
+                .await,
+                "the other Channel of the World hears the World Chat line"
+            );
+            assert_eq!(
+                heard,
+                vec![ChatLine::Room {
+                    room: ChatRoom::World,
+                    speaker_name: "Aela".to_owned(),
+                    text: "trade at the depot".to_owned(),
+                }]
+            );
+            // The sender's own Channel delivers it back, so the other World had the same time.
+            assert!(wait_for(10, || !channel_a.drain(aela).is_empty()).await);
+            assert!(
+                elsewhere.drain(cato).is_empty(),
+                "World Chat never reaches another World"
+            );
+        };
+        let finished = first_of(Box::pin(exchange), Box::pin(listeners)).await;
+        shutdown.cancel();
+        drop((channel_a, channel_b, elsewhere));
         database.cleanup().await?;
         finished.ok_or("the relays stopped")?;
         Ok(())

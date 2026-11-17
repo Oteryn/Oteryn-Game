@@ -262,7 +262,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// actor is not held, as at a closed client's release (`held_step`). The PvE deadline
     /// and the PvP block do not hold an actor standing in a protection zone
     /// (`in_fight_logout_retry`).
-    async fn logout_in_fight(
+    pub(super) async fn logout_in_fight(
         &self,
         actor: ExactActorRef,
         session: GameSessionId,

@@ -1,0 +1,14 @@
+{
+  "id": 512,
+  "name": "CHANNEL_SWITCH_V1",
+  "owner_decision": "chsw owner decisions 2026-11-17 (Option 2, five-minute cooldown); GAME-CHANNEL-01 §7-§11",
+  "owner": "Game channel-policy authority (GAME-CHANNEL-01); final admission stays with FND-04",
+  "requires": [],
+  "command_types": [
+    6247,
+    6248
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Commands 6247 and 6248 read the switch locks and cooldown and run the safe exit of a voluntary Channel switch; see channel-switch-v1.md."
+}

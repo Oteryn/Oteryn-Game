@@ -316,6 +316,12 @@ impl TradeBook {
         }
         false
     }
+    /// chsw §8: an open direct trade of `session` (a poisoned book counts as open).
+    pub(super) fn open(&self, session: GameSessionId) -> bool {
+        self.0
+            .lock()
+            .map_or(true, |book| book.record(session).is_some())
+    }
     pub(super) fn transitioning(&self, session: GameSessionId) -> bool {
         self.0.lock().map_or(true, |book| {
             book.record(session).is_some_and(|r| r.request.is_some())

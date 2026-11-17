@@ -278,6 +278,9 @@ pub mod wheel_allocation;
 #[path = "features/0031-tutorial-notices/mod.rs"]
 pub mod tutorial_notices;
 
+/// The in-game Change Channel window (capability 512).
+#[path = "features/0512-channel-switch/mod.rs"]
+pub mod channel_switch;
 #[path = "features/0497-sanction-record/mod.rs"]
 pub mod sanction_record;
 #[path = "features/0075-server-save-countdown/protocol.rs"]
