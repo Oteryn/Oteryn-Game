@@ -19,6 +19,7 @@ const HORSE: &str = "oteryn:creature.horse";
 
 pub(in crate::gameplay_transport) struct StableEntry {
     actor: crate::foundation::ExactActorRef,
+    scope: crate::foundation::RuntimeScopeRefV1,
     position: crate::foundation::MovementPositionSnapshot,
     draw: u8,
 }
@@ -28,22 +29,23 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
         &self,
         entries: Vec<StableEntry>,
     ) {
+        let scope = crate::foundation::RuntimeScopeRefV1::channel(self.world_id, self.channel_id);
         for entry in entries {
-            let scope =
-                crate::foundation::RuntimeScopeRefV1::channel(self.world_id, self.channel_id);
-            if !matches!(
-                self.root
-                    .settle_horse_lure(
-                        self.character,
-                        self.holder,
-                        scope,
-                        entry.actor.scope_generation(),
-                        self.reset_epoch,
-                        entry.draw,
-                    )
-                    .await,
-                Ok(true)
-            ) {
+            if entry.scope != scope
+                || !matches!(
+                    self.root
+                        .settle_horse_lure(
+                            self.character,
+                            self.holder,
+                            scope,
+                            entry.actor.scope_generation(),
+                            self.reset_epoch,
+                            entry.draw,
+                        )
+                        .await,
+                    Ok(true)
+                )
+            {
                 continue;
             }
             let mut runtime = self.runtime.lock().await;
@@ -110,6 +112,7 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
                 (u32::from_be_bytes([digest[0], digest[1], digest[2], digest[3]]) % 30) as u8;
             stable.push(StableEntry {
                 actor: step.actor,
+                scope: runtime.binding().runtime_scope(),
                 position,
                 draw,
             });
