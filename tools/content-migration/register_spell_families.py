@@ -544,6 +544,8 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     questpc7_smith_item_profile.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import qnpcfx_item_profiles
     qnpcfx_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import krailos_item_profiles
+    krailos_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import qready1_quest_item_profiles
     import qready1_craft_item_profiles
     import qready1_cradle_item_profiles
