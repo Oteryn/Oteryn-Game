@@ -18,8 +18,8 @@ pub enum NativeRule {
     LionTrial { trial: u8 },
     UnnaturalDance { tile: u8 },
     IceSealPaint { seal: u16 },
-    SoulWarRemorse,
     SeaSerpentTelescope,
+    SoulWarRemorse,
     SoulWarEnergy,
 }
 
