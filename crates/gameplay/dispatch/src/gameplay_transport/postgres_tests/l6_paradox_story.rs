@@ -609,27 +609,7 @@ pub(super) async fn exercise(
             .collect::<Vec<_>>()
     );
     assert_eq!(progress(h).await?, 5);
-    if name.ends_with("-legacy") {
-        legacy_source_gap(h).await?;
-        let before = snapshot(h).await?;
-        conversation(owner, admitted, npcs[4], &["hi", "math"]).await?;
-        let after = snapshot(h).await?;
-        assert_eq!(after["achievements"], before["achievements"]);
-        assert_eq!(after["grants"], before["grants"]);
-        assert_eq!(progress(h).await?, 5);
-        // A later source finale must survive a repeated compatibility contact.
-        sqlx::query("UPDATE game_character_quest_tracks SET value=2 WHERE track_key=$1")
-            .bind(SOURCE_MATH)
-            .execute(&h.pool)
-            .await?;
-        conversation(owner, admitted, npcs[4], &["hi", "math"]).await?;
-        assert_eq!(source_tracks(h).await?.get(SOURCE_MATH), Some(&2));
-        let after = snapshot(h).await?;
-        assert_eq!(after["achievements"], before["achievements"]);
-        assert_eq!(after["grants"], before["grants"]);
-    } else {
-        assert_riddler_accepts_learned_story(h).await?;
-    }
+    assert_riddler_accepts_learned_story(h).await?;
     let achievements: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1",
     )
@@ -671,5 +651,24 @@ pub(super) async fn exercise(
         committed,
         "a fresh repeated lesson cannot grant another achievement source"
     );
+    if name.ends_with("-legacy") {
+        legacy_source_gap(h).await?;
+        let before = snapshot(h).await?;
+        conversation(owner, admitted, npcs[4], &["hi", "math"]).await?;
+        let after = snapshot(h).await?;
+        assert_eq!(after["achievements"], before["achievements"]);
+        assert_eq!(after["grants"], before["grants"]);
+        assert_eq!(progress(h).await?, 5);
+        // A later source finale must survive a repeated compatibility contact.
+        sqlx::query("UPDATE game_character_quest_tracks SET value=2 WHERE track_key=$1")
+            .bind(SOURCE_MATH)
+            .execute(&h.pool)
+            .await?;
+        conversation(owner, admitted, npcs[4], &["hi", "math"]).await?;
+        assert_eq!(source_tracks(h).await?.get(SOURCE_MATH), Some(&2));
+        let after = snapshot(h).await?;
+        assert_eq!(after["achievements"], before["achievements"]);
+        assert_eq!(after["grants"], before["grants"]);
+    }
     Ok(())
 }
