@@ -216,12 +216,14 @@ None,
              (SELECT count(*) FROM game_character_quest_states), \
              (SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid)")
             .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
-        wire(
+        let command_id = 1 + u64::try_from(n)?;
+        let step = encode_step_intent(StepDirection::East);
+        let reply = wire(
             owner,
             admitted,
-            1 + u64::try_from(n)?,
+            command_id,
             COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-            encode_step_intent(StepDirection::East),
+            step.clone(),
         )
         .await?;
         let expected = if skeleton == 1 && chest == 1 {
@@ -248,17 +250,42 @@ None,
                 "refused hoist must explain the instruction gate"
             );
         }
+        let observed = owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?;
         assert_eq!(
-            owner
+            observed.position(),
+            expected,
+            "both flags must equal one: {skeleton}/{chest}"
+        );
+        if n == 2 || n == 3 {
+            let next_command_id = admitted.continuity.next_command_id;
+            let replayed = wire(
+                owner,
+                admitted,
+                command_id,
+                COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+                step,
+            )
+            .await?;
+            assert_eq!(replayed, reply, "replay returns the original STEP result");
+            assert_eq!(admitted.continuity.next_command_id, next_command_id);
+            let after_replay = owner
                 .runtime
                 .lock()
                 .await
                 .read_actor_position(actor)
-                .map_err(debug)?
-                .position(),
-            expected,
-            "both flags must equal one: {skeleton}/{chest}"
-        );
+                .map_err(debug)?;
+            assert_eq!(after_replay.position(), observed.position());
+            assert_eq!(after_replay.revision(), observed.revision());
+            assert!(
+                owner.states.chat.drain(admitted.game_session_id).is_empty(),
+                "replay must not resend gate feedback"
+            );
+        }
         let after = owner
             .root
             .read_character_quest_state(owner.character, fence.character_id)
