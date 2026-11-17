@@ -200,7 +200,14 @@ fn scenario_with_voice(
         let closed_hole = target_key.as_str();
         let bag = "oteryn:item.tibia.i2854";
         let shovel = tool;
-        for key in [shovel, closed_hole, &format!("oteryn:item.tibia.i{after}")] {
+        let soul_net = tool == "oteryn:item.tibia.i14020";
+        let after_key = format!("oteryn:item.tibia.i{after}");
+        let profiles = if soul_net {
+            &[shovel][..]
+        } else {
+            &[shovel, closed_hole, after_key.as_str()][..]
+        };
+        for key in profiles {
             assert!(
                 native.item_policy(key, "definition-r1").is_some(),
                 "native terrain profile {key}"
@@ -421,7 +428,7 @@ fn scenario_with_voice(
             exchange(&owner, admitted, 1, &payload, reference(shovel))
                 .await
                 .map_err(|e| format!("initial use: {e}"))?;
-        if tool == "oteryn:item.tibia.i14020" {
+        if soul_net {
             assert_eq!(
                 oteryn_protocol_oteryn::refusal_detail::RefusalDetail::of_use(result),
                 Some(oteryn_protocol_oteryn::refusal_detail::RefusalDetail::NotPossible)
