@@ -190,16 +190,16 @@ pub(super) fn tiles(manifest: &Manifest, phase: Option<bool>) -> &'static [Phase
     }
 }
 
-fn creature_at(dry: bool, home: usize, roll: u64) -> Option<&'static str> {
+fn creature_at(dry: bool, home: usize, roll: u64) -> Option<(&'static str, u64)> {
     if !dry || home >= HOMES.len() {
         return None;
     }
     // The spoiler reports a possible Groam appearance. Use one World-day
     // draw at a native Scout home, with a one-percent Oteryn selection.
     Some(if home == HOMES.len() - 1 && roll < 10 {
-        GROAM
+        (GROAM, u64::from(oteryn_world_bundle::spawn::MAX_RESPAWN_MS))
     } else {
-        SCOUT
+        (SCOUT, 90_000)
     })
 }
 
@@ -228,7 +228,7 @@ pub(in crate::map) fn project_spawns(
     sources.retain(|(points, _)| !points.is_empty());
     let roll = daily.pick(x, y, "awash-groam", 1000);
     for (home, &(x, y)) in HOMES.iter().enumerate() {
-        let Some(creature) = creature_at(dry, home, roll) else {
+        let Some((creature, respawn)) = creature_at(dry, home, roll) else {
             continue;
         };
         if !world.enterable(TilePos { x, y, floor: -10 }) {
@@ -238,7 +238,7 @@ pub(in crate::map) fn project_spawns(
         sources.push((
             vec![(
                 (i32::from(x), i32::from(y), 10),
-                90_000,
+                respawn,
                 creature.into(),
                 health,
                 blockable,
@@ -257,9 +257,9 @@ mod tests {
     fn awash_spawn_phase_and_groam_chance_boundaries() {
         let boss_home = HOMES.len() - 1;
         assert_eq!(creature_at(false, boss_home, 0), None);
-        assert_eq!(creature_at(true, 0, 0), Some(SCOUT));
-        assert_eq!(creature_at(true, boss_home, 9), Some(GROAM));
-        assert_eq!(creature_at(true, boss_home, 10), Some(SCOUT));
+        assert_eq!(creature_at(true, 0, 0), Some((SCOUT, 90_000)));
+        assert_eq!(creature_at(true, boss_home, 9), Some((GROAM, 86_400_000)));
+        assert_eq!(creature_at(true, boss_home, 10), Some((SCOUT, 90_000)));
         assert_eq!(creature_at(true, HOMES.len(), 0), None);
         assert!(
             FLOODED

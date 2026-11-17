@@ -210,6 +210,7 @@ fn phase_sectors(
             || x >= manifest.world.max_x
             || y < manifest.world.min_y
             || y >= manifest.world.max_y
+            || !manifest.world.floors.contains(&-floor)
         {
             return Err(refusal("world-change phase layer outside world"));
         }
@@ -434,7 +435,7 @@ fn project(
             }
         }
         if let Some(layer) = pending.remove(&key(&sector)) {
-            // A source ship tile supplies the day's whole tile, including ground and flags.
+            // A selected phase tile supplies the whole tile, including ground and flags.
             // Unchanged tiles in the sector retain their original placement attributes.
             let mut tiles: BTreeMap<_, _> =
                 sector.tiles.into_iter().map(|t| ((t.y, t.x), t)).collect();
@@ -443,7 +444,7 @@ fn project(
                     .get(&(tile.y, tile.x))
                     .is_some_and(|base| base.house != 0)
                 {
-                    return Err(refusal("trader layer overlaps a house"));
+                    return Err(refusal("daily layer overlaps a house"));
                 }
                 tiles.insert((tile.y, tile.x), tile);
             }
