@@ -13,6 +13,7 @@ mod inventory;
 mod items;
 mod marlin_trophy;
 mod rewards;
+pub mod sandra_lottery;
 pub mod teleport;
 pub use inventory::{NpcProgramInventory, inventory_prefetch_required, requires_current_inventory};
 

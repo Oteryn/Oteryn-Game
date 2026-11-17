@@ -43,6 +43,13 @@ pub(super) async fn apply<C: ItemLoopContent>(
     node: &NodeIncarnationProof,
     permit: &crate::durability::spell_owner_commit::SpellLanePermit,
 ) -> StoredResult<bool> {
+    let resolved = sandra_lottery::resolve(
+        request,
+        plan,
+        content.loop_content_digest(),
+        fence.character_id,
+    )?;
+    let plan = resolved.as_ref().unwrap_or(plan);
     if !crate::durability::quest_world_callback::consume_npc_inputs(
         tx,
         permit,
@@ -102,10 +109,19 @@ pub(super) async fn apply<C: ItemLoopContent>(
         .into_iter()
         .map(|(item, count)| serde_json::json!({"item":item,"count":count}))
         .collect::<Vec<_>>();
-    let typed_take = plan.effects.iter().filter_map(|effect| match effect {
-        NpcRuleEffect::TakeItem { item, count, subtype, optional: false } => Some(serde_json::json!({"item":item,"count":count,"subtype":subtype})),
-        _ => None,
-    }).collect::<Vec<_>>();
+    let typed_take = plan
+        .effects
+        .iter()
+        .filter_map(|effect| match effect {
+            NpcRuleEffect::TakeItem {
+                item,
+                count,
+                subtype,
+                optional: false,
+            } => Some(serde_json::json!({"item":item,"count":count,"subtype":subtype})),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
     let mut value = serde_json::json!({"key":request.transition_key,"quest":plan.quest,"npc":request.npc,
         "program_digest":plan.program_digest,"rules":plan.selected_rule_keys,"take":take,"typed_take":typed_take,"give":gift,
         "tracks":plan.track_changes.iter().map(|change|serde_json::json!({"key":change.key,"before":change.before,"after":change.after})).collect::<Vec<_>>()});
