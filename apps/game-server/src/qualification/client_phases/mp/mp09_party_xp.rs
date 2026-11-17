@@ -636,11 +636,20 @@ async fn encounter(
     }
     evidence("MP_CHECK MP09 hunt-attack-started PASS all three bots attacking in chase mode");
     let mut hits = [false; 3];
+    // Diagnostics for a removed target: every value text on it, and its last shown health.
+    let (mut texts_on_target, mut other_texts, mut sources, mut last_health) =
+        (0_u32, 0_u32, Vec::new(), None);
     bots::wait_observation(bots, deadline, "all three damage the hunt target and kill", |bots, events| {
         for stream in events {
             for event in stream {
                 let SessionEvent::Presentation(delta) = event else { continue };
                 for event in &delta.value {
+                    if let PresentationEventKind::ValueText { kind, target: victim, attacker, primary, .. } = event.kind {
+                        if victim == target {
+                            texts_on_target += 1;
+                            if sources.len() < 6 { sources.push(format!("{kind:?}/{:?}/{}", attacker.map(|a| attackers.iter().position(|own| *own == a)), primary.value)); }
+                        } else { other_texts += 1; }
+                    }
                     let PresentationEventKind::ValueText { kind, target: victim, attacker: Some(source), primary, .. } = event.kind else { continue };
                     if victim != target || primary.value == 0 || !matches!(kind, PresentationValueKind::DamageDealt | PresentationValueKind::DamageOthers) { continue; }
                     if !attackers.contains(&source) { return Err(format!("foreign damage on the hunt target reply={event:?};cannot assume the full {pool}-XP party pool").into()); }
@@ -648,8 +657,11 @@ async fn encounter(
                 }
             }
         }
+        if let Some(shown) = bots[0].session.as_ref().and_then(|c| c.world_entities()).and_then(|e| e.get(&target).copied()) {
+            if let oteryn_dev_client::EntityDetail::Actor { health_percent, .. } = shown.detail { last_health = Some((health_percent, shown.position)); }
+        }
         let gone = bots[0].session.as_ref().and_then(|c| c.world_entities()).is_some_and(|e| e.get(&target).is_none());
-        if gone && !hits.iter().all(|hit| *hit) { return Err(format!("hunt target removed before all contributions;attributed_damage={hits:?};source:crates/gameplay/dispatch/src/gameplay_transport/attack/shared_experience.rs:52").into()); }
+        if gone && !hits.iter().all(|hit| *hit) { return Err(format!("hunt target removed before all contributions;attributed_damage={hits:?};texts_on_target={texts_on_target};other_texts={other_texts};sources={sources:?};last_health={last_health:?};source:crates/gameplay/dispatch/src/gameplay_transport/attack/shared_experience.rs:52").into()); }
         Ok(gone && hits.iter().all(|hit| *hit))
     }).await?;
     evidence(&format!(
