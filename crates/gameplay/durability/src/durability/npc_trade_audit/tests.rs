@@ -1339,3 +1339,30 @@ fn purchase_audit_proves_bundle_count_separately_from_physical_outputs() {
     value.purchase.as_mut().unwrap().offer_count = 4;
     assert!(check_npc_trade(&value).is_err());
 }
+
+#[test]
+fn purchase_audit_proves_token_payment_separately_from_gold_bags() {
+    use super::purchase::{OneItemNpcPurchaseCurrencyInputV1, OneItemNpcPurchaseCurrencyV1};
+    let mut value = shopping_bag_purchase();
+    let token = definition("Item", "oteryn:item.tibia.i3446", "r");
+    value.total_gold_units = 60;
+    value.burned_gold_units = 100;
+    value.minted_gold_units = 40;
+    value.lines[0] = burn(LINE_COIN_BURN, 10, coin(Coin::Platinum, "r"), 1, 1, 0);
+    value.lines[1] = mint_line(LINE_COIN_MINT, 20, coin(Coin::Gold, "r"), 2, 40);
+    value.lines.insert(2, burn(LINE_ITEM_BURN, 30, token.clone(), 7, 100, 10));
+    value.purchase.as_mut().unwrap().currency = Some(OneItemNpcPurchaseCurrencyV1 {
+        definition: Some(token),
+        inputs: vec![OneItemNpcPurchaseCurrencyInputV1 { item_instance_id: uuid(30), parent: uuid(50), nested: false }],
+    });
+    assert_eq!(check_npc_trade(&value), Ok(()));
+    let mut changed = value.clone();
+    changed.lines[2].after.as_mut().unwrap().quantity = 11;
+    assert!(check_npc_trade(&changed).is_err(), "underpaying tokens is refused");
+    let mut changed = value.clone();
+    changed.purchase.as_mut().unwrap().currency.as_mut().unwrap().inputs.clear();
+    assert!(check_npc_trade(&changed).is_err(), "every token debit needs typed custody evidence");
+    let mut changed = value;
+    changed.total_gold_units = 59;
+    assert!(check_npc_trade(&changed).is_err(), "token payment never subsidizes shopping bags");
+}

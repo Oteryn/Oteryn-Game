@@ -72,7 +72,7 @@ pub(super) async fn scenario(h: &Harness, owner: &ComposedFreshAdmission<'_, '_,
     for text in ["imbuement packages", "bash"] { client.talk(npc, text).await?; }
     let package_command = client.next_command;
     let package = client.talk(npc, "yes").await?;
-    assert!(package.lines.iter().any(|line| line.contains("package is in your backpack")));
+    assert!(package.lines.iter().any(|line| line == "You have successfully completed your purchase of the items."));
     assert_eq!(coins(h).await?, 88_750);
     let contents: Vec<(String, i64)> = sqlx::query_as("SELECT i.definition_production_key,i.quantity \
         FROM game_hireling_package_receipts p JOIN game_item_nested_entries n ON n.parent_item_instance_id=p.present_item_instance_id \

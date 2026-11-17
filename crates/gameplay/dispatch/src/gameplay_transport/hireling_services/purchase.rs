@@ -370,7 +370,7 @@ pub(super) async fn package(
         .await;
     drop(runtime);
     match result {
-        Ok(_) => completed(intent, "Your imbuement package is in your backpack."),
+        Ok(_) => completed(intent, "You have successfully completed your purchase of the items."),
         Err(NpcTradeError::Unavailable(_)) => unknown(),
         Err(NpcTradeError::InsufficientFunds) => {
             NpcConversations::bank_reply(intent, "Sorry, you don't have enough money.".into())
@@ -427,7 +427,7 @@ pub(super) async fn resume(
     {
         Ok(true) => Some(completed(
             intent,
-            "Your imbuement package is in your backpack.",
+            "You have successfully completed your purchase of the items.",
         )),
         Ok(false) => None,
         Err(NpcTradeError::Unavailable(_)) => Some(unknown()),

@@ -1,8 +1,8 @@
 # NPC purchases and Obtain containers
 
 Capability 514 gates command 6249. It requires NPC service and item view. Its nested
-legacy offer remains a BUY with quantity one; amount carries the physical purchase
-quantity. The legacy command 8 schema, limits, price and placement path stay unchanged.
+legacy offer remains a BUY with quantity one; amount carries the number of priced offers. The server multiplies it by the
+catalogue count to obtain physical units. The legacy command 8 schema, limits, price and placement path stay unchanged.
 Both flags are included on each purchase and are part of its immutable replay binding.
 Shopping bags are item 21411, hold twenty stacks and cost twenty gold each.
 
@@ -22,12 +22,22 @@ sequencing the command. Replays return the original message without another debi
 The payload uses QuickLootResultV1. SET/CLEAR return an empty list. OPEN returns the
 selected owned container identity as one accepted entry, or an empty list when unset.
 
-## Current admission boundary
+## Payment and service paths
 
-The new purchase writer admits ordinary gold-priced catalogue offers with count one,
-with at most 128 created item instances per transaction. Non-gold currencies, bundled
-offers, and House Hireling package purchases remain refused by this new command.
-The existing command 8 owner retains its prior admission and behavior.
+The purchase writer conserves each currency separately: the offer price is paid in
+its configured item currency; shopping bags always cost gold. Gold fees use the
+existing carried-coin and activated V2 bank payer. The typed audit records bundle
+count, every currency debit and every created item. At most 128 item instances are
+created in one transaction. Legacy command 8 retains its prior admission checks.
 
-Obtain SET/CLEAR/OPEN have a typed client session adapter and real server routes.
-A native Obtain recipient selector is not rendered yet.
+House Hireling imbuement packages use the donor's dialogue path (command 7), not the
+shop purchase packet. The existing native package owner creates one present (2856)
+containing the three catalogue ingredients and debits the package price atomically.
+Crystal 201189f: `data-crystal/npc/hireling.lua:1775-1811,2298-2318`.
+
+The native Obtain server flow resolves the selected item identity through the
+existing carried-container owner. SET 4 stores it, CLEAR 5 removes the category's
+recipient, and OPEN 6 publishes the selected container through the item-view owner.
+This is the server operation sequence from Crystal
+`src/server/network/protocol/protocolgame.cpp:2104-2143`; Oteryn uses its native
+item identity rather than Tibia's position/item-id/stack-position encoding.

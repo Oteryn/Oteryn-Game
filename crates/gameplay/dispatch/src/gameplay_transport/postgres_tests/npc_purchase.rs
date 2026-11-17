@@ -47,6 +47,7 @@ enum Case {
     Unfunded,
     Obtain,
     Separate,
+    NativeObtain,
     Drop,
     Capacity,
     Compat,
@@ -157,6 +158,19 @@ fn obtain_container_set_clear_is_separate_from_loot_container() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || scenario(admin, Case::Separate).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "NPC purchase scenario thread panicked")??;
+    Ok(())
+}
+
+#[test]
+fn obtain_native_selection_set_open_clear_routes_to_item_views() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || scenario(admin, Case::NativeObtain).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "NPC purchase scenario thread panicked")??;
     Ok(())
@@ -598,6 +612,22 @@ fn scenario(admin: String, case: Case) -> TestResult {
                 .await?;
             assert_eq!(new, 0);
             assert_eq!(gold(&h).await?, 998);
+        } else if case == Case::NativeObtain {
+            set_target(&owner,&mut admitted,1,ObtainAction::Set,None,Some(target)).await?;
+            for (command, expected) in [(2,vec![target]),(4,Vec::new())] {
+                if command == 4 { set_target(&owner,&mut admitted,3,ObtainAction::Clear,None,None).await?; }
+                let (status,payload) = exchange(&owner,&mut admitted,None,command,COMMAND_TYPE_OBTAIN_CONTAINER,
+                    encode_obtain_container(&ObtainContainerIntent { action: ObtainAction::Open, category: None, container: None }).map_err(debug)?).await?;
+                assert_eq!(status,CommandStatus::Accepted);
+                let result = oteryn_protocol_oteryn::quick_loot::decode_quick_loot_result(&payload).map_err(debug)?;
+                assert_eq!(result.items.iter().map(|item|item.item).collect::<Vec<_>>(),expected);
+                assert!(result.items.iter().all(|item|item.accepted));
+            }
+            let (status,_) = exchange(&owner,&mut admitted,None,5,COMMAND_TYPE_OBTAIN_CONTAINER,
+                encode_obtain_container(&ObtainContainerIntent { action: ObtainAction::Set, category: None, container: Some(id(250)) }).map_err(debug)?).await?;
+            assert_eq!(status,CommandStatus::Rejected,"native selection must resolve an owned container");
+            let recipients:i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_obtain_containers").fetch_one(&h.pool).await?;
+            assert_eq!(recipients,0);
         } else if case == Case::Separate {
             set_target(
                 &owner,
