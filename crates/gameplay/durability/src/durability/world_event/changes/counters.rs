@@ -238,6 +238,7 @@ pub async fn credit(
             ) | (
                 2,
                 Credit::Task(_)
+                    | Credit::VoiceGobble { .. }
                     | Credit::HeartDestroyed
                     | Credit::SoulNetDestroyed
                     | Credit::CoralPathCompleted
@@ -338,8 +339,27 @@ pub async fn credit(
             return Ok(CreditOutcome::Refused);
         }
         seen[index] = true;
-        let Ok(after) = before.credit(kind, credit, &bindings()?.parameters, event.occurred_at_ms)
-        else {
+        let result = match (kind, credit) {
+            (CounterKind::TheirMastersVoice, Credit::VoiceGobble { dungeon_tiles, placement }) => {
+                let epoch = i64::try_from(authority.epoch)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?;
+                let deadline = before.deadline_ms.map(i64::try_from).transpose()
+                    .map_err(|_| DurabilityError::InvalidStoredState)?;
+                let cleared: i64 = sqlx::query_scalar("SELECT count(*) FROM (SELECT substring(placement FROM 33) FROM game_terrain_tool_transforms WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2 AND state_item_id=12065 AND decay_at_unix_ms=$3 AND decay_step=0 AND cardinality(decay_states)=1 AND decay_states[1] BETWEEN 12059 AND 12063 UNION SELECT $4::bytea) AS cleared")
+                    .bind(world.as_bytes().as_slice()).bind(epoch).bind(deadline).bind(placement.as_slice())
+                    .fetch_one(&mut **tx).await?;
+                before.voice_gobble(
+                    u64::try_from(cleared).map_err(|_| DurabilityError::InvalidStoredState)?,
+                    dungeon_tiles,
+                    event.occurred_at_ms,
+                )
+            }
+            (CounterKind::TheirMastersVoice, Credit::Task(_)) => {
+                return Ok(CreditOutcome::Refused);
+            }
+            _ => before.credit(kind, credit, &bindings()?.parameters, event.occurred_at_ms),
+        };
+        let Ok(after) = result else {
             return Ok(CreditOutcome::Refused);
         };
         changed |= after.phase_version != values[index].phase_version;

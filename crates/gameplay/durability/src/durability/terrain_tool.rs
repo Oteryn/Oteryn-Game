@@ -19,6 +19,7 @@ use sqlx::Row;
 /// The existing native progression binding and revision fence accompany only a closed
 /// gobbler operation. Its amount and occurrence are re-proved by the durable owner.
 pub struct TerrainExperience {
+    pub dungeon_tiles: u32,
     pub fence: CurrentCharacterGameplayFence,
     pub request: ExperienceAwardRequest<
         { crate::content::character_progression_content::CHARACTER_EXPERIENCE_TABLE_LEVELS },
@@ -203,7 +204,10 @@ impl DurabilityRoot {
                 occurrence.extend_from_slice(&command.command_id().get().to_be_bytes());
                 let event = CreditEvent {
                     source_kind: 2, occurrence,
-                    credits: vec![(CounterKind::TheirMastersVoice,Credit::Task(0))],
+                    credits: vec![(CounterKind::TheirMastersVoice,Credit::VoiceGobble {
+                        dungeon_tiles: experience.as_ref().ok_or(DurabilityError::InvalidStoredState)?.dungeon_tiles,
+                        placement: key.to_be_bytes(),
+                    })],
                     counter_generations: day.counter_generations,
                     occurred_at_ms: u64::try_from(now).map_err(|_|DurabilityError::InvalidStoredState)?,
                     character: Some(crate::foundation::CharacterId::decode(fence.character_id.as_bytes())

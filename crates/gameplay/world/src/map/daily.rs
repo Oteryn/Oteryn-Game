@@ -232,6 +232,10 @@ fn layers(manifest: &Manifest, daily: &DailyMap) -> Result<BTreeMap<u32, Sector>
     Ok(out)
 }
 
+const fn fungus_grows(draw: u64) -> bool {
+    draw < 30
+}
+
 fn fungus(manifest: &Manifest, sector: &mut Sector, daily: &DailyMap) -> Result<(), Error> {
     if !daily.fungus || sector.floor != -9 {
         return Ok(());
@@ -239,7 +243,7 @@ fn fungus(manifest: &Manifest, sector: &mut Sector, daily: &DailyMap) -> Result<
     for tile in &mut sector.tiles {
         if !(33306..=33369).contains(&tile.x)
             || !(31847..=31919).contains(&tile.y)
-            || daily.pick(tile.x, tile.y, "fungus-chance", 100) >= 30
+            || !fungus_grows(daily.pick(tile.x, tile.y, "fungus-chance", 100))
         {
             continue;
         }
@@ -474,4 +478,15 @@ pub(super) fn grimvale_spawns(
         }
     }
     Some(sources)
+}
+
+#[cfg(test)]
+mod voice_tests {
+    #[test]
+    fn voice_fungus_growth_chance_bounds() {
+        assert!(super::fungus_grows(0));
+        assert!(super::fungus_grows(29));
+        assert!(!super::fungus_grows(30));
+        assert!(!super::fungus_grows(99));
+    }
 }

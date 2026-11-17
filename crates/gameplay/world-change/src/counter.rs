@@ -69,6 +69,10 @@ pub enum Credit {
         ordinal: u8,
     },
     VoiceMage,
+    VoiceGobble {
+        dungeon_tiles: u32,
+        placement: [u8; 8],
+    },
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CounterError {
@@ -122,14 +126,14 @@ impl CounterState {
                 (1..=4).contains(&self.stage)
                     && self.counts[2] < (1 << 25)
                     && match self.stage {
-                        1 => self.counts[0] < 100 && self.counts[1] == 0 && self.counts[2] == 0,
+                        1 => self.counts[1] == 0 && self.counts[2] == 0,
                         2 => {
-                            self.counts[0] >= 100
+                            self.counts[0] > 0
                                 && (1..=25).contains(&self.counts[1])
                                 && self.counts[2] != (1 << 25) - 1
                         }
                         _ => {
-                            self.counts[0] >= 100
+                            self.counts[0] > 0
                                 && self.counts[1] == 25
                                 && self.counts[2] == (1 << 25) - 1
                         }
@@ -338,6 +342,38 @@ impl CounterState {
         }
         self.finish(next, kind)
     }
+    /// Record the number of distinct cleared ground placements in the current period.
+    pub fn voice_gobble(
+        self,
+        cleared_tiles: u64,
+        dungeon_tiles: u32,
+        now_ms: u64,
+    ) -> Result<Self, CounterError> {
+        let kind = CounterKind::TheirMastersVoice;
+        self.validate(kind)?;
+        if cleared_tiles == 0
+            || cleared_tiles > u64::from(dungeon_tiles)
+            || self.stage == 4
+            || self.deadline_ms.is_some_and(|deadline| now_ms >= deadline)
+        {
+            return Err(CounterError::InvalidCredit);
+        }
+        let mut next = self;
+        next.counts[0] = cleared_tiles;
+        if self.deadline_ms.is_none() {
+            next.deadline_ms = Some(
+                now_ms
+                    .checked_add(3_600_000)
+                    .ok_or(CounterError::Overflow)?,
+            );
+        }
+        if next.stage == 1 && cleared_tiles == u64::from(dungeon_tiles) {
+            next.stage = 2;
+            next.counts[1] = 1;
+        }
+        self.finish(next, kind)
+    }
+
     pub fn tick(self, kind: CounterKind, now_ms: u64) -> Result<Self, CounterError> {
         self.validate(kind)?;
         let mut next = self;
@@ -383,6 +419,14 @@ impl CounterState {
         }
         if epoch == self.epoch {
             return Ok(self);
+        }
+        if kind == CounterKind::TheirMastersVoice
+            && let Some(deadline) = self.deadline_ms
+        {
+            let mut reset = self.tick(kind, deadline)?;
+            reset.epoch = epoch;
+            reset.entered_epoch = epoch;
+            return Ok(reset);
         }
         let mut next = self.tick(kind, now_ms)?;
         next.epoch = epoch;
@@ -650,4 +694,47 @@ pub struct SpawnSourceCell {
     pub x: u16,
     pub y: u16,
     pub floor: u8,
+}
+
+#[cfg(test)]
+mod voice_tests {
+    use super::*;
+
+    #[test]
+    fn voice_waves_require_every_dungeon_tile() -> Result<(), CounterError> {
+        let kind = CounterKind::TheirMastersVoice;
+        let state = CounterState::new(kind, 7, false);
+        let almost = state.voice_gobble(417, 418, 1)?;
+        assert_eq!(almost.stage, 1);
+        assert_eq!(almost.voice_gobble(417, 418, 2)?, almost);
+        let cleared = almost.voice_gobble(418, 418, 3)?;
+        assert_eq!((cleared.stage, cleared.counts), (2, [418, 1, 0]));
+        assert!(state.voice_gobble(0, 0, 1).is_err());
+        assert!(almost.voice_gobble(419, 418, 3).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn voice_deadline_and_server_save_fence_the_previous_encounter() -> Result<(), CounterError> {
+        let kind = CounterKind::TheirMastersVoice;
+        let state = CounterState::new(kind, 7, false).voice_gobble(25, 418, 100)?;
+        let deadline = 3_600_100;
+        assert_eq!(state.tick(kind, deadline - 1)?, state);
+        assert!(state.voice_gobble(26, 418, deadline).is_err());
+        for reset in [
+            state.tick(kind, deadline)?,
+            state.at_save(kind, 8, false, &Parameters::default(), 101)?,
+        ] {
+            assert_eq!(
+                (reset.stage, reset.counts, reset.deadline_ms),
+                (1, [0; 3], None)
+            );
+            assert_eq!(reset.credit_generation, state.credit_generation + 1);
+        }
+        assert_eq!(
+            state.at_save(kind, 7, false, &Parameters::default(), deadline)?,
+            state
+        );
+        Ok(())
+    }
 }

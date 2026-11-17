@@ -430,7 +430,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .cursor(self.root, self.character)
                 .await
                 .map_err(|_| ())?;
+            let base = self.bundle_map().ok_or(())?.overlay.base();
+            let dungeon_tiles = (33306..=33369)
+                .flat_map(|x| (31847..=31919).map(move |y| (x, y)))
+                .filter(|&(x, y)| {
+                    base.tile(x, y, -9)
+                        .filter(|tile| tile.ground().is_some_and(|(ordinal, _)| ordinal == 0))
+                        .and_then(|tile| tile.appearance(0))
+                        .is_some_and(|appearance| (12059..=12063).contains(&appearance))
+                })
+                .count();
             let experience = Box::new(TerrainExperience {
+                dungeon_tiles: u32::try_from(dungeon_tiles).map_err(|_| ())?,
                 fence: xp_fence,
                 request: ExperienceAwardRequest {
                     occurrence: voice_experience_occurrence(command_ref).map_err(|_| ())?,
