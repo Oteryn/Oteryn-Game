@@ -2,8 +2,7 @@
 use super::*;
 use crate::foundation::{ChannelId, WorldId};
 
-#[path = "world_event/reset_fixture.rs"]
-mod reset_fixture;
+use super::world_event::event_fixture;
 
 #[test]
 fn cbchance_chyllfroest_opens_and_closes_at_server_save() -> TestResult {
@@ -54,7 +53,7 @@ fn cbchance_chyllfroest_opens_and_closes_at_server_save() -> TestResult {
                     .open_character_authority(&seal)
                     .await
                     .map_err(debug)?;
-                reset_fixture::reset_epochs(&h, &authority, pin.qualified_room(), world, channel, 4)
+                event_fixture::reset_epochs(&h, &authority, pin.qualified_room(), world, channel, 4)
                     .await?;
                 let days: Vec<(String, bool)> = sqlx::query_as(
                     "SELECT reset_epoch::text,active FROM game_world_change_states

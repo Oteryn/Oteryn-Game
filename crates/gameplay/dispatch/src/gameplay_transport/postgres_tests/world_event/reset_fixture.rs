@@ -4,7 +4,7 @@ use crate::content::QualifiedNativeEntryRoom;
 use crate::durability::admission_authority_guards::AdmissionGuardStore;
 use crate::foundation::admission_authority_publication::*;
 
-pub(super) async fn reset_epochs(
+pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn reset_epochs(
     h: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     room: &QualifiedNativeEntryRoom,

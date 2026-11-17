@@ -14,7 +14,7 @@ use oteryn_protocol_oteryn::{
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[path = "world_event/reset_fixture.rs"]
-mod event_fixture;
+pub(super) mod event_fixture;
 
 #[test]
 fn world_event_postgres_real_dispatch_reset_restart_and_fences() -> TestResult {
