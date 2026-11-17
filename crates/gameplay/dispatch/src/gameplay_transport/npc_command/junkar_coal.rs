@@ -47,18 +47,22 @@ pub(super) async fn donate(
         .map(|entry| entry.item.item_instance_id);
     {
         let runtime = admission.runtime.lock().await;
-        if admission
-            .states
-            .npc_conversations
-            .current_npc(
-                &admission.states.chat,
-                &runtime,
-                actor,
-                command.game_session_id,
-                intent,
-            )
-            .as_ref()
-            != Some(&context)
+        if !runtime
+            .player_control_facts(actor, command.game_session_id)
+            .is_ok_and(|facts| facts.control_loss.is_none())
+            || admission.states.spell_states.lock().await.is_dead(actor)
+            || admission
+                .states
+                .npc_conversations
+                .current_npc(
+                    &admission.states.chat,
+                    &runtime,
+                    actor,
+                    command.game_session_id,
+                    intent,
+                )
+                .as_ref()
+                != Some(&context)
             || !admission
                 .states
                 .player_trades

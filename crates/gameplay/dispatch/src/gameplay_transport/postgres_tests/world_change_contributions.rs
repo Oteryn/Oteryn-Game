@@ -95,3 +95,98 @@ fn scenario() -> TestResult {
         h.cleanup().await
     })
 }
+
+#[test]
+fn junkar_coal_donation_debits_once_and_stays_separate_from_pump_coal() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run("junkar-coal-donation", junkar_scenario)
+}
+
+fn junkar_scenario() -> TestResult {
+    use super::{Dependencies, prepare_current_session};
+    use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+    use oteryn_gameplay_world_change::owner::{COAL_ITEM, ContributionKind};
+    use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
+
+    run(async |admin| {
+        let h = Harness::create_with_admission_seed(admin, "junkar_coal", true, false).await?;
+        prepare_current_session(&h).await?;
+        let world = WorldId::decode(&id(42)).map_err(debug)?;
+        let (controller, pin) =
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
+        let mut deps = Dependencies::new()?;
+        reset_fixture::set_runtime(
+            &mut deps,
+            world,
+            ChannelId::decode(&id(43)).map_err(debug)?,
+            &pin,
+            1,
+        )?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let mut owner = deps.owner(&h, &authority);
+        owner.active_generation = controller.active();
+        deps.initialize(&owner).await;
+        let actor = deps.actor;
+        deps.runtime
+            .lock()
+            .await
+            .initialize_first_entry_position(actor)
+            .map_err(debug)?;
+        super::boss_activity::issue_content_and_reset(&h, &pin).await?;
+        super::worldchg_trader::day(&h, world, 1).await?;
+        sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
+            .bind(id(41).as_slice()).execute(&h.pool).await?;
+        owner.reset_epoch = 1;
+        let [npc] =
+            super::classic_quests::install(&owner, &deps.admitted, ["oteryn:npc.junkar_thais"])
+                .await?;
+        super::item_look::seed_main_backpack(&h, &[(COAL_ITEM, 1)]).await?;
+        let session = deps.admitted.game_session_id;
+        let fence = owner
+            .current_quest_fence(session)
+            .await
+            .map_err(|()| "fence")?
+            .ok_or("fence")?
+            .item_fence();
+        for (ordinal, text) in [(1, "hi"), (2, "donate coal"), (2, "donate coal")] {
+            let result = owner
+                .npc_talk(
+                    actor,
+                    UseCommand {
+                        game_session_id: session,
+                        command_id: ordinal,
+                        item_fence: Some(fence),
+                    },
+                    NpcTalkIntent {
+                        npc_actor: npc,
+                        text: text.into(),
+                    },
+                )
+                .await;
+            assert_eq!(result.disposition, NpcIntentDisposition::Ok, "{text}");
+        }
+        assert_eq!(
+            super::qengine_voucher_stories::quantity(&h, 12600).await?,
+            0
+        );
+        let mut tx = h.pool.begin().await?;
+        assert_eq!(
+            changes::tally(&mut tx, world, 1, ContributionKind::SteamshipCoal).await?,
+            1
+        );
+        assert_eq!(
+            changes::tally(&mut tx, world, 1, ContributionKind::Coal).await?,
+            0
+        );
+        tx.rollback().await?;
+        h.cleanup().await
+    })
+}
