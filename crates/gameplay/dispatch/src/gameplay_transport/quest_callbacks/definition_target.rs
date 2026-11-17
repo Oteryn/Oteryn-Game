@@ -50,11 +50,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
-        let inventory = self
+        let Ok(inventory) = self
             .root
             .read_item_use_inventory(self.character, self.holder, fence)
             .await
-            .map_err(|_| ())?;
+        else {
+            // Unrelated Ground actions retain their own historical receipt probe.
+            return Ok(None);
+        };
         let Some(item) = inventory
             .backpack
             .iter()
