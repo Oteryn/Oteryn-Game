@@ -107,7 +107,12 @@ fn scenario(admin: &str) -> TestResult {
             let (wild, wild_entity) = {
                 let mut runtime = deps.runtime.lock().await;
                 let wild = runtime
-                    .realize_native_qualification_spawn(pin.clone(), TAINTED, cell(9, 0))
+                    .realize_native_qualification_spawn_for_source(
+                        1,
+                        pin.clone(),
+                        TAINTED,
+                        cell(9, 0),
+                    )
                     .map_err(debug)?
                     .actor;
                 (wild, entity(&runtime, wild)?)
@@ -179,7 +184,12 @@ fn scenario(admin: &str) -> TestResult {
             let (summon, summon_entity, master) = {
                 let mut runtime = deps.runtime.lock().await;
                 let master = runtime
-                    .realize_native_qualification_spawn(pin.clone(), TAINTED, cell(11, 0))
+                    .realize_native_qualification_spawn_for_source(
+                        2,
+                        pin.clone(),
+                        TAINTED,
+                        cell(11, 0),
+                    )
                     .map_err(debug)?
                     .actor;
                 let spec = NativeSummonAdmissionSpec::qualified(
@@ -198,7 +208,12 @@ fn scenario(admin: &str) -> TestResult {
                     .map_err(debug)?;
                 // Fill the final actor slot so no Redeemed Soul can be admitted.
                 runtime
-                    .realize_native_qualification_spawn(pin.clone(), TAINTED, cell(11, 1))
+                    .realize_native_qualification_spawn_for_source(
+                        3,
+                        pin.clone(),
+                        TAINTED,
+                        cell(11, 1),
+                    )
                     .map_err(debug)?;
                 assert_eq!(runtime.native_summon_master(summon), Some(master));
                 (summon, entity(&runtime, summon)?, master)
