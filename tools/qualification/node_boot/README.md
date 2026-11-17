@@ -2,7 +2,8 @@
 
 The default `run.sh` first preserves the native entry room's existing SEAM stages
 in a disposable baseline pass, then creates a fresh topology with real World
-regions `(126,125)`, `(126,126)` and `(127,127)`, on every authored floor, and
+regions `(126,125)`, `(126,126)`, `(127,127)`, `(129,123)` and `(129,124)` (the last two hold the Edron
+quest chests with uniques 6028, 6032 and 6033), on every authored floor, and
 `content/spells.manifest.json` content. `compile-regions` uses the production
 compiler and its equivalence proof; the generated qualification digest is passed
 to the production loader. The committed full-world pin is unchanged. The third
