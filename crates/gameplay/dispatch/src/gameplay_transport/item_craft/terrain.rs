@@ -86,6 +86,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Release the item lane before the existing snapshot owner reacquires it.
                 drop(permit);
                 self.refresh_terrain_tools().await;
+                self.project_thornfire_wolf(command).await;
                 crate::gameplay_transport::quest_terrain_uses::after_tool(self, actor, command)
                     .await;
             }

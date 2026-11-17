@@ -76,9 +76,89 @@ pub const fn at_save(progress: i64) -> (i64, bool) {
     }
 }
 
+/// Crystal prepared_bucket.lua:70-83. Exact map-station use only.
+pub const PREPARED_BUCKET: &str = "oteryn:item.tibia.i12819";
+pub const BOG_WATER: &str = "oteryn:item.tibia.i12721";
+pub const FILLED_BUCKET: &str = "oteryn:item.tibia.i12722";
+
+pub fn refill_bucket(used: &str, station: &str) -> Option<&'static str> {
+    (used == PREPARED_BUCKET && station == BOG_WATER).then_some(FILLED_BUCKET)
+}
+
+pub const FILLED_BUCKET_ID: u16 = 12722;
+pub const PREPARED_BUCKET_ID: u16 = 12819;
+pub const FIREFIGHTER_TOTAL: u32 = 500;
+
+/// Crystal prepared_bucket.lua:9-23 plus the Shadowthorn fire region witnessed
+/// in data-global/world/world.otbm. A portable field cannot supply a base key.
+pub fn is_thornfire(placement: u64, appearance: u16) -> bool {
+    let x = placement >> 32;
+    let y = (placement >> 16) & 0xffff;
+    let floor = (placement >> 8) & 0xff;
+    matches!(
+        appearance,
+        232 | 5061..=5067 | 6288 | 6289 | 7803 | 19096 | 32021
+    ) && match floor {
+        6 => (33046..=33114).contains(&x) && (32135..=32209).contains(&y),
+        7 => (33047..=33114).contains(&x) && (32137..=32204).contains(&y),
+        8 => (33055..=33129).contains(&x) && (32149..=32219).contains(&y),
+        _ => false,
+    }
+}
+
+pub const WOLF: &str = "oteryn:creature.thornfire_wolf";
+
+/// Crystal prepared_bucket.lua:24-29. The wiki gives a 0.1–1% range;
+/// use one 0.5% draw for the World occurrence and choose one destination.
+const WOLF_POSITIONS: [(i32, i32, i16); 4] = [
+    (33091, 32149, 7),
+    (33079, 32143, 7),
+    (33104, 32160, 7),
+    (33095, 32158, 7),
+];
+
+pub fn wolf_position(chance: u64, destination: u64) -> Option<(i32, i32, i16)> {
+    ((u128::from(chance) * 1000) >> 64 < 5).then(|| WOLF_POSITIONS[(destination >> 62) as usize])
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn thornfire_wolf_uses_one_half_percent_draw_and_one_position() {
+        let first_miss = u64::try_from((5_u128 << 64).div_ceil(1000)).ok();
+        assert!(first_miss.is_some());
+        if let Some(first_miss) = first_miss {
+            assert_eq!(wolf_position(first_miss - 1, 0), Some(WOLF_POSITIONS[0]));
+            assert_eq!(wolf_position(first_miss, 0), None);
+        }
+        for (index, &position) in WOLF_POSITIONS.iter().enumerate() {
+            assert_eq!(wolf_position(0, (index as u64) << 62), Some(position));
+        }
+        assert_eq!(wolf_position(u64::MAX, u64::MAX), None);
+    }
+
+    #[test]
+    fn thornfire_refill_requires_the_prepared_bucket_and_bog_water() {
+        assert_eq!(
+            refill_bucket(PREPARED_BUCKET, BOG_WATER),
+            Some(FILLED_BUCKET)
+        );
+        assert_eq!(refill_bucket(FILLED_BUCKET, BOG_WATER), None);
+        assert_eq!(refill_bucket(PREPARED_BUCKET, FILLED_BUCKET), None);
+        assert_eq!(refill_bucket(BOG_WATER, PREPARED_BUCKET), None);
+    }
+
+    #[test]
+    fn thornfire_requires_a_shadowthorn_fire_placement() {
+        let fire = (33074_u64 << 32) | (32135 << 16) | (6 << 8) | 1;
+        assert!(is_thornfire(fire, 5063));
+        assert!(!is_thornfire(fire | (8 << 8), 5063));
+        assert!(!is_thornfire(fire - (30 << 32), 5063));
+        assert!(!is_thornfire(fire, 12721));
+        assert_eq!(FIREFIGHTER_TOTAL, 500);
+    }
 
     #[test]
     fn thornfire_requires_every_elf_home_and_all_three_overseers_at_save() {

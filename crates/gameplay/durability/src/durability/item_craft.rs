@@ -30,6 +30,7 @@ mod harvest;
 pub(crate) mod marriage;
 mod skinning;
 pub mod soulpit;
+mod thornfire_bucket;
 pub use enchanting::EnchantingCraft;
 pub use harvest::{MapHarvestOperand, MapHarvestRequest, MapHarvestResult};
 pub use skinning::SkinningRequest;
@@ -321,6 +322,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
                 && request.tool.is_none()
                 && tool_id == request.source
         });
+        let thornfire_is_qualified = thornfire_bucket::extinguishes(request, gathering, &definition);
         if tool
             .as_ref()
             .map(|(key, revision)| (key.as_str(), revision.as_str()))
@@ -333,7 +335,10 @@ async fn write_with_skinning<C: ItemLoopContent>(
             || (consumes_source
                 && definition.production_key != bait
                 && !seed_is_qualified
-                && !soil_is_qualified)
+                && !soil_is_qualified
+                && !thornfire_is_qualified)
+            || (definition.production_key == oteryn_gameplay_world_change::thornfire::FILLED_BUCKET
+                && !thornfire_is_qualified)
         {
             return Ok(UseDisposition::StaleState);
         }
@@ -355,7 +360,9 @@ async fn write_with_skinning<C: ItemLoopContent>(
             .collect::<Option<Vec<_>>>();
         outputs.map(
             |outputs| oteryn_gameplay_items::item_craft::CookingConversion {
-                recipe: if soil_is_qualified
+                recipe: if thornfire_is_qualified {
+                    thornfire_bucket::EXTINGUISH_RECIPE
+                } else if soil_is_qualified
                     && definition.production_key == "oteryn:item.tibia.i945"
                 {
                     "oteryn:elemental_energy_soil.crystal"
@@ -426,7 +433,8 @@ async fn write_with_skinning<C: ItemLoopContent>(
                         Some(resolved.conversion)
                     })
                 } else {
-                    cooking_conversion(native, &definition, station)
+                    thornfire_bucket::refill(native, &definition, station)
+                        .or_else(|| cooking_conversion(native, &definition, station))
                 }
             }
             (None, _) => reward_bag_conversion(
@@ -720,6 +728,13 @@ async fn write_with_skinning<C: ItemLoopContent>(
             event.as_bytes(),
         )
         .await?;
+    }
+    if conversion.recipe == thornfire_bucket::EXTINGUISH_RECIPE {
+        let gathering = request.gathering.as_ref().ok_or(DurabilityError::InvalidStoredState)?;
+        thornfire_bucket::credit_firefighter(tx, fence, &event).await?;
+        super::world_event::changes::thornfire::record_wolf_draw(
+            tx, fence, request.command, &gathering.scope, &gathering.mutation, &event,
+        ).await?;
     }
     if conversion.recipe == "oteryn:elemental_energy_soil.crystal" {
         elemental_energy::create(tx, permit, fence, request, native, &transaction, occurred)

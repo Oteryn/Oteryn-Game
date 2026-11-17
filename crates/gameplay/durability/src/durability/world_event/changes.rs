@@ -14,7 +14,7 @@ use sha2::{Digest, Sha256};
 mod bindings;
 pub mod callbacks;
 pub mod counters;
-pub(super) mod thornfire;
+pub(crate) mod thornfire;
 
 /// The day after the reset `reset_epoch` of `world`, on the UTC calendar at `unix_ms`.
 pub fn roll(

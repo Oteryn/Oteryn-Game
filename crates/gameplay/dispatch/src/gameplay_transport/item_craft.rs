@@ -22,6 +22,7 @@ mod planting;
 mod rope;
 mod skinning;
 mod terrain;
+mod thornfire;
 
 pub(super) async fn dispatch<A: FreshAdmissionAuthority>(
     authority: &A,
@@ -266,8 +267,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 let tile = view::compose_tile(&at.map.overlay, &facts, pos).ok()??;
                 let entry = tile.entries.iter().find(|e| e.source.key() == key)?;
-                let MapDefinition::Item(reference) = entry.facts.definition else {
-                    return disposition(UseDisposition::NothingToUse);
+                let station = match entry.facts.definition {
+                    MapDefinition::Item(reference) => {
+                        super::item_look::typed_definition(index, reference)?
+                    }
+                    // Bog water is a base Terrain in the Global map. The station
+                    // conversion uses the same canonical source-item identity.
+                    MapDefinition::Terrain(_)
+                        if entry.facts.appearance_id == 12721
+                            || matches!(key, MapEntryKey::Base(placement)
+                            if oteryn_gameplay_world_change::thornfire::is_thornfire(
+                                placement, entry.facts.appearance_id,
+                            )) =>
+                    {
+                        TypedDefinitionRef {
+                            family: "Item".into(),
+                            production_key: format!(
+                                "oteryn:item.tibia.i{}",
+                                entry.facts.appearance_id
+                            ),
+                            revision_ref: "definition-r1".into(),
+                        }
+                    }
+                    MapDefinition::Terrain(_) => return disposition(UseDisposition::NothingToUse),
                 };
                 let map_target = (
                     key,
@@ -281,10 +303,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         || entry.facts.sub_type != 0,
                     pos,
                 );
-                (
-                    super::item_look::typed_definition(index, reference)?,
-                    map_target,
-                )
+                (station, map_target)
             }
         };
         request.station = Some(station);
@@ -409,7 +428,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .station
             .as_ref()
             .and_then(|s| item_id(&s.production_key));
+        use oteryn_gameplay_world_change::thornfire as rules;
         if let (Some(tool), Some(target_id)) = (tool, target_id)
+            && tool.item.definition.production_key == rules::FILLED_BUCKET
+            && let (MapEntryKey::Base(key), revision, false, _) = map_target
+            && rules::is_thornfire(key, target_id)
+        {
+            let map = self.bundle_map()?;
+            if map.facts.terrain_tool_action(key) != Some(None)
+                || !map.facts.quest_callback_capacity(key, revision, 0)
+            {
+                return disposition(UseDisposition::StaleState);
+            }
+            let mut placement = map.overlay.base().digest().to_vec();
+            placement.extend_from_slice(&key.to_be_bytes());
+            request.gathering = Some(crate::durability::item_craft::GatheringCraft {
+                scope: crate::durability::terrain_tool::TerrainScope {
+                    map_revision: crate::map::overlay::map_revision(map.overlay.base()),
+                    content_generation: native.source_digest(),
+                    reset_epoch: i64::try_from(self.reset_epoch).ok()?,
+                },
+                mutation: crate::durability::terrain_tool::TerrainMutation {
+                    tool: source,
+                    tool_key: tool.item.definition.production_key.clone(),
+                    tool_revision: tool.item.definition.revision_ref.clone(),
+                    placement,
+                    expected_revision: i64::try_from(revision).ok()?,
+                    before: u32::from(target_id),
+                    after: 0,
+                    decay: Vec::new(),
+                },
+                attempt: oteryn_gameplay_items::fishing::GatheringAttempt {
+                    after: None,
+                    yield_item: Some(rules::PREPARED_BUCKET_ID),
+                    consumes_bait: true,
+                },
+            });
+        } else if let (Some(tool), Some(target_id)) = (tool, target_id)
             && let Some(tool_id) = item_id(&tool.item.definition.production_key)
             && let Some(attempt) = oteryn_gameplay_items::event_planting::planting_attempt(
                 tool_id, target_id,
@@ -500,6 +555,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return disposition(UseDisposition::Rejected);
         }
+        let extinguishing = request
+            .gathering
+            .as_ref()
+            .is_some_and(|gathering| gathering.mutation.tool_key == rules::FILLED_BUCKET);
         let result = self
             .root
             .craft_item(
@@ -517,6 +576,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(_permit);
         if result == UseDisposition::Committed {
             self.refresh_terrain_tools().await;
+            if extinguishing {
+                self.project_thornfire_wolf(command).await;
+            }
         }
         disposition(result)
     }
