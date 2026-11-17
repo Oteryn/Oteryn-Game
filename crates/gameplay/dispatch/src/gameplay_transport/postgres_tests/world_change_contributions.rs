@@ -142,10 +142,10 @@ fn junkar_scenario() -> TestResult {
             .initialize_first_entry_position(actor)
             .map_err(debug)?;
         super::boss_activity::issue_content_and_reset(&h, &content_pin).await?;
-        super::worldchg_trader::day(&h, world, 1).await?;
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
             .bind(id(41).as_slice()).execute(&h.pool).await?;
-        owner.reset_epoch = 1;
+        let epoch = owner.reset_epoch;
+        assert_eq!(epoch, 0);
         let [npc] =
             super::classic_quests::install(&owner, &deps.admitted, ["oteryn:npc.junkar_thais"])
                 .await?;
@@ -180,11 +180,11 @@ fn junkar_scenario() -> TestResult {
         );
         let mut tx = h.pool.begin().await?;
         assert_eq!(
-            changes::tally(&mut tx, world, 1, ContributionKind::SteamshipCoal).await?,
+            changes::tally(&mut tx, world, epoch, ContributionKind::SteamshipCoal).await?,
             1
         );
         assert_eq!(
-            changes::tally(&mut tx, world, 1, ContributionKind::Coal).await?,
+            changes::tally(&mut tx, world, epoch, ContributionKind::Coal).await?,
             0
         );
         tx.rollback().await?;
