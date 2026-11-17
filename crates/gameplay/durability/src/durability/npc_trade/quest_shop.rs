@@ -16,7 +16,10 @@ pub(super) async fn permitted(
         NpcTradeSide::Exchange => {
             return Ok(matches!(
                 request.cause.npc_key.as_str(),
-                "oteryn:npc.al_dee" | "oteryn:npc.seymour" | "oteryn:npc.uzgod"
+                "oteryn:npc.al_dee"
+                    | "oteryn:npc.seymour"
+                    | sinatuki_exchange::NPC
+                    | "oteryn:npc.uzgod"
             ));
         }
         NpcTradeSide::Sell => ProjectV2ServiceOfferDirection::BuyFromPlayer,
