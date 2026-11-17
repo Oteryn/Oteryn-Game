@@ -77,14 +77,42 @@ fn live_minimap_reopens_exploration_edits_markers_and_isolates_invalid_world_bin
             floor: -7
         }))
     );
+    // A failed atomic write must also preserve edits and removals of existing marks.
+    let temporary = lock(&play.minimap)
+        .path()
+        .ok_or("active cache")?
+        .with_extension("tmp");
+    std::fs::create_dir(&temporary)?;
+    {
+        let mut map = lock(&play.minimap);
+        let original = map.markers.clone();
+        assert!(map.edit_marker(100, 200, -7, "Lost".into(), 0).is_err());
+        assert_eq!(map.markers, original);
+        assert!(map.remove_marker(100, 200, -7).is_err());
+        assert_eq!(map.markers, original);
+    }
+    std::fs::remove_dir(temporary)?;
     lock(&play.minimap).remove_marker(100, 200, -7)?;
     assert!(lock(&play.minimap).markers.is_empty());
+    let cache = lock(&play.minimap).path().ok_or("active cache")?;
     play.bind_minimap_world("invalid world");
     assert!(
         lock(&play.minimap).cells.is_empty(),
         "a refused binding cannot display another world's exploration"
     );
     assert!(lock(&play.minimap).binding.is_none());
+    std::fs::write(&cache, b"malformed")?;
+    play.bind_minimap_world(world);
+    play.set_live_map(&snapshot(100))?;
+    {
+        let mut map = lock(&play.minimap);
+        assert!(map.save().is_err());
+        for _ in 0..2 {
+            assert!(map.create_mark_at((100, 200, -7)).is_err());
+            assert!(map.markers.is_empty());
+        }
+        assert_eq!(std::fs::read(cache)?, b"malformed");
+    }
     drop(play);
     std::fs::remove_dir_all(root)?;
     Ok(())
@@ -155,12 +183,15 @@ fn dropping_play_closes_and_joins_the_editor_before_reopening_the_cache()
 }
 
 #[test]
-fn minimap_editor_survives_temporary_play_view_replacement() -> Result<(), Box<dyn std::error::Error>> {
+fn minimap_editor_survives_temporary_play_view_replacement()
+-> Result<(), Box<dyn std::error::Error>> {
     let mut play = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
     let shared = play.minimap.clone();
     let (done, finished) = std::sync::mpsc::channel();
     open_editor(&shared, move |stopped| {
-        while !stopped.load(std::sync::atomic::Ordering::Acquire) { std::thread::park(); }
+        while !stopped.load(std::sync::atomic::Ordering::Acquire) {
+            std::thread::park();
+        }
         let _ = done.send(());
     });
     drop(play.clone());
@@ -169,10 +200,25 @@ fn minimap_editor_survives_temporary_play_view_replacement() -> Result<(), Box<d
     let preferences_kept_editor = lock(&shared).editor.is_some();
     play.set_world_viewport([600, 330])?;
     let viewport_kept_editor = lock(&shared).editor.is_some();
-    let position = ActorPosition { x: 100, y: 200, floor: -7 };
+    let position = ActorPosition {
+        x: 100,
+        y: 200,
+        floor: -7,
+    };
     play.set_live_map(&WorldMapViewSnapshot {
-        header: MapViewHeader { content_generation: [1; 32], bundle_digest: [2; 32], reset_epoch: 1, origin: position, first_visible_floor: -7 },
-        tiles: vec![MapTile { position, ground_speed: 100, more: false, items: vec![] }],
+        header: MapViewHeader {
+            content_generation: [1; 32],
+            bundle_digest: [2; 32],
+            reset_epoch: 1,
+            origin: position,
+            first_visible_floor: -7,
+        },
+        tiles: vec![MapTile {
+            position,
+            ground_speed: 100,
+            more: false,
+            items: vec![],
+        }],
     })?;
     let map_kept_editor = lock(&shared).editor.is_some();
     drop(play);

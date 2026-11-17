@@ -28,6 +28,19 @@ impl Outbox {
         {
             events.drain(..index);
         }
+        // A fresh destination snapshot contains spatial and other projections before
+        // domain 99. Only live messages before that receipt belong to the old stream.
+        let replacement = events.iter().rposition(|event| {
+            matches!(event, SessionEvent::GatedSnapshotReplaced(delta)
+                if delta.value.domain_id == oteryn_session::activity_scope::STATE_DOMAIN_ACTIVITY_SCOPE)
+        });
+        if let Some(index) = replacement {
+            events
+                .extract_if(..index, |event| {
+                    matches!(event, SessionEvent::ServerMessage(_))
+                })
+                .for_each(drop);
+        }
         self.console_events(&events);
         self.activity_scope_events(&events);
         self.channel_list_events(&events);
@@ -74,14 +87,9 @@ impl Outbox {
         );
         super::super::feature_0287_actor_spell_catalog::protocol::reduce(&mut mailbox, &events);
         super::super::feature_0291_cast_chat::protocol::reduce(&mut mailbox, &events);
-        let has_scope_replacement = events.iter().any(|event| {
-            matches!(event, SessionEvent::GatedSnapshotReplaced(delta)
-                if delta.value.domain_id == oteryn_session::activity_scope::STATE_DOMAIN_ACTIVITY_SCOPE)
-        });
         mailbox.coalesce_events(events);
         // A full activity handoff publishes domain 99 without a typed scope event.
-        if has_scope_replacement && mailbox.scope_pending && mailbox.pushed.activity_scope.is_none()
-        {
+        if replacement.is_some() && mailbox.scope_pending {
             mailbox.pushed.activity_scope = mailbox.activity_scope.clone();
             mailbox.pushed.scope_changed = true;
         }
