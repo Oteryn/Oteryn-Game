@@ -157,7 +157,9 @@ fn claim_case(
         // for the replay so no Foundation command-result cache can satisfy it.
         let catalogue = std::sync::Arc::new(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
-                .map_err(debug)?.catalogue().clone(),
+                .map_err(debug)?
+                .catalogue()
+                .clone(),
         );
         for (commands, expected) in [
             (
@@ -188,7 +190,6 @@ fn claim_case(
             assert_eq!(bag.entries.len(), 1);
             assert_eq!(bag.entries[0].item.quantity, quantity);
             assert_eq!(bag.entries[0].item.definition.production_key, reward);
-
         }
         let claims: (i64, i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_reward_claims WHERE character_id=encode($1,'hex')::uuid AND claim_production_key=$2), (SELECT count(*) FROM game_reward_claim_mint_receipts)")
             .bind(fence.character_id.as_bytes().as_slice()).bind(claim).fetch_one(&harness.pool).await?;
@@ -196,7 +197,10 @@ fn claim_case(
         if reward == "oteryn:item.tibia.i5956" {
             let text: String = sqlx::query_scalar("SELECT t.text FROM game_item_texts t JOIN game_reward_claim_mint_receipts m USING(item_instance_id) WHERE m.claim_production_key=$1")
                 .bind(claim).fetch_one(&harness.pool).await?;
-            assert_eq!(text, "Damn you Thais! Damn you TBI! I am no longer an agent or a noble but a black knight. A dark avenger that will have his revenge!");
+            assert_eq!(
+                text,
+                "Damn you Thais! Damn you TBI! I am no longer an agent or a noble but a black knight. A dark avenger that will have his revenge!"
+            );
         }
         drop(authority);
         drop(seal);
@@ -204,71 +208,130 @@ fn claim_case(
     })
 }
 
-
 #[test]
 fn qaitems_boots_source_use_inventory_and_replay() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     let started = std::time::Instant::now();
     let result: TestResult = std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| -> Result<(), String> {
-            claim_case("oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firewalker_boots", (32582, 31405, -15), &[(32582, 6284)], 2472, "oteryn:item.tibia.i9019", 1)
-                .map_err(|error| error.to_string())
+            claim_case(
+                "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firewalker_boots",
+                (32582, 31405, -15),
+                &[(32582, 6284)],
+                2472,
+                "oteryn:item.tibia.i9019",
+                1,
+            )
+            .map_err(|error| error.to_string())
         })?
-        .join().map_err(|_| "qaitems dispatch panicked")?.map_err(Into::into);
+        .join()
+        .map_err(|_| "qaitems dispatch panicked")?
+        .map_err(Into::into);
     assert!(started.elapsed().as_secs_f64() > 0.01);
-    eprintln!("QAITEMS_DISPATCH_EXECUTED boots duration={:?} success={}", started.elapsed(), result.is_ok());
+    eprintln!(
+        "QAITEMS_DISPATCH_EXECUTED boots duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
     result
 }
 
 #[test]
 fn qaitems_hammer_source_use_inventory_and_replay() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     let started = std::time::Instant::now();
     let result: TestResult = std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| -> Result<(), String> {
-            claim_case("oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.hammer", (32776, 32253, -8), &[(32776, 6078)], 2472, "oteryn:item.tibia.i3208", 1)
-                .map_err(|error| error.to_string())
+            claim_case(
+                "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.hammer",
+                (32776, 32253, -8),
+                &[(32776, 6078)],
+                2472,
+                "oteryn:item.tibia.i3208",
+                1,
+            )
+            .map_err(|error| error.to_string())
         })?
-        .join().map_err(|_| "qaitems dispatch panicked")?.map_err(Into::into);
+        .join()
+        .map_err(|_| "qaitems dispatch panicked")?
+        .map_err(Into::into);
     assert!(started.elapsed().as_secs_f64() > 0.01);
-    eprintln!("QAITEMS_DISPATCH_EXECUTED hammer duration={:?} success={}", started.elapsed(), result.is_ok());
+    eprintln!(
+        "QAITEMS_DISPATCH_EXECUTED hammer duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
     result
 }
 
 #[test]
 fn qaitems_lottery_source_use_inventory_and_replay() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     let started = std::time::Instant::now();
     let result: TestResult = std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| -> Result<(), String> {
-            claim_case("oteryn:reward-claim.quest.u8_1.secret_service.lottery_ticket", (32872, 31958, -11), &[(32872, 6250)], 2469, "oteryn:item.tibia.i5956", 1)
-                .map_err(|error| error.to_string())
+            claim_case(
+                "oteryn:reward-claim.quest.u8_1.secret_service.lottery_ticket",
+                (32872, 31958, -11),
+                &[(32872, 6250)],
+                2469,
+                "oteryn:item.tibia.i5956",
+                1,
+            )
+            .map_err(|error| error.to_string())
         })?
-        .join().map_err(|_| "qaitems dispatch panicked")?.map_err(Into::into);
+        .join()
+        .map_err(|_| "qaitems dispatch panicked")?
+        .map_err(Into::into);
     assert!(started.elapsed().as_secs_f64() > 0.01);
-    eprintln!("QAITEMS_DISPATCH_EXECUTED lottery duration={:?} success={}", started.elapsed(), result.is_ok());
+    eprintln!(
+        "QAITEMS_DISPATCH_EXECUTED lottery duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
     result
 }
 
 #[test]
 fn qaitems_poem_source_use_inventory_and_replay() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     drop(admin);
     let started = std::time::Instant::now();
     let result: TestResult = std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| -> Result<(), String> {
-            claim_case("oteryn:reward-claim.quest.u8_1.secret_service.poem_scroll", (32643, 32733, -7), &[(32643, 6251)], 2472, "oteryn:item.tibia.i347", 1)
-                .map_err(|error| error.to_string())
+            claim_case(
+                "oteryn:reward-claim.quest.u8_1.secret_service.poem_scroll",
+                (32643, 32733, -7),
+                &[(32643, 6251)],
+                2472,
+                "oteryn:item.tibia.i347",
+                1,
+            )
+            .map_err(|error| error.to_string())
         })?
-        .join().map_err(|_| "qaitems dispatch panicked")?.map_err(Into::into);
+        .join()
+        .map_err(|_| "qaitems dispatch panicked")?
+        .map_err(Into::into);
     assert!(started.elapsed().as_secs_f64() > 0.01);
-    eprintln!("QAITEMS_DISPATCH_EXECUTED poem duration={:?} success={}", started.elapsed(), result.is_ok());
+    eprintln!(
+        "QAITEMS_DISPATCH_EXECUTED poem duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
     result
 }

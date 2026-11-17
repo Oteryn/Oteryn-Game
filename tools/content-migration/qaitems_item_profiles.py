@@ -1,4 +1,4 @@
-"""Physical custody for the source-qualified hammer and poem, using the native importer.
+"""Physical custody for the source-qualified quest items, using the native importer.
 
 Reward identity selection lives in reward-claim-authoring/qaitems_rewards.py.
 Boots 9019 and the text-bearing lottery ticket 5956 already have native custody.
@@ -11,7 +11,10 @@ import qengine_reward_item_profiles as shared
 from import_cyclopedia_global import apply_profile_weights
 from refresh_item_overlay_inputs import qualify_native_core
 
-IDS = {347, 3208}
+# Global Ghostsilver Lantern rev 1148076 selects lit 23738. Crystal items.xml:
+# 47292-47296 supplies its name, description and weight, with no explicit decay
+# or numeric light attributes. Preserve accepted client facts; invent no timer.
+IDS = {347, 3208, 23738}
 PROOF = 'tools/content-schema/native-gameplay/qaitems-item-profiles.json'
 
 

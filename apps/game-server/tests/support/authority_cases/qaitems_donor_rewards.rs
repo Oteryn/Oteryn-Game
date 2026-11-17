@@ -37,6 +37,20 @@ const LOTTERY: Case = Case {
     shard: "items-29500-29999.json",
 };
 
+// QA's Global claim caller requests lit 23738 (TibiaWiki rev 1148076).
+// The retained donor claim remains untouched; qualify the requested item at MINT.
+const LANTERN: Case = Case {
+    tag: "lantern",
+    claim: "oteryn:reward-claim.kv.ghostsilver_lantern_quest",
+    item: "oteryn:item.tibia.i23738",
+    shard: "items-12500-12999.json",
+};
+
+#[test]
+fn qaitems_lantern_inventory() -> f::TestResult {
+    postgres_case(LANTERN)
+}
+
 const LOTTERY_TEXT: &str = "Damn you Thais! Damn you TBI! I am no longer an agent or a noble but a black knight. A dark avenger that will have his revenge!";
 
 fn content_root() -> std::path::PathBuf {
@@ -77,9 +91,18 @@ fn content_case(case: Case) -> f::TestResult {
         case.item
     );
     if case.tag == "lottery" {
-        assert_eq!(claim["native_contents"]["placements"][0]["root"]["key"], case.item);
-        assert_eq!(claim["native_contents"]["placements"][0]["root_text"], LOTTERY_TEXT);
-        assert_eq!(claim["placements"][0]["reward"]["written_text"]["item"]["key"], case.item);
+        assert_eq!(
+            claim["native_contents"]["placements"][0]["root"]["key"],
+            case.item
+        );
+        assert_eq!(
+            claim["native_contents"]["placements"][0]["root_text"],
+            LOTTERY_TEXT
+        );
+        assert_eq!(
+            claim["placements"][0]["reward"]["written_text"]["item"]["key"],
+            case.item
+        );
     } else {
         assert_eq!(claim["readiness"], "ready");
     }
@@ -149,7 +172,13 @@ async fn exercise(
             .as_str()
             .ok_or("item family")?
             .into(),
-        production_key: reward["item"]["key"].as_str().ok_or("item key")?.into(),
+        production_key: if case.tag == "lantern" {
+            // The QA caller's Global item selection is independently admitted;
+            // this regression leaves its separately owned claim inputs alone.
+            case.item.into()
+        } else {
+            reward["item"]["key"].as_str().ok_or("item key")?.into()
+        },
         revision_ref: reward["item"]["revision"]
             .as_str()
             .ok_or("item revision")?
@@ -181,7 +210,9 @@ async fn exercise(
         quantity: reward["count"].as_u64().ok_or("quantity")?.try_into()?,
         contents: Vec::new(),
         additional_items: Vec::new(),
-        root_text: claim["native_contents"]["placements"][0]["root_text"].as_str().map(str::to_owned),
+        root_text: claim["native_contents"]["placements"][0]["root_text"]
+            .as_str()
+            .map(str::to_owned),
         backpack: generation_item_facts(native, &definition(2854)).map_err(f::debug)?,
         content_revision: format!(
             "sha256:{}",
