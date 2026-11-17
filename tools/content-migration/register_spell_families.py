@@ -519,6 +519,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # Complete only unknown kinds from agreeing admitted taxonomy and pinned XML.
     import hand_weapon_kinds
     hand_weapon_kinds.apply_native(root, generated, spell_import.canonical_bytes)
+    # MP01: weapons without a Crystal level or vocation equip at level 0 for any vocation.
+    import weapon_equip_requirements
+    weapon_equip_requirements.apply_native(root, generated, spell_import.canonical_bytes)
     import sys
     sys.path.insert(0, str(root / 'tools/content-schema/native-gameplay'))
     import native_goal_corpse_items
