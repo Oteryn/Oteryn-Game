@@ -5,8 +5,15 @@
 //! carried rope), prints it, walks it with STEP and USE commands only, USEs the chest and must
 //! then carry the exact reward item. A refused door (the level-35 door before Noble Armor for a
 //! lower character), a refused floor change or a missing route is the row's FAIL with that
-//! exact refusal; nothing is skipped or provisioned around. A refused door is first banned and
-//! the route replanned; the row fails only when no other way remains.
+//! exact refusal. A refused door is first banned and the route replanned; the row fails only
+//! when no other way remains.
+//!
+//! Setup, before any travel: a fresh level-1 character walks to the level door before the Noble
+//! Armor chests and must be refused by its USE; then the node-boot fixture (`provision.py
+//! qualify <session> knight`, level 100) gives the character a qualifying build, and the row
+//! logs out, reconnects and reads the level back. Where the route needs a ship, the character
+//! walks to the captain and buys the passage through the NPC dialogue (`travel.rs`); the fixture
+//! mints no gold, so a captain's fare is a FAIL naming the exact need.
 //!
 //! Before connecting, each row also plans from the start town and prints that route (or why none
 //! was found), so the evidence shows the whole multi-floor way from Thais to the chest. Rows run
@@ -25,6 +32,9 @@ pub(super) struct Chest {
     character: usize,
     tag: u8,
 }
+
+/// The level every Q01 character is raised to, and the lowest level any door on the way needs.
+const DOOR_LEVEL: u32 = 35;
 
 const fn chest(
     row: &'static str,
@@ -104,10 +114,139 @@ async fn journey(clients: &SeamClients<'_>, chest: &Chest) -> TestResult {
     }
     let reference = provisioning::item_reference(&provisioning::item_index()?, chest.item)?;
     from_town(planner, chest, &label);
-    let mut client = connect_character(clients, chest.tag, chest.character).await?;
+    let client = connect_character(clients, chest.tag, chest.character).await?;
+    let mut client = setup(clients, planner, chest, &label, client).await?;
     let result = claim(&mut client, planner, chest, &label, ordinal, reference).await;
     let _ = client.session_mut().logout().await;
     result
+}
+
+/// The character's level, read from the GeneralStats tab.
+async fn level(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<u32> {
+    use oteryn_protocol_oteryn::cyclopedia_character as wire;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+            wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+            &[wire::CharacterTab::GeneralStats as u8, 0, 0, 1],
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted
+        || reply.payload.first() != Some(&(wire::CharacterTab::GeneralStats as u8))
+    {
+        return Err(format!("GeneralStats query refused: {:?}", reply.status).into());
+    }
+    let bytes = reply
+        .payload
+        .get(9..13)
+        .ok_or("GeneralStats reply too short for a level")?;
+    Ok(u32::from_le_bytes(bytes.try_into()?))
+}
+
+/// A below-level character USEs the level door before the chest and must be refused. A walk
+/// that cannot reach the door is recorded, not hidden; an opened door is the row's FAIL.
+async fn below_level_check(
+    client: &mut oteryn_dev_client::DevClientSession,
+    planner: &travel::Planner<'_>,
+    chest: &Chest,
+    label: &str,
+    level: u32,
+) -> TestResult {
+    let Some(&(door, action)) = planner.level_doors(chest.at, 12).first() else {
+        evidence(&format!(
+            "Q01_CHECK {label} below_level not_run: no level door within 12 tiles of the chest"
+        ));
+        return Ok(());
+    };
+    let mut passages = travel::Passages::default();
+    if let Err(error) = travel::travel_to(
+        client,
+        planner,
+        &format!("{label}:below-level"),
+        door,
+        &travel::beside(door),
+        &mut passages,
+    )
+    .await
+    {
+        evidence(&format!(
+            "Q01_CHECK {label} below_level not_run: cannot walk to the door: {error}"
+        ));
+        return Ok(());
+    }
+    let reply = travel::use_map_object(client, &planner.door_placement(door)?).await?;
+    evidence(&format!(
+        "Q01_CHECK {label} below_level level={level} door={},{},{} action={action} use={reply:?}",
+        door.x, door.y, -door.floor
+    ));
+    if reply == UseDisposition::Committed {
+        return Err(
+            format!("{label} level {level} character opened the level-{DOOR_LEVEL} door").into(),
+        );
+    }
+    Ok(())
+}
+
+/// Below-level check first, then the fixture build (knight, level 100), logout, reconnect and
+/// the level read back. A character an earlier row already raised is used as it is.
+async fn setup(
+    clients: &SeamClients<'_>,
+    planner: &travel::Planner<'_>,
+    chest: &Chest,
+    label: &str,
+    mut client: oteryn_dev_client::DevClientSession,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    let before = level(&mut client).await?;
+    if before >= DOOR_LEVEL {
+        evidence(&format!(
+            "Q01_CHECK {label} setup:fixture_level={before} (raised by an earlier row)"
+        ));
+        return Ok(client);
+    }
+    if chest.quest == "noble_armor" {
+        below_level_check(&mut client, planner, chest, label, before).await?;
+    }
+    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let script = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tools/qualification/node_boot/provision.py");
+    let status = tokio::task::spawn_blocking(move || {
+        std::process::Command::new("sudo")
+            .args(["-n", "python3"])
+            .arg(script)
+            .args([
+                "--socket",
+                &socket,
+                "--session",
+                &session,
+                "--profile",
+                "knight",
+            ])
+            .status()
+    })
+    .await??;
+    if !status.success() {
+        return Err(format!("{label} node-boot fenced build provisioning failed").into());
+    }
+    let (result, logout, attempts, busy_timed_out) =
+        client_world::logout_retrying_busy(&mut client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("{label} fixture setup logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+    }
+    drop(client);
+    let mut client = connect_character(clients, chest.tag, chest.character).await?;
+    let after = level(&mut client).await?;
+    evidence(&format!(
+        "Q01_CHECK {label} setup:fixture_level={after} profile=knight level_before={before} reload=fresh_admission"
+    ));
+    if after < DOOR_LEVEL {
+        return Err(format!(
+            "{label} fixture left the character at level {after}, below {DOOR_LEVEL}"
+        )
+        .into());
+    }
+    Ok(client)
 }
 
 /// Evidence only: the route a fresh character would take from the start town, without a rope.
@@ -129,6 +268,9 @@ fn from_town(planner: &travel::Planner<'_>, chest: &Chest, label: &str) {
         Err(reason) => evidence(&format!(
             "TRAVEL_ROUTE {label} from-town {TOWN:?} unreached: {reason}"
         )),
+    }
+    for line in planner.offers_near(chest.at, 200) {
+        evidence(&format!("TRAVEL_OFFERS {label} {line}"));
     }
 }
 
