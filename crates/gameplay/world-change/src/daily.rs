@@ -175,6 +175,8 @@ pub struct DailyWorldChanges {
     /// Wereboars and werebadgers instead of bandits, badgers and butterflies.
     pub grimvale_full_moon: bool,
     pub flower_month: bool,
+    #[serde(default)]
+    pub awash: bool,
     /// W15: 62/498 observed days, accepted as 125 per thousand per reset.
     /// Old immutable decisions stay inactive until their next server save.
     #[serde(default)]
@@ -253,6 +255,7 @@ impl DailyWorldChanges {
         let fury_gates = fury_active.then_some(fury_exit);
         let nightmare_isles = NIGHTMARE_LAYERS[choice(draw(nightmare), 3) as usize];
         Self {
+            awash: false,
             stampede,
             fire_from_the_earth,
             world_counters: true,
@@ -408,6 +411,7 @@ mod tests {
                 oriental_trader: Some(OrientalTraderTown::LibertyBay),
                 grimvale_full_moon: true,
                 flower_month: true,
+                awash: false,
                 stampede: true,
                 fire_from_the_earth: false,
                 world_counters: true,

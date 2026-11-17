@@ -193,6 +193,10 @@ pub(super) async fn record(
     let timestamp: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM activated_at)*1000)::bigint FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_one(&mut **tx).await?;
     let mut selected = roll(world, epoch, timestamp)?;
+    if let Some(retiring_epoch) = epoch.checked_sub(1) {
+        let coal = tally(tx, world, retiring_epoch, ContributionKind::Coal).await?;
+        selected.awash = oteryn_gameplay_world_change::owner::awash_at_save(coal);
+    }
     counters::at_reset(
         tx,
         world,

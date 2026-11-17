@@ -30,6 +30,11 @@ pub fn add_contribution(tally: u64, amount: u32) -> Option<u64> {
         .flatten()
 }
 
+/// The prior day's coal total across all three Dronk pumps (TibiaWiki rev 1149364).
+pub const fn awash_at_save(coal: u64) -> bool {
+    coal >= 202
+}
+
 /// Annual UTC calendar window, inclusive start and exclusive end.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SeasonalWindow {
@@ -94,6 +99,7 @@ pub fn is_active(day: &DailyWorldChanges, key: &str) -> bool {
         };
     }
     match key {
+        "awash" => day.awash,
         "thawing" => day.thawing,
         "their_masters_voice" => day.their_masters_voice,
         "oriental_trader" => day.oriental_trader.is_some(),
@@ -150,5 +156,22 @@ mod imported_layer_tests {
         day.fury_gates = Some(day.fury_exit);
         day.reset_epoch = 0;
         assert!(!is_active(&day, "fury_gates/thais"));
+    }
+}
+
+#[cfg(test)]
+mod contribution_tests {
+    use super::*;
+
+    #[test]
+    fn awash_uses_only_the_retiring_days_coal() {
+        for (coal, active) in [(0, false), (201, false), (202, true), (203, true)] {
+            let mut day = DailyWorldChanges::roll(1, 11, 17, |_| 0);
+            day.awash = awash_at_save(coal);
+            assert_eq!(is_active(&day, "awash"), active);
+        }
+        let mut next = DailyWorldChanges::roll(2, 11, 18, |_| 0);
+        next.awash = awash_at_save(0);
+        assert!(!is_active(&next, "awash"));
     }
 }
