@@ -22,28 +22,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return None;
         }
-        // The Channel's positioned players and their bound characters, under the runtime lock.
+        // Resolve positioned players and their bound characters in the observer's scope.
         let players: Vec<(EntityRef, [u8; 16])> = {
             let runtime = self.runtime.lock().await;
-            let visible = runtime.visible_entities();
-            let mut players = Vec::new();
-            for (actor, _, session) in runtime.positioned_actor_census().ok()? {
-                let Some(session) = session else { continue };
-                let Ok(lease) = runtime.bound_attacker_lease(actor, session) else {
-                    continue;
-                };
-                let Some(entity) = visible.players.iter().find(|p| p.actor == actor) else {
-                    continue;
-                };
-                players.push((
-                    EntityRef {
-                        identity: actor.placement_identity(),
-                        generation: entity.generation,
-                    },
-                    *lease.character_id().as_bytes(),
-                ));
+            let observer = admitted.runtime_actor?;
+            if runtime.house_observer(observer).ok()?.is_some() {
+                runtime
+                    .house_visible_players(observer, admitted.game_session_id)
+                    .ok()?
+                    .into_iter()
+                    .map(|entity| {
+                        let (_, resident) = runtime.house_observer(entity.actor).ok()??;
+                        Some((
+                            EntityRef {
+                                identity: entity.actor.placement_identity(),
+                                generation: entity.generation,
+                            },
+                            *resident.lease.character_id().as_bytes(),
+                        ))
+                    })
+                    .collect::<Option<Vec<_>>>()?
+            } else {
+                let visible = runtime.visible_entities();
+                let mut players = Vec::new();
+                for (actor, _, session) in runtime.positioned_melee_census().ok()? {
+                    let Some(session) = session else { continue };
+                    let Ok(lease) = runtime.bound_attacker_lease(actor, session) else {
+                        continue;
+                    };
+                    let Some(entity) = visible.players.iter().find(|p| p.actor == actor) else {
+                        continue;
+                    };
+                    players.push((
+                        EntityRef {
+                            identity: actor.placement_identity(),
+                            generation: entity.generation,
+                        },
+                        *lease.character_id().as_bytes(),
+                    ));
+                }
+                players
             }
-            players
         };
         let viewed = players.iter().map(|(_, character)| *character).collect();
         let emblems = self

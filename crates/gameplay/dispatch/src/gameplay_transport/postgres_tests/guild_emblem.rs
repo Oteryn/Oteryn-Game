@@ -205,6 +205,22 @@ fn scenario() -> TestResult {
         assert_eq!(observed.len(), 1);
         assert_eq!(observed[0].entity.identity, deps.actor.placement_identity());
         assert_eq!(observed[0].emblem, Emblem::Ally);
+        deps.runtime
+            .lock()
+            .await
+            .record_control_loss(
+                deps.actor,
+                admitted.game_session_id,
+                crate::foundation::ControlLossMark {
+                    epoch: 1,
+                    grace_deadline: 100,
+                },
+            )
+            .map_err(debug)?;
+        assert_eq!(
+            owner.observe_guild_emblems(admitted).await,
+            Some(observed.clone())
+        );
         let mut stale = admitted;
         stale.continuity.connection_generation += 1;
         assert_eq!(owner.observe_guild_emblems(stale).await, None);

@@ -104,16 +104,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Some(false);
         }
         let (_, content) = self.appearance_context()?;
-        let state = self
-            .root
-            .read_current_character_appearance_state(
-                self.character,
-                self.holder,
-                fence,
-                content.earned_grant_keys(),
-            )
+        let state = observation::read_state(self, fence, content.earned_grant_keys())
             .await
-            .ok()?;
+            .ok()??;
         let (base, _) = catalogue::base(&content, &state);
         let (mount, bonus) = if riding {
             let Some(mount) = base
@@ -128,7 +121,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             (0, 0)
         };
         let mut runtime = self.runtime.lock().await;
-        if !current_runtime(&runtime, actor, command.game_session_id, &fence, &content) {
+        if !observation::current_runtime_for_read(
+            &runtime,
+            actor,
+            command.game_session_id,
+            &fence,
+            &content,
+        ) {
             return Some(false);
         }
         Some(

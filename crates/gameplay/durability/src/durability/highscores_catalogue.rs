@@ -110,8 +110,21 @@ pub async fn answer_session(
     if served_world != world {
         return HighscoresReply::Rejected;
     }
-    let Ok((current, _)) = super::fresh_admission::FreshAdmissionStore::from_root(root.clone())
-        .current_session_at(session)
+    let store = super::fresh_admission::FreshAdmissionStore::from_root(root.clone());
+    let Ok(pass) = root.try_issue_semantic_pass() else {
+        return HighscoresReply::Rejected;
+    };
+    let Ok(current) = pass
+        .run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = super::db::begin_observation_transaction(holder, deadline).await?;
+                let current = store
+                    .current_session_in_transaction(&mut tx, session)
+                    .await?;
+                super::db::commit_semantic_transaction(tx, deadline).await?;
+                Ok(current)
+            })
+        })
         .await
     else {
         return HighscoresReply::Rejected;

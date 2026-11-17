@@ -8,6 +8,7 @@ use oteryn_protocol_oteryn::depot::{
 struct DepotAuthority {
     reply: RefCell<Option<DepotObservation>>,
     calls: Cell<usize>,
+    selected_item: Cell<Option<ItemKey>>,
     slots: RefCell<Vec<Option<u32>>>,
 }
 
@@ -54,6 +55,7 @@ impl FreshAdmissionAuthority for DepotAuthority {
         slot: Option<u32>,
         item: Option<ItemKey>,
     ) -> Option<DepotObservation> {
+        self.selected_item.set(item);
         self.slots.borrow_mut().push(slot);
         self.depot(actor, command, intent, item).await
     }
@@ -94,6 +96,7 @@ fn write_text_depot_view_records_only_current_opened_box_and_closes_on_resume()
         let authority = DepotAuthority {
             reply: RefCell::new(None),
             calls: Cell::new(0),
+            selected_item: Cell::new(None),
             slots: RefCell::default(),
         };
         let mut views = Some(SessionItemView::resume(Default::default()));
@@ -164,6 +167,7 @@ fn write_text_depot_view_real_dispatch_requires_selected_capability() -> Result<
             let authority = DepotAuthority {
                 reply: RefCell::new(Some(observed.clone())),
                 calls: Cell::new(0),
+                selected_item: Cell::new(None),
                 slots: RefCell::default(),
             };
             let mut admitted = positioned()?;
@@ -250,6 +254,7 @@ fn write_text_depot_view_preserves_only_exact_native_page_selection() -> Result<
         let authority = DepotAuthority {
             reply: RefCell::new(None),
             calls: Cell::new(0),
+            selected_item: Cell::new(None),
             slots: RefCell::default(),
         };
         let mut views = Some(SessionItemView::resume(Default::default()));
@@ -295,6 +300,48 @@ fn write_text_depot_view_preserves_only_exact_native_page_selection() -> Result<
                 assert!(view.depot_items.is_empty());
             }
         }
+        // A deposit replaces the item at 91 before a previously queued withdrawal arrives.
+        for (action, ordinal_item, expected) in [
+            (DepotAction::Browse, [7; 16], None),
+            (
+                DepotAction::Deposit(std::num::NonZeroU64::MIN),
+                [9; 16],
+                None,
+            ),
+            (DepotAction::Withdraw(91), [9; 16], None),
+            (DepotAction::Browse, [9; 16], None),
+            (
+                DepotAction::Withdraw(91),
+                [9; 16],
+                Some(ItemKey::Instance([9; 16])),
+            ),
+        ] {
+            let payload = encode_depot_intent(DepotIntent {
+                town: Some(7),
+                box_number: 17,
+                page: 0,
+                action,
+            })
+            .map_err(|e| format!("{e:?}"))?;
+            let mut next = observed.clone();
+            next.items[0].1 = ordinal_item;
+            next.reply.outcome = if action == DepotAction::Browse {
+                DepotOutcome::Opened
+            } else {
+                DepotOutcome::Moved
+            };
+            *authority.reply.borrow_mut() = Some(next);
+            let command = oteryn_protocol_oteryn::ClientCommandView {
+                payload: &payload,
+                ..command
+            };
+            assert!(
+                routing::depot::route(&authority, actor, &admitted, command, &mut views)
+                    .await
+                    .is_some()
+            );
+            assert_eq!(authority.selected_item.get(), expected);
+        }
         Ok(())
     })
 }
@@ -325,6 +372,7 @@ fn a_slotted_deposit_reaches_the_depot_owner_only_with_capability_510() -> Resul
             let authority = DepotAuthority {
                 reply: RefCell::new(Some(reply(DepotOutcome::Moved))),
                 calls: Cell::new(0),
+                selected_item: Cell::new(None),
                 slots: RefCell::default(),
             };
             let mut admitted = positioned()?;

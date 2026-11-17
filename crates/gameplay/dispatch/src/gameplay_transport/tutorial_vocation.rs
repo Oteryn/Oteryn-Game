@@ -8,6 +8,8 @@ use crate::foundation::{ExactActorRef, GameSessionId};
 use oteryn_gameplay_quests::tutorial::TutorialStep;
 use oteryn_protocol_oteryn::tutorial_vocation as wire;
 
+use crate::durability::starter_grant::NewhavenStarterOutcome;
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     async fn tutorial_vocation_current(
         &self,
@@ -87,11 +89,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .position(|key| *key == before.vocation())
                 .map_or(0, |index| (index + 1) as u8);
             let offered = progress && before.vocation() == NO_VOCATION;
-            if choice.is_none() {
-                if chosen != 0 {
-                    self.grant_newhaven_starter(initial.item_fence())
+            if choice.is_none() || choice == Some(chosen) {
+                if chosen != 0
+                    && self
+                        .grant_newhaven_starter(initial.item_fence())
                         .await
-                        .ok()?;
+                        .ok()?
+                        == NewhavenStarterOutcome::NotAdmitted
+                {
+                    return None;
                 }
                 return wire::Observation { offered, chosen }.encode();
             }
@@ -118,7 +124,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
-        let retained = if let Some(retained) = retained {
+        let retained = if let Some(mut retained) = retained {
+            // A same-session resume can retry the original occurrence and expected
+            // revision under its newly authenticated connection generation.
+            if retained.fence.connection_generation.get() < fence.connection_generation.get() {
+                retained.fence.connection_generation = fence.connection_generation;
+            }
             if !same_authority(&retained.fence, &fence)
                 || choice.is_some_and(|id| {
                     retained.request.after.vocation() != wire::VOCATIONS[usize::from(id - 1)]
@@ -254,9 +265,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.states
             .tutorial_sessions
             .clear_vocation(session, retained.request.occurrence);
-        self.grant_newhaven_starter(current.item_fence())
+        if self
+            .grant_newhaven_starter(current.item_fence())
             .await
-            .ok()?;
+            .ok()?
+            == NewhavenStarterOutcome::NotAdmitted
+        {
+            return None;
+        }
         let chosen = wire::VOCATIONS
             .iter()
             .position(|key| *key == build.vocation())? as u8

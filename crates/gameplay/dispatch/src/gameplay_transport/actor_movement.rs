@@ -21,6 +21,14 @@ use std::time::Duration;
 /// A committed step and its SPEED-1 duration (CONDITIONS-0 §4.2), or why nothing moved.
 pub type StepInChannel = Result<(MovementPositionSnapshot, Duration), MovementError>;
 
+fn drome_drunk(state: &crate::spell::cast::PlayerSpellState, now_us: u64) -> bool {
+    use oteryn_gameplay_domain::domain::condition::{ConflictKey, StatusKind};
+    state
+        .owned_conditions()
+        .active_at(ConflictKey::Status(StatusKind::Drunk), now_us)
+        .is_some_and(|instance| instance.definition().key() == "drome.drunk")
+}
+
 impl ChannelSpellStates {
     /// Resolve Drome control before field/floor preflight. The common movement owner
     /// repeats this pure decision with the same frozen time/position, so a prepared
@@ -51,12 +59,7 @@ impl ChannelSpellStates {
         ) {
             return Err(MovementError::Blocked);
         }
-        use oteryn_gameplay_domain::domain::condition::{ConflictKey, StatusKind};
-        if !state
-            .owned_conditions()
-            .active_at(ConflictKey::Status(StatusKind::Drunk), now_us)
-            .is_some_and(|instance| instance.definition().key() == "drome.drunk")
-        {
+        if !drome_drunk(state, now_us) {
             return Ok(requested);
         }
         use oteryn_simulation_determinism::{
@@ -222,6 +225,10 @@ pub(in crate::gameplay_transport) fn prewalk_forecast(
         return [0; 8];
     };
     if states.is_dead(actor)
+        || (runtime.is_tibiadrome(actor)
+            && states
+                .get(runtime, actor, session)
+                .is_some_and(|state| state.drome_practice && drome_drunk(state, now_us)))
         || runtime.player_control_facts(actor, session).is_err()
         || (states.get(runtime, actor, session).is_some()
             && !states.native_condition_movement_allowed(

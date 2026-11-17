@@ -91,6 +91,9 @@ fn depot_search_dispatch_retrieves_all_depot_items_until_no_room_once() -> TestR
 /// CONTAINER-MANUAL-SORT-1 (capability 510): a slotted deposit takes its depot box slot.
 #[test]
 fn depot_manual_sort_deposit_takes_its_box_slot_and_replays() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| {
@@ -1228,7 +1231,7 @@ fn scenario_with_premium(
                     action: DepotAction::Withdraw(2),
                     ..withdraw
                 },
-                None,
+                Some(ItemKey::Instance(carried.ok_or("displayed item")?)),
             )
             .await
             .ok_or("selection withdraw")?;
