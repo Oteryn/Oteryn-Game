@@ -54,7 +54,7 @@ fn item_on_map_use_commits_progress_and_spawns_once_without_relocation_postgres(
                 )?;
             let generation = controller.active().ok_or("active generation")?;
             let native = generation.native_gameplay().ok_or("native profiles")?;
-            let start = (33210_u16, 31671_u16);
+            let start = (33211_u16, 31670_u16);
             let world = super::l6_world_pickups::native_crop(
                 native,
                 super::l6_world_pickups::NativeCrop {
@@ -63,7 +63,7 @@ fn item_on_map_use_commits_progress_and_spawns_once_without_relocation_postgres(
                         "/../../../content/world/placements/region-z07-x129-y123.b3"
                     )),
                     region: (7, 129, 123),
-                    bounds: (33210, 31670, 33212, 31672),
+                    bounds: (33210, 31670, 33214, 31671),
                     start,
                     expected: vec![super::l6_world_pickups::ExpectedTile {
                         position: (GRAVE.x, GRAVE.y),
