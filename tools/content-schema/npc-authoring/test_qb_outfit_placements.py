@@ -20,7 +20,7 @@ QB_CELLS = {
     "oteryn:npc.zoltan": (33266, 31847, 4),
     # QB-2
     "oteryn:npc.a_majestic_warwolf": (33355, 31991, 8),
-    "oteryn:npc.budrik": (32525, 31905, 8),
+    "oteryn:npc.budrik": (32525, 31906, 8),
     "oteryn:npc.ceiron": (32665, 31717, 7),
     "oteryn:npc.eruaran": (33618, 32372, 5),
     "oteryn:npc.flickering_soul": (33621, 31419, 10),
@@ -55,7 +55,7 @@ class QbOutfitPlacementTest(unittest.TestCase):
         self.assertEqual(len(records), len(QB_CELLS))
         self.assertEqual(cells, QB_CELLS)
         contacts = {r["npc"] for r in records if r.get("block_solid_contact", False)}
-        self.assertEqual(contacts, {"oteryn:npc.vescu"})
+        self.assertEqual(contacts, {"oteryn:npc.gnommander", "oteryn:npc.vescu"})
 
 
 if __name__ == "__main__":

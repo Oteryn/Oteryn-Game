@@ -69,14 +69,14 @@ at its single agreeing promotion-candidate cell, as in QB-1. One Eyed Joe
 | Quest | TibiaWiki | NPCs placed (x, y, z) |
 |---|---|---|
 | Brotherhood / Nightmare Outfits | `Brotherhood_Outfits`, `Nightmare_Outfits` | The Bone Master 32793,32225,14; The Dream Master 32844,32228,14 |
-| Cave Explorer Outfits | `Cave_Explorer_Outfits` | Gnommander 32248,32604,8 |
+| Cave Explorer Outfits | `Cave_Explorer_Outfits` | Gnommander 32248,32604,8 (source-backed solid contact: no adjacent clear single-item ground) |
 | Crystal Warlord / Soil Guardian Outfits | `Crystal_Warlord_Outfits`, `Soil_Guardian_Outfits` | Gnomally 32795,31746,10 |
 | Revenant Outfits | `Revenant_Outfits` | Flickering Soul 33621,31419,10 |
 | Dream Warden / Dream Warrior Outfits | `Dream_Warden_Outfits`, `Dream_Warrior_Outfits` | Eruaran 33618,32372,5; Vanys 33685,32180,8 |
 | Druid Outfits | `Druid_Outfits_Quest/Spoiler` | A Majestic Warwolf 33355,31991,8; Ceiron 32665,31717,7; Ustan 32580,32757,6 |
 | Knight Outfits | `Knight_Outfits_Quest/Spoiler` | Gregor 32406,32201,6 |
 | Hand of the Inquisition (mission 1 guards) | `The_Inquisition_Quest/Spoiler` | Grof 32372,32182,7; Kulag 32287,32264,7; Miles 32429,32173,5; Tim 32425,32223,6; Walter 32338,32277,7 |
-| To Outfox a Fox | `To_Outfox_a_Fox_Quest/Spoiler` | Budrik 32525,31905,8 |
+| To Outfox a Fox | `To_Outfox_a_Fox_Quest/Spoiler` | Budrik 32525,31906,8 (adjacent to the BlockSolid donor cell 32525,31905,8) |
 
 ## QB-3 — mainland Citizen and Warrior addons
 

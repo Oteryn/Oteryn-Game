@@ -29,7 +29,7 @@ const QB2_OUTFIT_NPCS: &[(&str, u16, u16, u8)] = &[
     // Druid Outfits Quest (A Majestic Warwolf, Ceiron, Ustan).
     ("oteryn:npc.a_majestic_warwolf", 33355, 31991, 8),
     // To Outfox a Fox Quest.
-    ("oteryn:npc.budrik", 32525, 31905, 8),
+    ("oteryn:npc.budrik", 32525, 31906, 8),
     ("oteryn:npc.ceiron", 32665, 31717, 7),
     // Dream Warden and Dream Warrior Outfits.
     ("oteryn:npc.eruaran", 33618, 32372, 5),
@@ -117,9 +117,17 @@ fn qb_outfit_hand_in_npcs_are_admitted_at_their_source_cells() -> TestResult {
 
 #[test]
 fn qb2_outfit_hand_in_npcs_are_admitted_at_their_source_cells() -> TestResult {
-    for (key, x, y, z) in QB2_OUTFIT_NPCS {
-        admitted_at(key, *x, *y, *z)?;
-    }
+    let refused: Vec<String> = QB2_OUTFIT_NPCS
+        .iter()
+        .filter_map(|(key, x, y, z)| {
+            std::panic::catch_unwind(|| admitted_at(key, *x, *y, *z))
+                .map_err(|_| ())
+                .and_then(|result| result.map_err(|_| ()))
+                .err()
+                .map(|()| (*key).to_owned())
+        })
+        .collect();
+    assert!(refused.is_empty(), "QB-2 NPCs refused: {refused:?}");
     Ok(())
 }
 
