@@ -1,4 +1,4 @@
-//! Completion metadata preserves exact old NPC pins and existing absent-track semantics.
+//! Source metadata preserves exact old NPC pins and existing absent-track semantics.
 use super::{NpcRuleCatalog, admission};
 use crate::quest::{NpcDefinitionPredecessor, QuestStateCatalogue};
 use sha2::{Digest, Sha256};
@@ -59,6 +59,40 @@ pub(super) fn register(
                     defaults: BTreeMap::new(),
                 });
         }
+    }
+    if let Some(program) = source.programs().iter().find(|program| {
+        program.document.program_key.as_deref() == Some("oteryn:quest-npc-program.sandra-lottery")
+    }) {
+        let quest = "oteryn:quest.outfit_and_addon_quests";
+        if program.document.quest != quest {
+            return Err("Sandra predecessor quest owner".into());
+        }
+        let marker = admission::binding_key(program);
+        if active.transition(&marker).is_none() {
+            return Err("missing Sandra definition marker".into());
+        }
+        // Sandra uses two already-native tracks with unchanged defaults/bounds.
+        // Before its activation the same outfit definition lacked only this pin.
+        let previous = QuestStateCatalogue::new(
+            active.content_revision.clone(),
+            active.declared_tracks().cloned().collect(),
+            active
+                .declared_transitions()
+                .filter(|transition| transition.key != marker)
+                .cloned()
+                .collect(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        active
+            .predecessors
+            .entry(quest.into())
+            .or_default()
+            .push(NpcDefinitionPredecessor {
+                hash: previous
+                    .definition_hash(quest)
+                    .ok_or("previous outfit definition")?,
+                defaults: BTreeMap::new(),
+            });
     }
     Ok(())
 }
