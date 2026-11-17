@@ -12,6 +12,7 @@ include!("character_core.rs");
 include!("character_release.rs");
 include!("e2e_row_batch.rs");
 include!("floor_journey.rs");
+include!("npc_routes.rs");
 include!("full_e2ef7_mount.rs");
 include!("full_row_c03_mount.rs");
 include!("full_row_c12_mount.rs");
@@ -701,18 +702,11 @@ async fn walk_use(
         crate::map::view::placement_key(at, ordinal).ok_or("route USE placement unavailable")?;
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
-    let payload = encode_use_intent(&WorldObjectTarget {
-        placement,
-        expected_revision: 0,
-    })
-    .map_err(|error| format!("route USE encode: {error:?}"))?;
+    // WorldObjectTarget is baseline USE-WIRE-V1 command 2. Capability 15
+    // extends USE with item/use-with fields; it does not own the command.
     for attempt in 1..=6 {
-        let reply = client
-            .session_mut()
-            .gated_command(CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, &payload)
-            .await?;
-        let disposition = decode_use_result(&reply.payload)
-            .map_err(|error| format!("route USE decode: {error:?}"))?;
+        let reply = client.use_object(&placement, 0).await?;
+        let disposition = reply.disposition;
         if disposition == UseDisposition::Exhausted
             && tile(client.world_spatial().actor_position)? == from
             && attempt < 6

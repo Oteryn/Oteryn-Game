@@ -1065,11 +1065,15 @@ async fn approach_oressa(
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
+    let from = tile(client.world_spatial().actor_position)?;
     let npc = npcs
         .npcs
         .iter()
         .find(|npc| npc.key == "oteryn:npc.oressa")
-        .ok_or("Oressa prerequisite blocked: compiled world has no oteryn:npc.oressa placement")?;
+        .ok_or_else(|| {
+            npc_route_failure(from, "oteryn:npc.oressa", npcs, &BTreeSet::from(["oteryn:npc.oressa".to_owned()]));
+            "Oressa prerequisite blocked: compiled world has no oteryn:npc.oressa placement"
+        })?;
     let path = route_toward(world, tile(client.world_spatial().actor_position)?, (&npc.key, &npc.placements), |at| {
         npc.placements.iter().any(|placement| placement.floor == at.floor
             && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3)

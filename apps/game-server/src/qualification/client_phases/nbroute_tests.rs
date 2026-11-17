@@ -59,41 +59,96 @@ fn endpoint(world: &BundleWorld, from: TilePos, path: &[WalkAction]) -> TestResu
     })
 }
 
+fn compiled_town() -> TestResult<&'static (BundleWorld, oteryn_world_bundle::npc::Table)> {
+    static TOWN_WORLD: std::sync::OnceLock<
+        Result<(BundleWorld, oteryn_world_bundle::npc::Table), String>,
+    > = std::sync::OnceLock::new();
+    TOWN_WORLD
+        .get_or_init(|| {
+            (|| -> TestResult<(BundleWorld, oteryn_world_bundle::npc::Table)> {
+                use oteryn_world_bundle_compiler::{bundle::BuildClass, compile, source};
+                let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+                // The same compile-regions inputs and equivalence proof as node boot.
+                let project =
+                    source::project_regions(&root, &[(126, 125), (126, 126), (127, 127)])?;
+                let (registry, palette) = source::registry(&root, &project)?;
+                let input = compile::Input {
+                    regions: &project.regions,
+                    palette: &palette,
+                    identity: serde_json::from_slice(&std::fs::read(
+                        root.join("content/world/pins/oteryn.identity.json"),
+                    )?)?,
+                    world: source::world_extent(&root)?,
+                    build_class: BuildClass::NonProduction,
+                    draft_areas: oteryn_world_bundle_compiler::project::draft_areas(
+                        &project.index,
+                    )?,
+                    families: &project.families,
+                };
+                let compiled = compile::compile(&input, &registry)?;
+                compile::equivalence(&input, &registry, &compiled.bytes)?;
+                let mut pin: serde_json::Value = serde_json::from_slice(&std::fs::read(
+                    root.join("content/world/pins/oteryn.json"),
+                )?)?;
+                pin["digest"] = compiled
+                    .digest
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>()
+                    .into();
+                let npcs = oteryn_world_bundle::bundle::visit(&compiled.bytes, |_, _| Ok(()))?.npcs;
+                let world = boot_world(
+                    compiled.bytes,
+                    &pin,
+                    WorldId::decode(&v7(1, 2))?,
+                    ChannelId::decode(&v7(1, 3))?,
+                )?;
+                Ok((world, npcs))
+            })()
+            .map_err(|error| error.to_string())
+        })
+        .as_ref()
+        .map_err(|error| error.clone().into())
+}
+
 #[test]
 fn qualification_nbroute_compiled_town() -> TestResult {
     on_route_thread(|| {
-        use oteryn_world_bundle_compiler::{bundle::BuildClass, compile, source};
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-        // The same compile-regions inputs and equivalence proof as node boot.
-        let project = source::project_regions(&root, &[(126, 125), (126, 126), (127, 127)])?;
-        let (registry, palette) = source::registry(&root, &project)?;
-        let input = compile::Input {
-            regions: &project.regions,
-            palette: &palette,
-            identity: serde_json::from_slice(&std::fs::read(
-                root.join("content/world/pins/oteryn.identity.json"),
-            )?)?,
-            world: source::world_extent(&root)?,
-            build_class: BuildClass::NonProduction,
-            draft_areas: oteryn_world_bundle_compiler::project::draft_areas(&project.index)?,
-            families: &project.families,
-        };
-        let compiled = compile::compile(&input, &registry)?;
-        compile::equivalence(&input, &registry, &compiled.bytes)?;
-        let mut pin: serde_json::Value =
-            serde_json::from_slice(&std::fs::read(root.join("content/world/pins/oteryn.json"))?)?;
-        pin["digest"] = compiled
-            .digest
-            .iter()
-            .map(|byte| format!("{byte:02x}"))
-            .collect::<String>()
-            .into();
-        let world = boot_world(
-            compiled.bytes,
-            &pin,
-            WorldId::decode(&v7(1, 2))?,
-            ChannelId::decode(&v7(1, 3))?,
-        )?;
+        let (world, npcs) = compiled_town()?;
+        assert!(
+            world.base().tile(TOWN.x, TOWN.y, -7).is_some(),
+            "compiled floor is native -z"
+        );
+        assert!(
+            world.base().tile(TOWN.x, TOWN.y, 7).is_none(),
+            "positive source z is not a native bundle floor"
+        );
+        // The runner uses these exact regions and pristine temple coordinates.
+        // Prove absence of candidates rather than claiming a failed walk search.
+        for id in [3165, 3180, 3156, 3177, 3203, 3178, 3197, 2854] {
+            let sellers = rune_seller_keys(id)?;
+            assert!(
+                !sellers.is_empty(),
+                "missing trade eligibility facts for {id}"
+            );
+            let inventory =
+                npc_route_failure(TOWN, &format!("oteryn:item.tibia.i{id}"), npcs, &sellers);
+            assert!(
+                inventory.placements.is_empty(),
+                "compiled seller inventory changed for {id}: {inventory:?}"
+            );
+            assert_eq!(inventory.in_town_window, 0);
+        }
+        let inventory = npc_route_failure(
+            TOWN,
+            "oteryn:npc.oressa",
+            npcs,
+            &std::collections::BTreeSet::from(["oteryn:npc.oressa".to_owned()]),
+        );
+        assert!(
+            inventory.placements.is_empty(),
+            "compiled Oressa inventory changed: {inventory:?}"
+        );
         let shrine = TilePos {
             x: 32376,
             y: 32239,
@@ -127,7 +182,7 @@ fn qualification_nbroute_compiled_town() -> TestResult {
             rats[1],
         ] {
             for target in rats {
-                let path = route_toward(&world, from, target, |at| at == target)
+                let path = route_toward(world, from, target, |at| at == target)
                     .ok_or_else(|| format!("no rat route: {from:?} -> {target:?}"))?;
                 if from.floor != target.floor {
                     assert!(
@@ -136,12 +191,12 @@ fn qualification_nbroute_compiled_town() -> TestResult {
                         "sewer descent must use the authored grate"
                     );
                 }
-                assert_eq!(endpoint(&world, from, &path)?, target);
-                let back = route_toward(&world, target, from, |at| at == from)
+                assert_eq!(endpoint(world, from, &path)?, target);
+                let back = route_toward(world, target, from, |at| at == from)
                     .ok_or_else(|| format!("no post-hunt return: {target:?} -> {from:?}"))?;
-                assert_eq!(endpoint(&world, target, &back)?, from);
+                assert_eq!(endpoint(world, target, &back)?, from);
             }
-            let path = route_toward(&world, from, shrine, |at| {
+            let path = route_toward(world, from, shrine, |at| {
                 at.floor == shrine.floor
                     && at.x.abs_diff(shrine.x).max(at.y.abs_diff(shrine.y)) <= 1
                     && world
@@ -150,8 +205,8 @@ fn qualification_nbroute_compiled_town() -> TestResult {
                         .is_some_and(|tile| tile.protection_zone())
             })
             .ok_or_else(|| format!("no shrine approach: {from:?} -> {shrine:?}"))?;
-            let inside = endpoint(&world, from, &path)?;
-            let outside = route_toward(&world, inside, "outside PZ", |at| {
+            let inside = endpoint(world, from, &path)?;
+            let outside = route_toward(world, inside, "outside PZ", |at| {
                 at.floor == inside.floor
                     && at.x.abs_diff(inside.x).max(at.y.abs_diff(inside.y)) >= 4
                     && world
@@ -160,11 +215,14 @@ fn qualification_nbroute_compiled_town() -> TestResult {
                         .is_some_and(|tile| !tile.protection_zone())
             })
             .ok_or("no post-shrine route outside PZ")?;
-            let outside = endpoint(&world, inside, &outside)?;
-            let back = route_toward(&world, outside, from, |at| at == from)
+            let outside = endpoint(world, inside, &outside)?;
+            let back = route_toward(world, outside, from, |at| at == from)
                 .ok_or("no outside-PZ return")?;
-            assert_eq!(endpoint(&world, outside, &back)?, from);
+            assert_eq!(endpoint(world, outside, &back)?, from);
         }
         Ok(())
     })
 }
+
+#[path = "nbroute_transport_tests.rs"]
+mod transport;

@@ -1070,29 +1070,8 @@ pub(super) async fn acquire_rune(
     use oteryn_protocol_oteryn::npc_service as wire;
     let index = provisioning::item_index()?;
     let reference = provisioning::item_reference(&index, id)?;
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(
-        root.join("content/services/trade/trade-00000-00323.json"),
-    )?)?;
     let item_key = format!("oteryn:item.tibia.i{id}");
-    let sellers: BTreeSet<_> = trades["records"]
-        .as_array()
-        .ok_or("trade records absent")?
-        .iter()
-        .filter_map(|record| {
-            let declaration = &record["declaration"];
-            declaration["offers"]
-                .as_array()?
-                .iter()
-                .any(|offer| {
-                    offer["direction"] == "SellToPlayer" && offer["item"]["key"] == item_key
-                })
-                .then(|| declaration["identity"]["key"].as_str())
-                .flatten()
-                .and_then(|key| key.strip_prefix("oteryn:service.trade."))
-                .map(|name| format!("oteryn:npc.{name}"))
-        })
-        .collect();
+    let sellers = rune_seller_keys(id)?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let here = tile(client.world_spatial().actor_position)?;
@@ -1111,9 +1090,14 @@ pub(super) async fn acquire_rune(
         })
         .min_by_key(|(_, path)| path.len());
     let Some((npc, path)) = selected else {
-        evidence(&format!("route_failed start={here:?} target={item_key} eligible_sellers={sellers:?} planner=rune-acquisition"));
+        let inventory = npc_route_failure(here, &item_key, &metadata.npcs, &sellers);
+        let reason = if inventory.placements.is_empty() {
+            "no compiled-world seller placement"
+        } else {
+            "no player-walk route within the admitted town window to a compiled-world seller"
+        };
         let balances = runtime::balances(client.session_mut()).await?;
-        return Err(format!("rune {id} acquisition blocked: no player-walk route within the admitted town window to a compiled-world seller; eligible_sellers={sellers:?}; observed_balances={balances:?}; carried_quantity={}; no item mint or remote vendor interaction; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:1", rune_quantity(client, reference)?).into());
+        return Err(format!("rune {id} acquisition blocked: {reason}; eligible_sellers={sellers:?}; observed_balances={balances:?}; carried_quantity={}; no item mint or remote vendor interaction; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:1", rune_quantity(client, reference)?).into());
     };
     walk(client, world, &path).await?;
     let actor = client
@@ -1936,7 +1920,10 @@ async fn player_first_vocation(
     let here = tile(client.world_spatial().actor_position)?;
     let observed_level = level(client).await?;
     let npc = metadata.npcs.npcs.iter().find(|npc| npc.key == "oteryn:npc.oressa")
-        .ok_or_else(|| format!("first vocation {vocation}: Oressa absent from compiled world; observed_level={observed_level}; source:crates/gameplay/content/src/content/npc_catalogue.rs:5"))?;
+        .ok_or_else(|| {
+            npc_route_failure(here, "oteryn:npc.oressa", &metadata.npcs, &BTreeSet::from(["oteryn:npc.oressa".to_owned()]));
+            format!("first vocation {vocation}: Oressa absent from compiled world; observed_level={observed_level}; source:crates/gameplay/content/src/content/npc_catalogue.rs:5")
+        })?;
     let path = route_toward(world, here, (&npc.key, &npc.placements), |at| npc.placements.iter().any(|p|
         p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3))
         .ok_or_else(|| format!("first vocation {vocation}: no ordinary player route to Oressa within the admitted town window; observed_level={observed_level}; source:crates/gameplay/content/src/content/npc_catalogue.rs:5"))?;
