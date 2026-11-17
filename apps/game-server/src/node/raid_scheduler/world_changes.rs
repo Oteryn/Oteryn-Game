@@ -154,16 +154,12 @@ pub(super) async fn observe(
                 if let Some(map) = context.1 {
                     project_map(map, day)?;
                 }
-                if !day.their_masters_voice {
+                let voice = counters::CounterKind::TheirMastersVoice.index();
+                if !day.their_masters_voice || day.counter_progress[voice][0] == 0 {
                     return Ok(false);
                 }
-                let census = runtime
-                    .positioned_melee_census()
-                    .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-                Ok(!census.iter().any(|(_, position, session)| {
-                    let at = position.position();
-                    session.is_some()
-                        && at.floor == -9
+                Ok(!runtime.committed_player_positions().iter().any(|at| {
+                    at.floor == -9
                         && (33306..=33369).contains(&at.x)
                         && (31847..=31919).contains(&at.y)
                 }))
