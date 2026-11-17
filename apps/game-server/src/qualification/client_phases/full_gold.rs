@@ -565,3 +565,41 @@ pub(super) async fn equip(
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[test]
+fn qualification_c01_admission_profile_selects_command() {
+    use oteryn_protocol_oteryn::{capability_tables, cyclopedia_character as wire};
+
+    // connect_character (also used by C20a/F6) admits through connect_session,
+    // which advertises this shared dev-client profile.
+    let supported = oteryn_dev_client::CLIENT_SUPPORTED_CAPABILITIES;
+    assert!(supported.contains(&wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1));
+    let mut selected: Vec<u32> = capability_tables::BUNDLE_WORLD_OFFERS_V1
+        .iter()
+        .filter(|(id, _)| supported.contains(id))
+        .map(|(id, _)| *id)
+        .collect();
+    loop {
+        let previous = selected.clone();
+        selected.retain(|id| {
+            capability_tables::BUNDLE_WORLD_OFFERS_V1
+                .iter()
+                .any(|(offered, requires)| {
+                    offered == id && requires.iter().all(|required| previous.contains(required))
+                })
+        });
+        if selected == previous {
+            break;
+        }
+    }
+    assert!(selected.contains(&wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1));
+    assert!(
+        capability_tables::GATED
+            .iter()
+            .filter(
+                |(_, commands, _)| commands.contains(&wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB)
+            )
+            .all(|(id, _, _)| selected.contains(id))
+    );
+}
