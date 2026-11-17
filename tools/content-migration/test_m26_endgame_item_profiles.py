@@ -58,10 +58,10 @@ class SourceRewardBossCorpseCapacity(unittest.TestCase):
                 payload=json.loads(loot.loot_tables({'records':[creature]},native_item_profiles=profiles))
                 fact=next(r for r in payload['items'] if r['item']['key']=='oteryn:item.tibia.i33867')
                 self.assertEqual(fact['materializable'],expected)
-                self.assertEqual(fact['container_capacity'],48 if reward_boss else None)
+                self.assertEqual(fact['container_capacity'],48)
         corpse=next(r for r in profiles['records'] if r['production_definition']['production_key']=='oteryn:item.tibia.i33867')
         identity=corpse['production_binding']['target']
-        self.assertIsNone(loot.native_corpse_capacity(identity,corpse), 'ordinary corpses retain the 30-entry bound')
+        self.assertEqual(loot.native_corpse_capacity(identity,corpse),48,'ordinary corpses admit the 48-entry bound (CORPSE48)')
         self.assertIsNone(loot.native_loot_yield_facts(identity,corpse), 'Ground-only admission never permits a carried yield')
 
 

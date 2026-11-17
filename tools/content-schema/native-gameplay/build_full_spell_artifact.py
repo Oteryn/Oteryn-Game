@@ -584,17 +584,17 @@ def native_corpse_capacity(ref: dict, profile: dict, *, reward_boss: bool = Fals
             or known_native(stack['stackable']) is not False or not isinstance(container, dict)):
         return None
     capacity = known_native(container.get('capacity', {}))
-    # Physical capacity and the existing 30-entry MINT work bound are distinct.
+    # Physical capacity and the 48-entry MINT work bound (CORPSE48) are distinct.
     # Crystal201189f items.xml declares48 for these exact Soul War corpses.
-    # Ground-only physical capacity does not raise the30-item MINT work bound.
+    # Ground-only physical capacity does not raise the 48-item MINT work bound.
     source_48 = {f'oteryn:item.tibia.i{i}' for i in (
         33797,33801,33805,33809,33813,33817,33859,33863,33867,33871,33875,33889,
         33897,33901,33905,33909)}
     if (type(capacity) is int and capacity == 48 and ref['key'] in source_48
             and profile['admission']['legal_destinations'] == ['Ground']):
         return capacity
-    # Exact QuestPC7 source physical capacities are independent of the retained
-    # 30-entry corpse MINT/work/view limits. No general container policy changes.
+    # Exact QuestPC7 source physical capacities are independent of the 48-entry
+    # corpse MINT/work/view limits (CORPSE48). No general container policy changes.
     questpc7_capacity = {'oteryn:item.tibia.i6048': 36,
                         'oteryn:item.tibia.i20972': 38,
                         'oteryn:item.tibia.i33821': 48}
@@ -606,9 +606,9 @@ def native_corpse_capacity(ref: dict, profile: dict, *, reward_boss: bool = Fals
             and known_native(physical['pickupable']) is False):
         return capacity
     # Reward-boss loot stays in personal entitlements; the physical corpse retains
-    # its source capacity. Ordinary corpse contents keep GAMEITEM01's 30-entry cap,
-    # matching CreatureRewardTable's existing per-creature admission rule.
-    maximum = 0xffffffff if reward_boss else 30
+    # its source capacity. Ordinary corpse contents keep GAMEITEM01's 48-entry cap
+    # (CORPSE48, owner 2026-11-17), matching CreatureRewardTable's per-creature admission rule.
+    maximum = 0xffffffff if reward_boss else 48
     return capacity if type(capacity) is int and 1 <= capacity <= maximum else None
 
 
