@@ -2084,24 +2084,24 @@ pub fn record_creature_kill(
             if credits.is_empty() && thornfire_home_bit.is_none() {
                 return None;
             }
-            let mut generations = [0; 8];
-            for kind in crate::durability::world_event::changes::counters::CounterKind::ALL {
-                generations[kind.index()] = *cycles.get(kind.key())?;
-            }
-            if let Some((key, generation, _)) = cohort {
-                let kind = if key.starts_with("their_masters_voice.") {
-                    Some(CounterKind::TheirMastersVoice)
-                } else {
-                    CounterKind::from_key(key)
-                };
-                if let Some(kind) = kind {
-                    generations[kind.index()] = generation;
+            let event = if credits.is_empty() {
+                None
+            } else {
+                let mut generations = [0; 8];
+                for kind in CounterKind::ALL {
+                    generations[kind.index()] = *cycles.get(kind.key())?;
                 }
-            }
-            Some(CapturedWorldChangeKill {
-                epoch: *epoch,
-                thornfire_home_bit,
-                event: (!credits.is_empty()).then(|| {
+                if let Some((key, generation, _)) = cohort {
+                    let kind = if key.starts_with("their_masters_voice.") {
+                        Some(CounterKind::TheirMastersVoice)
+                    } else {
+                        CounterKind::from_key(key)
+                    };
+                    if let Some(kind) = kind {
+                        generations[kind.index()] = generation;
+                    }
+                }
+                Some(
                     crate::durability::world_event::changes::counters::CreditEvent {
                         source_kind: 1,
                         occurrence: crate::durability::party_kill_xp::encode_death_key(facts.death),
@@ -2109,8 +2109,13 @@ pub fn record_creature_kill(
                         counter_generations: generations,
                         occurred_at_ms: facts.died_at_unix_ms,
                         character: Some(principal.character),
-                    }
-                }),
+                    },
+                )
+            };
+            Some(CapturedWorldChangeKill {
+                epoch: *epoch,
+                thornfire_home_bit,
+                event,
             })
         })
     } else {
@@ -3652,13 +3657,28 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 };
             }
             if let Some(event) = &captured.event {
-                match admission.root.credit_world_change_event(admission.character, admission.holder, scope, generation, captured.epoch, event.clone()).await {
-                    Ok(crate::durability::world_event::changes::counters::CreditOutcome::Applied { .. } |
-                       crate::durability::world_event::changes::counters::CreditOutcome::AlreadyApplied) => (),
-                    Ok(crate::durability::world_event::changes::counters::CreditOutcome::Refused) => {
-                        operator_event("world_change_credit_refused reason=stale_source_or_cycle");
-                    },
-                    Err(_) => return SettleReport { verdict: SettleVerdict::Retry, no_progression: false },
+                let result = admission
+                    .root
+                    .credit_world_change_event(
+                        admission.character,
+                        admission.holder,
+                        scope,
+                        generation,
+                        captured.epoch,
+                        event.clone(),
+                    )
+                    .await;
+                if result.is_err() {
+                    return SettleReport {
+                        verdict: SettleVerdict::Retry,
+                        no_progression: false,
+                    };
+                }
+                if matches!(
+                    result,
+                    Ok(crate::durability::world_event::changes::counters::CreditOutcome::Refused)
+                ) {
+                    operator_event("world_change_credit_refused reason=stale_source_or_cycle");
                 }
             }
         }

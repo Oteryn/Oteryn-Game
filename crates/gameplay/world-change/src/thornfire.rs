@@ -85,7 +85,6 @@ pub fn refill_bucket(used: &str, station: &str) -> Option<&'static str> {
     (used == PREPARED_BUCKET && station == BOG_WATER).then_some(FILLED_BUCKET)
 }
 
-pub const FILLED_BUCKET_ID: u16 = 12722;
 pub const PREPARED_BUCKET_ID: u16 = 12819;
 pub const FIREFIGHTER_TOTAL: u32 = 500;
 
