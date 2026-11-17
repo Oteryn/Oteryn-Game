@@ -956,6 +956,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 true,
                 cause,
                 None,
+                projection.as_ref(),
             );
             if preflight != UseDisposition::Committed {
                 return preflight;
@@ -1306,6 +1307,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
         }
         if callback.effects.encounter.is_some() && !close {
+            if let Some(delay) = callback.effects.reset_after_ms {
+                let Some(published_due) =
+                    self.owner_now().get().checked_add(u64::from(delay) * 1_000)
+                else {
+                    return UseDisposition::Exhausted;
+                };
+                if let Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
+                    due,
+                    ..
+                }) = projection.as_mut()
+                {
+                    *due = published_due;
+                }
+            }
             let disposition = self.execute_quest_encounter(
                 runtime,
                 states,
@@ -1319,6 +1334,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 false,
                 cause,
                 personal_reservation.as_mut(),
+                projection.as_ref(),
             );
             if disposition == UseDisposition::Committed {
                 if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
