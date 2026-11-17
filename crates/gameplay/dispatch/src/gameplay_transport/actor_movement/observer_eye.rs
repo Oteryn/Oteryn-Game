@@ -157,17 +157,25 @@ pub(in crate::gameplay_transport) fn advance_observer_eye(
         return;
     };
     let rounds = 1 + late / PLATFORM_INTERVAL_MICROS;
-    let advance = (rounds % PLATFORM_PHASES.len() as u64) as usize;
-    if advance != 0 {
-        for &(x, y) in bindings::WEST_FIELD {
-            let at = MovementLocalPosition {
-                x,
-                y,
-                floor: bindings::FLOOR,
-            };
-            if let Some((key, appearance)) = platform_at(map, at)
-                && let Some(phase) = PLATFORM_PHASES.iter().position(|&id| id == appearance)
-            {
+    let started = pair.expires - ATTEMPT_MICROS;
+    let previous_beat = (pair.next_platform_cycle - started) / PLATFORM_INTERVAL_MICROS - 1;
+    for &(x, y) in bindings::WEST_FIELD {
+        let at = MovementLocalPosition {
+            x,
+            y,
+            floor: bindings::FLOOR,
+        };
+        if let Some((key, appearance)) = platform_at(map, at)
+            && let Some(phase) = PLATFORM_PHASES.iter().position(|&id| id == appearance)
+        {
+            // Crystal supplies appearances but no local cadence. Vary the period
+            // per placement and attempt without drawing from shared RNG state.
+            let seed = key.wrapping_add(started).wrapping_mul(0x9e3779b97f4a7c15);
+            let period = 1 + (seed >> 32) % 3;
+            let transitions =
+                (previous_beat + rounds).div_ceil(period) - previous_beat.div_ceil(period);
+            let advance = (transitions % PLATFORM_PHASES.len() as u64) as usize;
+            if advance != 0 {
                 let after = PLATFORM_PHASES[(phase + advance) % PLATFORM_PHASES.len()];
                 map.facts.transform_movement_item(key, after);
             }
@@ -282,7 +290,11 @@ pub(super) fn mirror_step(
     let Some(pair) = current_pair(runtime, states, now_us) else {
         states.observer_eye_pair = if arrived_on_pad && crate::map::floor::table_of(cells).is_some()
         {
-            pair_on_pads(runtime, states, now_us)
+            let pair = pair_on_pads(runtime, states, now_us);
+            if pair.is_some() {
+                states.owner_wake.notify_one();
+            }
+            pair
         } else {
             None
         };
