@@ -182,7 +182,10 @@ mod tests {
             progress |= bit;
             assert_eq!(at_save(progress), (progress, false));
         }
-        assert_eq!(at_save(progress | overseers[2]), (0, true));
+        let complete = progress | overseers[2];
+        let missing_first_elf = complete & !1;
+        assert_eq!(at_save(missing_first_elf), (missing_first_elf, false));
+        assert_eq!(at_save(complete), (0, true));
         assert_eq!(at_save(0), (0, false));
     }
 }

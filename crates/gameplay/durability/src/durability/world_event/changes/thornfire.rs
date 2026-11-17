@@ -45,7 +45,9 @@ impl DurabilityRoot {
         {
             return Err(DurabilityError::InvalidStoredState);
         }
-        let recovery = authority.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
@@ -98,27 +100,38 @@ pub(crate) async fn record_wolf_draw(
     mutation: &crate::durability::terrain_tool::TerrainMutation,
     event: &str,
 ) -> Result<(), DurabilityError> {
-    let RuntimeScopeRefV1::Channel { world_id, channel_id } = fence.runtime_scope else {
+    let RuntimeScopeRefV1::Channel {
+        world_id,
+        channel_id,
+    } = fence.runtime_scope
+    else {
         return Err(DurabilityError::InvalidStoredState);
     };
-    let placement = mutation.placement.get(32..)
+    let placement = mutation
+        .placement
+        .get(32..)
         .and_then(|bytes| <[u8; 8]>::try_from(bytes).ok())
         .map(i64::from_be_bytes)
         .ok_or(DurabilityError::InvalidStoredState)?;
-    let digest = Sha256::new()
-        .chain_update(b"oteryn.world-change.thornfire.wolf.v1")
-        .chain_update(world_id.as_bytes())
-        .chain_update(scope.reset_epoch.to_be_bytes())
-        .chain_update(placement.to_be_bytes())
-        .chain_update(mutation.expected_revision.to_be_bytes())
-        .finalize();
-    let draw = |bytes: &[u8]| {
-        <[u8; 8]>::try_from(bytes).map(u64::from_be_bytes)
+    let root = GameplayDecisionRoot::from_bytes(
+        Sha256::new()
+            .chain_update(b"oteryn.world-change.thornfire.wolf.v1")
+            .chain_update(world_id.as_bytes())
+            .chain_update(scope.reset_epoch.to_be_bytes())
+            .finalize()
+            .into(),
+    );
+    let mut occurrence = [0; 16];
+    occurrence[..8].copy_from_slice(&placement.to_be_bytes());
+    occurrence[8..].copy_from_slice(&mutation.expected_revision.to_be_bytes());
+    let occurrence = DecisionOccurrenceId::from_bytes(occurrence);
+    let draw = |purpose| {
+        deterministic_decision_u64(&root, occurrence, purpose, 0)
             .map_err(|_| DurabilityError::InvalidStoredState)
     };
-    if let Some((x, y, floor)) = oteryn_gameplay_world_change::thornfire::wolf_position(
-        draw(&digest[..8])?, draw(&digest[8..16])?,
-    ) {
+    if let Some((x, y, floor)) =
+        oteryn_gameplay_world_change::thornfire::wolf_position(draw("chance")?, draw("position")?)
+    {
         sqlx::query("INSERT INTO game_thornfire_wolf_spawns(world_id,reset_epoch,fire_placement,fire_revision,channel_id,scope_generation,game_session_id,command_id,spawn_id,x,y,floor)
             VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,$4,encode($5,'hex')::uuid,$6::text::numeric,encode($7,'hex')::uuid,$8::text::numeric,$9::uuid,$10,$11,$12)
             ON CONFLICT(world_id,reset_epoch,fire_placement,fire_revision) DO NOTHING")
@@ -134,7 +147,10 @@ pub(crate) async fn record_wolf_draw(
 impl DurabilityRoot {
     /// Reconcile the committed winning USE with the still-current Channel owner.
     /// A repeated projection uses the same runtime occurrence even after an unknown commit.
-    #[allow(clippy::too_many_arguments, reason = "keep current scope ownership and original USE separate")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "keep current scope ownership and original USE separate"
+    )]
     pub async fn project_thornfire_wolf<C: Send>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -144,10 +160,16 @@ impl DurabilityRoot {
         context: &mut C,
         place: fn(&mut C, [u8; 16], (i32, i32, i16)) -> Result<(), DurabilityError>,
     ) -> Result<(), DurabilityError> {
-        let RuntimeScopeRefV1::Channel { world_id, channel_id } = fence.runtime_scope else {
+        let RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } = fence.runtime_scope
+        else {
             return Ok(());
         };
-        let recovery = authority.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
         self.try_issue_semantic_pass()?.run_with_context(context, move |holder, deadline, context| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
