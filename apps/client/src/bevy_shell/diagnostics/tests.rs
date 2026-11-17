@@ -201,6 +201,7 @@ fn overlay_lines_come_from_the_pacer_window_scale_owner_and_log() -> TestResult 
         "{text}"
     );
     assert!(text.contains("Connection offline  (login)"), "{text}");
+    assert!(text.contains("Traffic out "), "{text}");
     assert!(text.contains("Log debug  warnings "), "{text}");
     assert!(
         text.contains(&format!("Build {}", crate::CLIENT_BUILD)),
@@ -348,4 +349,28 @@ fn a_panicking_ecs_error_is_logged_with_its_context_and_still_panics() -> TestRe
     assert!(text.contains(" ERROR "), "{text}");
     std::fs::remove_dir_all(directory)?;
     Ok(())
+}
+
+#[test]
+fn the_traffic_line_shows_session_frames_and_bytes_each_way() {
+    let snapshot = overlay::Snapshot {
+        traffic: (
+            oteryn_session::FrameCount {
+                frames: 3,
+                bytes: 2048,
+            },
+            oteryn_session::FrameCount {
+                frames: 5,
+                bytes: 512,
+            },
+        ),
+        ..Default::default()
+    };
+    assert!(
+        snapshot
+            .lines()
+            .contains(&"Traffic out 3 frames 2.0 KiB  in 5 frames 0.5 KiB".to_owned()),
+        "{:?}",
+        snapshot.lines()
+    );
 }

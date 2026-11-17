@@ -96,6 +96,8 @@ pub(super) struct Snapshot {
     pub ui_scale: f32,
     pub adapter: Option<String>,
     pub memory: Option<u64>,
+    /// Session frames `(sent, received)` since the client started.
+    pub traffic: (oteryn_session::FrameCount, oteryn_session::FrameCount),
     pub counters: crate::crash_report::LogCounters,
     pub log_level: &'static str,
     pub last_crash: Option<String>,
@@ -122,6 +124,14 @@ impl Snapshot {
                 age.as_secs()
             ));
         }
+        let (sent, received) = self.traffic;
+        lines.push(format!(
+            "Traffic out {} frames {:.1} KiB  in {} frames {:.1} KiB",
+            sent.frames,
+            sent.bytes as f64 / 1024.,
+            received.frames,
+            received.bytes as f64 / 1024.
+        ));
         if let Some(channel) = &self.channel {
             lines.push(channel.clone());
         }
@@ -167,7 +177,8 @@ fn connection(phase: Phase) -> &'static str {
     }
 }
 
-/// Process resident memory from `/proc`; other platforms leave the line out.
+/// Process resident memory: `/proc` on Linux, the working set on Windows; other platforms
+/// leave the line out.
 fn resident_memory() -> Option<u64> {
     #[cfg(target_os = "linux")]
     {
@@ -176,10 +187,34 @@ fn resident_memory() -> Option<u64> {
         let kib: u64 = line.split_whitespace().nth(1)?.parse().ok()?;
         Some(kib * 1024)
     }
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(windows)]
+    {
+        windows_working_set()
+    }
+    #[cfg(not(any(target_os = "linux", windows)))]
     {
         None
     }
+}
+
+#[cfg(windows)]
+#[allow(unsafe_code)] // One read into an owned, sized struct; the pseudo-handle needs no close.
+fn windows_working_set() -> Option<u64> {
+    use windows_sys::Win32::System::{
+        ProcessStatus::{K32GetProcessMemoryInfo, PROCESS_MEMORY_COUNTERS},
+        Threading::GetCurrentProcess,
+    };
+    let size = u32::try_from(std::mem::size_of::<PROCESS_MEMORY_COUNTERS>()).ok()?;
+    let mut counters = PROCESS_MEMORY_COUNTERS {
+        cb: size,
+        ..Default::default()
+    };
+    // SAFETY: GetCurrentProcess returns a pseudo-handle valid for this process, and `counters`
+    // is an initialized struct of exactly `size` bytes the call writes into.
+    if unsafe { K32GetProcessMemoryInfo(GetCurrentProcess(), &mut counters, size) } == 0 {
+        return None;
+    }
+    u64::try_from(counters.WorkingSetSize).ok()
 }
 
 fn character_text(identity: [u8; 16]) -> String {
@@ -243,6 +278,7 @@ pub(super) fn refresh(
         ui_scale: scale.map_or(1., |scale| scale.0),
         adapter: adapter.clone(),
         memory: resident_memory(),
+        traffic: oteryn_session::frame_traffic(),
         counters: crate::crash_report::log_counters(),
         log_level: owner.settings.preferences.diagnostics.level_name(),
         last_crash: last_crash.message(),
