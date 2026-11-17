@@ -63,3 +63,4 @@ CWARLOCK local content validation (2026-11-17):
 | `validate_full_game_content_tree.py` | PASS: 19 domains, 39 systems, 100 nodes, none unassigned |
 | `validate_materialized_game_tree.py` | PASS: 97/97 materialized files, 10 World markers, 1,261 successor files |
 | `quest-authoring/run_checks.py --part checks` | PASS: complete offline checks runner |
+| `quest-authoring/run_checks.py --part unit-tests --jobs 2` | PASS: 182 modules, 1,464 tests; 8 existing skips |
