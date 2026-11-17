@@ -10,9 +10,13 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import sys
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
+from build_spell_item_identities import historical_binding_bytes
+
 XML = 'imports/canary/items-xml/items.xml'
 XML_SHA = '1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
@@ -26,7 +30,11 @@ FIELDS = ('weapon_type','attack','defense','extra_defense','elemental','range','
 def capture(root, profiles):
     raw = (root / XML).read_bytes()
     bound = (root / BINDINGS).read_bytes()
-    if hashlib.sha256(raw).hexdigest() != XML_SHA or hashlib.sha256(bound).hexdigest() != BINDINGS_SHA:
+    if hashlib.sha256(raw).hexdigest() != XML_SHA:
+        raise ValueError('HAND_KIND_SOURCE_PIN')
+    # The approved Cake identity must not rewrite this historical hand-kind proof.
+    bound = historical_binding_bytes(bound, BINDINGS_SHA)
+    if hashlib.sha256(bound).hexdigest() != BINDINGS_SHA:
         raise ValueError('HAND_KIND_SOURCE_PIN')
     bindings = {r['external_id']:r for r in json.loads(bound)['bindings']}
     nodes = {int(n.get('id')):n for n in ET.fromstring(raw) if n.get('id')}

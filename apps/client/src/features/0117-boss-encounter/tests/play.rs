@@ -180,3 +180,6 @@ mod catalogue;
 
 #[path = "slots.rs"]
 mod slots;
+
+#[path = "actual_capture.rs"]
+mod actual_capture;

@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.vascalir",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 0,
+      "next_topic": 91,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/the_rookie_guard/mission10",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/the_rookie_guard/mission11",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I can give you a silver amulet and a flask to collect wasp poison. Are you prepared for that mission?"
+      ]
+    }
+  ]
+}

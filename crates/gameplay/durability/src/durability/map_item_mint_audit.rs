@@ -163,9 +163,10 @@ pub fn check_map_item_mint(value: &OneItemMapItemMintV1) -> Result<(), AuditErro
     check_uuid_v7(&command.game_session_id)?;
     check_uuid_v7(&entry.world_id)?;
     check_uuid_v7(&entry.channel_id)?;
-    // A map-authored key is never materializable (WORLD-INTERACTION-0 §4.4).
+    // Captured key provenance is part of the typed source MINT.
     if !value.before_semantically_absent
-        || after.key_number != 0
+        || after.key_number > u32::from(u16::MAX)
+        || (after.key_number != 0 && after.quantity != 1)
         || after.lifecycle != ITEM_LIFECYCLE_LIVE
         || after.quantity == 0
         || after.quantity > GAMEITEM01_STACK_QUANTITY_MAX

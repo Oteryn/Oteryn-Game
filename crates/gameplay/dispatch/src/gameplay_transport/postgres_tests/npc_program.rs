@@ -47,27 +47,107 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
     let source = NpcRuleCatalog::load_embedded().map_err(debug)?;
-    assert_eq!(source.programs().len(), 15);
+    // The merged Paradox and citizen Source owners add exactly two programs,
+    // 31 rules and four NPCs. Keep the prior cohort's exact census as well.
+    let inherited = source
+        .programs()
+        .iter()
+        .filter(|p| {
+            p.document.quest != "oteryn:quest.the_paradox_tower_quest"
+                && p.document.program_key.as_deref()
+                    != Some("oteryn:quest-npc-program.citizen-source-sagas")
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(source.programs().len(), 25);
+    assert_eq!(inherited.len(), 23);
     assert_eq!(
-        source
-            .programs()
+        inherited
             .iter()
             .map(|p| p.document.rules.len())
             .sum::<usize>(),
-        1167
+        1212
     );
-    let unique = source
-        .programs()
+    let unique = inherited
         .iter()
         .flat_map(|p| p.document.rules.iter().map(|r| r.npc.as_str()))
         .collect::<std::collections::BTreeSet<_>>();
-    assert_eq!(unique.len(), 89);
+    assert_eq!(unique.len(), 97);
+    for (quest, program_key, count, npcs) in [
+        (
+            "oteryn:quest.the_paradox_tower_quest",
+            None,
+            28,
+            vec!["oteryn:npc.riddler"],
+        ),
+        (
+            "oteryn:quest.outfit_and_addon_quests",
+            Some("oteryn:quest-npc-program.citizen-source-sagas"),
+            3,
+            vec!["oteryn:npc.amber", "oteryn:npc.hanna", "oteryn:npc.lubo"],
+        ),
+    ] {
+        let added = source
+            .programs()
+            .iter()
+            .filter(|p| {
+                p.document.quest == quest && p.document.program_key.as_deref() == program_key
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(added.len(), 1);
+        assert_eq!(added[0].document.rules.len(), count);
+        assert_eq!(
+            added[0]
+                .document
+                .rules
+                .iter()
+                .map(|rule| rule.npc.as_str())
+                .collect::<std::collections::BTreeSet<_>>()
+                .into_iter()
+                .collect::<Vec<_>>(),
+            npcs
+        );
+    }
     let [kesar, demeron, tereban] =
         super::classic_quests::install(owner, admitted, [KESAR, DEMERON, "oteryn:npc.tereban"])
             .await?;
     super::classic_quests::talk(owner, admitted, kesar, 2400, "hi").await?;
     // An unfinished Lion prerequisite cannot create a Stag receipt or source stage.
     super::classic_quests::talk(owner, admitted, kesar, 2401, "help").await?;
+    // This historical track requires an actual committed Character revision >=2.
+    // Advance through the existing XP owner before capturing the unchanged-state baseline.
+    let before = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "XP fence")?
+        .ok_or("XP fence")?;
+    let binding = owner
+        .progression_binding(admitted.game_session_id)
+        .ok_or("current progression binding")?;
+    let request = crate::durability::character_progression::ExperienceAwardRequest {
+        occurrence: crate::durability::character_progression::ExperienceRewardOccurrence::from_bytes(
+            super::fixture::id(91),
+        )
+        .map_err(debug)?,
+        amount: oteryn_simulation_determinism::ExactI64::new(5),
+        context: binding.context.clone(),
+        policy_revision: binding.policy_revision.clone(),
+        reward_revision: binding.reward_revision.clone(),
+        policy: binding.policy.clone(),
+    };
+    let award = h
+        .root
+        .commit_character_experience(authority, &h.node, before, request)
+        .await
+        .map_err(debug)?;
+    let crate::durability::character_progression::ExperienceCommitOutcome::Committed(award) = award
+    else {
+        return Err("fixture XP history was not committed".into());
+    };
+    assert_eq!(
+        award.committed_character_revision.get(),
+        before.expected_character_revision.get() + 1
+    );
+    assert_eq!(award.level_after, award.level_before);
     let mut fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
@@ -79,16 +159,37 @@ pub(super) async fn exercise(
         .await
         .map_err(debug)?;
     assert!(!empty.tracks().contains_key(STAG));
-    // Establish the completed prior Lion mission using its existing native owner.
-    // This fixture does not add a route around any missing Stag item hand-in.
+    let normal_trigger_mode: String = owner
+        .root
+        .try_issue_semantic_pass()?
+        .run(|holder, _| {
+            Box::pin(async move {
+                Ok(sqlx::query_scalar("SHOW session_replication_role")
+                    .fetch_one(&mut **holder)
+                    .await?)
+            })
+        })
+        .await?;
+    assert_eq!(normal_trigger_mode, "origin");
+    let prerequisite_receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .fetch_one(&h.pool).await?;
+    let prerequisite_revision = fence.expected_character_revision;
+    // Generic commands cannot write this native-owned Lion prerequisite.
+    // Check both historical aliases before installing an explicit historical fixture.
     for (id, key) in [(2410, "npc_3"), (2411, "creature_event_1")] {
         let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
         let outcome=slot.commit_quest_transition(owner.root,authority,owner.holder,fence,
             crate::durability::quest_state::QuestTransitionRequest {
                 transition_key:format!("oteryn:quest-transition/crystalserver/quest/u12_40/the_order_of_the_lion/kesar_mission/{key}"),
                 cause:crate::durability::quest_state::QuestCause::Command(CommandRef::new(admitted.game_session_id,CommandId::new(id).map_err(debug)?)),
-            },owner.quest_catalogue.as_ref().ok_or("catalogue")?.clone()).await.map_err(debug)?;
-        assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
+            },owner.quest_catalogue.as_ref().ok_or("catalogue")?.clone()).await;
+        assert!(matches!(
+            outcome,
+            Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput)
+        ));
         drop(slot);
         fence = owner
             .current_quest_fence(admitted.game_session_id)
@@ -96,6 +197,48 @@ pub(super) async fn exercise(
             .map_err(|()| "fence")?
             .ok_or("fence")?;
     }
+    assert_eq!(
+        owner
+            .root
+            .read_character_quest_state(authority, fence.character_id)
+            .await
+            .map_err(debug)?,
+        empty,
+        "rejected generic Lion aliases write no quest state"
+    );
+    let after_prerequisite_receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .fetch_one(&h.pool).await?;
+    assert_eq!(after_prerequisite_receipts, prerequisite_receipts);
+    assert_eq!(fence.expected_character_revision, prerequisite_revision);
+    // Import completed Lion MISSION5 as PRIOR historical fixture state only.
+    // This existing srv6 fixture pattern proves no current Lion completion or receipt.
+    // SET LOCAL is confined to this owned case database and this transaction.
+    let mut historical = h.pool.acquire().await?;
+    let mut tx = sqlx::Connection::begin(&mut *historical).await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let inserted = sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,5,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(oteryn_gameplay_quests::quest::hero_of_bounac::MISSION)
+        .bind(oteryn_gameplay_quests::quest::hero_of_bounac::QUEST)
+        .execute(&mut *tx).await?;
+    assert_eq!(inserted.rows_affected(), 1);
+    tx.commit().await?;
+    let restored_trigger_mode: String = sqlx::query_scalar("SHOW session_replication_role")
+        .fetch_one(&mut *historical)
+        .await?;
+    assert_eq!(restored_trigger_mode, "origin");
+    drop(historical);
+    fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
+    assert_eq!(fence.expected_character_revision, prerequisite_revision);
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
@@ -409,11 +552,19 @@ pub(super) async fn exercise_xp(
         (3004, "help"),
         (3005, "yes"),
     ] {
-        super::classic_quests::talk(owner, admitted, harlan, command, text).await?;
+        let lines = super::classic_quests::talk(owner, admitted, harlan, command, text).await?;
+        if command == 3004 {
+            assert_eq!(
+                lines,
+                vec![
+                    "Our supplies are running out. Bring me 20 tender venisons from the stags of this isle and you will not regret it."
+                ]
+            );
+        }
     }
     assert_eq!(
         super::classic_quests::progress(owner, admitted, authority, TRACK).await?,
-        1
+        2
     );
     let premature: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
@@ -422,6 +573,11 @@ pub(super) async fn exercise_xp(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(premature, 0);
+    let before_handin: i64 = sqlx::query_scalar("SELECT total_experience FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid").bind(super::fixture::id(41).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(
+        before_handin, initial,
+        "asking for supplies must not award XP"
+    );
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await

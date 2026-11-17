@@ -49,10 +49,19 @@ class RustCacheBenchmarkTests(unittest.TestCase):
                 run([sys.executable, "-c", code], os.environ.copy(), log, 0.5)
             child = int(log.read_text().strip())
             state = Path(f"/proc/{child}/stat")
+
+            def process_state():
+                # None once the child is gone: it can be reaped between an exists() check and
+                # the read, which raises ProcessLookupError (or FileNotFoundError) instead.
+                try:
+                    return state.read_text().split()[2]
+                except (FileNotFoundError, ProcessLookupError):
+                    return None
+
             deadline = time.monotonic() + 1
-            while state.exists() and state.read_text().split()[2] != "Z" and time.monotonic() < deadline:
+            while process_state() not in (None, "Z") and time.monotonic() < deadline:
                 time.sleep(0.01)
-            self.assertTrue(not state.exists() or state.read_text().split()[2] == "Z")
+            self.assertIn(process_state(), (None, "Z"))
 
     def test_cold_and_warm_samples_are_not_pooled(self):
         rows = [{"case": "cold", "build_seconds": 20},

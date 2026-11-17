@@ -23,11 +23,19 @@ pub(super) fn source_for(
             && record.profile.target.revision == creature.state.policy.definition_revision
     })?;
     let definitions = record.attack_definitions.as_ref()?;
+    let profiles = super::native_source_profiles(
+        native,
+        record,
+        matches!(
+            runtime.binding().runtime_scope(),
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ),
+    )?;
     ComposedSource::from_native_parts(
         &record.profile.target,
         proposal.entry_index,
         &definitions.records,
-        &definitions.profiles,
+        &profiles,
         native.source_digest(),
     )
     .ok()
@@ -46,25 +54,50 @@ pub(super) async fn execute(
     parties: &ReferenceParties,
     now: u64,
     charms: &crate::content::charm_source::CanonicalCharmCatalogue,
-) {
-    let Ok(stamp) = runtime.issue_owner_work() else {
-        return;
-    };
-    let Some(base) = prepare_composed_reader(
-        runtime, states, attack, room, native, map, source, proposal, parties, now, stamp,
+    native_health_names: &crate::gameplay_transport::source_names::NativeHealthNamesData,
+) -> Result<(), ()> {
+    let stamp = runtime.issue_owner_work().map_err(|_| ())?;
+    let prepared = prepare_source_reader_checked(
+        runtime,
+        states,
+        attack,
+        room,
+        native,
+        map,
+        SourceShape::Composed(source),
+        proposal,
+        parties,
+        now,
+        stamp,
+        false,
+        None,
+        None,
     )
-    .await
-    else {
-        return;
+    .await;
+    let base = match prepared {
+        Ok(base) => base,
+        Err(PreparationError::Unavailable) => return Err(()),
+        Err(PreparationError::Refused) => {
+            if !map.validate_transaction(runtime).await {
+                return Err(());
+            }
+            return Ok(());
+        }
     };
     let Some(mut reader) = CurrentComposed::prepare(runtime, attack, room, source, base, now)
     else {
-        return;
+        return Ok(());
     };
+    if reader
+        .bind_native_health_names(runtime, native_health_names)
+        .is_none()
+    {
+        return Ok(());
+    }
     let Ok(catalog) =
         crate::creature_area_heal::CreatureHealCatalog::from_current_native(runtime, native)
     else {
-        return;
+        return Ok(());
     };
     let mut owner = std::mem::take(&mut states.monster_composed);
     let result = owner.execute_current(
@@ -84,7 +117,7 @@ pub(super) async fn execute(
     );
     states.monster_composed = owner;
     let Ok(outcome) = result else {
-        return;
+        return Ok(());
     };
     if let Some(primary) = outcome.primary {
         record_hits(
@@ -109,6 +142,7 @@ pub(super) async fn execute(
             attack.record_hit_taken(runtime, target, *session, semantic_now);
         }
     }
+    Ok(())
 }
 
 struct CurrentCreature {
@@ -119,15 +153,17 @@ struct CurrentCreature {
     primary_requires_heal: bool,
 }
 
-struct CurrentComposed<'native> {
-    base: CurrentTarget<'native>,
+pub(in crate::gameplay_transport::monster_profile_cycle) struct CurrentComposed<'native, 'turn> {
+    pub(in crate::gameplay_transport::monster_profile_cycle) base: CurrentTarget<'native>,
     ability: crate::content::ProjectV2DefinitionRef,
     creatures: Vec<CurrentCreature>,
     primary_conditions: bool,
+    native_health_names:
+        Option<&'turn crate::gameplay_transport::source_names::NativeHealthNamesData>,
 }
 
-impl<'native> CurrentComposed<'native> {
-    fn prepare(
+impl<'native, 'turn> CurrentComposed<'native, 'turn> {
+    pub(in crate::gameplay_transport::monster_profile_cycle) fn prepare(
         runtime: &ChannelRuntimeV1,
         attack: &mut ChannelAttackStates,
         room: &QualifiedNativeEntryRoom,
@@ -243,7 +279,18 @@ impl<'native> CurrentComposed<'native> {
             ability: source.ability.clone(),
             creatures,
             primary_conditions: primary.is_some_and(|p| !p.conditions.is_empty()),
+            native_health_names: None,
         })
+    }
+
+    pub(in crate::gameplay_transport::monster_profile_cycle) fn bind_native_health_names(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        names: &'turn crate::gameplay_transport::source_names::NativeHealthNamesData,
+    ) -> Option<()> {
+        names.validate_frame(runtime).ok()?;
+        self.native_health_names = Some(names);
+        Some(())
     }
 
     fn is_current(&self, runtime: &ChannelRuntimeV1, stamp: RuntimeWorkStamp) -> bool {
@@ -255,7 +302,29 @@ impl<'native> CurrentComposed<'native> {
     }
 }
 
-impl SpellWorldReader for CurrentComposed<'_> {
+impl SpellWorldReader for CurrentComposed<'_, '_> {
+    fn source_damage_draw(
+        &mut self,
+        minimum: u32,
+        maximum: u32,
+        draw: u64,
+        target: Option<ExactActorRef>,
+    ) -> Result<Option<u32>, crate::creature_auto_attack::AttackError> {
+        self.base.source_damage_draw(minimum, maximum, draw, target)
+    }
+    fn source_combat_component_damage(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        issuer: ExactActorRef,
+        target: ExactActorRef,
+        magnitude: u32,
+        now: u64,
+        stamp: RuntimeWorkStamp,
+    ) -> Option<u32> {
+        self.is_current(runtime, stamp).then_some(())?;
+        self.base
+            .source_combat_component_damage(runtime, issuer, target, magnitude, now, stamp)
+    }
     fn native_gameplay<'a>(
         &'a self,
         runtime: &ChannelRuntimeV1,
@@ -319,7 +388,7 @@ impl SpellWorldReader for CurrentComposed<'_> {
     }
 }
 
-impl ComposedWorldReader for CurrentComposed<'_> {
+impl ComposedWorldReader for CurrentComposed<'_, '_> {
     fn creature_combat(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -360,25 +429,21 @@ impl ComposedWorldReader for CurrentComposed<'_> {
         }
         let element = element?;
         let snapshot = runtime.companion_snapshot(target).ok()?;
-        // A damage-derived heal needs its own existing composed receipt. Do not
-        // degrade that source policy into ordinary elemental damage.
-        if snapshot
-            .state
-            .policy
-            .damage_healing(element, i64::from(amount))
-            .ok()?
-            != 0
-        {
-            return None;
+        let prepared = crate::creature_damage_spell::native_event::prepare_native_creature_damage(
+            &snapshot.state.policy,
+            element,
+            amount,
+        )?;
+        if runtime.native_health_event(target).ok()?.is_some_and(|event| {
+            event.kind() == oteryn_gameplay_content::content::native_monster_callbacks::NativeHealthEventKind::HealthForgotten
+        }) {
+            let observation = self.native_health_names?.observe(runtime, target).ok()??;
+            runtime.validate_native_health_change_observation(&observation).ok()?;
+            let signed = observation.primary(-i64::from(prepared)).ok()?;
+            u32::try_from(signed.checked_neg()?).ok()
+        } else {
+            Some(prepared)
         }
-        u32::try_from(
-            oteryn_gameplay_combat_rules::resolution::creature_damage_response(
-                &snapshot.state.policy,
-                i64::from(amount),
-                element,
-            )?,
-        )
-        .ok()
     }
 
     fn callback_allowed(
@@ -421,12 +486,70 @@ impl ComposedWorldReader for CurrentComposed<'_> {
         stamp: RuntimeWorkStamp,
     ) -> Option<bool> {
         self.is_current(runtime, stamp).then_some(())?;
-        // The existing runtime has no same-tile actor stack order. One exact
-        // occupant proves top; the existing owner also counts temporarily
-        // uncontrolled/dead/unqualified occupants, not only combat candidates.
-        runtime
-            .is_sole_current_actor_on_cell(target)
-            .ok()?
-            .then_some(true)
+        source_top_creature(runtime, target)
+    }
+}
+
+fn source_top_creature(runtime: &ChannelRuntimeV1, target: ExactActorRef) -> Option<bool> {
+    runtime.is_current_top_actor(target).ok()
+}
+
+#[cfg(test)]
+mod source_top_tests {
+    use super::*;
+    #[test]
+    fn srx3_composed_source_callback_reads_actual_top_of_stacked_actors()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let id = |tag: u8| {
+            let mut value = [tag; 16];
+            value[6] = 0x70;
+            value[8] = 0x80;
+            value
+        };
+        let world = crate::foundation::WorldId::decode(&id(0x81))?;
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            crate::foundation::ChannelId::decode(&id(0x82))?,
+            crate::foundation::NodeId::decode(&id(0x83))?,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            8,
+            crate::foundation::ChannelContentPin::from_activation(
+                world,
+                1,
+                [1; 32],
+                [2; 32],
+                [3; 32],
+                [4; 32],
+                (10, 10, 7),
+            ),
+        )?;
+        let mut actors = Vec::new();
+        for tag in [0x84, 0x85] {
+            let reservation = runtime.reserve_fresh_session(GameSessionId::decode(&id(tag))?)?;
+            let actor = runtime.commit_fresh_session(reservation)?;
+            runtime.initialize_pinned_test_position(
+                actor,
+                MovementLocalPosition {
+                    x: 10,
+                    y: 10,
+                    floor: 7,
+                },
+            )?;
+            actors.push(actor);
+        }
+        assert_eq!(
+            source_top_creature(&runtime, actors[1]),
+            Some(true),
+            "source callback must see latest canonical tile entry even with another actor below it"
+        );
+        assert_eq!(
+            source_top_creature(&runtime, actors[0]),
+            Some(false),
+            "lower actor is known not-top, not missing combat facts"
+        );
+        Ok(())
     }
 }

@@ -831,7 +831,7 @@ fn checked_collect_reply(stage: &str, bytes: &[u8]) -> TestResult<CollectReply> 
     })
 }
 
-async fn exchange(
+pub(super) async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     id: u64,

@@ -247,7 +247,7 @@ impl ChannelSpellStates {
                 .ok();
             let dynamic = standing_element(read, source);
             let fixed = match static_tile {
-                Some(tile) => static_element(tile, source),
+                Some(tile) => static_element(&tile, source),
                 None => Some(None),
             };
             let element = combine_elements(dynamic, fixed);
@@ -484,7 +484,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let position=runtime.read_actor_position(actor).map_err(|_|crate::durability::DurabilityError::Unavailable)?.position();
             let pz=qualified_protection_zone(runtime,owner.movement_cells(),actor).ok_or(crate::durability::DurabilityError::Unavailable)?;
             let static_tile=owner.movement_cells().spell_tiles().lookup(owner.movement_cells().scope(),crate::content::LogicalCell{x:position.x,y:position.y,z:i32::from(position.floor)}).ok();
-            let standing=if pz {None} else {combine_elements(standing_element(&read,source),static_tile.map_or(Some(None),|tile|static_element(tile,source))).ok_or(crate::durability::DurabilityError::Unavailable)?};
+            let standing=if pz {None} else {combine_elements(standing_element(&read,source),static_tile.map_or(Some(None),|tile|static_element(&tile,source))).ok_or(crate::durability::DurabilityError::Unavailable)?};
             let before=states.get(runtime,actor,session).ok_or(crate::durability::DurabilityError::Unavailable)?.clone();
             let cycle=crate::spell::actor_conditions::stage_source_owner_cycle(&before,now,Some(TickFacts{in_protection_zone:pz,standing_on_field:standing}),None).map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let Some(cycle)=cycle else {return Ok(None)};

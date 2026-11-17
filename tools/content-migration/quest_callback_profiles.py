@@ -1,5 +1,6 @@
 """Carry already admitted quest offering and chest definitions into the native Item provider."""
 import copy
+import difflib
 import hashlib
 import json
 import sys
@@ -179,8 +180,13 @@ def grant_semantics(root, definition):
     return semantics
 
 
-def admit(root, generated, profile_path, manifest_path, order, canonical, extra_keys=()):
-    # Keep the selected startup cohort and main's explicit native reward keys.
+def requested_keys(root, extra_keys=()):
+    keys, _, _ = _requested_inputs(root, extra_keys)
+    return keys
+
+
+def _requested_inputs(root, extra_keys=()):
+    # Retain both the selected startup source cohort and authored callback custody.
     sys.path.insert(0, str(root / 'tools/content-schema/world-authoring'))
     from quest_chest_bindings import panpipe_key_claim
     sys.path.insert(0, str(root / 'tools/content-schema/reward-claim-authoring'))
@@ -224,6 +230,12 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
     # apply the same pinned source, exact binding and portability checks below.
     keys.add('oteryn:item.tibia.i32594')
+    # M07's Rust-authored Lion trials need the same native physical Item owner.
+    import lion_trial_item_profiles
+    keys.update(f'oteryn:item.tibia.i{i}' for i in lion_trial_item_profiles.SOURCE_RECORDS)
+    # Crystal 201189f movements_lions_rock.lua:54-108: the native STEP
+    # amphora grants this canonical scroll; it is authored in Rust, not JSON.
+    keys.add('oteryn:item.tibia.i21467')
     # Crystal201189f chest.lua:508-513: Fanfare's key3520 uses the already
     # admitted bone key2973. Its key-binding hold is separate from Item admission.
     keys.add('oteryn:item.tibia.i2973')
@@ -276,6 +288,22 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
             # Crystal201189f chest.lua:556: UID5024 grants the already-canonical
             # silver key3700. KEY owns its native numbered instance; the claim's
             # historical waiting_implementation flag is not an Item hold.
+            # Crystal 201189f chest.lua: UID5018 is the Fanfare access key.
+            # It grants a numbered key but never a canonical quest transition.
+            if definition['identity']['key'] == 'oteryn:reward-claim.quest.key.id3520':
+                placements = definition['placements']
+                key = 'oteryn:item.tibia.i2973'
+                expected = {'items': [{'count': 1, 'item': {
+                    'family': 'Item', 'key': key, 'revision': 'definition-r1'}}],
+                    'key_binding': 'canary:door-key/3520'}
+                if (len(placements) != 1 or placements[0]['reward'] != expected
+                        or placements[0].get('quest_transition') is not None
+                        or placements[0]['source_binding']['project_position'] !=
+                            {'x': 32376, 'y': 31802, 'z': 7}
+                        or {'server': 'crystalserver', 'unique_id': 5018} not in
+                            placements[0]['source_binding']['legacy_unique_ids']):
+                    raise ValueError('FANFARE_ACCESS_KEY_CLAIM_CHANGED')
+                keys.add(key)
             if definition['identity']['key'] == 'oteryn:reward-claim.quest.key.id3700':
                 placements = definition['placements']
                 key = 'oteryn:item.tibia.i2971'
@@ -307,6 +335,62 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
         # and admission. Shop Items with unqualified facts are a separate input.
         keys.update(f"oteryn:item.tibia.i{task['item']['source_id']}"
                     for task in grizzly['tasks'] if task.get('item'))
+    return keys, authored_keys, authored_callbacks
+
+
+def canonical_source_inputs(root):
+    """Authenticate and parse the source once for an ordinary admission pass."""
+    raw = (root / SOURCE).read_bytes()
+    if hashlib.sha256(raw).hexdigest() != SOURCE_SHA256:
+        raise ValueError('QUEST_CALLBACK_SOURCE_DIGEST')
+    source_items = ET.fromstring(raw).findall('item')
+    return raw, source_items
+
+
+def canonical_native_profile(root, definition, matches, source_items):
+    """Construct one ordinary profile from the caller's authenticated source inputs."""
+    identity = definition['identity']
+    key = identity['key']
+    if (not definition['materializable']
+            or definition['stack_class'] not in ('StackCapable', 'NonStackable')
+            or len(matches) != 1 or matches[0]['disposition'] != 'EXACT'
+            or matches[0]['target'] != identity):
+        raise ValueError(f'QUEST_CALLBACK_ITEM_NOT_ADMITTED: {key}')
+    physical = definition['semantics']['physical']
+    if (physical['state'] != 'KNOWN'
+            or any(physical['value'][field] != {'state': 'KNOWN', 'value': True}
+                   for field in ('movable', 'pickupable'))):
+        raise ValueError('QUEST_CALLBACK_ITEM_NOT_PORTABLE')
+    item_id = int(matches[0]['external_id'])
+    source_matches = [item for item in source_items
+                      if int(item.get('id', item.get('fromid', '0'))) <= item_id
+                      <= int(item.get('id', item.get('toid', '0')))]
+    if len(source_matches) != 1:
+        raise ValueError('QUEST_CALLBACK_SOURCE_ITEM_MISSING')
+    speeds = [attr for attr in source_matches[0].findall('attribute')
+              if attr.get('key', '').lower() == 'speed']
+    if len(speeds) > 1:
+        raise ValueError('QUEST_CALLBACK_DUPLICATE_SPEED')
+    # Canary's Abilities constructor defaults speed to zero when XML omits it.
+    speed = int(speeds[0].attrib['value']) if speeds else 0
+    record = {
+        'authoring': {'item': identity},
+        'semantics': grant_semantics(root, definition),
+        'attributes': {'speed_bonus': speed},
+        'admission': {'materializable': True, 'stack_class': definition['stack_class'],
+                      'legal_destinations': ['CharacterInventory', 'Ground']},
+        'production_definition': {'family': identity['family'], 'production_key': key,
+                                  'revision_ref': identity['revision']},
+        'production_binding': matches[0], 'production_binding_qualification': None,
+    }
+    complete_native_stack(root, record, definition, matches[0])
+    return record
+
+
+def admit(root, generated, profile_path, manifest_path, order, canonical, extra_keys=()):
+    keys, authored_keys, authored_callbacks = _requested_inputs(root, extra_keys)
+    import container_native
+    import lion_trial_item_profiles
     document = json.loads(generated[profile_path])
     admit_map_carriers(root, document)
     present = {row['production_definition']['production_key']: row for row in document['records']}
@@ -327,10 +411,32 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
     import authored_static_item_constructors
     authored = json.loads(generated[authored_static_item_constructors.ADMISSIONS])
     bindings.extend(row['binding'] for row in authored['records'])
-    raw = (root / SOURCE).read_bytes()
-    if hashlib.sha256(raw).hexdigest() != SOURCE_SHA256:
-        raise ValueError('QUEST_CALLBACK_SOURCE_DIGEST')
-    source_items = ET.fromstring(raw).findall('item')
+    raw, source_items = canonical_source_inputs(root)
+    lion_keys = {f'oteryn:item.tibia.i{item}' for item in lion_trial_item_profiles.SOURCE_RECORDS}
+    top_order_keys = {key for key in lion_keys if key in present
+                      and isinstance(present[key].get('attributes'), dict)
+                      and any(field in present[key]['attributes']
+                              for field in ('always_on_top', 'always_on_top_order'))}
+    lion_records = lion_trial_item_profiles.records(
+        root, raw, definitions, top_order_keys=top_order_keys)
+    # QuickLoot may already have attached canonical navigation metadata. Keep
+    # that optional owner in the expected record without borrowing its value
+    # from the native row or changing the shape of newly admitted Lion Items.
+    taxonomy_keys = {key for key in lion_records if key in present
+                     and isinstance(present[key].get('authoring'), dict)
+                     and 'taxonomy' in present[key]['authoring']}
+    lion_taxonomy = {}
+    if taxonomy_keys:
+        taxonomy = json.loads((root / 'content/items/taxonomy/items.json').read_bytes())
+        for row in taxonomy['records']:
+            key = row['target']['key']
+            if key in taxonomy_keys:
+                if key in lion_taxonomy or row['target'] != definitions[key]['identity']:
+                    raise ValueError('LION_TRIAL_ITEM_TAXONOMY:' + key)
+                lion_taxonomy[key] = row['source_taxonomy']
+        if lion_taxonomy.keys() != taxonomy_keys:
+            raise ValueError('LION_TRIAL_ITEM_TAXONOMY:'
+                             + ','.join(sorted(taxonomy_keys - lion_taxonomy.keys())))
     import quests_2_emperor_item_profiles
     source_packet = json.loads((root / quests_2_emperor_item_profiles.PATH).read_bytes())
     import authored_quest_item_custody
@@ -339,6 +445,23 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
     custody_inputs = (authored_quest_item_custody.qualification_inputs(root, missing_authored, raw)
                       if missing_authored else None)
     for key, definition in sorted(definitions.items()):
+        if key in lion_records:
+            record = lion_records[key]
+            if key in present:
+                if key in lion_taxonomy:
+                    record['authoring']['taxonomy'] = copy.deepcopy(lion_taxonomy[key])
+                if present[key] != record:
+                    before = (json.dumps(present[key], ensure_ascii=False,
+                                         sort_keys=True, indent=2) + '\n').splitlines(keepends=True)
+                    after = (json.dumps(record, ensure_ascii=False,
+                                        sort_keys=True, indent=2) + '\n').splitlines(keepends=True)
+                    difference = ''.join(difflib.unified_diff(
+                        before, after, fromfile='existing/' + key, tofile='qualified/' + key,
+                        n=max(len(before), len(after))))
+                    raise ValueError('LION_TRIAL_NATIVE_PROFILE_DRIFT:' + key + '\n' + difference)
+            else:
+                document['records'].append(record)
+            continue
         # These exact source-qualified Items retain their canonical identity;
         # this is not a general bypass for an unqualified native record.
         definition = quests_2_emperor_item_profiles.callback_definition(
@@ -350,6 +473,9 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
             if qualified is definition:
                 raise ValueError(f'QUEST_CALLBACK_ITEM_NOT_ADMITTED: {key}')
             definition = qualified
+        if key == 'oteryn:item.tibia.i2874':
+            # Only an agreeing, already-admitted native empty-vial profile closes this hold.
+            definition = container_native.native_water_vial(definition, present.get(key))
         identity = definition['identity']
         if key in authored_keys and key not in present:
             import authored_quest_timed_custody
@@ -379,32 +505,45 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
                 or any(physical['value'][field] != {'state': 'KNOWN', 'value': True}
                        for field in ('movable', 'pickupable'))):
             raise ValueError('QUEST_CALLBACK_ITEM_NOT_PORTABLE')
+        if key == 'oteryn:item.tibia.i2992' and key not in present:
+            # Goblin Temple reuses the seasonal owner's existing Snowball.
+            # Preserve its complete equipment/weapon facts before this pass.
+            import seasonal_item_profiles as seasonal
+            packet = json.loads((root / seasonal.PATH).read_bytes())
+            if (packet['schema'] != 'OTERYN_SEASONAL_ITEM_PROFILES/v1'
+                    or packet['crystal_commit'] != seasonal.PIN
+                    or len(packet['records']) != len(seasonal.IDS)
+                    or {r['production_definition']['production_key'] for r in packet['records']}
+                        != {f'oteryn:item.tibia.i{i}' for i in seasonal.IDS}):
+                raise ValueError('GOBLIN_SNOWBALL_SOURCE_DRIFT')
+            candidates = [r for r in packet['records'] if r['production_definition']['production_key'] == key]
+            if len(candidates) != 1:
+                raise ValueError('GOBLIN_SNOWBALL_SOURCE_ITEM')
+            present[key] = copy.deepcopy(candidates[0])
+            document['records'].append(present[key])
+        if key == 'oteryn:item.tibia.i2955' and key not in present:
+            # Fanfare already belongs to the retained House provider. Seed its
+            # exact source profile before this earlier callback pass can create
+            # a poorer canonical-only record that would shadow that owner.
+            import house_decoration_actions as house
+            packet = json.loads((root / house.PROFILES).read_bytes())
+            if (packet['schema'] != 'OTERYN_HOUSE_DECORATION_PROFILES/v1'
+                    or packet['crystal_commit'] != house.PIN
+                    or packet['canary_commit'] != house.CANARY
+                    or packet['catalogue_sha256'] != hashlib.sha256(
+                        (root / house.CATALOGUE).read_bytes()).hexdigest()):
+                raise ValueError('FANFARE_NATIVE_SOURCE_DRIFT')
+            candidates = [row for row in packet['records']
+                          if row['production_definition']['production_key'] == key]
+            if len(candidates) != 1:
+                raise ValueError('FANFARE_NATIVE_SOURCE_ITEM')
+            present[key] = copy.deepcopy(candidates[0])
+            document['records'].append(present[key])
         if key in present:
             complete_native_stack(root, present[key], definition, matches[0])
             continue
-        item_id = int(matches[0]['external_id'])
-        source_matches = [item for item in source_items
-                          if int(item.get('id', item.get('fromid', '0'))) <= item_id
-                          <= int(item.get('id', item.get('toid', '0')))]
-        if len(source_matches) != 1:
-            raise ValueError('QUEST_CALLBACK_SOURCE_ITEM_MISSING')
-        speeds = [attr for attr in source_matches[0].findall('attribute')
-                  if attr.get('key', '').lower() == 'speed']
-        if len(speeds) > 1:
-            raise ValueError('QUEST_CALLBACK_DUPLICATE_SPEED')
-        # Canary's Abilities constructor defaults speed to zero when XML omits it.
-        speed = int(speeds[0].attrib['value']) if speeds else 0
-        document['records'].append({
-            'authoring': {'item': identity},
-            'semantics': grant_semantics(root, definition),
-            'attributes': {'speed_bonus': speed},
-            'admission': {'materializable': True, 'stack_class': definition['stack_class'],
-                          'legal_destinations': ['CharacterInventory', 'Ground']},
-            'production_definition': {'family': identity['family'], 'production_key': key,
-                                      'revision_ref': identity['revision']},
-            'production_binding': matches[0], 'production_binding_qualification': None,
-        })
-        complete_native_stack(root, document['records'][-1], definition, matches[0])
+        document['records'].append(canonical_native_profile(
+            root, definition, matches, source_items))
     document['records'].sort(key=order)
     raw = encode_native_profile(document)
     generated[profile_path] = raw

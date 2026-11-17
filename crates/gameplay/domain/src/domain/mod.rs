@@ -33,6 +33,7 @@ pub mod power_score;
 pub mod premium;
 pub mod progression;
 pub mod soulpit;
+pub mod source_normal_draw;
 pub mod timed_item;
 pub mod timed_item_host;
 pub mod uniform_draw;
@@ -1246,3 +1247,7 @@ mod character_build_property_tests;
 
 #[cfg(test)]
 mod timed_item_property_tests;
+
+pub mod soul_war_cruelty;
+pub mod soul_war_fourth_taint;
+pub mod soul_war_mirror;

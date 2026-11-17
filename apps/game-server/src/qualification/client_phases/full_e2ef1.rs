@@ -139,12 +139,8 @@ mod e2ef1 {
         ordinal: u8,
         appearance: u16,
     }
-    fn position(at: TilePos) -> ActorPosition {
-        ActorPosition {
-            x: i32::from(at.x),
-            y: i32::from(at.y),
-            floor: -i16::from(at.floor),
-        }
+    fn position(at: TilePos, basis: spatial_basis::Basis) -> ActorPosition {
+        basis.position(at)
     }
     fn distance(a: TilePos, b: TilePos) -> u16 {
         if a.floor == b.floor {
@@ -253,8 +249,9 @@ mod e2ef1 {
         Ok(())
     }
     async fn autowalk(client: &mut DevClientSession, at: TilePos) -> TestResult {
+        let basis = spatial_basis::current(client)?;
         use oteryn_dev_client::client_runtime::target_move::{WalkDisposition, send};
-        let result = send(client.session_mut(), position(at)).await?;
+        let result = send(client.session_mut(), position(at, basis)).await?;
         if result.status != CommandStatus::Accepted
             || result.disposition != Some(WalkDisposition::Accepted)
         {
@@ -300,6 +297,10 @@ mod e2ef1 {
         world: &BundleWorld,
         checks: &mut Checks,
     ) -> TestResult {
+        let basis = spatial_basis::current(client)?;
+        if spatial_basis::current(peer)? != basis {
+            return Err("peer spatial basis differs from actor".into());
+        }
         let start = tile(client.world_spatial().actor_position)?;
         let path = route(world, start, |at| distance(at, start) == 4)
             .ok_or("no four-tile movement lane")?;
@@ -336,14 +337,14 @@ mod e2ef1 {
         }
         autowalk(client, goal).await?;
         until_with_peer(client, peer, |c| {
-            c.world_spatial().actor_position == position(goal)
+            c.world_spatial().actor_position == position(goal, basis)
         })
         .await?;
         checks.pass("autowalk", goal);
         autowalk(client, start).await?;
         target_command(client, &[16, 1]).await?;
         stable(client, 1500).await?;
-        if client.world_spatial().actor_position == position(start) {
+        if client.world_spatial().actor_position == position(start, basis) {
             return Err("STOP did not interrupt an unfinished route".into());
         }
         checks.pass("stop", client.world_spatial());
@@ -654,10 +655,11 @@ mod e2ef1 {
         reference: EntityRef,
         at: TilePos,
     ) -> TestResult<u8> {
+        let basis = spatial_basis::current(client)?;
         use oteryn_protocol_oteryn::creature_push::*;
         let payload = encode_creature_push_intent(&CreaturePushIntent {
             target: reference,
-            destination: position(at),
+            destination: position(at, basis),
         })
         .map_err(|e| format!("push encoding: {e:?}"))?;
         let result = client
@@ -712,6 +714,10 @@ mod e2ef1 {
         world: &BundleWorld,
         checks: &mut Checks,
     ) -> TestResult {
+        let basis = spatial_basis::current(client)?;
+        if spatial_basis::current(peer)? != basis {
+            return Err("peer spatial basis differs from actor".into());
+        }
         let here = tile(client.world_spatial().actor_position)?;
         let path = route(world, tile(peer.world_spatial().actor_position)?, |at| {
             distance(at, here) == 1
@@ -728,7 +734,7 @@ mod e2ef1 {
             c.world_entities().is_some_and(|entities| {
                 entities
                     .get(&reference)
-                    .is_some_and(|e| e.position == position(original))
+                    .is_some_and(|e| e.position == position(original, basis))
             })
         })
         .await?;
@@ -746,14 +752,14 @@ mod e2ef1 {
             return Err("push-player did not move".into());
         }
         until_with_peer(peer, client, |c| {
-            c.world_spatial().actor_position == position(landing)
+            c.world_spatial().actor_position == position(landing, basis)
         })
         .await?;
         until_with_peer(client, peer, |c| {
             c.world_entities().is_some_and(|entities| {
                 entities
                     .get(&reference)
-                    .is_some_and(|e| e.position == position(landing))
+                    .is_some_and(|e| e.position == position(landing, basis))
             })
         })
         .await?;
@@ -773,6 +779,7 @@ mod e2ef1 {
         bytes: &[u8],
         checks: &mut Checks,
     ) -> TestResult {
+        let basis = spatial_basis::current(client)?;
         let metadata = oteryn_world_bundle::bundle::visit(bytes, |_, _| Ok(()))?;
         travel_to_spawn(client, world, &metadata.spawns, "oteryn:creature.rat").await?;
         let here = tile(client.world_spatial().actor_position)?;
@@ -799,7 +806,7 @@ mod e2ef1 {
             c.world_entities().is_some_and(|entities| {
                 entities
                     .get(&creature.entity)
-                    .is_some_and(|e| e.position == position(landing))
+                    .is_some_and(|e| e.position == position(landing, basis))
             })
         })
         .await?;
@@ -835,6 +842,7 @@ mod e2ef1 {
         object: Object,
         revision: u64,
     ) -> TestResult {
+        let basis = spatial_basis::current(client)?;
         let at = tile(client.world_spatial().actor_position)?;
         let direction = DIRS
             .into_iter()
@@ -863,7 +871,7 @@ mod e2ef1 {
         // The oracle keeps immutable closed-door collision. Here only the server
         // knows the new door state, so assert the actual native crossing directly.
         if client.step_retrying(direction).await?.disposition != StepDisposition::Moved
-            || client.world_spatial().actor_position != position(object.at)
+            || client.world_spatial().actor_position != position(object.at, basis)
         {
             return Err("open door did not admit crossing".into());
         }

@@ -91,6 +91,7 @@ fn capture() -> Result<Capture, BoxError> {
     let encode = |log: &QuestLog| encode_quest_log(log).map_err(|error| format!("{error:?}"));
     let line = fixture_line(7, true);
     let list = QuestLog {
+        map_marks: Vec::new(),
         view: Some(QuestLogView::List(vec![
             QuestListEntry {
                 quest_index: 7,
@@ -114,10 +115,12 @@ fn capture() -> Result<Capture, BoxError> {
         snapshot: encode(&QuestLog::default())?,
         list: encode(&list)?,
         line: encode(&QuestLog {
+            map_marks: Vec::new(),
             view: Some(QuestLogView::Line(line.clone())),
             tracked: vec![],
         })?,
         track: encode(&QuestLog {
+            map_marks: Vec::new(),
             view: None,
             tracked: vec![line],
         })?,

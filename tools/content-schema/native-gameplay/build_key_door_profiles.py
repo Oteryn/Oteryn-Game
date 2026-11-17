@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Source-derived profiles for the M06 key-door and level-door playable path.
+"""Source-derived profiles for the M06/M01c key-door and level-door playable path.
 
 Crystal 201189f data/libs/tables/doors.lua:4,9,265 supplies the identities.
 Its startup/tables/door_level.lua:66 binds 6264 to Noble Armor's level-35 gate.
@@ -19,7 +19,7 @@ from build_tool_item_profiles import build as source_profiles
 
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = 'tools/content-schema/native-gameplay/key-door-item-profiles.json'
-IDS = {1628, 1631, 1646, 1647, 1648, 1649, 2967, 2968, 5102, 5103, 6264, 6265}
+IDS = {1628, 1631, 1646, 1647, 1648, 1649, 2967, 2968, 5097, 5102, 5103, 6248, 6264, 6265}
 
 
 def build(directory):

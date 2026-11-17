@@ -219,10 +219,15 @@ fn scenario() -> TestResult {
         let cells = map
             .movement_cells(pin.qualified_room().movement_cells())
             .map_err(debug)?;
+        let combat_room = pin.qualified_room().bundle_view(
+            cells.clone(), map.frame_binding_digest(world), map.map_revision_digest(),
+            crate::content::NativeEntryStart { x: 1, y: 0, floor: 7 },
+        ).ok_or("Dawnport trial combat room")?;
         let (actor, session) = (deps.actor, deps.admitted.game_session_id);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
         owner.movement_cells = (&cells).into();
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&combat_room));
         let mut admitted = deps.admitted;
         Box::pin(owner.admit_progression_session(&mut admitted)).await;
         let progression = owner

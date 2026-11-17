@@ -13,7 +13,8 @@ use std::collections::BTreeSet;
 #[derive(Debug)]
 pub struct QuestActorConditionProof {
     fence: CurrentCharacterGameplayFence,
-    command: CommandRef,
+    cause: QuestCause,
+    item_disguise: Option<(String, String)>,
     callback: String,
     generation: [u8; 32],
     active: BTreeSet<ActorConditionRequirement>,
@@ -60,12 +61,80 @@ impl QuestActorConditionProof {
             .collect();
         Some(Self {
             fence,
-            command,
+            cause: QuestCause::Command(command),
+            item_disguise: None,
             callback: callback.into(),
             generation: native.source_digest(),
             active,
         })
     }
+    /// STEP uses the same sealed occurrence proof as command-only condition gates.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "binds the live condition sample to one fenced native STEP occurrence"
+    )]
+    pub fn read_world_current(
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        fence: CurrentCharacterGameplayFence,
+        cause: QuestCause,
+        callback: &str,
+        native: &NativeGameplayState,
+        spell_conditions: &ConditionStore<String>,
+        now: u64,
+    ) -> Option<Self> {
+        let QuestCause::Step(command) = cause else {
+            return None;
+        };
+        let mut proof = Self::read_current(
+            runtime,
+            actor,
+            fence,
+            command,
+            callback,
+            native,
+            spell_conditions,
+            now,
+        )?;
+        proof.cause = cause;
+        if let Some(
+            oteryn_gameplay_foundation::foundation::condition::TemporaryDisplayedAppearance::Item(
+                item,
+            ),
+        ) = spell_conditions.displayed_temporary_appearance_at(now)
+            && item.artifact_digest() == native.source_digest()
+            && item.revision_ref() == "definition-r1"
+            && native
+                .spell_appearances()?
+                .for_item(item.definition_key(), item.revision_ref())
+                .is_some()
+        {
+            let condition = spell_conditions
+                .get(oteryn_gameplay_domain::domain::condition::ConflictKey::Outfit)?;
+            proof.item_disguise = Some((
+                item.definition_key().into(),
+                condition.definition().key().into(),
+            ));
+        }
+        Some(proof)
+    }
+
+    pub(crate) fn permits_world(
+        &self,
+        fence: CurrentCharacterGameplayFence,
+        request: &QuestTransitionRequest,
+        generation: [u8; 32],
+        required: &oteryn_gameplay_quests::quest::world_callbacks::ItemDisguiseRequirement,
+    ) -> bool {
+        self.permits(fence, request, generation, &[])
+            && self
+                .item_disguise
+                .as_ref()
+                .is_some_and(|(item, condition)| {
+                    item == &required.item && condition == &required.condition
+                })
+    }
+
     pub(super) fn permits(
         &self,
         fence: CurrentCharacterGameplayFence,
@@ -74,7 +143,7 @@ impl QuestActorConditionProof {
         required: &[ActorConditionRequirement],
     ) -> bool {
         self.fence.item_fence() == fence.item_fence()
-            && request.cause == QuestCause::Command(self.command)
+            && request.cause == self.cause
             && request.transition_key == self.callback
             && generation == self.generation
             && required.iter().all(|kind| self.active.contains(kind))

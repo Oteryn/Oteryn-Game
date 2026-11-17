@@ -146,14 +146,28 @@ fn wolf_step(item: u16, key: &str, reward: u16, captures: bool) -> TestResult {
         frame: [3; 32],
         map: booted.map_revision_digest(),
         tiles: BTreeMap::new(),
+        source_steps: Default::default(),
     };
     map.tiles.insert(
         (6, 0, 7),
         Some(Tile {
             admits: true,
+            ground_clear: true,
+            solid: false,
+            // This explicit open ground/trap fixture has no immutable solid barrier.
+            source_spawn_admits: true,
             projectile: false,
             speed: 150,
             field: None,
+            source_placement: SourcePlacementTerrain {
+                exists: true,
+                ground: true,
+                immovable_solid: false,
+                protection_zone: false,
+                floor_change: false,
+                teleport: false,
+            },
+            source_placement_proven: true,
         }),
     );
     let before = runtime

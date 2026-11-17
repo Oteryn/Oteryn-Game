@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/targuna/sterling-mark-treasure",
+      "quest": "oteryn:quest.targuna_quest",
+      "npc": "oteryn:npc.sterling",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/long_lost_treasure/mission",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/long_lost_treasure/treasure_marked",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/long_lost_treasure/morla_done",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for bringing me that map. If I see that correctly the X that marks the spot seems to be here on Targuna.",
+        "Let me mark it for you, don't wait too long to grab it. It'd be a shame if you were too late ..."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/npc/sterling.lua#L142-L155"
+      ],
+      "map_mark": {
+        "position": {
+          "x": 31948,
+          "y": 31924,
+          "floor": -7
+        },
+        "kind": "cross",
+        "text": "Treasure"
+      }
+    }
+  ]
+}

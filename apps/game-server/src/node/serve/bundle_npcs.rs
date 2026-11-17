@@ -24,6 +24,10 @@ use std::collections::BTreeSet;
 use std::path::Path;
 use std::sync::Arc;
 
+#[path = "bundle_npcs/conditional.rs"]
+mod conditional;
+#[path = "bundle_npcs/event_contacts.rs"]
+mod event_contacts;
 mod seasonal;
 #[path = "bundle_npcs/weekday.rs"]
 mod weekday;
@@ -145,11 +149,13 @@ enum TimedPeriod {
 /// Unlike the donor, which picks the startup set from the light level (`functions.lua:33-40`, so
 /// a start during dusk spawns the day set) and spawns 5 s after the period change
 /// (`spawns_npc_by_time.lua:159-170`), the set follows the world minute at boot and every tick.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 pub(super) struct TimedNpcSpawns {
     admitted: [bool; TIMED_NPCS.len()],
     weekday: Option<weekday::WeekdayNpcSpawns>,
     seasonal: seasonal::SeasonalNpcSpawns,
+    conditional: conditional::ConditionalNpcSpawns,
+    event_contacts: event_contacts::EventContacts,
 }
 
 impl TimedNpcSpawns {
@@ -164,6 +170,8 @@ impl TimedNpcSpawns {
             admitted,
             weekday: weekday::WeekdayNpcSpawns::from_boot(boot),
             seasonal: seasonal::SeasonalNpcSpawns::default(),
+            conditional: conditional::ConditionalNpcSpawns::default(),
+            event_contacts: event_contacts::EventContacts::default(),
         }
     }
 
@@ -173,18 +181,35 @@ impl TimedNpcSpawns {
         events: &[String],
         enterable: impl Fn(crate::map::overlay::TilePos) -> bool,
     ) -> Self {
+        self.conditional = conditional::ConditionalNpcSpawns::admit(boot, &enterable);
+        self.event_contacts = event_contacts::EventContacts::admit(boot, &enterable);
         self.seasonal = seasonal::SeasonalNpcSpawns::admit(boot, events, enterable);
         self
+    }
+
+    pub(super) fn with_calendar(mut self, calendar: Option<(u8, u8)>) -> Self {
+        self.conditional.set_calendar(calendar);
+        self
+    }
+
+    pub(super) async fn refresh_event_contacts(
+        &mut self,
+        root: &crate::durability::DurabilityRoot,
+        world: crate::foundation::WorldId,
+    ) -> Result<(), crate::durability::DurabilityError> {
+        self.event_contacts.refresh(root, world).await
     }
 
     pub(super) fn set_brutus_present(&mut self, present: bool) {
         self.seasonal.set_brutus_present(present);
     }
 
-    pub(super) fn is_empty(self) -> bool {
+    pub(super) fn is_empty(&self) -> bool {
         !self.admitted.iter().any(|admitted| *admitted)
             && self.weekday.is_none()
             && self.seasonal.is_empty()
+            && self.conditional.is_empty()
+            && self.event_contacts.is_empty()
     }
 
     /// One world-clock step at `now_utc_ms` (boot and every world tick): the clock the
@@ -211,7 +236,7 @@ impl TimedNpcSpawns {
     /// is reconciled on its own: one that cannot move now (its cell occupied) keeps the rest
     /// going and is retried on the next tick; the first such error is returned.
     fn reconcile(
-        self,
+        &mut self,
         runtime: &mut ChannelRuntimeV1,
         tibian_minute: u32,
     ) -> Result<(), NpcPlacementError> {
@@ -249,6 +274,8 @@ impl TimedNpcSpawns {
             }
         }
         outcome
+            .and(self.conditional.tick(runtime))
+            .and(self.event_contacts.tick(runtime))
     }
 }
 
@@ -366,11 +393,14 @@ impl LoadedNpcCatalogue {
             .ok_or(BootError::ContentActivation("NPC catalogue content root"))?;
         let catalogue_sha256 = npc::catalogue_sha256(content)
             .map_err(|_| BootError::ContentActivation("NPC catalogue digest"))?;
-        let source = oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime()
-            .map_err(|_| BootError::ContentActivation("native NPC quest catalogue"))?;
+        let programs = oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime()
+            .map_err(|_| BootError::ContentActivation("NPC quest programs"))?;
+        let authored_npcs =
+            oteryn_gameplay_quests::quest::authored_bindings::native_dialogue_npcs()
+                .map_err(|_| BootError::ContentActivation("authored NPC dialogue bindings"))?;
         let rewards = oteryn_gameplay_quests::quest::reward_callbacks::load()
             .map_err(|_| BootError::ContentActivation("native NPC reward catalogue"))?;
-        let native_npcs = source
+        let native_npcs = programs
             .programs()
             .iter()
             .flat_map(|program| program.document.rules.iter().map(|rule| rule.npc.as_str()))
@@ -381,6 +411,7 @@ impl LoadedNpcCatalogue {
                     .map(|reward| reward.npc.as_str()),
             )
             .chain(std::iter::once("oteryn:npc.viola"))
+            .chain(authored_npcs.iter().map(String::as_str))
             .collect::<BTreeSet<_>>()
             .into_iter()
             .collect::<Vec<_>>();
@@ -540,7 +571,7 @@ pub(super) fn place(
 
 #[cfg(test)]
 #[allow(clippy::expect_used, clippy::panic, reason = "test fixtures")]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use crate::foundation::{ChannelId, NodeId, WorldId};
 
@@ -1307,4 +1338,12 @@ mod tests {
             "bundle coordinates cannot replace catalogue admission"
         );
     }
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/src/node/serve/bundle_npcs/m38_hoaxette_tests.rs"
+    ));
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/src/node/serve/bundle_npcs/m38_rascalio_tests.rs"
+    ));
 }

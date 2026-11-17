@@ -166,6 +166,127 @@ fn session_ingress_unknown_pending_work_cannot_resume_or_reexecute()
 }
 
 #[test]
+fn discarded_step_recovery_fences_generation_and_uses_the_current_egress_cursor()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_protocol_oteryn::world_spatial::{
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, encode_step_intent,
+        encode_step_result,
+    };
+    use oteryn_protocol_oteryn::{
+        ClientCommandValue, decode_command_result, decode_wire_envelope, encode_client_command,
+    };
+    // The Channel copies the reservation's successor immediately; House copies it at reply.
+    for copied_next in [1, 2] {
+        let owner = SessionCommands::default();
+        let mut admitted = session()?;
+        let mut stream = SessionCommandStream::open(Some(&owner), &admitted).ok_or("open")?;
+        assert!(matches!(
+            stream.begin(1, 1, 0, false),
+            Ok(CommandAction::Execute)
+        ));
+        let frame = encode_client_command(
+            1,
+            &ClientCommandValue {
+                command_id: 1,
+                command_type: COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+                payload: &encode_step_intent(StepDirection::East),
+            },
+        )?;
+        let envelope = decode_wire_envelope(&frame)?;
+        stream
+            .buffer_step(envelope.client_command(1)?)
+            .ok_or("buffer exact original")?;
+        admitted.continuity.next_command_id = copied_next;
+        assert!(owner.recover_trade_continuity(&mut admitted).is_none());
+        assert!(!owner.resumable(&admitted), "active stream owns its result");
+        drop(stream);
+
+        // Existing periodic egress can advance after reservation while the step waits.
+        admitted.continuity.server_sequence = 11;
+        let mut stale = admitted;
+        stale.continuity.connection_generation = 2;
+        assert!(owner.recover_trade_continuity(&mut stale).is_none());
+        let mut wrong_counter = admitted;
+        wrong_counter.continuity.next_command_id = 3;
+        assert!(owner.recover_trade_continuity(&mut wrong_counter).is_none());
+        assert!(!owner.resumable(&admitted));
+        owner
+            .recover_trade_continuity(&mut admitted)
+            .ok_or("settle original after current egress")?;
+        assert_eq!(admitted.continuity.next_command_id, 2);
+        assert_eq!(admitted.continuity.server_sequence, 12);
+        assert!(owner.resumable(&admitted));
+        {
+            let commands = owner.0.lock().map_err(|_| "commands")?;
+            let state = commands
+                .get(&admitted.game_session_id)
+                .ok_or("session")?
+                .lock()
+                .map_err(|_| "ingress")?;
+            assert_eq!(state.ingress.outstanding(), 0);
+            assert!(state.pending_delivery.is_none());
+            let retained = decode_wire_envelope(state.retained.as_deref().ok_or("retained")?)?;
+            let result = decode_command_result(retained.payload())?;
+            assert_eq!(retained.connection_generation(), 1);
+            assert_eq!(retained.server_sequence(), 12);
+            assert_eq!(result.command_id, 1);
+            assert_eq!(result.status, CommandStatus::Rejected);
+            assert_eq!(
+                result.payload,
+                encode_step_result(StepDisposition::Rejected)
+            );
+        }
+        owner
+            .recover_trade_continuity(&mut admitted)
+            .ok_or("idempotent recovery")?;
+        assert_eq!(admitted.continuity.server_sequence, 12);
+    }
+    Ok(())
+}
+
+#[test]
+fn buffered_step_that_reentered_execution_keeps_an_unknown_outcome_pending()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_protocol_oteryn::world_spatial::{
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, encode_step_intent,
+    };
+    use oteryn_protocol_oteryn::{ClientCommandValue, decode_wire_envelope, encode_client_command};
+    let owner = SessionCommands::default();
+    let mut admitted = session()?;
+    let mut stream = SessionCommandStream::open(Some(&owner), &admitted).ok_or("open")?;
+    assert!(matches!(
+        stream.begin(1, 1, 0, false),
+        Ok(CommandAction::Execute)
+    ));
+    let frame = encode_client_command(
+        1,
+        &ClientCommandValue {
+            command_id: 1,
+            command_type: COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+            payload: &encode_step_intent(StepDirection::East),
+        },
+    )?;
+    let envelope = decode_wire_envelope(&frame)?;
+    stream
+        .buffer_step(envelope.client_command(1)?)
+        .ok_or("buffer exact original")?;
+    assert!(matches!(
+        stream.begin(1, 1, 0, true),
+        Ok(CommandAction::Execute)
+    ));
+    admitted.continuity.next_command_id = stream.next_command_id();
+    drop(stream);
+    owner
+        .recover_trade_continuity(&mut admitted)
+        .ok_or("unknown continuity stays unchanged")?;
+    assert_eq!(admitted.continuity.next_command_id, 2);
+    assert_eq!(admitted.continuity.server_sequence, 0);
+    assert!(!owner.resumable(&admitted));
+    assert!(SessionCommandStream::open(Some(&owner), &admitted).is_none());
+    Ok(())
+}
+
+#[test]
 fn session_ingress_npc_recovery_requires_the_original_inactive_reservation()
 -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, decode_npc_intent_result};

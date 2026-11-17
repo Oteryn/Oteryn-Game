@@ -103,6 +103,26 @@ impl ServerMessageHub {
         }
     }
 
+    /// A source callback's personal notice uses the currently joined native
+    /// session, without a broadcast identity or a durable gameplay grant.
+    pub(super) fn send_current(&self, session: GameSessionId, message: ServerMessage) -> bool {
+        if encode_server_message(&message).is_err() {
+            return false;
+        }
+        let Ok(mut state) = self.state.lock() else {
+            return false;
+        };
+        let Some(recipient) = state.recipients.get_mut(&session) else {
+            return false;
+        };
+        if recipient.queue.len() >= MAX_ANNOUNCEMENTS {
+            return false;
+        }
+        recipient.queue.push_back(Arc::new(message));
+        drop(state);
+        self.changed.notify_waiters();
+        true
+    }
     pub(super) fn forget(&self, session: GameSessionId) {
         if let Ok(mut state) = self.state.lock() {
             state.recipients.remove(&session);

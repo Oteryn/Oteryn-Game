@@ -541,7 +541,7 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
     }
 }
 
-async fn framed_target(
+pub(super) async fn framed_target(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     session: GameSessionId,

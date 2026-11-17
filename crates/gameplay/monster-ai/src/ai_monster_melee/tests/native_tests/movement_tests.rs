@@ -283,3 +283,24 @@ fn a_foreign_position_context_on_either_actor_cannot_wake_native_melee() -> Resu
     }
     Ok(())
 }
+
+#[test]
+fn review2_native_movement_retry_keeps_target_ten_tiles_east() -> Result<(), String> {
+    let mut fixture = NativeFixture::new(1000, 1, 8)?;
+    for x in 2..=9 {
+        fixture.step(fixture.target, position(x))?;
+    }
+    fixture.think(0, true)?;
+    fixture.swing(0, 1, 0)?;
+    fixture.step(fixture.target, position(10))?;
+    fixture.retry_movement(100_000)?;
+    assert_eq!(
+        fixture
+            .owner
+            .creature_ai
+            .state(fixture.issuer)
+            .and_then(|state| state.target()),
+        Some(fixture.target)
+    );
+    Ok(())
+}

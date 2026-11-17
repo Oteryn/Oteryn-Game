@@ -98,7 +98,14 @@ pub fn prepare_bundle_ladder<'a>(
 
 impl RopeProof<'_> {
     fn resolve(&self, runtime: &ChannelRuntimeV1) -> Result<MovementLocalPosition, MovementError> {
-        qualify_origin(runtime, self.cells, self.actor, self.session, self.expected)?;
+        qualify_origin(
+            runtime,
+            self.cells,
+            self.actor,
+            self.session,
+            self.expected,
+            None,
+        )?;
         let origin = self.expected.position();
         if i32::from(origin.floor) != self.spot.z
             || origin.x.abs_diff(self.spot.x) > 1

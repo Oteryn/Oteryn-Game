@@ -106,6 +106,7 @@ def profile(i,node,obj,physical,bindings,field):
   if scripts.get('vocation'):
    for v in ['Druid','Knight','Monk','Paladin','Sorcerer']:
     if v.lower() in scripts['vocation'].lower():vocations.append(v.upper())
+   if scripts['vocation'].strip().lower() in ('none','none;true','none;false'):vocations=['NONE']
    if not vocations:raise ValueError('unknown source vocation constraint')
   sem['equipment']=K({'patterns':K([{'pattern_id':1,'primary_slot':K(slots[slot]),
    'additional_reserved_slots':K(['SHIELD'] if a.get('slottype')=='two-handed' and slot=='hand' else []),

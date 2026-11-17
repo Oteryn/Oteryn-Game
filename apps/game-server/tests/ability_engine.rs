@@ -87,6 +87,14 @@ mod foundation {
     }
     pub(crate) struct ChannelRuntimeV1;
     impl ChannelRuntimeV1 {
+        pub(crate) fn encounter_source_damage(
+            &self,
+            _: ExactActorRef,
+            _: u64,
+            _: u8,
+        ) -> Result<(u64, bool), CarrierError> {
+            Err(CarrierError::Invalid)
+        }
         pub(crate) const fn content_pin(&self) -> ContentPin {
             ContentPin
         }

@@ -1,0 +1,210 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.the_dream_courts_quest",
+  "source_files": [
+    {
+      "path": "data-global/npc/stricken_soul.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "506efb1fc93172d5a9fef91360686e1cb080d6830897d44e5cb8dfd86ea8b39c"
+    }
+  ],
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
+      "quest": "oteryn:quest.the_dream_courts_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/stricken_soul.lua:52-93"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/the_dream_courts/stricken_soul/greet_new",
+      "quest": "oteryn:quest.the_dream_courts_quest",
+      "npc": "oteryn:npc.stricken_soul",
+      "trigger": "greet",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "This place is... haunted... heed my warning... there are... ghooooooosts here...! Why are you giving me that... look? I am certain, there aaaaaaare ghosts here - I've seen them! Do you believe me?"
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/stricken_soul.lua:52-53"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_dream_courts/stricken_soul/greet_done",
+      "quest": "oteryn:quest.the_dream_courts_quest",
+      "npc": "oteryn:npc.stricken_soul",
+      "trigger": "greet",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Gree... tings."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/stricken_soul.lua:54-55"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_dream_courts/stricken_soul/ask_name",
+      "quest": "oteryn:quest.the_dream_courts_quest",
+      "npc": "oteryn:npc.stricken_soul",
+      "trigger": "say",
+      "guards": [],
+      "reply": [
+        "Excellent... I hope they will haaaaaaunt my house no longer. What was your... naaaaaame again, tell me?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/stricken_soul.lua:72-74"
+      ],
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_dream_courts/stricken_soul/ask_help",
+      "quest": "oteryn:quest.the_dream_courts_quest",
+      "npc": "oteryn:npc.stricken_soul",
+      "trigger": "say",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Yeeeees... you need to help meeeeeee. I want those ghosts gone... this is my home and I need it to teach my students. Will you take care of the... ghosts?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/stricken_soul.lua:75-77"
+      ],
+      "keywords": [
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_dream_courts/stricken_soul/yes_noop",
+      "quest": "oteryn:quest.the_dream_courts_quest",
+      "npc": "oteryn:npc.stricken_soul",
+      "trigger": "say",
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/stricken_soul.lua:71-78"
+      ],
+      "keywords": [
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_dream_courts/stricken_soul/name_grant",
+      "quest": "oteryn:quest.the_dream_courts_quest",
+      "npc": "oteryn:npc.stricken_soul",
+      "trigger": "say",
+      "guards": [],
+      "reply": [
+        " Ah yeeeeees, |PLAYERNAME|. I will remember you. Now, lessons are every day in the morning and once a week in the evening... ...",
+        "Oh, you're not here for this, are you? So about the ghoooosts, yes. You seeeee, there are 3 secret passages here. ...",
+        "Thiiiiis is no ordinary house... it is a nexus, a gateway to a once hidden cathedral. Sheltering a small and peaceful society of scholars and monks. Secluded from every distraction. ...",
+        "I was one of them and ordered to hold contact to the outside woooorld. But then, something... happened. ...",
+        "Outsiders managed to sneak in, infiltrate and influence the society... for the worse. Who knows for what ends. They chaaaaanged... ...",
+        "Shortly after, contact was lost... the nexus broken and sealed, ghosts appeared... eeeeeeeverywhere. ...",
+        "Find the three passages... one is right here in the cellars, one in the jungles of Tiquanda and one in the deserts of Darama. ...",
+        "Restore their connection and open this nexus to access the buried cathedral and find the cause to this... eliminate all remainders there if you must, |PLAYERNAME|."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/stricken_soul.lua:79-93"
+      ],
+      "match_player_name": true,
+      "topics": [
+        3
+      ],
+      "exclude_keywords": [
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_dream_courts/stricken_soul/name_noop",
+      "quest": "oteryn:quest.the_dream_courts_quest",
+      "npc": "oteryn:npc.stricken_soul",
+      "trigger": "say",
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/stricken_soul.lua:79-94"
+      ],
+      "match_player_name": true,
+      "exclude_keywords": [
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_dream_courts/stricken_soul/fallback",
+      "quest": "oteryn:quest.the_dream_courts_quest",
+      "npc": "oteryn:npc.stricken_soul",
+      "trigger": "say",
+      "guards": [],
+      "reply": [
+        "Sorry, I didn't understand."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/stricken_soul.lua:95-98"
+      ],
+      "any_message": true
+    }
+  ]
+}

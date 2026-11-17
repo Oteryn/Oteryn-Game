@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "tracks": [],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/m20/cursed-crystal-final-dust",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.one_eyed_joe",
+      "carried_item": "oteryn:item.tibia.i21507",
+      "carried_target": "oteryn:item.tibia.i21505",
+      "keywords": [
+        "mix"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/questline",
+          "minimum": -1,
+          "maximum": 4,
+          "set": 2,
+          "at_least": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i21507",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i21505",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i21506",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You mixed the proper ingredients to create a special ointment. With this salve you may unpetrify a petrified object."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua:5-6,50-61"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/m20/cursed-crystal-final-oil",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.one_eyed_joe",
+      "carried_item": "oteryn:item.tibia.i21505",
+      "carried_target": "oteryn:item.tibia.i21507",
+      "keywords": [
+        "mix"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/questline",
+          "minimum": -1,
+          "maximum": 4,
+          "set": 2,
+          "at_least": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i21505",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i21507",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i21506",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You mixed the proper ingredients to create a special ointment. With this salve you may unpetrify a petrified object."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua:5-6,50-61"
+      ]
+    }
+  ]
+}

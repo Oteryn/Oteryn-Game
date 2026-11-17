@@ -67,6 +67,47 @@ async fn install_with_positions<const N: usize>(
     keys: [&str; N],
     positions: Option<[Position; N]>,
 ) -> TestResult<[EntityRef; N]> {
+    install_offsets(owner, admitted, keys, positions, |i| {
+        if N > 5 {
+            (i % 5 - 2, 1 + i / 5)
+        } else {
+            (i, 1)
+        }
+    })
+    .await
+}
+
+pub(super) async fn install_with_offsets<const N: usize>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    keys: [&str; N],
+    offsets: Option<[(i32, i32); N]>,
+) -> TestResult<[EntityRef; N]> {
+    install_offsets(owner, admitted, keys, None, |i| {
+        offsets
+            .as_ref()
+            .and_then(|offsets| usize::try_from(i).ok().and_then(|i| offsets.get(i)))
+            .copied()
+            .unwrap_or((i, 1))
+    })
+    .await
+}
+
+pub(super) async fn install_above<const N: usize>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    keys: [&str; N],
+) -> TestResult<[EntityRef; N]> {
+    install_offsets(owner, admitted, keys, None, |i| (i, -1)).await
+}
+
+async fn install_offsets<const N: usize>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    keys: [&str; N],
+    positions: Option<[Position; N]>,
+    offset: impl Fn(i32) -> (i32, i32),
+) -> TestResult<[EntityRef; N]> {
     let catalogue = NpcDataCatalogue::load(
         std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
         std::ffi::OsStr::new("world"),
@@ -123,15 +164,10 @@ async fn install_with_positions<const N: usize>(
             let p = if let Some(positions) = positions.as_ref() {
                 positions[i]
             } else {
+                let (dx, dy) = offset(i32::try_from(i)?);
                 Position {
-                    x: u16::try_from(
-                        at.x + if N > 5 {
-                            i32::try_from(i % 5)? - 2
-                        } else {
-                            i32::try_from(i)?
-                        },
-                    )?,
-                    y: u16::try_from(at.y + if N > 5 { 1 + i32::try_from(i / 5)? } else { 1 })?,
+                    x: u16::try_from(at.x + dx)?,
+                    y: u16::try_from(at.y + dy)?,
                     floor: -i8::try_from(at.floor)?,
                 }
             };
