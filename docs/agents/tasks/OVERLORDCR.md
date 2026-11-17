@@ -33,3 +33,5 @@ Current validation table (ci-local.sh is absent at this base):
 | behavioral red-to-green proof | Not obtained; initial red attempt failed in compiler |
 
 Donor key rechecked on the current 201189f8 checkout: `data-global/lib/core/storages.lua:1084`, `BossStorage = 41652`. Its overlord death script is byte-identical to packet revision 9f5a72c for the relevant file. The supplemental build has progressed past the content crate into gameplay dependencies.
+
+Additional donor participant witness: `data/libs/functions/functions.lua:1075-1082` implements `onDeathForDamagingPlayers` by iterating `creature:getDamageMap()`, resolving each key with `Player(key)`, and invoking the callback for resolved players. This confirms damage-map rather than proximity/party eligibility. Supplemental PG compilation has progressed through production dispatch and into the final application/client dependency chain; it has not reported a test outcome yet.
