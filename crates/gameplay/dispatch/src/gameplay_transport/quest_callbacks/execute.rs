@@ -1594,7 +1594,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | crate::map::facts::QuestCallbackProjection::TimedRemoteTransform { .. }
                     | crate::map::facts::QuestCallbackProjection::TimedEntrance { .. }
             )
-        ) || callback.effects.reset_after_ms.is_some()
+        ) || outlaw_burn
+            || callback.effects.reset_after_ms.is_some()
             || callback.effects.passages_reset_after_ms.is_some()
             || callback.effects.target_transform.is_some()
             || callback

@@ -160,6 +160,7 @@ pub(super) struct CallbackStates {
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
     scene_items: BTreeMap<TilePos, BTreeMap<EntryId, (u64, bool)>>,
+    scene_fields: BTreeMap<(TilePos, EntryId), QuestSceneField>,
     batch_blockers: BTreeSet<TilePos>,
     presences: BTreeMap<u64, (TilePos, EntryId)>,
     naginata_picks: Vec<NaginataPick>,
@@ -500,6 +501,59 @@ impl CallbackStates {
             })
         })
     }
+    fn remove_scene_item(&mut self, position: TilePos, entry: EntryId) -> bool {
+        let (Some(items), Some(visible)) = (
+            self.scene_items.get_mut(&position),
+            self.movement_items.get_mut(&position),
+        ) else {
+            return false;
+        };
+        items.remove(&entry);
+        if items.is_empty() {
+            self.scene_items.remove(&position);
+        }
+        visible.retain(|item| item.source != view::EntrySource::Added(entry));
+        if visible.is_empty() {
+            self.movement_items.remove(&position);
+        }
+        self.scene_fields.remove(&(position, entry));
+        true
+    }
+
+    fn expire_scene_fields(&mut self, now: u64) -> usize {
+        let due: Vec<_> = self
+            .scene_fields
+            .iter()
+            .filter(|((position, _), field)| {
+                !self.position_reserved(*position)
+                    && field.stages.first().is_some_and(|(due, _)| *due <= now)
+            })
+            .map(|(key, _)| *key)
+            .collect();
+        for (position, entry) in &due {
+            let Some(field) = self.scene_fields.get_mut(&(*position, *entry)) else {
+                continue;
+            };
+            let elapsed = field
+                .stages
+                .partition_point(|(deadline, _)| *deadline <= now);
+            let facts = field.stages[elapsed - 1].1;
+            field.stages.drain(..elapsed);
+            if let Some(facts) = facts {
+                if let Some(item) = self.movement_items.get_mut(position).and_then(|entries| {
+                    entries
+                        .iter_mut()
+                        .find(|item| item.source == view::EntrySource::Added(*entry))
+                }) {
+                    item.facts = facts;
+                }
+            } else {
+                let _ = self.remove_scene_item(*position, *entry);
+            }
+        }
+        due.len()
+    }
+
     fn scene_blocks(&self, pos: TilePos) -> bool {
         self.scene_items
             .get(&pos)
@@ -523,6 +577,7 @@ impl CallbackStates {
         self.movement_items.retain(|p, _| !cleared(p));
         self.solid_items.retain(|p| !cleared(p));
         self.scene_items.retain(|p, _| !cleared(p));
+        self.scene_fields.retain(|(p, _), _| !cleared(p));
         self.batch_blockers.retain(|p| !inside(*p));
         self.portals.retain(|p, _| !cleared(p));
         self.presences.retain(|_, (p, _)| !cleared(p));
@@ -545,6 +600,7 @@ impl CallbackStates {
             + self.portals.len()
             + self.solid_items.len()
             + self.scene_items.values().map(BTreeMap::len).sum::<usize>()
+            + self.scene_fields.len()
             + self.batch_blockers.len()
             + self.movement_items.values().map(Vec::len).sum::<usize>();
         used.saturating_add(additional) < super::super::overlay::OVERLAY_BUDGET_BYTES / 512
@@ -846,7 +902,33 @@ impl BundleFacts {
             .map(|((due, _), _)| *due)
             .into_iter()
             .chain(states.portals.values().filter_map(|p| p.expires))
+            .chain(
+                states
+                    .scene_fields
+                    .iter()
+                    .filter(|((position, _), _)| !states.position_reserved(*position))
+                    .filter_map(|(_, field)| field.stages.first().map(|(deadline, _)| *deadline)),
+            )
             .min()
+    }
+
+    /// An active environmental field created by the exact Channel scene owner.
+    pub fn quest_scene_field(&self, position: TilePos) -> Option<(EntryId, EntryFacts)> {
+        let states = self.callbacks.lock().ok()?;
+        states
+            .movement_items
+            .get(&position)?
+            .iter()
+            .rev()
+            .find_map(|item| {
+                let view::EntrySource::Added(entry) = item.source else {
+                    return None;
+                };
+                states
+                    .scene_fields
+                    .contains_key(&(position, entry))
+                    .then_some((entry, item.facts))
+            })
     }
 
     /// The current Channel owner drains this even while no player is walking.
@@ -856,7 +938,7 @@ impl BundleFacts {
             return 0;
         };
         let states = Arc::make_mut(&mut states);
-        let mut changed = 0;
+        let mut changed = states.expire_scene_fields(now);
         let expired: BTreeSet<_> = states
             .portals
             .values()
@@ -1975,6 +2057,31 @@ impl BundleFacts {
 
 /// A fully resolved edit; only the projection owner can publish these together.
 #[derive(Clone, Debug)]
+pub struct QuestSceneField {
+    /// In chronological order. A missing appearance removes this exact field.
+    pub stages: Vec<(u64, Option<EntryFacts>)>,
+}
+
+impl QuestSceneField {
+    fn valid(&self) -> bool {
+        self.stages.len() <= 3
+            && self.stages.windows(2).all(|pair| pair[0].0 < pair[1].0)
+            && self
+                .stages
+                .iter()
+                .enumerate()
+                .all(|(index, (deadline, replacement))| {
+                    *deadline != 0
+                        && if let Some(facts) = replacement {
+                            !facts.pickupable && index + 1 < self.stages.len()
+                        } else {
+                            index + 1 == self.stages.len()
+                        }
+                })
+    }
+}
+
+#[derive(Clone, Debug)]
 pub enum QuestSceneMutation {
     Restore {
         key: u64,
@@ -2000,6 +2107,7 @@ pub enum QuestSceneMutation {
         position: TilePos,
         facts: EntryFacts,
         passable: bool,
+        field: Option<QuestSceneField>,
     },
 }
 
@@ -2013,6 +2121,15 @@ fn project_scene(
         return false;
     }
     for edit in edits {
+        if let QuestSceneMutation::Create {
+            field: Some(field),
+            passable,
+            ..
+        } = edit
+            && (!passable || !field.valid())
+        {
+            return false;
+        }
         if matches!(edit, QuestSceneMutation::Create { facts, .. } | QuestSceneMutation::Replace { facts, .. } | QuestSceneMutation::Restore { facts, .. } if facts.pickupable)
         {
             return false;
@@ -2077,25 +2194,15 @@ fn project_scene(
                 states.passable.insert(*key, *passable);
             }
             QuestSceneMutation::RemoveCreated { position, entry } => {
-                let Some(items) = states.scene_items.get_mut(position) else {
+                if !states.remove_scene_item(*position, *entry) {
                     return false;
-                };
-                items.remove(entry);
-                if items.is_empty() {
-                    states.scene_items.remove(position);
-                }
-                let Some(items) = states.movement_items.get_mut(position) else {
-                    return false;
-                };
-                items.retain(|item| item.source != view::EntrySource::Added(*entry));
-                if items.is_empty() {
-                    states.movement_items.remove(position);
                 }
             }
             QuestSceneMutation::Create {
                 position,
                 facts,
                 passable,
+                field,
             } => {
                 let Some(sequence) = states.movement_sequence.checked_add(1) else {
                     return false;
@@ -2117,6 +2224,11 @@ fn project_scene(
                     .entry(*position)
                     .or_default()
                     .insert(entry, (owner, *passable));
+                if let Some(field) = field {
+                    states
+                        .scene_fields
+                        .insert((*position, entry), field.clone());
+                }
             }
         }
     }

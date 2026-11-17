@@ -111,6 +111,8 @@ pub(super) fn world(burn: bool) -> TestResult<crate::map::boot::BundleWorld> {
         (5, 1791, bundle::TerrainKind::Common),
         (6, 6477, bundle::TerrainKind::Common),
         (7, 2118, bundle::TerrainKind::Field),
+        (8, 2119, bundle::TerrainKind::Field),
+        (9, 2120, bundle::TerrainKind::Field),
     ] {
         data.manifest.palette.push(bundle::PaletteEntry {
             key: format!("oteryn:terrain.tibia.i{appearance}"),
@@ -353,5 +355,26 @@ pub(super) async fn exercise_burn(
         use_target(owner, admitted, 3, &target).await?,
         UseDisposition::Committed
     );
+    let map = owner.bundle_map().ok_or("map")?;
+    let deadline = map.facts.next_movement_decay_time().ok_or("fire decay")?;
+    for (time, expected) in [
+        (deadline, Some(2119)),
+        (deadline + 148_000_000, Some(2120)),
+        (deadline + 246_000_000, None),
+    ] {
+        assert_eq!(map.facts.expire_movement_items(time), 1);
+        assert_eq!(
+            map.facts
+                .quest_scene_field(RECEIVER)
+                .map(|(_, facts)| facts.appearance_id),
+            expected
+        );
+        assert_eq!(
+            map.facts
+                .quest_scene_field(SECOND_FIRE)
+                .map(|(_, facts)| facts.appearance_id),
+            Some(2118)
+        );
+    }
     Ok(())
 }

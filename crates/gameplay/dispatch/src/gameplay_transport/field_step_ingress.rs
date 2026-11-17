@@ -309,9 +309,83 @@ impl StepIngressRead<'_, '_> {
                 }
             }
         }
+        if first_magic_field {
+            non_player_contact = quest_scene_field_contact(room, source, self.destination)?;
+        }
         Ok((non_player_contact, player_contact))
     }
 }
+fn quest_scene_field_contact(
+    room: &crate::content::QualifiedNativeEntryRoom,
+    source: &crate::content::native_gameplay::NativeGameplayState,
+    destination: MovementLocalPosition,
+) -> Result<Option<super::NonPlayerFieldContact>, MovementError> {
+    use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+    use crate::map::boot::BundleCollisionIndexExt;
+    use crate::map::overlay::TilePos;
+
+    let cells = room.movement_cells();
+    let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
+        return Ok(None);
+    };
+    let (Ok(x), Ok(y), Ok(z)) = (
+        u16::try_from(destination.x),
+        u16::try_from(destination.y),
+        i8::try_from(destination.floor),
+    ) else {
+        return Ok(None);
+    };
+    let Some((entry, facts)) = index
+        .map()
+        .facts
+        .quest_scene_field(TilePos { x, y, floor: -z })
+    else {
+        return Ok(None);
+    };
+    let tile = cells
+        .spell_tiles()
+        .lookup(
+            cells.scope(),
+            crate::content::LogicalCell {
+                x: destination.x,
+                y: destination.y,
+                z: i32::from(destination.floor),
+            },
+        )
+        .map_err(|_| MovementError::NotQualified)?;
+    if tile.flags().protection_zone || facts.appearance_id == 2120 {
+        return Ok(None);
+    }
+    let policy = source
+        .item_policy_for_source_id(u32::from(facts.appearance_id))
+        .ok_or(MovementError::NotQualified)?;
+    let recipe = policy
+        .record()
+        .attributes
+        .field_condition
+        .as_ref()
+        .ok_or(MovementError::NotQualified)?;
+    let Some(values) = recipe
+        .condition_values()
+        .map_err(|_| MovementError::NotQualified)?
+    else {
+        return Ok(None);
+    };
+    let definition = oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
+        &format!("native.field.i{}", facts.appearance_id),
+        1,
+        values,
+    )
+    .ok_or(MovementError::NotQualified)?;
+    Ok(Some(super::NonPlayerFieldContact {
+        origin: super::NonPlayerFieldOrigin::Environment,
+        source: format!("environment:field:scene:{}", entry.get()),
+        definition,
+        element: recipe.element().map_err(|_| MovementError::NotQualified)?,
+        content: source.source_digest(),
+    }))
+}
+
 #[allow(clippy::too_many_arguments)]
 pub(super) fn destination(
     runtime: &ChannelRuntimeV1,

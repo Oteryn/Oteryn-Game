@@ -1,5 +1,5 @@
 use super::*;
-use crate::map::facts::{QuestCallbackProjection, QuestSceneMutation};
+use crate::map::facts::{QuestCallbackProjection, QuestSceneField, QuestSceneMutation};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) fn prepare_quest_scene(
@@ -168,6 +168,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     position: at,
                     facts,
                     passable,
+                    field: self.prepare_outlaw_fire_field(map, callback, edit.position, facts)?,
                 },
                 _ => return Err(UseDisposition::Rejected),
             });
@@ -176,5 +177,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             mutations,
             remove_self: scene.remove_self,
         }))
+    }
+
+    fn prepare_outlaw_fire_field(
+        &self,
+        map: &BundleMap,
+        callback: &Callback,
+        position: Position,
+        facts: EntryFacts,
+    ) -> Result<Option<QuestSceneField>, UseDisposition> {
+        use oteryn_gameplay_quests::quest::outlaw_power_burn;
+        if !outlaw_power_burn::shared_input(callback) || facts.appearance_id != 2118 {
+            return Ok(None);
+        }
+        let mut stages = Vec::new();
+        // Crystal Item::transform starts decay on the ring's replacement. The
+        // separate Game.createItem call leaves its field in the initial form.
+        if position == outlaw_power_burn::RING_POSITION {
+            let mut deadline = self.owner_now().get();
+            for (duration, appearance) in [
+                (200_000_000, Some(2119)),
+                (148_000_000, Some(2120)),
+                (98_000_000, None),
+            ] {
+                deadline = deadline
+                    .checked_add(duration)
+                    .ok_or(UseDisposition::Exhausted)?;
+                let next = if let Some(appearance) = appearance {
+                    Some(
+                        map.facts
+                            .movement_item_facts(appearance)
+                            .ok_or(UseDisposition::Rejected)?,
+                    )
+                } else {
+                    None
+                };
+                stages.push((deadline, next));
+            }
+        }
+        Ok(Some(QuestSceneField { stages }))
     }
 }
