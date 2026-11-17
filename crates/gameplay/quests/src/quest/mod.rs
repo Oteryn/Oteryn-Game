@@ -159,6 +159,11 @@ pub enum QuestComparison {
     Any,
     Eq(i64),
     Ne(i64),
+    /// Every masked bit is set. Single-bit flags match Crystal 201189f8
+    /// `data/libs/functions/bitwise_flags.lua:1-2` (`testFlag`).
+    BitsSet(i64),
+    /// Every masked bit is clear.
+    BitsClear(i64),
     Lt(i64),
     Le(i64),
     Gt(i64),
@@ -177,6 +182,8 @@ impl QuestComparison {
             Self::Any => true,
             Self::Eq(other) => value == other,
             Self::Ne(other) => value != other,
+            Self::BitsSet(mask) => mask > 0 && value & mask == mask,
+            Self::BitsClear(mask) => mask > 0 && value & mask == 0,
             Self::Lt(other) => value < other,
             Self::Le(other) => value <= other,
             Self::Gt(other) => value > other,
@@ -197,6 +204,8 @@ impl QuestComparison {
     fn encode(self, out: &mut Vec<u8>) {
         let (tag, values): (u8, &[i64]) = match &self {
             Self::Any => (0, &[]),
+            Self::BitsSet(mask) => (10, std::slice::from_ref(mask)),
+            Self::BitsClear(mask) => (11, std::slice::from_ref(mask)),
             Self::Eq(value) => (1, std::slice::from_ref(value)),
             Self::Ne(value) => (2, std::slice::from_ref(value)),
             Self::Lt(value) => (3, std::slice::from_ref(value)),
@@ -519,6 +528,7 @@ impl QuestStateCatalogue {
                 }
                 let comparison_ok = match effect.from {
                     QuestComparison::Between(low, high) => low <= high,
+                    QuestComparison::BitsSet(mask) | QuestComparison::BitsClear(mask) => mask > 0,
                     QuestComparison::ElapsedAtLeast(seconds) => seconds >= 0,
                     QuestComparison::ElapsedLessThan(seconds) => {
                         (1..=366 * 24 * 60 * 60).contains(&seconds)

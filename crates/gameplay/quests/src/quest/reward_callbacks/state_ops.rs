@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 pub enum StateCondition {
     Any,
     Between { minimum: i64, maximum: i64 },
+    BitsSet { mask: i64 },
+    BitsClear { mask: i64 },
     ElapsedAtLeast { seconds: u32 },
     ElapsedLessThan { seconds: u32 },
 }
@@ -29,11 +31,15 @@ impl<'de> Deserialize<'de> for StateCondition {
         enum Wire {
             Any {},
             Between { minimum: i64, maximum: i64 },
+            BitsSet { mask: i64 },
+            BitsClear { mask: i64 },
             ElapsedAtLeast { seconds: u32 },
             ElapsedLessThan { seconds: u32 },
         }
         Ok(match Wire::deserialize(deserializer)? {
             Wire::Any {} => Self::Any,
+            Wire::BitsSet { mask } => Self::BitsSet { mask },
+            Wire::BitsClear { mask } => Self::BitsClear { mask },
             Wire::Between { minimum, maximum } => Self::Between { minimum, maximum },
             Wire::ElapsedAtLeast { seconds } => Self::ElapsedAtLeast { seconds },
             Wire::ElapsedLessThan { seconds } => Self::ElapsedLessThan { seconds },
@@ -70,6 +76,7 @@ impl StateOperation {
     pub fn valid(&self) -> bool {
         let condition = match self.from {
             StateCondition::Any => true,
+            StateCondition::BitsSet { mask } | StateCondition::BitsClear { mask } => mask > 0,
             StateCondition::Between { minimum, maximum } => minimum <= maximum,
             StateCondition::ElapsedAtLeast { seconds }
             | StateCondition::ElapsedLessThan { seconds } => {
@@ -99,6 +106,8 @@ impl StateOperation {
             StateCondition::Any | StateCondition::ElapsedAtLeast { .. } => true,
             StateCondition::ElapsedLessThan { .. } => value > 0,
             StateCondition::Between { minimum, maximum } => (minimum..=maximum).contains(&value),
+            StateCondition::BitsSet { mask } => QuestComparison::BitsSet(mask).holds(value, 0),
+            StateCondition::BitsClear { mask } => QuestComparison::BitsClear(mask).holds(value, 0),
         }
     }
 
@@ -107,6 +116,8 @@ impl StateOperation {
             track: self.track.clone(),
             from: match self.from {
                 StateCondition::Any => QuestComparison::Any,
+                StateCondition::BitsSet { mask } => QuestComparison::BitsSet(mask),
+                StateCondition::BitsClear { mask } => QuestComparison::BitsClear(mask),
                 StateCondition::Between { minimum, maximum } => {
                     QuestComparison::Between(minimum, maximum)
                 }

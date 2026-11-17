@@ -20,7 +20,9 @@ pub(super) fn valid(quest: &BoundQuest, operation: &StateOperation) -> bool {
             }
             Some((minimum, maximum))
         }
-        StateCondition::Any => None,
+        StateCondition::Any | StateCondition::BitsSet { .. } | StateCondition::BitsClear { .. } => {
+            None
+        }
         StateCondition::ElapsedAtLeast { .. } | StateCondition::ElapsedLessThan { .. } => {
             if track.minimum < 0 {
                 return false;
