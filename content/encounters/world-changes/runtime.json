@@ -2,6 +2,11 @@
   "schema": 1,
   "changes": [
     {
+      "key": "awash",
+      "schedule": {"kind": "previous_contribution", "resource": "coal", "minimum": 202},
+      "sources": ["https://tibia.fandom.com/index.php?curid=54770&oldid=1149364"]
+    },
+    {
       "key": "fury_gates",
       "schedule": {"kind": "native_daily", "change": "fury_gates"},
       "sources": ["oteryn:production/crates/gameplay/world-change/src/daily.rs#fury_gates"]

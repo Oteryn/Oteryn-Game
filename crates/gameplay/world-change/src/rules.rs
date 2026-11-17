@@ -252,6 +252,24 @@ mod tests {
     use super::*;
 
     #[test]
+    fn awash_requires_202_coal_from_the_previous_epoch() -> Result<(), RuleError> {
+        let catalogue = Catalogue::embedded()?;
+        let awash = catalogue
+            .definitions()
+            .iter()
+            .find(|rule| rule.key == "awash")
+            .expect("Awash must be selected by the server-save catalogue");
+        assert_eq!(
+            awash.schedule,
+            Schedule::PreviousContribution {
+                resource: crate::owner::ContributionKind::Coal,
+                minimum: 202,
+            },
+        );
+        Ok(())
+    }
+
+    #[test]
     fn previous_contribution_selects_only_after_save_at_the_inclusive_threshold() {
         let schedule = Schedule::PreviousContribution {
             resource: crate::owner::ContributionKind::Coal,

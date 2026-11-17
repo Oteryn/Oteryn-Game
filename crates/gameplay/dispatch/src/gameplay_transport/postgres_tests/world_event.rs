@@ -13,6 +13,9 @@ use oteryn_protocol_oteryn::{
 };
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
+#[path = "world_event/awash.rs"]
+mod awash;
+
 #[path = "world_event/reset_fixture.rs"]
 mod event_fixture;
 
