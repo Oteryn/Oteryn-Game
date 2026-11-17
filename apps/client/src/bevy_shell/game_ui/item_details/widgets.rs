@@ -14,6 +14,7 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins) -> Widgets {
         .spawn((
             Overlay,
             GameModal,
+            crate::bevy_shell::ui::window_layout::WindowLayer("item_details"),
             GlobalZIndex(160),
             bevy::input_focus::tab_navigation::TabGroup {
                 order: 2,
@@ -27,7 +28,6 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins) -> Widgets {
                 align_items: AlignItems::Center,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0., 0., 0., 0.45)),
         ))
         .id();
     let panel = commands

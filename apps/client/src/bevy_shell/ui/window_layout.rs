@@ -69,6 +69,7 @@ pub(in crate::bevy_shell) const WINDOWS: &[(&str, Geometry)] = &[
     ("highscores", geometry(1050., Some(620.), [740., 430.])),
     ("houses", geometry(540., None, [380., 300.])),
     ("imbuing", geometry(760., None, [530., 300.])),
+    ("item_details", geometry(482., None, [340., 300.])),
     ("journal", geometry(785., Some(620.), [550., 430.])),
     ("market", geometry(1000., Some(634.), [800., 480.])),
     ("npc", geometry(600., None, [420., 350.])),
