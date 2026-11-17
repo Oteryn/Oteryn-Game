@@ -128,6 +128,27 @@ pub enum QuestCallbackProjection {
     },
 }
 
+impl QuestCallbackProjection {
+    /// Rebase source-only reset lifetime when publication follows durable admission.
+    pub fn refresh_source_reset_due(&mut self, published_due: u64) -> bool {
+        match self {
+            Self::TimedTransform { due, .. }
+            | Self::ReadsetTransforms {
+                reset: Some((due, _)),
+                ..
+            }
+            | Self::Scene {
+                reset: Some((due, _)),
+                ..
+            } => {
+                *due = published_due;
+                true
+            }
+            _ => false,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 struct NaginataPick {
     session: [u8; 16],

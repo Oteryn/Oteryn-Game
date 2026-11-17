@@ -1319,12 +1319,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 else {
                     return UseDisposition::Exhausted;
                 };
-                if let Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
-                    due,
-                    ..
-                }) = projection.as_mut()
+                if projection
+                    .as_mut()
+                    .is_none_or(|projection| !projection.refresh_source_reset_due(published_due))
                 {
-                    *due = published_due;
+                    return UseDisposition::Rejected;
                 }
             }
             let disposition = self.execute_quest_encounter(
