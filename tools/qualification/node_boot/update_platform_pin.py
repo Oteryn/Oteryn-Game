@@ -20,6 +20,7 @@ def update(root: Path, platform: Path) -> str:
         ("tools/qualification/wp5_s3b/run.sh", "PLATFORM_SHA"),
         ("tools/qualification/login_local/run.sh", "PLATFORM_SHA"),
         ("tools/qualification/game_platform/lifecycle.sh", "GAME_PLATFORM_SHA"),
+        ("tools/qualification/game_platform/run.sh", "GAME_PLATFORM_SHA"),
     ):
         path = root / relative
         original = path.read_text()
@@ -27,6 +28,8 @@ def update(root: Path, platform: Path) -> str:
         if count != 1:
             raise ValueError(f"expected one producer pin in {relative}")
         path.write_text(updated)
+    readme = root / "tools/qualification/game_platform/README.md"
+    readme.write_text(re.sub(r"`[0-9a-f]{40}`", f"`{revision}`", readme.read_text(), count=1))
     return revision
 
 

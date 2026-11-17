@@ -72,7 +72,7 @@ def bootstrap(work, account, world, operation, revisions):
         raise ValueError("intent_context_missing")
     args = dict(zip(["profileRevision", "rulesetRevision", "contentRevision", "starterTemplateRevision"], revisions))
     args.update(accountId=account, targetWorldId=world, operationId=operation,
-                requestedName="Qualification Two", requestedSex="Female")
+                requestedName="Qualification Two", requestedSex="Female", requestedVocation="Knight")
     result = subprocess.run([binary, "seed", "bootstrap-intent", json.dumps(args)],
                             env=env, capture_output=True, timeout=20, check=True)
     value = json.loads(result.stdout)
