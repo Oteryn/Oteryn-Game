@@ -18,9 +18,15 @@ fn sinatuki_exchange_postgres_dispatch() -> TestResult {
         return Ok(());
     };
     assert!(!admin.is_empty());
+    let started = std::time::Instant::now();
     super::kill_reward_e2e::scenario_thread::run("sinatuki-exchange", || {
         super::quest_world_callbacks::scenario("sinatuki-exchange", POSITION, false)
-    })
+    })?;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED sinatuki_exchange_postgres_dispatch {:?}",
+        started.elapsed()
+    );
+    Ok(())
 }
 
 pub(super) async fn exercise(
@@ -124,7 +130,7 @@ pub(super) async fn exercise(
             .await?;
         }
         let lines = super::classic_quests::talk(owner, admitted, npc, command, "nupi").await?;
-        assert_eq!(lines.last().map(String::as_str), Some(reply));
+        assert_eq!(lines, [reply]);
         assert_inventory(h, expected).await?;
     }
     Ok(())

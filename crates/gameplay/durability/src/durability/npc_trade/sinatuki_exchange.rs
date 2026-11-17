@@ -5,7 +5,9 @@ pub const NPC: &str = "oteryn:npc.sinatuki";
 pub const SHARD: &str = "oteryn:item.tibia.i7290";
 const FISH: [&str; 2] = ["oteryn:item.tibia.i7158", "oteryn:item.tibia.i7159"];
 pub const REWARD: u32 = 5;
+// The fixed NPC exchange contract allows three input burn lines.
 const MAX_INPUT_STACKS: usize = 3;
+
 fn definition(key: &str) -> TypedDefinitionRef {
     TypedDefinitionRef {
         family: "Item".into(),
@@ -122,6 +124,7 @@ fn eligible(entry: &Entry, fish: &TypedDefinitionRef) -> bool {
 }
 
 impl DurabilityRoot {
+    /// Exchange 99 or 100 fish of one species for five shards.
     pub async fn exchange_sinatuki_fish(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
