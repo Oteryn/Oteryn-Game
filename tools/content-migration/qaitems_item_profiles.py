@@ -1,8 +1,8 @@
-"""Physical custody for four source-qualified quest rewards, using the native importer.
+"""Physical custody for the source-qualified hammer and poem, using the native importer.
 
 Reward identity selection lives in reward-claim-authoring/qaitems_rewards.py.
-The accepted Global client weights and canonical active-time boot budget win
-against old donor XML. No use, writing, lottery draw or equipment script is activated.
+Boots 9019 and the text-bearing lottery ticket 5956 already have native custody.
+Their equipped/unused counterparts require no quest reward promotion.
 """
 import copy
 import hashlib
@@ -11,7 +11,7 @@ import qengine_reward_item_profiles as shared
 from import_cyclopedia_global import apply_profile_weights
 from refresh_item_overlay_inputs import qualify_native_core
 
-IDS = {347, 3208, 5957, 9018}
+IDS = {347, 3208}
 PROOF = 'tools/content-schema/native-gameplay/qaitems-item-profiles.json'
 
 
@@ -38,15 +38,6 @@ def capture(root):
     for record in records:
         key = record['production_definition']['production_key']
         definition = definitions[key]
-        if key == 'oteryn:item.tibia.i9018':
-            # Keep the already accepted Global active-time owner; the OTS
-            # absolute deadline/deequip split is not a new timing authority.
-            temporal = definition['semantics']['temporal']
-            if (temporal['value']['consumption_mode'] != source.K('AUTHORITATIVE_ACTIVE_TIME_BUDGET')
-                    or temporal['value']['duration'] != source.K(3600000)
-                    or temporal['value']['stop_duration'] != source.K(True)):
-                raise ValueError('QAITEMS_BOOT_TIME_OWNER_DRIFT')
-            record['semantics']['temporal'] = copy.deepcopy(temporal)
         for group in ('physical', 'stack', 'container', 'charges', 'temporal'):
             if shared.accepted.known_conflict(definition['semantics'][group], record['semantics'][group]):
                 raise ValueError('QAITEMS_CANONICAL_CONFLICT:' + key + ':' + group)
@@ -66,7 +57,7 @@ def apply_admissions(definitions, root):
         if definition['identity']['key'] in profiles:
             profile = profiles[definition['identity']['key']]
             qualified = qualify_native_core(definition, profile)
-            if definition['identity']['key'] in {'oteryn:item.tibia.i3208', 'oteryn:item.tibia.i9018'}:
+            if definition['identity']['key'] == 'oteryn:item.tibia.i3208':
                 # Ready claims construct from the canonical pattern before later
                 # physical owners compose it. Carry the same source-qualified
                 # pattern, preserving every already known canonical leaf.
