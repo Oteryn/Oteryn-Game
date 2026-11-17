@@ -306,6 +306,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
         };
+        if let Some(fallen) = states.observer_eye_fall_notice.take() {
+            self.states.server_messages.send_current(
+                fallen,
+                oteryn_protocol_oteryn::zones_nologout::ServerMessage::Advance(
+                    "Sorry, not possible.".into(),
+                ),
+            );
+        }
         if hicks
             && matches!(
                 &outcome,

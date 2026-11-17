@@ -144,6 +144,9 @@ fn observer_eye_scenario(admin: String, scenario: Scenario) -> TestResult {
         deps.initialize(&owner).await;
         deps.initialize_player(&owner, partner, partner_session)
             .await;
+        if scenario == Scenario::Fall {
+            assert!(owner.states.server_messages.join(partner_session, 1));
+        }
         for (command, direction, controller_y, partner_y) in [
             (1, StepDirection::South, 32913, 32907),
             (2, StepDirection::South, 32914, 32908),
@@ -217,6 +220,16 @@ fn observer_eye_scenario(admin: String, scenario: Scenario) -> TestResult {
                     ..partner_start
                 },
                 "partner after controller STEP {command}",
+            );
+        }
+        if scenario == Scenario::Fall {
+            assert_eq!(
+                owner.states.server_messages.take(partner_session, 1),
+                Some(
+                    oteryn_protocol_oteryn::zones_nologout::ServerMessage::Advance(
+                        "Sorry, not possible.".into(),
+                    )
+                )
             );
         }
         if scenario == Scenario::Timeout {

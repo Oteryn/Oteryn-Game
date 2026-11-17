@@ -334,6 +334,7 @@ pub(super) fn mirror_step(
         ) && runtime.commit_source_step(proof).is_ok()
         {
             states.observer_eye_pair = None;
+            states.observer_eye_fall_notice = Some(partner_session);
         }
         return;
     }
