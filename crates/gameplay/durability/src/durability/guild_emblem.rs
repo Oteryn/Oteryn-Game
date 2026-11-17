@@ -16,6 +16,7 @@ impl DurabilityRoot {
         recovery: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
+        house_origin: Option<[u8; 16]>,
         viewed: Vec<[u8; 16]>,
     ) -> Result<Option<Vec<([u8; 16], Emblem)>>, DurabilityError> {
         let record = recovery
@@ -27,7 +28,17 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &record).await?;
-                    if assert_session_fence(&mut tx, &fence, &node).await?.is_err() {
+                    let current = if let Some(origin) = house_origin {
+                        super::db::lock_admission_relations(&mut tx).await?;
+                        super::house_hireling::fence::assert_house_custody_fence(
+                            &mut tx, &node, &fence, origin,
+                        )
+                        .await?
+                        .is_some()
+                    } else {
+                        assert_session_fence(&mut tx, &fence, &node).await?.is_ok()
+                    };
+                    if !current {
                         tx.rollback().await?;
                         return Ok(None);
                     }

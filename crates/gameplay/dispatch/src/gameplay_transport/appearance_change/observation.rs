@@ -4,6 +4,7 @@ use crate::domain::carrier_values::CarrierError;
 use oteryn_gameplay_foundation::foundation::condition::TemporaryDisplayedAppearance;
 #[path = "observation/house.rs"]
 mod house;
+pub(super) use house::{current_runtime_for_read, read_state};
 
 #[derive(Debug, Clone)]
 pub struct Observation {

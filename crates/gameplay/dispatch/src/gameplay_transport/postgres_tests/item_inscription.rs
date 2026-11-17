@@ -51,8 +51,13 @@ fn item_inscription_read_returns_carried_text_and_refuses_foreign_items_postgres
             let sealed=read(admitted,id(71)).await.flatten().ok_or("sealed document")?;
             assert_eq!(sealed.text,"One inscription: żółw 🐢");
             assert!(!sealed.writable,"the write-once target only shows its text");
+            sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) SELECT encode($1,'hex')::uuid,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,'Foreign Reader' FROM game_character_roots WHERE character_id=encode($2,'hex')::uuid").bind(id(90).as_slice()).bind(id(41).as_slice()).execute(&h.pool).await?;
+            super::item_look::seed_character_backpack(&h,90,98,&[("oteryn:item.tibia.i3505",1)]).await?;
+            let foreign_count:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND character_id<>encode($2,'hex')::uuid").bind(id(99).as_slice()).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(foreign_count,1,"foreign letter exists in another character's bag");
             // Not carried (unknown), the main backpack itself and a map entry are refused.
-            assert_eq!(read(admitted,id(99)).await,None);
+            assert_eq!(read(admitted,id(99)).await,None,"another character owns the letter");
+            assert_eq!(read(admitted,id(100)).await,None);
             assert_eq!(read(admitted,id(70)).await,None);
             assert_eq!(owner.item_inscription_read(admitted,Some(ItemKey::MapBase{bundle_digest:[0;32],placement_key:1,reset_epoch:0})).await,None);
             admitted.item_fence=None;

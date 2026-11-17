@@ -7,10 +7,24 @@ use oteryn_protocol_oteryn::CommandStatus;
 
 #[test]
 fn tutorial_vocation_offer_and_submit_real_dispatch() -> TestResult {
+    vocation_scenario(false, false)
+}
+
+#[test]
+fn tutorial_vocation_waits_for_main_backpack() -> TestResult {
+    vocation_scenario(true, false)
+}
+
+#[test]
+fn tutorial_vocation_resumes_retained_request() -> TestResult {
+    vocation_scenario(false, true)
+}
+
+fn vocation_scenario(missing_bag: bool, retained: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("tutorial-vocation", || {
+    super::kill_reward_e2e::scenario_thread::run("tutorial-vocation", move || {
         run(async |admin| {
             let h = Harness::create_newhaven(admin, "tutorial_vocation").await?;
             let request = prepare_current_session(&h).await?;
@@ -128,8 +142,71 @@ fn tutorial_vocation_offer_and_submit_real_dispatch() -> TestResult {
                     .0,
                 CommandStatus::Rejected
             );
-            let (status, selected) =
-                super::cyclopedia::support::exchange(&owner, &mut admitted, 6, 6243, &[4]).await?;
+            if missing_bag {
+                move_fixture_bag(&h, 41, 98).await?;
+                assert!(
+                    owner.tutorial_vocation_wire(admitted, &[4]).await.is_none(),
+                    "kit could not be placed"
+                );
+                assert!(
+                    owner.tutorial_vocation_wire(admitted, &[]).await.is_none(),
+                    "observation retries the kit"
+                );
+                move_fixture_bag(&h, 98, 41).await?;
+            }
+            if retained {
+                use crate::durability::character_build::{BuildFormula, BuildOccurrence};
+                use crate::gameplay_transport::vocation_choice::{
+                    RetainedNpcVocation, vocation_choice_request,
+                };
+                let formula = active
+                    .native_gameplay()
+                    .ok_or("active native gameplay")?
+                    .training_formula()
+                    .ok_or("training formula")?;
+                let before = h
+                    .root
+                    .read_character_build_state(&authority, fence.character_id)
+                    .await
+                    .map_err(debug)?;
+                let request = vocation_choice_request(
+                    BuildOccurrence::from_bytes(id(88)).map_err(debug)?,
+                    before,
+                    "paladin",
+                    formula,
+                    None,
+                )
+                .map_err(debug)?;
+                let old = owner
+                    .npc_vocation_fence(admitted.game_session_id)
+                    .await
+                    .ok_or("old fence")?;
+                assert!(owner.states.tutorial_sessions.retain_vocation(
+                    admitted.game_session_id,
+                    RetainedNpcVocation {
+                        fence: old,
+                        request,
+                        formula_digest: formula.digest()
+                    }
+                ));
+                sqlx::query("UPDATE game_durability_reconnect_sessions SET current_generation=current_generation+1 WHERE game_session_id=encode($1,'hex')::uuid").bind(admitted.game_session_id.as_bytes().as_slice()).execute(&h.pool).await?;
+                admitted.continuity.connection_generation += 1;
+                admitted.item_fence = Some(
+                    owner
+                        .npc_vocation_fence(admitted.game_session_id)
+                        .await
+                        .ok_or("resumed fence")?
+                        .item_fence(),
+                );
+            }
+            let (status, selected) = super::cyclopedia::support::exchange(
+                &owner,
+                &mut admitted,
+                6,
+                6243,
+                if retained { &[] } else { &[4] },
+            )
+            .await?;
             assert_eq!(status, CommandStatus::Accepted, "submit Paladin");
             assert_eq!(selected, [0, 4]);
             let build = h
@@ -188,4 +265,15 @@ fn tutorial_vocation_offer_and_submit_real_dispatch() -> TestResult {
             h.cleanup().await
         })
     })
+}
+
+async fn move_fixture_bag(h: &Harness, from: u8, to: u8) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let moved=sqlx::query("UPDATE game_item_container_slots SET character_id=encode($2,'hex')::uuid WHERE character_id=encode($1,'hex')::uuid").bind(id(from).as_slice()).bind(id(to).as_slice()).execute(&mut *tx).await?;
+    assert_eq!(moved.rows_affected(), 1);
+    tx.commit().await?;
+    Ok(())
 }

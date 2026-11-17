@@ -2,7 +2,7 @@
 use super::*;
 use crate::foundation::HouseHirelingEntity;
 
-pub(super) async fn read_state(
+pub(in crate::gameplay_transport::appearance_change) async fn read_state(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     fence: CurrentCharacterGameplayFence,
     grant_keys: Vec<String>,
@@ -51,7 +51,7 @@ pub(super) async fn read_state(
     }
 }
 
-pub(super) fn current_runtime_for_read(
+pub(in crate::gameplay_transport::appearance_change) fn current_runtime_for_read(
     runtime: &ChannelRuntimeV1,
     actor: ExactActorRef,
     session: GameSessionId,

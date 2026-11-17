@@ -176,6 +176,7 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
+        house_origin: Option<[u8; 16]>,
         item: [u8; 16],
     ) -> Result<Option<(TypedDefinitionRef, String)>> {
         let recovery = authority
@@ -188,17 +189,35 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    let root = match assert_item_only_fence(&mut tx, &fence, &node).await? {
-                        Ok(root) => root,
-                        Err(CharacterProgressionError::Unavailable(error)) => return Err(error),
-                        Err(_) => return Ok(Err(ItemUseError::AuthorityRejected)),
+                    let (content_revision, ruleset_revision) = if let Some(origin) = house_origin {
+                        if super::super::house_hireling::fence::assert_house_custody_fence(
+                            &mut tx, &node, &fence, origin,
+                        )
+                        .await?
+                        .is_none()
+                        {
+                            return Ok(Err(ItemUseError::AuthorityRejected));
+                        }
+                        sqlx::query_as(
+                            "SELECT content_revision, ruleset_revision FROM game_character_roots \
+                             WHERE character_id = encode($1,'hex')::uuid",
+                        )
+                        .bind(fence.character_id.as_bytes().as_slice())
+                        .fetch_one(&mut *tx)
+                        .await?
+                    } else {
+                        match assert_item_only_fence(&mut tx, &fence, &node).await? {
+                            Ok(root) => (root.content_revision, root.ruleset_revision),
+                            Err(CharacterProgressionError::Unavailable(error)) => return Err(error),
+                            Err(_) => return Ok(Err(ItemUseError::AuthorityRejected)),
+                        }
                     };
-                    reconcile_carried_death_tree(&mut tx, &fence, &node, None).await?;
+                    reconcile_carried_death_tree(&mut tx, &fence, &node, house_origin).await?;
                     let inventory = match read_use_inventory(
                         &mut tx,
                         &fence,
-                        root.content_revision,
-                        root.ruleset_revision,
+                        content_revision,
+                        ruleset_revision,
                     )
                     .await
                     {

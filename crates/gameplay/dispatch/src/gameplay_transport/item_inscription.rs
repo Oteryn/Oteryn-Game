@@ -54,7 +54,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let native = self.active_generation?.native_gameplay()?;
         let (definition, text) = self
             .root
-            .read_carried_item_text(self.character, self.holder, fence, item)
+            .read_carried_item_text(
+                self.character,
+                self.holder,
+                fence,
+                self.resident_origin(admitted).await,
+                item,
+            )
             .await
             .ok()??;
         reply(native, &definition, text)?.encode()

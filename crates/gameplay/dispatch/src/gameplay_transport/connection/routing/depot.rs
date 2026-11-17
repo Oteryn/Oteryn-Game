@@ -26,14 +26,33 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 oteryn_protocol_oteryn::depot::DepotAction::Deposit(handle) => {
                     item_view.as_ref().and_then(|view| view.resolve(handle))
                 }
+                oteryn_protocol_oteryn::depot::DepotAction::Withdraw(ordinal) => {
+                    item_view.as_ref().and_then(|view| {
+                        let (town, number) = view.open_depot?;
+                        if view.depot_withdraw_needs_browse
+                            || intent.town != Some(town)
+                            || intent.box_number != number
+                        {
+                            return None;
+                        }
+                        let (_, item) =
+                            view.depot_items.iter().find(|(seen, _)| *seen == ordinal)?;
+                        Some(crate::gameplay_transport::item_view::ItemKey::Instance(
+                            *item,
+                        ))
+                    })
+                }
                 _ => None,
             };
             // A new attempt replaces the connection's previous view, including when
             // the owner cannot complete its read. Never retain stale access on `None`.
-            if let Some(view) = item_view.as_mut() {
-                view.open_depot = None;
-                view.depot_items.clear();
-            }
+            let previous_items = item_view
+                .as_mut()
+                .map(|view| {
+                    view.open_depot = None;
+                    std::mem::take(&mut view.depot_items)
+                })
+                .unwrap_or_default();
             let observation = authority
                 .depot_at(
                     actor,
@@ -68,6 +87,17 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             {
                 view.open_depot = reply.town.map(|town| (town, reply.box_number));
                 if view.open_depot.is_some() {
+                    if intent.action == oteryn_protocol_oteryn::depot::DepotAction::Browse {
+                        view.depot_withdraw_needs_browse = false;
+                    } else {
+                        view.depot_withdraw_needs_browse |=
+                            previous_items.iter().any(|(old_ordinal, old_id)| {
+                                observation
+                                    .items
+                                    .iter()
+                                    .any(|(ordinal, id)| ordinal == old_ordinal && id != old_id)
+                            });
+                    }
                     view.depot_items = observation.items;
                 }
             }

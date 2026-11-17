@@ -559,6 +559,8 @@ pub struct SessionItemView {
     /// Exact native instances on the last shown depot page, never guessed from ordinals.
     /// These are historical selection data; writing must revalidate under its own lane.
     pub(super) depot_items: Vec<(u64, [u8; 16])>,
+    /// A move reused a displayed ordinal. Only an explicit browse starts a fresh selection.
+    pub(super) depot_withdraw_needs_browse: bool,
 }
 
 impl SessionItemView {
@@ -579,6 +581,7 @@ impl SessionItemView {
             appearances: false,
             open_depot: None,
             depot_items: Vec::new(),
+            depot_withdraw_needs_browse: false,
         }
     }
 

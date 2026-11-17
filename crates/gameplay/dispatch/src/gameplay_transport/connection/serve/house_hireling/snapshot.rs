@@ -14,7 +14,9 @@ impl State {
         let enabled = selected.contains(oteryn_protocol_oteryn::hireling::CAPABILITY_HIRELING_V1);
         let mut items = if selected
             .contains(oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1)
-            && (enabled
+            && (selected.contains(
+                oteryn_protocol_oteryn::item_inscription::CAPABILITY_ITEM_INSCRIPTION_READ_V1,
+            ) || enabled
                 || selected.contains(
                     oteryn_protocol_oteryn::house_wrap::CAPABILITY_HOUSE_FURNITURE_WRAP_V1,
                 )
@@ -204,6 +206,9 @@ impl State {
                 visibility,
                 appearances,
                 spatial_revision,
+                capacity: None,
+                capacity_refresh_at: None,
+                emblems: Vec::new(),
                 movement_effect_revision: authority
                     .observe_current_actor_movement_effects(actor, admitted.game_session_id, 0)
                     .await

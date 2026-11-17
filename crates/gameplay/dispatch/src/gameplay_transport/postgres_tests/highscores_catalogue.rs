@@ -62,6 +62,49 @@ fn highscores_catalogue_and_type_predicate_reach_dispatch_client_state_and_selec
             sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'policy-1',$2,20,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'catalogue-fixture')")
             .bind(world.as_bytes().as_slice()).bind(mode).execute(&h.pool).await?;
             super::highscores_world::snapshot(&h.pool, world, 1, character.as_bytes(), 1).await?;
+            let query = oteryn_protocol_oteryn::highscores::HighscoresQuery {
+                world: Some(wire::WorldId::decode(world.as_bytes()).map_err(debug)?),
+                details: true,
+                category: 1,
+                vocation: 1,
+                page: 1,
+                snapshot_id: 0,
+            };
+            let mut admission_writer = h.pool.begin().await?;
+            sqlx::query("LOCK TABLE game_durability_reconnect_sessions IN EXCLUSIVE MODE")
+                .execute(&mut *admission_writer)
+                .await?;
+            let response = crate::durability::highscores_catalogue::answer_session(
+                &h.root,
+                world,
+                world,
+                admitted.game_session_id,
+                None,
+            )
+            .await;
+            let typed = crate::durability::highscores_catalogue::answer_session(
+                &h.root,
+                world,
+                world,
+                admitted.game_session_id,
+                Some((query, Some(kind))),
+            )
+            .await;
+            admission_writer.rollback().await?;
+            assert!(
+                matches!(
+                    response,
+                    crate::durability::highscore_snapshot::reply::HighscoresReply::Result(_)
+                ),
+                "admission writer blocked the catalogue request"
+            );
+            assert!(
+                matches!(
+                    typed,
+                    crate::durability::highscore_snapshot::reply::HighscoresReply::Result(_)
+                ),
+                "admission writer blocked the typed query"
+            );
             let mut panel = HighscoresPanel::default();
             panel.selected = true;
             panel.catalogue_selected = true;
@@ -112,14 +155,6 @@ fn highscores_catalogue_and_type_predicate_reach_dispatch_client_state_and_selec
                 panel.reply.as_ref().ok_or("filtered highscores")?.category,
                 1
             );
-            let query = oteryn_protocol_oteryn::highscores::HighscoresQuery {
-                world: Some(wire::WorldId::decode(world.as_bytes()).map_err(debug)?),
-                details: true,
-                category: 1,
-                vocation: 1,
-                page: 1,
-                snapshot_id: 0,
-            };
             let wrong = wire::encode_query(
                 query,
                 Some(if kind == WorldType::Optional {
