@@ -306,13 +306,15 @@ impl ChannelRuntimeV1 {
             actors
                 .try_reserve(monsters.len())
                 .map_err(|_| CarrierError::AllocationFailed)?;
+            // Source scripts transfer the cohort before creating its monsters.
+            // Both operations still roll back together if bind or projection fails.
+            for proof in players {
+                snapshots.push(self.commit_source_step(proof)?);
+            }
             for (key, health, at) in monsters {
                 let actor = self.admit_encounter_actor(key, *health, *at)?;
                 self.install_creature_policy(actor, key)?;
                 actors.push(actor);
-            }
-            for proof in players {
-                snapshots.push(self.commit_source_step(proof)?);
             }
             let phase = bind(self, &actors, &snapshots)?;
             if !project() {

@@ -67,6 +67,34 @@ pub fn prepare_quest_callback_teleport_facing<'a>(
     Ok(proof)
 }
 
+/// Encounter admission may collect a current player cohort on one landing.
+#[allow(clippy::too_many_arguments)]
+pub fn prepare_quest_encounter_transfer<'a>(
+    runtime: &ChannelRuntimeV1,
+    cells: &'a NativeEntryMovementCells,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    expected: MovementPositionSnapshot,
+    destination: MovementLocalPosition,
+    pz_blocked: bool,
+    closed: &'a dyn CellBlocker,
+    player_stack: bool,
+) -> Result<impl crate::foundation::SourceStepCommitProof + 'a, MovementError> {
+    let proof = CallbackTeleport {
+        cells,
+        actor,
+        session,
+        expected,
+        destination,
+        pz_blocked,
+        closed,
+        facing: None,
+        player_stack,
+    };
+    proof.check(runtime)?;
+    Ok(proof)
+}
+
 /// Forced source encounter exits may gather players on one landing tile.
 /// Current map, actor/session and creature occupancy remain authoritative.
 pub fn prepare_quest_encounter_ejection<'a>(
