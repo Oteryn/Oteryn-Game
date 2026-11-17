@@ -205,6 +205,7 @@ fn e2e_result_line(line: &str) -> String {
     };
     let verdict = match status {
         Some("CAPTURED") => return format!("e2e_capture {rest}"),
+        Some("MISSING") => "MISSING-SERVER",
         Some(value @ ("PASS" | "FAIL" | "SKIPPED" | "MISSING-SERVER" | "MISSING-CLIENT")) => value,
         Some(other) => {
             detail.insert(0, other.to_owned());
@@ -259,6 +260,16 @@ mod e2e_result_line_tests {
                 ),
             );
         }
+    }
+
+    #[test]
+    fn qualification_missing_q_row_keeps_the_canonical_missing_status() {
+        assert_eq!(
+            e2e_result_line(
+                "e2e_all scenario=Q03a.full status=MISSING seconds=0 evidence=no-confirmed-descent"
+            ),
+            "e2e_all scenario=Q03a.full status=MISSING-SERVER seconds=0 evidence=no-confirmed-descent",
+        );
     }
 
     #[test]

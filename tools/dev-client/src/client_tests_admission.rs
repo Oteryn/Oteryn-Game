@@ -396,3 +396,24 @@ async fn run_no_alpn_case() -> Result<(), Box<dyn StdError + Send + Sync>> {
     server.await??;
     Ok(())
 }
+
+#[test]
+fn admission_material_is_not_minted_before_transport_is_ready() -> Result<(), Box<dyn StdError + Send + Sync>> {
+    block_on(async {
+        let generated = rcgen::generate_simple_self_signed(vec!["localhost".to_owned()])?;
+        let minted = std::cell::Cell::new(false);
+        let result = connect_session_with_admission(JoinRequest {
+            address: "127.0.0.1:0".parse()?,
+            server_name: "localhost",
+            root_certificate: &generated.cert.der().clone(),
+            schema_revision: 1,
+            character_id: CharacterId::decode(&test_uuid_v7(4))?,
+            admission_material: b"",
+            client_build_id: CLIENT_BUILD_ID,
+            deadline: TEST_DEADLINE,
+        }, || { minted.set(true); Ok(b"fresh-grant".to_vec()) }).await;
+        assert!(result.is_err());
+        assert!(!minted.get(), "grant lifetime started before TCP/TLS preparation");
+        Ok(())
+    })?
+}

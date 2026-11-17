@@ -848,6 +848,18 @@ mod travel {
             rope: bool,
             passages: &Passages,
         ) -> Result<Vec<(Leg, TilePos)>, String> {
+            complete_search(self.plan_serviced(from, target, goal, rope, passages, async || Ok(())))
+        }
+
+        pub(super) async fn plan_serviced(
+            &self,
+            from: TilePos,
+            target: TilePos,
+            goal: &dyn Fn(TilePos) -> bool,
+            rope: bool,
+            passages: &Passages,
+            service: impl AsyncFnMut() -> Result<(), String>,
+        ) -> Result<Vec<(Leg, TilePos)>, String> {
             // The box also covers every captain (and his landing) near the target, so a passage
             // whose port lies outside the plain start-to-target box can still be walked to.
             let mut points = vec![from, target];
@@ -864,7 +876,7 @@ mod travel {
             };
             let (low_x, high_x) = span(|at| at.x);
             let (low_y, high_y) = span(|at| at.y);
-            search(
+            search_serviced(
                 from,
                 goal,
                 |at| {
@@ -879,7 +891,9 @@ mod travel {
                     });
                 },
                 SEARCH_LIMIT,
+                service,
             )
+            .await
         }
 
         fn door(&self, at: TilePos) -> Option<(u64, u16)> {
@@ -910,6 +924,33 @@ mod travel {
             let mut placement = self.world.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
             Ok(placement)
+        }
+
+        pub(super) fn tile_evidence(&self, at: TilePos) -> String {
+            use crate::map::view::MapFacts;
+            let Some(tile) = self.world.base().tile(at.x, at.y, at.floor) else {
+                return format!("{} absent", show(at));
+            };
+            let appearances: Vec<_> = tile
+                .ids()
+                .iter()
+                .zip(tile.depths())
+                .filter(|(_, depth)| **depth == 0)
+                .enumerate()
+                .map(|(ordinal, (id, _))| {
+                    u8::try_from(ordinal)
+                        .ok()
+                        .and_then(|ordinal| self.world.facts().base_entry(at, ordinal, *id))
+                        .map(|entry| entry.appearance_id)
+                })
+                .collect();
+            format!(
+                "{} items={appearances:?} ground_walkable={} enterable={} floor_change={}",
+                show(at),
+                tile.walkable(),
+                self.world.enterable(at),
+                self.world.floors().contains(at)
+            )
         }
 
         /// Reward objects are used from a free adjacent tile on their own floor.
@@ -988,12 +1029,46 @@ mod travel {
     }
 
     /// Weighted A* over player actions, each with its own cost.
+    #[cfg(test)]
     fn search<E: Copy>(
+        from: TilePos,
+        goal: &dyn Fn(TilePos) -> bool,
+        estimate: impl Fn(TilePos) -> u32,
+        edges: impl FnMut(TilePos, &mut Vec<(E, TilePos, u32)>),
+        limit: usize,
+    ) -> Result<Vec<(E, TilePos)>, String> {
+        complete_search(search_serviced(
+            from,
+            goal,
+            estimate,
+            edges,
+            limit,
+            async || Ok(()),
+        ))
+    }
+
+    fn complete_search<T>(
+        future: impl std::future::Future<Output = Result<T, String>>,
+    ) -> Result<T, String> {
+        let mut future = std::pin::pin!(future);
+        match future
+            .as_mut()
+            .poll(&mut std::task::Context::from_waker(std::task::Waker::noop()))
+        {
+            std::task::Poll::Ready(result) => result,
+            std::task::Poll::Pending => {
+                Err("synchronous search unexpectedly waited for session IO".into())
+            }
+        }
+    }
+
+    async fn search_serviced<E: Copy>(
         from: TilePos,
         goal: &dyn Fn(TilePos) -> bool,
         estimate: impl Fn(TilePos) -> u32,
         mut edges: impl FnMut(TilePos, &mut Vec<(E, TilePos, u32)>),
         limit: usize,
+        mut service: impl AsyncFnMut() -> Result<(), String>,
     ) -> Result<Vec<(E, TilePos)>, String> {
         let mut open = BinaryHeap::from([Reverse((estimate(from), 0u32, from))]);
         let mut costs = HashMap::from([(from, 0u32)]);
@@ -1018,6 +1093,7 @@ mod travel {
             }
             if settled.is_multiple_of(1024) {
                 verdict::Harness::global().progress("travel search");
+                service().await?;
             }
             closest = closest.min((estimate(at), at));
             if goal(at) {
@@ -1060,6 +1136,41 @@ mod travel {
             "every reachable tile of the search box exhausted ({settled} settled); closest tile reached {}",
             show(closest.1)
         ))
+    }
+
+    #[cfg(test)]
+    #[test]
+    fn qualification_route_search_services_live_session_between_batches() -> TestResult {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
+                let start = TilePos {
+                    x: 0,
+                    y: 0,
+                    floor: -7,
+                };
+                let mut serviced = 0;
+                let route = search_serviced(
+                    start,
+                    &|at| at.x == 4096,
+                    |_| 0,
+                    |at, out| {
+                        if at.x < 4096 {
+                            out.push(((), TilePos { x: at.x + 1, ..at }, 1));
+                        }
+                    },
+                    5000,
+                    async || {
+                        serviced += 1;
+                        Ok(())
+                    },
+                )
+                .await?;
+                assert_eq!(route.len(), 4096);
+                assert!(serviced >= 4, "long route search starved session liveness");
+                Ok(())
+            })
     }
 
     fn describe_offer(offer: &Offer) -> String {
@@ -1648,9 +1759,24 @@ mod travel {
                 return Ok(());
             }
             verdict::Harness::global().progress("walk");
-            let route = planner
-            .plan(from, target, goal, rope, passages)
-            .map_err(|reason| {
+            let mut service_error = None;
+            let planned = planner
+                .plan_serviced(from, target, goal, rope, passages, async || {
+                    verdict::Harness::global().progress("travel session liveness");
+                    match client.service_liveness(Duration::from_millis(25)).await {
+                        Ok(()) => Ok(()),
+                        Err(error) => {
+                            let reason = error.to_string();
+                            service_error = Some(error);
+                            Err(reason)
+                        }
+                    }
+                })
+                .await;
+            if let Some(error) = service_error {
+                return Err(error.into());
+            }
+            let route = planned.map_err(|reason| {
                 format!(
                     "{label} no route by step, door, stairs, hole, ladder{} from {} to {}: {reason}; refused on the way: [{}]",
                     if rope { " or rope" } else { "" },
@@ -4572,12 +4698,61 @@ fn fresh_grant_material(tag: u8) -> TestResult<([u8; 32], [u8; 16])> {
     Ok((nonce, attempt))
 }
 
+async fn wait_fixture_command<T: Send + 'static>(
+    task: tokio::task::JoinHandle<Result<T, String>>,
+    mut service: impl AsyncFnMut() -> TestResult,
+) -> TestResult<T> {
+    let mut live = Ok(());
+    while !task.is_finished() && live.is_ok() {
+        verdict::Harness::global().progress("fixture provisioning liveness");
+        live = service().await;
+    }
+    // Even after transport loss, retain the fenced operation until its bounded
+    // control request completes; never detach a writer into the next row.
+    let result = task.await?;
+    live?;
+    result.map_err(Into::into)
+}
+
+#[cfg(test)]
+#[test]
+fn qualification_fixture_command_services_liveness_and_joins_after_loss() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let finished = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+            let writer_finished = finished.clone();
+            let (release, gate) = std::sync::mpsc::sync_channel(1);
+            let task = tokio::task::spawn_blocking(move || -> Result<(), String> {
+                gate.recv().map_err(|error| error.to_string())?;
+                writer_finished.store(true, std::sync::atomic::Ordering::SeqCst);
+                Ok(())
+            });
+            let mut serviced = 0;
+            let result = wait_fixture_command(task, async || {
+                serviced += 1;
+                release.send(())?;
+                Err("transport lost".into())
+            })
+            .await;
+            assert!(result.is_err());
+            assert_eq!(serviced, 1);
+            assert!(
+                finished.load(std::sync::atomic::Ordering::SeqCst),
+                "fixture writer detached after transport loss"
+            );
+            Ok(())
+        })
+}
+
 pub(super) async fn connect_character(
     clients: &SeamClients<'_>,
     tag: u8,
     index: usize,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     wait_character_released(clients, index).await?;
+    verdict::Harness::global().progress("admission");
     let generation = platform_generation(clients.descriptor, &clients.accounts[index]).await?;
     let (nonce, attempt) = fresh_grant_material(tag)?;
     let grant = Grant {
@@ -4592,17 +4767,24 @@ pub(super) async fn connect_character(
         nonce,
         attempt,
     };
-    let token = sign_grant(&grant, now_seconds()?);
-    let client = oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
-        address: clients.address,
-        server_name: "localhost",
-        root_certificate: clients.certificate,
-        schema_revision: 1,
-        character_id: crate::foundation::CharacterId::decode(&clients.characters[index])?,
-        admission_material: token.as_bytes(),
-        client_build_id: "oteryn-dev-client/world-qualification",
-        deadline: Duration::from_secs(20),
-    })
+    let client = oteryn_dev_client::connect_session_with_admission(
+        oteryn_dev_client::JoinRequest {
+            address: clients.address,
+            server_name: "localhost",
+            root_certificate: clients.certificate,
+            schema_revision: 1,
+            character_id: crate::foundation::CharacterId::decode(&clients.characters[index])?,
+            admission_material: &[],
+            client_build_id: "oteryn-dev-client/world-qualification",
+            deadline: Duration::from_secs(20),
+        },
+        || {
+            let issued = now_seconds().map_err(|error| {
+                oteryn_dev_client::DevClientError::Io(std::io::Error::other(error.to_string()))
+            })?;
+            Ok(sign_grant(&grant, issued).into_bytes())
+        },
+    )
     .await?;
     verdict::Harness::global().progress("admission");
     Ok(client)
@@ -4881,6 +5063,19 @@ fn qualification_nbroute_retries_only_stationary_rejections_with_a_bound() {
 
 #[cfg(test)]
 #[test]
+fn qualification_q01_bundle_route_reaches_noble_armor_door() -> TestResult {
+    flr2_reward_route(
+        "Q01a",
+        TilePos {
+            x: 32451,
+            y: 32048,
+            floor: -8,
+        },
+    )
+}
+
+#[cfg(test)]
+#[test]
 fn qualification_flr2_q03a_descends_to_adjacent_reward() -> TestResult {
     flr2_reward_route(
         "Q03a",
@@ -4945,7 +5140,13 @@ fn flr2_reward_route(label: &'static str, target: TilePos) -> TestResult {
                 return Ok(());
             }
             let route = planned?;
-            for line in planner.describe(TOWN, &route) {
+            let description = planner.describe(TOWN, &route);
+            if label == "Q01a" {
+                let description = description.join(" ");
+                assert!(description.contains("rope-USE@32453,32039,9"));
+                assert!(description.contains("door@32448,32042,8(action=1035)"));
+            }
+            for line in description {
                 eprintln!("FLR2_ROUTE {label} {line}");
             }
             let landing = route

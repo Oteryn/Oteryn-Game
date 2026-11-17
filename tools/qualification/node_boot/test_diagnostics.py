@@ -5,6 +5,7 @@ import os
 import re
 import selectors
 import signal
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -31,6 +32,17 @@ def function(name):
 
 
 class RuntimeEvidenceTests(unittest.TestCase):
+    def test_shutdown_guard_check_handles_multiple_runtime_scopes(self):
+        sql = re.search(r"echo '([^']+)' \| psql_admin oteryn_node_boot", function('graceful_shutdown')).group(1)
+        with sqlite3.connect(':memory:') as database:
+            database.execute('CREATE TABLE game_durability_admission_runtime_guards (ready boolean)')
+            for values, expected in [([], False), ([False], True), ([False, False], True), ([False, True], False)]:
+                database.execute('DELETE FROM game_durability_admission_runtime_guards')
+                database.executemany('INSERT INTO game_durability_admission_runtime_guards VALUES (?)', [(value,) for value in values])
+                rows = database.execute(sql).fetchall()
+                # The shell must receive one truth value, independent of scope count.
+                self.assertEqual(rows, [(int(expected),)], values)
+
     def test_served_content_revision_is_the_characters_interpretation(self):
         # NBSEAM: the quest and Task Board owners refuse a Character whose stored progression
         # content differs from the served readiness.content_revision (ProgressionContextMismatch).
