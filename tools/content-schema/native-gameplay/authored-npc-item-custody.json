@@ -5,6 +5,11 @@
       "path": "tools/content-schema/quest-authoring/batch3_a/npc/fathers_burden.json",
       "sha256": "3e61e951d10057e71e8090fcd12865dbbee2718a6c7771d536a5ba258df9214b",
       "quest": "oteryn:quest.a_father_s_burden_quest"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/wyda-bored-exchange.json",
+      "sha256": "1bdddd171a4bc6dc77a54b7d40bd94ca990c32d4b5b8ebd229d634c818c8720b",
+      "quest": "oteryn:quest.bored_mini_world_change"
     }
   ]
 }

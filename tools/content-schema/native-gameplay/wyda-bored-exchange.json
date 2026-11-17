@@ -1,0 +1,24 @@
+{
+  "quest": "oteryn:quest.bored_mini_world_change",
+  "npc": "oteryn:npc.wyda",
+  "requires_world_change": "bored",
+  "take": {
+    "item": "oteryn:item.tibia.i3734",
+    "quantity": 1
+  },
+  "rewards": [
+    {
+      "item": "oteryn:item.tibia.i12617",
+      "chance_permille": 36,
+      "achievement": "oteryn:achievement/torn_treasures"
+    },
+    {
+      "item": "oteryn:item.tibia.i3211",
+      "chance_permille": 964
+    }
+  ],
+  "sources": [
+    "https://tibia.fandom.com/index.php?curid=76211&oldid=1135336",
+    "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/wyda.lua#L104-L117"
+  ]
+}
