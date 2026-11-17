@@ -202,18 +202,10 @@ pub(super) async fn observe_item_target(
             target: UseItemTarget::Gone,
         });
     };
-    let contents = entries
-        .iter()
-        .map(|entry| {
-            Some(ViewItem {
-                appearance_id: super::item_view::appearance_of(&entry.item.definition),
-                key: ItemKey::Instance(entry.item.item_instance_id),
-                item_definition_ref: definition_ref(index, &entry.item.definition)?,
-                count: NonZeroU32::new(entry.item.quantity)?,
-                sub_type: 0,
-            })
-        })
-        .collect::<Option<Vec<_>>>()?;
+    let contents = corpse_view_items(index, &entries);
+    if contents.len() != entries.len() {
+        return None;
+    }
     Some(ItemTargetObservation {
         actor: actor_position,
         target: UseItemTarget::Corpse {
@@ -225,6 +217,26 @@ pub(super) async fn observe_item_target(
             contents,
         },
     })
+}
+
+/// The durable corpse entries as domain 11 view items, in loot order.
+fn corpse_view_items(
+    index: &ItemDefinitionIndex,
+    entries: &[crate::durability::item_transfer::BackpackEntry],
+) -> Vec<ViewItem> {
+    entries
+        .iter()
+        .map(|entry| {
+            Some(ViewItem {
+                appearance_id: super::item_view::appearance_of(&entry.item.definition),
+                key: ItemKey::Instance(entry.item.item_instance_id),
+                item_definition_ref: definition_ref(index, &entry.item.definition)?,
+                count: NonZeroU32::new(entry.item.quantity)?,
+                sub_type: 0,
+            })
+        })
+        .collect::<Option<Vec<_>>>()
+        .unwrap_or_default()
 }
 
 /// D1211: resolve every locked carried definition from this exact admitted native generation.

@@ -462,3 +462,139 @@ fn corpse_take_facts_are_the_generation_item_profiles() {
         revision_ref: "spell-p2-r21".to_owned(),
     }));
 }
+
+const LOOT_TABLES: &[u8] =
+    include_bytes!("../../../../../tools/content-schema/native-gameplay/loot-tables.json");
+
+/// The `(key, revision, min_count, max_count)` of every entry of the pinned loot table `table`.
+fn loot_entries(table: &serde_json::Value) -> Vec<(String, String, u64, u64)> {
+    table["entries"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|entry| {
+            (
+                entry["item"]["key"].as_str().unwrap().to_owned(),
+                entry["item"]["revision"].as_str().unwrap().to_owned(),
+                entry["min_count"].as_u64().unwrap(),
+                entry["max_count"].as_u64().unwrap(),
+            )
+        })
+        .collect()
+}
+
+fn pinned_loot_tables() -> Vec<serde_json::Value> {
+    let section: serde_json::Value = serde_json::from_slice(LOOT_TABLES).unwrap();
+    section["tables"].as_array().unwrap().clone()
+}
+
+/// A Cyclops corpse holding one stack of every entry of its real pinned loot table, each at its
+/// maximum count (Crystal 201189f8 `data-otservbr-global/monster/giants/cyclops.lua`).
+fn cyclops_corpse() -> Vec<BackpackEntry> {
+    let table = pinned_loot_tables()
+        .into_iter()
+        .find(|table| table["identity"]["key"] == "oteryn:loot.creature.cyclops")
+        .unwrap();
+    loot_entries(&table)
+        .into_iter()
+        .enumerate()
+        .map(|(ordinal, (key, revision, _, max_count))| {
+            corpse_entry(ordinal, &key, &revision, u32::try_from(max_count).unwrap())
+        })
+        .collect()
+}
+
+fn corpse_entry(ordinal: usize, key: &str, revision: &str, quantity: u32) -> BackpackEntry {
+    let mut item_instance_id = [0x5c; 16];
+    item_instance_id[15] = u8::try_from(ordinal).unwrap();
+    BackpackEntry {
+        item: InventoryItem {
+            item_instance_id,
+            definition: TypedDefinitionRef {
+                family: "Item".to_owned(),
+                production_key: key.to_owned(),
+                revision_ref: revision.to_owned(),
+            },
+            quantity,
+        },
+        placement_ordinal: u64::try_from(ordinal).unwrap() + 1,
+    }
+}
+
+/// CORPSELOOT: every entry of a real Cyclops corpse is shown, in loot order, with its count.
+#[test]
+fn cyclops_corpse_shows_every_real_loot_entry() {
+    let index = ItemDefinitionIndex::decode(PRODUCTION_KEYS).unwrap();
+    let corpse = cyclops_corpse();
+    assert_eq!(corpse.len(), 13);
+    let shown = corpse_view_items(&index, &corpse);
+    assert_eq!(
+        shown
+            .iter()
+            .map(|item| (item.key, item.count.get()))
+            .collect::<Vec<_>>(),
+        corpse
+            .iter()
+            .map(|entry| (
+                ItemKey::Instance(entry.item.item_instance_id),
+                entry.item.quantity
+            ))
+            .collect::<Vec<_>>()
+    );
+}
+
+/// CORPSELOOT (E2E nbgh71): one entry the pinned index does not name, or one with no quantity,
+/// never hides the rest of the corpse. Per Crystal the corpse opens and shows the items it has;
+/// each refused entry is reported with its item id and the reason.
+#[test]
+fn one_unnamed_or_empty_corpse_entry_never_hides_the_rest() {
+    let index = ItemDefinitionIndex::decode(PRODUCTION_KEYS).unwrap();
+    let mut corpse = cyclops_corpse();
+    let real = corpse.clone();
+    corpse.insert(
+        2,
+        corpse_entry(40, "oteryn:item.tibia.i99999999", "definition-r1", 1),
+    );
+    corpse.insert(5, corpse_entry(41, "oteryn:item.tibia.i3031", "definition-r1", 0));
+    let mut shown = Vec::new();
+    let lines = oteryn_error_codes::capture(|| shown = corpse_view_items(&index, &corpse));
+    assert_eq!(
+        shown.iter().map(|item| item.key).collect::<Vec<_>>(),
+        real.iter()
+            .map(|entry| ItemKey::Instance(entry.item.item_instance_id))
+            .collect::<Vec<_>>()
+    );
+    assert_eq!(lines.len(), 2, "{lines:?}");
+    assert!(lines[0].contains("event=corpse_entry_refused"), "{lines:?}");
+    assert!(lines[0].contains("item=oteryn:item.tibia.i99999999"), "{lines:?}");
+    assert!(lines[0].contains("reason=not_in_item_index"), "{lines:?}");
+    assert!(lines[1].contains("item=oteryn:item.tibia.i3031"), "{lines:?}");
+    assert!(lines[1].contains("reason=zero_quantity"), "{lines:?}");
+}
+
+/// CORPSELOOT: the whole defect class over the pinned content. Every entry of every species'
+/// loot table is an Item the pinned index names at exactly its revision, with a non-empty count
+/// range, so no real drop is refused by the corpse view. A failure lists every species.
+#[test]
+fn every_species_loot_entry_is_named_by_the_pinned_item_index() {
+    let index = ItemDefinitionIndex::decode(PRODUCTION_KEYS).unwrap();
+    let tables = pinned_loot_tables();
+    assert_eq!(tables.len(), 1292);
+    let failing: Vec<String> = tables
+        .iter()
+        .filter_map(|table| {
+            let bad: Vec<String> = loot_entries(table)
+                .into_iter()
+                .filter(|(key, revision, min_count, max_count)| {
+                    index.definition_ref("Item", key, revision).is_none()
+                        || *min_count == 0
+                        || max_count < min_count
+                })
+                .map(|(key, _, min_count, max_count)| format!("{key}[{min_count}..={max_count}]"))
+                .collect();
+            (!bad.is_empty())
+                .then(|| format!("{}: {}", table["identity"]["key"], bad.join(", ")))
+        })
+        .collect();
+    assert!(failing.is_empty(), "species with unmappable loot: {failing:#?}");
+}
