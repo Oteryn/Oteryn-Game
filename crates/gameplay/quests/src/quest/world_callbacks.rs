@@ -852,6 +852,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
         (9303, "tanjis", 20, &[14223, 13990, 14042][..]),
         (9304, "obujos", 30, &[14222, 14043, 13987][..]),
     ] {
+        let flag = format!("oteryn:quest-progress/deeplings_world_change/{boss}-chest");
         let additional: Vec<_> = items
             .iter()
             .map(|id| serde_json::json!({"item": format!("oteryn:item.tibia.i{id}"), "count": 1}))
@@ -864,9 +865,10 @@ pub fn load() -> Result<Vec<Callback>, String> {
             "reversible":false,
             "passages":[],
             "storage":[{
-                "track":format!("oteryn:quest-progress/deeplings_world_change/{boss}-chest"),
+                "track":flag,
                 "minimum":1,"maximum":1,"set":0
             }],
+            "track_initials":{(flag):0},
             "effects":{"item_reward":{"item":"oteryn:item.tibia.i3035","count":coins,"additional":additional}},
             "offerings":[],
             "return_on_failure":false,
