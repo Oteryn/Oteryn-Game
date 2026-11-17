@@ -1,0 +1,41 @@
+# QCX36 Ferumbras' Ascension Quest
+
+Base `98d09d5ce17df2a621df3fac9c2ce341dccc073b`.
+
+## Sources
+
+- TibiaWiki MediaWiki API capture supplied by the maintainer on 2026-11-17. Direct API access returned HTTP 402 in this environment. The quest page is [curid 76901, oldid 1110095](https://tibia.fandom.com/?curid=76901&oldid=1110095).
+- The spoiler is [curid 76902, oldid 1204031](https://tibia.fandom.com/?curid=76902&oldid=1204031).
+- Crystal `201189f871d23597b82caf88fd611454a2ddefb8`. Paths below are relative to this revision. The older Crystal reward script digest already in the repository matches this revision byte for byte. [Crystal reward action](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/ferumbras_ascension/actions_reward.lua#L1-L42)
+
+## Compatibility comparison
+
+| Area | Global and Crystal evidence | Repository and remaining difference |
+| --- | --- | --- |
+| Requirements and journal | Global requires Premium and level 150, recommends 250+, and shows this quest in the log. A Dwarven Ring and a pick, shovel or equivalent are listed as equipment. Global grandfathered access earned before the July 31, 2018 level gate. | Definition already records Premium, 150 and journal visibility. Its source class remains `reward_only`, with a journal classification hold. The runtime tests level and Premium on the chosen route, including later stages. Equipment interactions and grandfathering are absent from that route. |
+| Entry and access | Global dialogue at Mazarius is `hi → short → yes → demonic essence → yes`. He takes 30 Demonic Essences and gives one Teleportation Rod. Crystal uses items 6499 and 22182 and writes Access, FirstDoor, MonsterDoor and TarbazDoor. Its entry actions 24837/24838 branch on access and the seven piece flags. | The shared approach records a visit at (33276, 32390, 8). The selected programme starts at (33275, 32390, 8), then consumes 10 essences on the floor at the ritual flame and sends the character straight to Plagirath. No matching Mazarius exchange is registered. The checked approach tiles carry no relevant AID in the retained placements. |
+| Seven minion routes | Global uses independent routes off Hell Hub. A successful route requires the Teleportation Rod on the Godbreaker piece after the boss. Crystal maps seven item targets 22174–22180. Global minion retries are 44 hours. | Selected runtime leads through eight fixed guardian defeats and sequential portals. Kills and traversals stand in for collecting individual pieces. The 60-second selected guardian respawn has a different purpose from the 44-hour per-character retry. |
+| Plagirath | Lord of the Lice prerequisite and bypass for repeat access, then Plagirath and Disgusting Ooze encounter behavior. | Selected route starts at the final guardian and bypasses the prerequisite and timed exit to the piece. |
+| Zamulosh | Per-character lever, eight timed habitats with lured creatures, walk-through walls and clone fight. | Selected route supplies the guardian and a kill gate. It omits the habitat states, individual puzzle credit and clone encounter behavior. |
+| Mazoran | Three-player colored tile and lever sequence, matching elements and timed lava restoration, then the boss. | Selected route supplies the guardian and a kill gate. It omits the shared lava and per-character color/element puzzle. |
+| Razzagorn | Four levers release The Shatterer, whose defeat opens the approach before the Razzagorn fight. | Selected route starts at Razzagorn and bypasses The Shatterer and lever release. |
+| Ragiaz | Grave Flower, Signet Ring, Bones and Vampire Teeth on the Dried Well, statue torch and the Rite of Eternal Night open the Blood Well route. Fight includes Death Dragons and Bone Capsule phases. | Selected route starts at Ragiaz. Three independent once-per-character claims exist: Bones 22158 ×1 at (33393, 32373, 11), Rite 22160 ×1 at (33384, 32323, 12), and Vampire Teeth 9685 ×1 at (33408, 32396, 11). Crystal/Canary UIDs are respectively 6307/6308, 6306/6307 and 6309/6309. The claims alone supply no ritual progress. |
+| Tarbaz | Five letters involve color/element assignment, Bone Flute on the matching animal, Fire Bug and basins, two signs, and luring Desperate Soul to the NPC. | Selected route starts at Tarbaz and bypasses the five letters and soul handoff. |
+| Shulgrax | Match garden flowers to tile colors. Each character pulls the lever within ten minutes. Fight includes Sin Devourers and Damned Souls. | Selected route starts at Shulgrax and bypasses the timed pattern and summoned-creature phase. |
+| Final access and fight | After all seven pieces, return to Mazarius' room and follow the new route to the final group lever. Global stages are crystals and Rift Invader deaths, Soul Splinters, Rift Fragments, and Mortal Shell. Global retries at 332 hours. Crystal death credit also transforms the exit briefly. | The selected path jumps from Shulgrax to one Mortal Shell guardian, then into the reward room. Separate encounter source records do not supply this quest's complete group admission, phase chain or timed exit. Crystal's final lever has a separate 480-hour literal, superseded by Global's 332 hours and Crystal's own death-credit timer. |
+| Physical reward | Global lists 5 Silver Tokens, 4 Folded Rift Carpets, 4 Rift Tapestries, 10 Crystal Coins and Ferumbras' Teddy. Crystal corroborates the bundle and supplies IDs 22516, 22737, 22731, 3043 and 22775, in bag 2853 at UID 1035. | The pre-audit runtime callback at (33388, 31409, 14) only granted 5 Silver Tokens. The retained cell includes appearance 4073, without UID 1035 on that entry. The selected definition's reward intent lists the token and cosmetics only. |
+| Completion and cosmetics | Global completes the reward conversation by greeting Heavenly Messenger after the final fight. Crystal's NPC has focus only and its chest grants Hat Hunter and both Rift Warrior looks with addon mask 3. | Runtime grants the achievement, outfit and completion via chest use. The Cledwyn attestation is a separate outfit dependency. No Heavenly Messenger completion callback was found. |
+| XP and boss loot | Global lists no fixed quest XP. Ferumbras' Hat and Mysterious Scroll are possible Mortal Shell loot. | No fixed quest XP is granted. Boss loot is independent of the chest and must not be added to it. |
+
+No Ferumbras quest callback row was found in `world-callbacks-held`. The active chosen programme is emitted by `questpc7_ferumbras_programme.py` to `questpc7-world-callbacks.json` and `questpc7-death-objectives.json`.
+
+## Blockers and open facts
+
+- BLOCKER Ferumbras seal exits damage-participant death scheduling with temporary portal destination and restoration data-global/scripts/quests/ferumbras_ascension/creaturescripts_bosses_kill.lua:114
+- BLOCKER Ferumbras final encounter source-specific crystal and multi-phase actor composition data-global/scripts/quests/ferumbras_ascension/actions_ferumbras_lever.lua:35
+- BLOCKER Zamulosh habitat puzzle paired creature and timed terrain credit data-global/scripts/quests/ferumbras_ascension/movements_lovely_monsters.lua:1
+- BLOCKER Shulgrax flower puzzle timed shared pattern and individual acceptance data-global/scripts/quests/ferumbras_ascension/actions_flower_puzzle_lever.lua:1
+
+OPEN-FACTS Global chest container, UID and exact positions for every intermediate selector; quantity of side drops and exact Mortal Shell loot probabilities; persisted grandfathered-access compatibility; Global outfit addon delivery timing and ownership. Crystal confirms its own chest packaging and server IDs.
+
+PARTIAL Mazarius entry and portal, source map bindings, independent Godbreaker routes, minion puzzles and timed retry/exit, final phases, journal classification, Heavenly Messenger completion, and the exact loot audit. The existing selected route has a PostgreSQL regression that requires ten essences and a chest cosmetic grant. Replacing those behaviors requires coordinated changes to that pre-existing test and the complete route; this task owns only the new PostgreSQL file.
