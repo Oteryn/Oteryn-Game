@@ -105,7 +105,7 @@
   },
   "great_fire_wave_i": "Both +15 critical extra damage and +10 critical chance selected from the existing project spell capture.",
   "flurry_of_blows_i": "Select AREA_GREATER_FLURRY_OF_BLOWS. Planner range +1 is preserved as an unselected cast-range hypothesis.",
-  "accepted_atelier_parameters": "Owner correction2026-10-01: Supreme II->III12M gold +15Greater Fragments; cap225 retained from merged#1472. Reference-only; no runtime admission.",
+  "accepted_atelier_parameters": "Winter Update CT 2026-11-16: supreme target grade 2 costs 12,500,000 gold +15 greater fragments. Owner-supplied Content session measurement evidence/2026-11-16-testserver/fragment-workshop.txt, with context docs/reference/winter-update-2026-testserver/. Supersedes the October 1 owner selection and Crystal 201189f8 src/creatures/players/wheel/player_wheel.cpp:1592 (12,000,000 +15). Cap225 is unchanged.",
   "dedication_reconciliation": "Reference capture selects mitigation +0.075 percentage points per point. Older resistance wording belongs to WHEEL-0 owner reconciliation before runtime admission.",
   "browser_research": "samples/browser-source-audit.json",
   "unique_conviction_selections": {
@@ -115,10 +115,11 @@
     "runic_mastery": "Fandom:1206174 explicitly applies the percentage bonus to base magic level, for that specific rune effect only."
   },
   "atelier_conflicts": {
-    "selected_project": 12000000,
+    "selected_project": 12500000,
     "fandom_1151969": 12500000,
     "amendment_1472": 12500000,
-    "state": "OWNER_CORRECTION_12M_15_GREATER_FRAGMENTS_SELECTED; ARCHITECT_DECISION_SYNC_PENDING"
+    "state": "CURRENT_TIBIA_WINTER_UPDATE_CT_2026_11_16_SELECTED; HISTORICAL_DONOR_12M_SUPERSEDED",
+    "crystal_201189f8": 12000000
   },
   "architect_ruling": {
     "reference": "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5933264015",
@@ -184,6 +185,15 @@
     "method": "Normal HTTPS verified upstream blobs; English Wiki read via research-only Chrome/CDP after HTTP402; reference-only selection",
     "runtime_admitted": false,
     "owner_cost_correction": {
+      "date": "2026-11-16",
+      "upgrade": "Supreme target grade 2",
+      "gold": 12500000,
+      "greater_fragments": 15,
+      "source": "Owner-supplied CT test-server measurement after the Winter Update, Content session: evidence/2026-11-16-testserver/fragment-workshop.txt; context docs/reference/winter-update-2026-testserver/. Crystal 201189f8 src/creatures/players/wheel/player_wheel.cpp:1592 still has 12000000 gold +15 fragments. Current Tibia takes precedence.",
+      "classification": "OWNER_SUPPLIED_CT_TESTSERVER_MEASUREMENT",
+      "independently_observed_by_worker": false
+    },
+    "historical_owner_cost_correction": {
       "date": "2026-10-01",
       "upgrade": "Supreme Grade II to III",
       "gold": 12000000,

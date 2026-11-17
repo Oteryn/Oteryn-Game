@@ -100,7 +100,7 @@
     "numerical_planner_reference": "CONFIRMED_PINNED_SOURCE",
     "unique_conviction_reference": "OFFICIAL_8833_8944_AND_FANDOM_1206174_RULES_BOUND_TO_BROWSER_AUDIT",
     "official_atelier_behavior": "LIVE_OFFICIAL_MANUAL_CONFIRMED_WITHIN_AUDIT_FACTS",
-    "fees_and_extra_points": "CAP225_AND_OWNER_SUPREME_III_12M_15_GREATER_FRAGMENTS_SELECTED_REFERENCE_ONLY; HISTORICAL_250_AND_12_5M_RETAINED_AS_CONFLICTS; TASKSHOP_GRADEIV_MAX_OUT_OF_SCOPE",
+    "fees_and_extra_points": "CAP225_RETAINED; SUPREME_TARGET_GRADE_2_12500000_GOLD_15_FRAGMENTS: owner-supplied CT Winter Update measurement 2026-11-16, Content session evidence/2026-11-16-testserver/fragment-workshop.txt; context docs/reference/winter-update-2026-testserver/. Supersedes Crystal 201189f8 src/creatures/players/wheel/player_wheel.cpp:1592 (12000000 +15) and October owner selection; broader Global parity is not claimed.",
     "loot_probabilities": "OTS_HYPOTHESIS_ONLY",
     "revealed_gem_limit": "PARITY_PENDING",
     "live_website_and_wiki": "LIVE_TIBIAPAL_INPUTS_AND_SEVEN_REQUESTED_FANDOM_PAGES_READ",
@@ -137,7 +137,7 @@
     "The original raw capture predates the completed slot crosswalk and graph extraction. Its historical limitation messages do not supersede source-graph.json or the candidate.",
     "The original source descriptions are retained; the selected Lord of Destruction numerical correction is explicit."
   ],
-  "candidate_sha256": "01a8d04a493d50c9de18b3139c5bdf12f95fd685077a7ea83e66e694ca0fe061",
+  "candidate_sha256": "f706605225e1e170cc179c226cadf13ac876ec18f2850d47f9392306efd9afae",
   "live_source_audit": {
     "file": "samples/live-source-audit.json",
     "sha256": "b912583964a8fb874afd5aab034cbd8845445b5c16f59dca15d5d3257b372e25"
@@ -148,11 +148,11 @@
   },
   "client_icon_manifest": {
     "file": "samples/client-icon-manifest.json",
-    "sha256": "e291d94c3b41a599caafcafa25a526e8c6295ccdd9fab56657b066aae719f3d6"
+    "sha256": "79dc73a82b3c05be8143d8c2c1a63a399760a64ce90cc8f04d8cdf9cfd3d15ea"
   },
   "reference_selection": {
     "file": "samples/reference-selection.json",
-    "sha256": "c29ecf3f5bc948d5431bd3fc262a97293f438aa72fd84d2467050e3bfd073316"
+    "sha256": "be6d57e2ee853d9defd9df05f6ace416c35880e1f045a4ed5e14988956cbecb2"
   },
   "browser_source_audit": {
     "file": "samples/browser-source-audit.json",

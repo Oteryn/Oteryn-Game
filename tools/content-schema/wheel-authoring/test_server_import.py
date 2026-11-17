@@ -25,7 +25,7 @@ class ServerImportTests(unittest.TestCase):
                               **gems['data']['vocations'][vocation]}, fields)
         self.assertEqual(gems['data']['catalogue'], source['gems'])
         self.assertEqual(gems['data']['catalogue']['grade_costs'][1]['supreme'],
-                         {'gold': 12000000, 'fragments': 15})
+                         {'gold': 12500000, 'fragments': 15})
         self.assertEqual(gems['data']['catalogue']['atelier']['operation_policy']['revealed_gem_limit'], 225)
 
     def test_candidate_with_unqualified_price_cannot_be_exported(self):
@@ -34,7 +34,7 @@ class ServerImportTests(unittest.TestCase):
             value = original(path)
             if path.name == 'wheel-candidate.json':
                 value = copy.deepcopy(value)
-                value['gems']['grade_costs'][1]['supreme']['gold'] = 12500000
+                value['gems']['grade_costs'][1]['supreme']['gold'] = 12000000
             return value
         with patch.object(importer, 'read', side_effect=changed):
             with self.assertRaisesRegex(ValueError, 'EVIDENCE_CANDIDATE_CONTENT'):
@@ -47,7 +47,7 @@ class ServerImportTests(unittest.TestCase):
             importer.check_or_write()
             importer.check_or_write(True)
             path = Path(directory) / 'gems.json'
-            value = path.read_text().replace('12000000', '12500000', 1)
+            value = path.read_text().replace('12500000', '12000000', 1)
             path.write_text(value)
             with self.assertRaisesRegex(ValueError, 'SERVER_IMPORT_DRIFT: gems.json'):
                 importer.check_or_write(True)
