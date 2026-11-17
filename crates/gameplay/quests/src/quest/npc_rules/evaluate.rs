@@ -602,17 +602,10 @@ mod tower_defence_tests {
         input.tracks = &tracks;
         for message in ["password", wrong] {
             input.message = message;
-            assert!(plan_inventory(&catalogue, &input)?.is_none());
+            assert!(catalogue.plan_item_exchange(&input)?.is_none());
         }
         input.message = &correct;
-        assert!(plan_inventory(&catalogue, &input)?.is_some());
+        assert!(catalogue.plan_item_exchange(&input)?.is_some());
         Ok(())
-    }
-
-    fn plan_inventory(
-        catalogue: &NpcRuleCatalog,
-        input: &NpcRuleInput<'_>,
-    ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
-        plan(catalogue, input, &BTreeMap::new(), false)
     }
 }
