@@ -77,16 +77,14 @@ fn run(name: &'static str) -> TestResult {
     result
 }
 pub(super) fn callback(name: &str) -> TestResult<Callback> {
+    let key = if name.ends_with("-east") {
+        "oteryn:quest-callback/gravedigger-brain-east"
+    } else {
+        KEY
+    };
     quest::world_callbacks::load()?
         .into_iter()
-        .find(|c| {
-            c.key
-                == if name.ends_with("-east") {
-                    format!("{KEY}-east")
-                } else {
-                    KEY.into()
-                }
-        })
+        .find(|c| c.key == key)
         .ok_or_else(|| "BRAINOUT production callback is missing".into())
 }
 pub(super) fn catalogue(
@@ -103,11 +101,9 @@ pub(super) fn catalogue(
                 .track(&storage.track)
                 .cloned()
                 .ok_or("brain mission track")?;
-            track.initial = if storage.preserve && !wrong {
-                1
-            } else {
-                track.initial
-            };
+            if storage.preserve && !wrong {
+                track.initial = 1;
+            }
             Ok(track)
         })
         .collect::<Result<Vec<_>, &str>>()?;
@@ -126,23 +122,59 @@ pub(super) fn catalogue(
 pub(super) fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    super::source_world_crop::world(
-        crate::map::overlay::TilePos {
-            x: 33019,
-            y: 32328,
-            floor: -10,
-        },
-        crate::map::overlay::TilePos {
-            x: 33026,
-            y: 32334,
-            floor: -10,
-        },
-        crate::map::overlay::TilePos {
-            x: START.x,
-            y: START.y,
-            floor: START.floor,
-        },
+    use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_scene};
+    // The machine crosses the original x=33024 region boundary. Preserve both
+    // source crops; neither the control stack nor the offering tiles are invented.
+    native_scene(
         native,
+        vec![
+            NativeCrop {
+                bytes: include_bytes!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../../../content/world/placements/region-z10-x128-y126.b3"
+                )),
+                region: (10, 128, 126),
+                bounds: (33019, 32328, 33024, 32335),
+                start: (START.x, START.y),
+                expected: vec![
+                    ExpectedTile {
+                        position: (33022, 32329),
+                        ids: vec![410, 17478, 7834, 17471, 19161],
+                        counted_entry: None,
+                    },
+                    ExpectedTile {
+                        position: (33023, 32329),
+                        ids: vec![410, 17477, 7834, 17472, 19162],
+                        counted_entry: None,
+                    },
+                    ExpectedTile {
+                        position: (33020, 32332),
+                        ids: vec![13988, 17477, 17478, 3522],
+                        counted_entry: None,
+                    },
+                    ExpectedTile {
+                        position: (33022, 32332),
+                        ids: vec![410, 7833, 17479, 17469, 3531],
+                        counted_entry: None,
+                    },
+                ],
+            },
+            NativeCrop {
+                bytes: include_bytes!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../../../content/world/placements/region-z10-x129-y126.b3"
+                )),
+                region: (10, 129, 126),
+                bounds: (33024, 32328, 33027, 32335),
+                start: (START.x, START.y),
+                expected: vec![ExpectedTile {
+                    position: (33025, 32332),
+                    ids: vec![32688, 17469, 7833, 3521],
+                    counted_entry: None,
+                }],
+            },
+        ],
+        &[],
     )
 }
 pub(super) async fn exercise(

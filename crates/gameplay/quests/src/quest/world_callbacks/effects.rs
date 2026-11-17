@@ -406,8 +406,8 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
-    if let Some(output) = &effects.ground_output {
-        if callback.trigger != Trigger::Use
+    if let Some(output) = &effects.ground_output
+        && (callback.trigger != Trigger::Use
             || callback.actor_kind != ActorKind::Player
             || callback.is_read_only()
             || !callback.has_state_writes()
@@ -427,10 +427,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || !output
                 .item
                 .strip_prefix("oteryn:item.tibia.i")
-                .is_some_and(|id| id.parse::<u16>().is_ok_and(|id| id > 0))
-        {
-            return false;
-        }
+                .is_some_and(|id| id.parse::<u16>().is_ok_and(|id| id > 0)))
+    {
+        return false;
     }
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
