@@ -436,6 +436,18 @@ pub(super) async fn capture_kill<const N: usize>(
     tx: &mut Transaction<'_, Postgres>,
     input: &super::party_kill_xp::PartyKillXpRequest<N>,
 ) -> Result<(), DurabilityError> {
+    if let Some(achievement) =
+        oteryn_gameplay_world_change::bored::death_achievement(&input.creature)
+    {
+        super::account_achievement::grant_missing(
+            tx,
+            input.principal,
+            &[achievement],
+            "oteryn:world-change-bored-spider",
+            &input.death_key,
+        )
+        .await?;
+    }
     let Some(member) = input.members.first() else {
         return Err(DurabilityError::InvalidStoredState);
     };

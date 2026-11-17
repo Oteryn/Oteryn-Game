@@ -47,13 +47,27 @@ pub(super) fn plan_with_input(
     entries: &[Entry],
     input: &TypedDefinitionRef,
 ) -> Result<Plan> {
+    plan_one(request, capacity, entries, input, false)
+}
+
+pub(super) fn plan_one(
+    request: &NpcTradeRequest,
+    capacity: usize,
+    entries: &[Entry],
+    input: &TypedDefinitionRef,
+    stack_allowed: bool,
+) -> Result<Plan> {
     let source = entries
         .iter()
         .find(|entry| {
-            entry.live && !entry.not_default && entry.quantity == 1 && entry.definition == *input
+            entry.live
+                && !entry.not_default
+                && entry.quantity > 0
+                && (stack_allowed || entry.quantity == 1)
+                && entry.definition == *input
         })
         .ok_or(NpcTradeError::ItemNotFound)?;
-    if entries.len() > capacity {
+    if entries.len() > capacity || (entries.len() == capacity && source.quantity > 1) {
         return Err(NpcTradeError::DoesNotFit);
     }
     let ordinal = entries
@@ -71,8 +85,8 @@ pub(super) fn plan_with_input(
                 item_instance_id: source.item_instance_id,
                 placement_ordinal: source.placement_ordinal,
                 coin: None,
-                quantity_before: 1,
-                quantity_after: 0,
+                quantity_before: source.quantity,
+                quantity_after: source.quantity - 1,
             },
             NpcTradeLine {
                 kind: NpcTradeLineKind::ItemMint,

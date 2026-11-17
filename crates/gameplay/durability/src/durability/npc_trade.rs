@@ -36,6 +36,8 @@ mod obsidian_knife;
 mod pick_exchange;
 mod present_exchange;
 mod quest_shop;
+mod wyda;
+use oteryn_gameplay_world_change::bored;
 pub use oteryn_gameplay_economy::npc_trade::{
     Entry, NpcTradeCoins, NpcTradeLine, NpcTradeLineKind,
 };
@@ -347,6 +349,7 @@ fn validate(request: &NpcTradeRequest, sell_all: bool) -> Result<Option<(u64, u3
     if request.cause.side == NpcTradeSide::Exchange {
         if request.cause.npc_key == obsidian_knife::NPC { obsidian_knife::validate(request, sell_all)?; }
         else if request.cause.npc_key == present_exchange::NPC { present_exchange::validate(request, sell_all)?; }
+        else if request.cause.npc_key == bored::WYDA { wyda::validate(request, sell_all)?; }
         else { pick_exchange::validate(request, sell_all)?; }
     }
     validate_sell_bound(request,sell_all,rules::NPC_TRADE_SELL_GOLD_UNITS_MAX)
@@ -944,6 +947,11 @@ impl DurabilityRoot {
                     let entries = lock_entries(&mut tx, &backpack, world_id, request.fluid_subtype.unwrap_or(0), &request.item.definition.production_key).await?;
                     if request.cause.side == NpcTradeSide::Exchange {
                         let knife = request.cause.npc_key == obsidian_knife::NPC;
+                        if request.cause.npc_key == bored::WYDA
+                            && !super::world_event::change_active(&mut tx, world_id, "bored").await?
+                        {
+                            return Ok(Err(NpcTradeError::RequirementNotMet));
+                        }
                         if knife && !obsidian_knife::ready(&mut tx, fence.character_id).await? {
                             return Ok(Err(NpcTradeError::RequirementNotMet));
                         }
@@ -951,6 +959,8 @@ impl DurabilityRoot {
                             pick_exchange::fits(&mut tx, fence, *weights, &[obsidian_knife::steel(), obsidian_knife::lance()], obsidian_knife::knife()).await?
                         } else if request.cause.npc_key == present_exchange::NPC {
                             pick_exchange::fits(&mut tx, fence, *weights, &[present_exchange::input()], present_exchange::output()).await?
+                        } else if request.cause.npc_key == bored::WYDA {
+                            pick_exchange::fits(&mut tx, fence, *weights, &[wyda::input()], &request.item.definition).await?
                         } else { pick_exchange::fits(&mut tx, fence, *weights, &[pick_exchange::input()], pick_exchange::output()).await? };
                         if !fits { return Ok(Err(NpcTradeError::DoesNotFit)); }
                     }
@@ -966,6 +976,7 @@ impl DurabilityRoot {
                         (Some(_), NpcTradeSide::Exchange) => {
                             if request.cause.npc_key == obsidian_knife::NPC { obsidian_knife::plan(&request, capacity, &entries) }
                             else if request.cause.npc_key == present_exchange::NPC { pick_exchange::plan_with_input(&request, capacity, &entries, present_exchange::input()) }
+                            else if request.cause.npc_key == bored::WYDA { pick_exchange::plan_one(&request, capacity, &entries, wyda::input(), true) }
                             else { pick_exchange::plan(&request, capacity, &entries) }
                         }.map(|plan| (plan, 0, 1)),
                     }};
@@ -1044,6 +1055,12 @@ impl DurabilityRoot {
                         &request.transaction_id,
                     )
                     .await?;
+                    if request.cause.npc_key == bored::WYDA && request.item.definition.production_key == bored::TORN_TEDDY {
+                        grant_missing(
+                            &mut tx, fence.character_id, &[bored::TORN_TREASURES],
+                            npc_trade_achievement::SOURCE_KIND, &request.transaction_id,
+                        ).await?;
+                    }
                     tx.commit(deadline).await?;
                     Ok(Ok(NpcTradeOutcome::Committed(CommittedNpcTrade {
                         transaction_id: request.transaction_id,
@@ -1128,7 +1145,7 @@ fn trade_message(
     let definition = |line: &NpcTradeLine| match line.coin {
         Some(coin) => request.coins.of(coin),
         None if request.cause.side == NpcTradeSide::Exchange && line.kind == NpcTradeLineKind::ItemBurn => {
-            if request.cause.npc_key == obsidian_knife::NPC { obsidian_knife::input_for(line, &plan.lines) } else if request.cause.npc_key == present_exchange::NPC { present_exchange::input() } else { pick_exchange::input() }
+            if request.cause.npc_key == obsidian_knife::NPC { obsidian_knife::input_for(line, &plan.lines) } else if request.cause.npc_key == present_exchange::NPC { present_exchange::input() } else if request.cause.npc_key == bored::WYDA { wyda::input() } else { pick_exchange::input() }
         },
         None => yeo::definition(request, line),
     };

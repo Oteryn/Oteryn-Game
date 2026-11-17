@@ -21,6 +21,7 @@ pub(super) fn check_recipe(
         return Err(AuditError::InvalidInput);
     };
     let before = take.before.as_ref().ok_or(AuditError::InvalidInput)?;
+    let remainder = take.after.as_ref().ok_or(AuditError::InvalidInput)?;
     let after = give.after.as_ref().ok_or(AuditError::InvalidInput)?;
     let matches = |state: &OneItemStateV1, key: &str| {
         state.definition.as_ref().is_some_and(|d| {
@@ -39,7 +40,8 @@ pub(super) fn check_recipe(
         || value.house_furniture_kit.is_some()
         || take.kind != LINE_ITEM_BURN
         || give.kind != LINE_ITEM_MINT
-        || before.quantity != 1
+        || (npc != oteryn_gameplay_world_change::bored::WYDA && before.quantity != 1)
+        || before.quantity.checked_sub(remainder.quantity) != Some(1)
         || after.quantity != 1
         || !matches(before, input)
         || !matches(after, output)

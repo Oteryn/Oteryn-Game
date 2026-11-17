@@ -10,6 +10,7 @@ use crate::durability::npc_trade::{
     NpcTradeCause, NpcTradeCoins, NpcTradeError, NpcTradeRequest, NpcTradeSide,
 };
 use crate::foundation::{CommandId, CommandRef};
+use oteryn_gameplay_world_change::bored;
 use oteryn_protocol_oteryn::npc_service::NpcTalkIntent;
 
 #[path = "oriental_trader.rs"]
@@ -47,11 +48,21 @@ const PRESENT_RECIPE: Recipe = Recipe {
     success: "THANK YOU! Here is a helmet that will serve you well.",
     cancel: None,
 };
+const WYDA_RECIPE: Recipe = Recipe {
+    npc: bored::WYDA,
+    keyword: "blood herb",
+    output: bored::BLOOD_HERB,
+    prompt: "Do you have a blood herb for me?",
+    success: "Thank you -SOOO- much! Here, let me give you a reward...",
+    cancel: Some("I see."),
+};
+
 fn recipe(npc: &str) -> Option<&'static Recipe> {
     match npc {
         "oteryn:npc.al_dee" => Some(&PICK_RECIPE),
         "oteryn:npc.seymour" => Some(&PRESENT_RECIPE),
         "oteryn:npc.uzgod" => Some(&KNIFE_RECIPE),
+        bored::WYDA => Some(&WYDA_RECIPE),
         _ => None,
     }
 }
@@ -128,7 +139,9 @@ pub(super) async fn talk(
                 let (line, next) = if oteryn_gameplay_npc::greeting::contains_words(
                     &words,
                     &oteryn_gameplay_npc::greeting::words(recipe.keyword),
-                ) {
+                ) || (recipe.npc == bored::WYDA
+                    && words.iter().any(|word| word == "bloodherb"))
+                {
                     (Some(recipe.prompt), 1)
                 } else if !fresh
                     && topic.number == 1
@@ -186,6 +199,17 @@ pub(super) async fn talk(
     let coins = bank_coin_definitions(admission, &runtime);
     drop(runtime);
     let step = step?;
+    if recipe.npc == bored::WYDA && !confirmed {
+        match admission
+            .root
+            .world_change_active(admission.world_id, "bored")
+            .await
+        {
+            Ok(true) => (),
+            Ok(false) => return Some(rejected()),
+            Err(_) => return Some(unknown()),
+        }
+    }
     if !confirmed {
         return Some(quest_dialogue::apply(admission, actor, command, intent.clone(), step).await);
     }
@@ -214,12 +238,17 @@ pub(super) async fn talk(
     let Some((gold, platinum, crystal)) = coins else {
         return Some(rejected());
     };
-    let Some(revision) = index.revision(recipe.output) else {
+    let output = if recipe.npc == bored::WYDA {
+        bored::exchange_reward(&occurrence)
+    } else {
+        recipe.output
+    };
+    let Some(revision) = index.revision(output) else {
         return Some(rejected());
     };
     let definition = TypedDefinitionRef {
         family: "Item".into(),
-        production_key: recipe.output.into(),
+        production_key: output.into(),
         revision_ref: revision.into(),
     };
     let Ok(item) = super::super::item_ref_admission::generation_item_facts(native, &definition)
@@ -310,6 +339,17 @@ pub(super) async fn talk(
         admission
             .root
             .exchange_present_for_helmet(
+                admission.character,
+                admission.holder,
+                fence,
+                request,
+                &NativeItemWeights(native),
+            )
+            .await
+    } else if recipe.npc == bored::WYDA {
+        admission
+            .root
+            .exchange_wyda_blood_herb(
                 admission.character,
                 admission.holder,
                 fence,
