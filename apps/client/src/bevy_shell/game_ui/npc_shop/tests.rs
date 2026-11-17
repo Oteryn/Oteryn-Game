@@ -266,7 +266,7 @@ fn sell_only_catalogue_initially_selects_available_side() -> Result {
 }
 
 #[test]
-fn npc_shop_explains_backpack_purchase_contract_limit() -> Result {
+fn npc_dialog_uses_global_geometry_without_help_prose() -> Result {
     let mut app = App::new();
     app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
         .init_asset::<Image>()
@@ -276,8 +276,30 @@ fn npc_shop_explains_backpack_purchase_contract_limit() -> Result {
             widgets::build(&mut commands, &skins, 1);
         });
     app.update();
-    assert!(app.world_mut().query::<&Text>().iter(app.world()).any(|text|
-        text.0 == "Buy in backpacks: unavailable from this server. Purchases use your existing backpack."));
+    let dialog = app
+        .world_mut()
+        .query::<(&Name, &Node)>()
+        .iter(app.world())
+        .find_map(|(name, node)| (name.as_str() == "npc-shop.dialog").then(|| node.clone()))
+        .ok_or("npc dialog")?;
+    // NpcDialog.qml: width 600, resizable from a 350px minimum height.
+    assert_eq!(
+        (dialog.width, dialog.height, dialog.min_height),
+        (px(600.), Val::Auto, px(350.))
+    );
+    let trade = app
+        .world_mut()
+        .query::<(&Name, &Node)>()
+        .iter(app.world())
+        .find_map(|(name, node)| (name.as_str() == "npc-shop.trade").then_some(node.width))
+        .ok_or("trade addon")?;
+    assert_eq!(trade, px(180.));
+    assert!(
+        !app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| { text.0.starts_with("Buy in backpacks") || text.0 == "NPC response" })
+    );
     Ok(())
 }
 

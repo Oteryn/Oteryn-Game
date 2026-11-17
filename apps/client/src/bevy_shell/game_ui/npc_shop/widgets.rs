@@ -39,7 +39,7 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
                 right: px(20.),
                 top: px(60.),
                 width: px(600.),
-                height: px(500.),
+                min_height: px(350.),
                 max_width: percent(96.),
                 max_height: percent(90.),
                 padding: UiRect {
@@ -75,7 +75,6 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
         })
         .id();
     commands.entity(content).add_child(details);
-    label(commands, skin, details, "NPC response");
     let details_scroll = commands
         .spawn((
             ScrollArea,
@@ -129,13 +128,6 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
             ));
         });
     }
-    // The accepted trade intent has no backpack-purchase flag or packing price.
-    label(
-        commands,
-        skin,
-        shop_controls,
-        "Buy in backpacks: unavailable from this server. Purchases use your existing backpack.",
-    );
     action(
         commands,
         skin,
@@ -146,15 +138,18 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
         130.,
     );
     let trade = commands
-        .spawn(Node {
-            width: px(180.),
-            min_width: px(150.),
-            flex_shrink: 0.,
-            flex_direction: FlexDirection::Column,
-            row_gap: px(5.),
-            min_height: px(0.),
-            ..default()
-        })
+        .spawn((
+            Name::new("npc-shop.trade"),
+            Node {
+                width: px(180.),
+                min_width: px(150.),
+                flex_shrink: 0.,
+                flex_direction: FlexDirection::Column,
+                row_gap: px(5.),
+                min_height: px(0.),
+                ..default()
+            },
+        ))
         .id();
     commands.entity(content).add_child(trade);
     let tabs = row(commands, trade);

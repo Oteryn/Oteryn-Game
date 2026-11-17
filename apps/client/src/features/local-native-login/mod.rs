@@ -158,11 +158,13 @@ pub struct LoginForm {
     pending: bool,
     retry: bool,
     message: String,
+    /// Title of the message box that presents `message`, until the player dismisses it.
+    alert: Option<&'static str>,
 }
 
 impl LoginForm {
     pub fn new(settings: LoginSettings) -> Self {
-        Self { settings, connected: false, pending: false, retry: false, message: tr!("Enter connection settings, then choose Save and sign in. Sign-in opens your browser.").into() }
+        Self { settings, connected: false, pending: false, retry: false, message: tr!("Enter connection settings, then choose Save and sign in. Sign-in opens your browser.").into(), alert: None }
     }
     /// Action shown after a failed attempt starts a fresh browser admission.
     pub fn submit_caption(&self) -> &'static str {
@@ -184,8 +186,24 @@ impl LoginForm {
     pub fn message(&self) -> &str {
         &self.message
     }
+    /// Progress while admission runs stays in the form; anything else opens the message box.
     pub fn feedback(&mut self, message: String) {
+        if !self.pending {
+            self.alert = Some("Login");
+        }
         self.message = message;
+    }
+    /// A message box with its own short title (About, Survey, Login Error).
+    pub fn inform(&mut self, title: &'static str, message: String) {
+        self.alert = Some(title);
+        self.message = message;
+    }
+    /// The open message box: its title and text.
+    pub fn alert(&self) -> Option<(&'static str, &str)> {
+        self.alert.map(|title| (title, self.message.as_str()))
+    }
+    pub fn dismiss_alert(&mut self) {
+        self.alert = None;
     }
     pub fn submit(&mut self) -> Result<NativeLoginConfig, String> {
         if self.connected {
@@ -197,11 +215,12 @@ impl LoginForm {
             )
             .into());
         }
-        let config = self
-            .settings
-            .config()
-            .inspect_err(|error| self.message = error.clone())?;
+        let config = self.settings.config().inspect_err(|error| {
+            self.message = error.clone();
+            self.alert = Some("Login Error");
+        })?;
         self.pending = true;
+        self.alert = None;
         self.message = tr!("Signing in: complete sign-in in your browser (up to five minutes). Please wait for gateway admission.").into();
         Ok(config)
     }
@@ -209,6 +228,7 @@ impl LoginForm {
         self.pending = false;
         self.connected = result.is_ok();
         self.retry = result.is_err();
+        self.alert = result.is_err().then_some("Login Error");
         self.message = result.map_or_else(
             |error| error_text(error).to_owned(),
             |()| tr!("Connected.").into(),

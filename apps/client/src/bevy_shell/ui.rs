@@ -31,6 +31,77 @@ pub(super) fn validate_assets(root: &Path) -> Result<(), String> {
     }
     Ok(())
 }
+/// Optional Tibia Global art. These files are not required by `validate_assets`: until a slot's
+/// file loads, the slot keeps its fallback (a caption child or the parent's plain backdrop).
+#[derive(Component, Clone, Debug, PartialEq, Eq)]
+pub(super) enum ArtSlot {
+    /// Entry-screen background behind the login window.
+    LoginBackground,
+    /// Market category icon, keyed by the server's category name.
+    MarketCategory(String),
+}
+impl ArtSlot {
+    pub fn path(&self) -> String {
+        match self {
+            Self::LoginBackground => "images/login/background.png".into(),
+            Self::MarketCategory(name) => {
+                let key: String = name
+                    .chars()
+                    .map(|c| {
+                        if c.is_ascii_alphanumeric() {
+                            c.to_ascii_lowercase()
+                        } else {
+                            '-'
+                        }
+                    })
+                    .collect();
+                format!("images/market/category-{key}.png")
+            }
+        }
+    }
+}
+/// The caption a slot shows while its art file is absent.
+#[derive(Component)]
+pub(super) struct ArtFallback;
+/// Loads each new slot's file; once the image is available the slot shows and its sibling
+/// fallback caption hides.
+// One node query covers the slots and their fallbacks; Bevy injects the queries.
+#[allow(clippy::type_complexity)]
+pub(super) fn project_art(
+    mut commands: Commands,
+    assets: Res<AssetServer>,
+    added: Query<(Entity, &ArtSlot), Without<ImageNode>>,
+    slots: Query<(Entity, &ImageNode, Option<&ChildOf>), With<ArtSlot>>,
+    children: Query<&Children>,
+    mut nodes: Query<(&mut Node, Has<ArtFallback>), Or<(With<ArtSlot>, With<ArtFallback>)>>,
+) {
+    for (entity, slot) in &added {
+        commands
+            .entity(entity)
+            .insert(ImageNode::new(assets.load(slot.path())));
+    }
+    for (entity, image, parent) in &slots {
+        if !assets.is_loaded(&image.image) {
+            continue;
+        }
+        let siblings = parent
+            .and_then(|parent| children.get(parent.parent()).ok())
+            .into_iter()
+            .flat_map(|children| children.iter());
+        for target in std::iter::once(entity).chain(siblings) {
+            if let Ok((mut node, fallback)) = nodes.get_mut(target) {
+                let display = if fallback {
+                    Display::None
+                } else {
+                    Display::Flex
+                };
+                if node.display != display {
+                    node.display = display;
+                }
+            }
+        }
+    }
+}
 #[derive(Resource)]
 pub(super) struct Skins {
     pub(super) buttons: source::ButtonImages,
@@ -116,8 +187,6 @@ pub(super) struct ShellToolbar;
 #[derive(Component)]
 pub(super) struct Dialog;
 #[derive(Component)]
-pub(super) struct Status;
-#[derive(Component)]
 pub(super) struct Feedback;
 #[derive(Component)]
 pub(super) struct ScopeLabel;
@@ -162,16 +231,6 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
             GlobalZIndex(10),
         ))
         .id();
-    let status = commands
-        .spawn((
-            source::text(
-                "Offline — no admitted character or world.",
-                source::font(skins.font.clone(), false),
-            ),
-            Status,
-        ))
-        .insert(TextLayout::default())
-        .id();
     let toolbar = commands
         .spawn(Node {
             column_gap: px(6.),
@@ -189,7 +248,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         .id();
     commands
         .entity(shell)
-        .add_children(&[status, toolbar, shell_feedback]);
+        .add_children(&[toolbar, shell_feedback]);
     for (control, caption, width) in [
         (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
@@ -235,9 +294,11 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
                 modal: true,
             },
             source::frame(skins.frame.clone(), [4., 17., 4., 4.]),
+            Name::new("options.window"),
+            // Tibia Global options: 685 wide; a 129px category column beside a 470px page.
             Node {
-                width: px(740.),
-                height: px(550.),
+                width: px(685.),
+                height: px(534.),
                 max_width: percent(98.),
                 max_height: percent(98.),
                 padding: UiRect {
@@ -460,7 +521,7 @@ pub(super) fn project(
     owner: NonSend<HostOwner>,
     skins: Res<Skins>,
     mut dialogs: Query<&mut Node, With<Dialog>>,
-    mut text: Query<(&mut Text, Has<Status>, Has<Feedback>, Has<ScopeLabel>)>,
+    mut text: Query<(&mut Text, Has<Feedback>, Has<ScopeLabel>)>,
     controls: Query<(Entity, &Control, Has<Checked>)>,
     mut indicators: Query<(&Indicator, &mut ImageNode)>,
     mut focus: ResMut<InputFocus>,
@@ -484,10 +545,8 @@ pub(super) fn project(
     for mut node in &mut dialogs {
         node.display = if open { Display::Flex } else { Display::None };
     }
-    for (mut text, status, feedback, scope) in &mut text {
-        let next = if status {
-            Some(owner.status.as_str())
-        } else if feedback {
+    for (mut text, feedback, scope) in &mut text {
+        let next = if feedback {
             Some(owner.settings.feedback.as_str())
         } else if scope {
             Some(owner.settings.scope_label())

@@ -33,10 +33,12 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins) -> Widgets {
     let panel = commands
         .spawn((
             crate::bevy_shell::window_drag::DraggableDialog,
+            Name::new("cyclopedia.window"),
             source::frame(skin.frame.clone(), [4., 17., 4., 4.]),
+            // Tibia Global Cyclopedia: 700 wide, 36px tab bar over a 420px tab page.
             Node {
-                width: px(1000.),
-                height: px(650.),
+                width: px(700.),
+                height: px(538.),
                 max_width: percent(96.),
                 max_height: percent(94.),
                 padding: UiRect {
@@ -51,7 +53,7 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins) -> Widgets {
         ))
         .id();
     commands.entity(overlay).add_child(panel);
-    source::dialog_caption(commands, panel, "Cyclopedia character", skin.font.clone());
+    source::dialog_caption(commands, panel, "Cyclopedia", skin.font.clone());
     Widgets {
         overlay,
         panel,
@@ -78,17 +80,39 @@ pub(super) fn render(
         .id();
     commands.entity(parent).add_child(content);
     let tabs = commands
-        .spawn(Node {
-            width: percent(100.),
-            flex_wrap: FlexWrap::Wrap,
-            column_gap: px(4.),
-            row_gap: px(4.),
-            ..default()
-        })
+        .spawn((
+            Name::new("cyclopedia.tabs"),
+            ScrollArea,
+            Node {
+                width: percent(100.),
+                height: px(36.),
+                flex_shrink: 0.,
+                column_gap: px(4.),
+                align_items: AlignItems::Center,
+                overflow: Overflow::scroll_x(),
+                ..default()
+            },
+        ))
         .id();
     commands.entity(content).add_child(tabs);
+    let page = commands
+        .spawn((
+            Name::new("cyclopedia.page"),
+            Node {
+                width: percent(100.),
+                height: px(420.),
+                flex_shrink: 0.,
+                flex_direction: FlexDirection::Column,
+                row_gap: px(6.),
+                overflow: Overflow::clip(),
+                ..default()
+            },
+        ))
+        .id();
+    commands.entity(content).add_child(page);
+    let (body, content) = (content, page);
     for choice in Tab::ALL {
-        let button = button(
+        let button = sized_button(
             commands,
             skin,
             tabs,
@@ -98,6 +122,7 @@ pub(super) fn render(
             },
             choice.label(),
             panel.pending || !panel.selected,
+            if choice == tab { 200. } else { 140. },
         );
         if choice == tab {
             commands.entity(button).insert(Checked);
@@ -341,7 +366,7 @@ pub(super) fn render(
             ..default()
         })
         .id();
-    commands.entity(content).add_child(footer);
+    commands.entity(body).add_child(footer);
     for (kind, label) in [
         (Kind::Encyclopedia, "Item encyclopedia"),
         (Kind::Refresh, "Refresh"),
@@ -363,7 +388,7 @@ pub(super) fn render(
             disabled,
         );
     }
-    content
+    body
 }
 fn text(commands: &mut Commands, skin: &Skins, parent: Entity, value: impl Into<String>) {
     let row = commands
@@ -385,8 +410,19 @@ fn button(
     label: &str,
     disabled: bool,
 ) -> Entity {
+    sized_button(commands, skin, parent, control, label, disabled, 140.)
+}
+fn sized_button(
+    commands: &mut Commands,
+    skin: &Skins,
+    parent: Entity,
+    control: Control,
+    label: &str,
+    disabled: bool,
+    width: f32,
+) -> Entity {
     let button = commands
-        .spawn((source::button(skin.buttons.clone(), 140.), control))
+        .spawn((source::button(skin.buttons.clone(), width), control))
         .observe(activate)
         .id();
     if disabled {
