@@ -35,6 +35,13 @@
       "name": "VIP_PRESENCE_DELTA_V1",
       "payload_schema": "docs/contracts/protocol-oteryn/v1/vip-presence-v1.proto#VipPresenceBatchV1",
       "max_payload_bytes": 14400
+    },
+    {
+      "id": 6,
+      "name": "NATIVE_MAP_CHAT_LINE_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/native-map-cues-v1.md#native-local-chat",
+      "max_payload_bytes": 1194,
+      "capability": 385
     }
   ],
   "snapshot_types": [

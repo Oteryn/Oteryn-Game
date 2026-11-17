@@ -93,7 +93,7 @@ pub struct SoulpitWaveRequest {
     pub wave: u8,
     pub species: String,
     /// Runtime positions use the source z; native map positions use its checked negation.
-    pub positions: [MovementLocalPosition; MONSTERS_PER_WAVE],
+    pub positions: [Option<MovementLocalPosition>; MONSTERS_PER_WAVE],
     pub boss_ability: BossAbility,
     pub now_micros: u64,
 }
@@ -130,12 +130,19 @@ struct WaveReceipt {
     actors: [Option<SoulpitWaveActor>; MONSTERS_PER_WAVE],
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct PreparedWave {
+    request: SoulpitWaveRequest,
+    next_cue: u8,
+}
+
 /// Physical admission receipts only. The durable SoulpitEncounter owns phases, survivors,
 /// deadlines and rewards. Keeping failed attempts prevents a retry from creating extra adds.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SoulpitPhysicalState {
     handoff_id: [u8; 16],
     waves: Vec<WaveReceipt>,
+    plans: Vec<PreparedWave>,
     next_summon_id: u64,
 }
 
@@ -268,6 +275,111 @@ impl ChannelActorCarrier {
         })
     }
 
+    /// The source selects positions when preparing a wave, before its delayed
+    /// creation callback. These process-local plans grant no actor admission.
+    pub fn soulpit_wave_plan(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        handoff_id: [u8; 16],
+        wave: u8,
+    ) -> Result<Option<SoulpitWaveRequest>, CarrierError> {
+        self.require_soulpit_instance(continuity)?;
+        Ok(self
+            .soulpit
+            .as_ref()
+            .filter(|state| state.handoff_id == handoff_id)
+            .and_then(|state| state.plans.iter().find(|plan| plan.request.wave == wave))
+            .map(|plan| plan.request.clone()))
+    }
+    pub fn retain_soulpit_wave_plan(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        request: SoulpitWaveRequest,
+    ) -> Result<SoulpitWaveRequest, CarrierError> {
+        self.require_soulpit_instance(continuity)?;
+        if request.handoff_id == [0; 16] || wave_stacks(request.wave).is_err() {
+            return Err(CarrierError::InvalidCommitBinding);
+        }
+        let state = self.soulpit.get_or_insert_with(|| {
+            Box::new(SoulpitPhysicalState {
+                handoff_id: request.handoff_id,
+                waves: Vec::new(),
+                plans: Vec::new(),
+                next_summon_id: 29,
+            })
+        });
+        if state.handoff_id != request.handoff_id {
+            return Err(CarrierError::PlanConflict);
+        }
+        if let Some(known) = state
+            .plans
+            .iter()
+            .find(|known| known.request.wave == request.wave)
+        {
+            return if known.request == request {
+                Ok(known.request.clone())
+            } else {
+                Err(CarrierError::PlanConflict)
+            };
+        }
+        if state.plans.len() >= 4 {
+            return Err(CarrierError::CapacityExceeded);
+        }
+        state
+            .plans
+            .try_reserve(1)
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        state.plans.push(PreparedWave {
+            request: request.clone(),
+            next_cue: 0,
+        });
+        Ok(request)
+    }
+
+    /// The existing physical wave plan also retains its process-local delayed
+    /// callbacks. A cue is acknowledged only after its owned map accepts it.
+    pub fn next_soulpit_wave_cue(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        handoff_id: [u8; 16],
+        wave: u8,
+    ) -> Result<Option<u8>, CarrierError> {
+        self.require_soulpit_instance(continuity)?;
+        let plan = self
+            .soulpit
+            .as_ref()
+            .filter(|state| state.handoff_id == handoff_id)
+            .and_then(|state| state.plans.iter().find(|plan| plan.request.wave == wave))
+            .ok_or(CarrierError::InvalidCommitBinding)?;
+        Ok((plan.next_cue < 28).then_some(plan.next_cue))
+    }
+
+    pub fn acknowledge_soulpit_wave_cue(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        handoff_id: [u8; 16],
+        wave: u8,
+        cue: u8,
+    ) -> Result<(), CarrierError> {
+        self.require_soulpit_instance(continuity)?;
+        let plan = self
+            .soulpit
+            .as_mut()
+            .filter(|state| state.handoff_id == handoff_id)
+            .and_then(|state| {
+                state
+                    .plans
+                    .iter_mut()
+                    .find(|plan| plan.request.wave == wave)
+            })
+            .ok_or(CarrierError::InvalidCommitBinding)?;
+        if plan.next_cue != cue || cue >= 28 {
+            return Err(CarrierError::PlanConflict);
+        }
+        plan.next_cue += 1;
+        Ok(())
+    }
+
     /// Executes each donor spawn attempt once. A blocked cell or full existing carrier is
     /// recorded as None, matching Game.createSoulPitMonster's skipped failure; no redraw.
     pub fn spawn_soulpit_wave(
@@ -327,7 +439,13 @@ impl ChannelActorCarrier {
                 .ok_or(CarrierError::DamageOverflow)?;
         }
         for (position, stack) in request.positions.iter().zip(stacks) {
-            if position.floor != 8
+            let Some(position) = position else {
+                if stack == SoulpitStack::Boss {
+                    return Err(CarrierError::PositionSnapshotMismatch);
+                }
+                continue;
+            };
+            if position.floor != content.entry_start().floor
                 || !(32362..=32390).contains(&position.x)
                 || !(31132..=31153).contains(&position.y)
                 || (stack == SoulpitStack::Boss && (position.x, position.y) != (32376, 31144))
@@ -353,6 +471,7 @@ impl ChannelActorCarrier {
             Box::new(SoulpitPhysicalState {
                 handoff_id: request.handoff_id,
                 waves: Vec::new(),
+                plans: Vec::new(),
                 next_summon_id: 29,
             })
         });
@@ -364,6 +483,9 @@ impl ChannelActorCarrier {
         for (ordinal, (position, stack)) in
             request.positions.iter().copied().zip(stacks).enumerate()
         {
+            let Some(position) = position else {
+                continue;
+            };
             let local = LocalPosition {
                 x: position.x,
                 y: position.y,
@@ -779,5 +901,24 @@ impl ScopeRuntimeV1 {
             continuity: &self.continuity,
             content: &self.content,
         })
+    }
+}
+
+impl super::ChannelRuntimeV1 {
+    /// Borrow the existing scoped carrier under its current owner and namespace fence.
+    /// The caller retains the runtime lock and releases this borrow before durable work.
+    pub fn soulpit_kernel_parts(
+        &mut self,
+    ) -> Result<
+        (
+            &mut super::ChannelActorCarrier,
+            &super::NamespaceContinuityGuard,
+            &super::ChannelContentPin,
+        ),
+        super::CarrierError,
+    > {
+        self.owner_fence()?;
+        self.carrier.validate_current_continuity(&self.continuity)?;
+        Ok((&mut self.carrier, &self.continuity, &self.content))
     }
 }

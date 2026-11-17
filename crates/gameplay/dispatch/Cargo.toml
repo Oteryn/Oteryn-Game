@@ -14,7 +14,7 @@ release-role = "production"
 [features]
 # Disposable node-boot builds only; absent from production binaries.
 qualification-clock = ["oteryn-gameplay-world/qualification-clock"]
-test-support = ["oteryn-gameplay-encounters/test-support", "oteryn-gameplay-entities/test-support"]
+test-support = ["dep:ed25519-dalek", "oteryn-gameplay-encounters/test-support", "oteryn-gameplay-entities/test-support"]
 
 [dependencies]
 oteryn-gameplay-world-change = { version = "=0.1.0", path = "../world-change" }
@@ -29,6 +29,7 @@ oteryn-gameplay-spell-rules = { version = "=0.1.0", path = "../spell-rules" }
 oteryn-gameplay-social-rules = { version = "=0.1.0", path = "../social-rules" }
 oteryn-gameplay-npc = { version = "=0.1.0", path = "../npc" }
 base64.workspace = true
+ed25519-dalek = { workspace = true, optional = true }
 oteryn-error-codes = { version = "=0.1.0", path = "../../error-codes" }
 oteryn-foundation = { version = "=0.1.0", path = "../../foundation" }
 oteryn-gameplay-admission-evidence = { version = "=0.1.0", path = "../admission-evidence" }
@@ -51,7 +52,7 @@ oteryn-gameplay-world = { version = "=0.1.0", path = "../world" }
 oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../protocol-oteryn" }
 oteryn-simulation-determinism = { version = "=0.1.0", path = "../../simulation-determinism" }
 oteryn-task-supervisor = { version = "=0.1.0", path = "../../task-supervisor" }
-oteryn-world-bundle = { version = "=0.1.0", path = "../../world-bundle" }
+oteryn-world-bundle = { version = "=0.1.0", path = "../../world-bundle", features = ["writer"] }
 rustls.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["raw_value"] }

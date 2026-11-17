@@ -42,8 +42,7 @@ fn tracker_hides_completed_missions_and_removes_quests_only_after_server_confirm
             server_sequence: 2,
             base_revision: 0,
             new_revision: 1,
-            value: QuestLog {
-                view: Some(QuestLogView::List(vec![])),
+            value: QuestLog { map_marks: Vec::new(), view: Some(QuestLogView::List(vec![])),
                 tracked: vec![active.clone(), completed],
             },
         },
@@ -86,8 +85,7 @@ fn tracker_hides_completed_missions_and_removes_quests_only_after_server_confirm
             server_sequence: 4,
             base_revision: 1,
             new_revision: 2,
-            value: QuestLog {
-                view: Some(QuestLogView::List(vec![])),
+            value: QuestLog { map_marks: Vec::new(), view: Some(QuestLogView::List(vec![])),
                 tracked: vec![active],
             },
         },

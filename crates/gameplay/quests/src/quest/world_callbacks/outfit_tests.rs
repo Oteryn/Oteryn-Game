@@ -35,7 +35,18 @@ fn world_outfits_require_a_stateful_use_and_a_closed_target() -> Result<(), Stri
 fn world_requirements_reject_unbounded_and_read_only_authority() -> Result<(), String> {
     let source = include_str!("../../../../../../content/quests/questpc7-world-callbacks.json");
     let document: serde_json::Value = serde_json::from_str(source).map_err(|e| e.to_string())?;
-    assert_eq!(parse(source)?.len(), 112);
+    let callbacks = parse(source)?;
+    let phase_callbacks = parse(include_str!(
+        "../../../../../../content/quests/world-callbacks/feaster-phase-routes.json"
+    ))?;
+    assert_eq!((callbacks.len(), phase_callbacks.len()), (110, 2));
+    let keys: BTreeSet<_> = callbacks.iter().map(|callback| &callback.key).collect();
+    let phase_keys: BTreeSet<_> = phase_callbacks
+        .iter()
+        .map(|callback| &callback.key)
+        .collect();
+    assert!(keys.is_disjoint(&phase_keys));
+    assert_eq!(keys.len() + phase_keys.len(), 112);
     for case in 0..4 {
         let mut row = document["callbacks"][0].clone();
         match case {

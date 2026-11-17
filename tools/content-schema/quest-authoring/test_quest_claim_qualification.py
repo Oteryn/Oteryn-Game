@@ -87,6 +87,14 @@ class QualificationTests(unittest.TestCase):
                         'quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal',
                     'oteryn:reward-claim.kv.powerring2':
                         'quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal',
+                    'oteryn:reward-claim.kv.draconia1':
+                        'quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal',
+                    'oteryn:reward-claim.kv.fireaxe1':
+                        'quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal',
+                    'oteryn:reward-claim.kv.goblintemple2':
+                        'quest_catalogue_chests_exact_fluid_subtypes_use_replay_and_refusal',
+                    'oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine':
+                        'quest_catalogue_chests_exact_fluid_subtypes_use_replay_and_refusal',
                 }[key])
 
     def test_invented_test_is_rejected(self):

@@ -15,6 +15,7 @@ struct Capture {
 
 fn list_log(entries: &[(u32, bool)]) -> QuestLog {
     QuestLog {
+        map_marks: Vec::new(),
         view: Some(QuestLogView::List(
             entries
                 .iter()

@@ -58,6 +58,7 @@ impl SpellGroundTarget {
             map_revision: format!("sha256:{}", hex(room.map_revision_digest())),
             content_revision: format!("sha256:{}", hex(pin.server_artifact_digest())),
             placement_context: room.frame_binding().digest().to_vec(),
+            item_profile_source: room.item_profile_source(),
         })
     }
     /// Reuses the actual combat corpse-placement address codec: signed i32 x,
@@ -99,6 +100,7 @@ impl SpellGroundTarget {
             map_revision: format!("sha256:{}", hex(room.map_revision_digest())),
             content_revision: format!("sha256:{}", hex(pin.server_artifact_digest())),
             placement_context: room.frame_binding().digest().to_vec(),
+            item_profile_source: room.item_profile_source(),
         })
     }
     pub fn placement(&self, source_reference: Vec<u8>) -> GroundPlacement {

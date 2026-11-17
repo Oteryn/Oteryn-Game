@@ -8,6 +8,8 @@ import copy
 import hashlib
 import json
 import re
+
+from native_container_fluids import project_fluid_child
 from pathlib import Path
 
 import poison_daggers
@@ -15,6 +17,7 @@ import poison_daggers
 SOURCE = Path(__file__).with_name('container_native_source.json')
 SOURCE_SHA256 = 'b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757'
 REVISION = '201189f871d23597b82caf88fd611454a2ddefb8'
+# Closed publication scope: other lanes retain their source claim ownership.
 MAX_CONTENTS = 20  # Existing BAGS-0 direct-container admission, not a donor capacity.
 # Existing selected owner rulings, reaffirmed by PR2770 ANSWER 6542716086/Q4.
 # Their source total remains 200; this deliberately preserves the accepted
@@ -42,10 +45,19 @@ FLUID_CHOICES = {
 # exact quest claims; neither global Item definitions nor other quests change.
 CHARGED_QUEST_CLAIMS = {
     'canary:reward-claim/kv/desert2': 3084,
+    'canary:reward-claim/kv/draconia1': 3284,
+    'canary:reward-claim/kv/fireaxe1': 3085,
     'canary:reward-claim/kv/timering3': 3082,
     'canary:reward-claim/kv/triangletower': 3083,
     'canary:reward-claim/kv/trollcave1': 3083,
     'canary:reward-claim/kv/weddingring1': 3085,
+}
+WATER_QUEST_CLAIMS = {
+    'canary:reward-claim/kv/goblintemple2': (
+        (6119,), {'kind': 'quest_kv', 'key': 'goblintemple2'}),
+    'canary:reward-claim/quest/u7_9/dreamers_challenge/chests_wine': (
+        (6197, 6198, 6199, 6200),
+        {'kind': 'storage', 'key': 'Storage.Quest.U7_9.DreamersChallenge.ChestsWine'}),
 }
 FULL_CHARGE_LEAVES = {
     'canary:reward-claim/kv/madmageroom3': (6082, 3081, 5),
@@ -62,7 +74,7 @@ def native_charge_item(item, profile):
         return item
     identity = item['identity']
     key = identity['key']
-    charges = {3082: 50, 3083: 150, 3084: 250, 3085: 200}.get(item_id(identity))
+    charges = {3082: 50, 3083: 150, 3084: 250, 3085: 200, 3284: 1}.get(item_id(identity))
     if charges is None:
         return item
     held = item
@@ -92,7 +104,7 @@ def native_charge_item(item, profile):
         return accepted == observed
 
     if (not all(agrees(item['semantics'][field], semantics[field]) for field in
-                ('physical', 'stack', 'container', 'charges', 'fluid', 'temporal'))
+                ('physical', 'stack', 'container', 'charges', 'fluid', 'temporal', 'weapon'))
             or any(fact({'semantics': semantics}, 'physical', field) is not True
                    for field in ('movable', 'pickupable'))
             or type(fact({'semantics': semantics}, 'physical', 'weight')) is not int):
@@ -102,8 +114,46 @@ def native_charge_item(item, profile):
     return qualified
 
 
+def native_water_vial(item, profile):
+    """Use the existing native empty-vial definition, scoped to exact water-bearing source claims."""
+    if item is None or profile is None:
+        return item
+    identity = item['identity']
+    semantics = profile['semantics']
+    if (identity['key'] != 'oteryn:item.tibia.i2874'
+            or profile['production_definition'] != {
+                'family': 'Item', 'production_key': identity['key'], 'revision_ref': identity['revision']}
+            or profile['production_binding']['target'] != identity
+            or profile['production_binding']['disposition'] != 'EXACT'
+            or profile['admission'] != {'materializable': True, 'stack_class': 'NonStackable',
+                                        'legal_destinations': ['CharacterInventory', 'Ground']}
+            or semantics['fluid'] != {'state': 'KNOWN', 'value': {'fluid_type': {'state': 'NOT_APPLICABLE'}}}
+            or any(semantics[group] != {'state': 'NOT_APPLICABLE'}
+                   for group in ('container', 'charges', 'temporal'))):
+        return item
+
+    def agrees(accepted, observed):
+        if isinstance(accepted, dict):
+            return accepted.get('state') == 'UNKNOWN' or isinstance(observed, dict) and all(
+                field in observed and agrees(value, observed[field]) for field, value in accepted.items())
+        return accepted == observed
+
+    if (not all(agrees(item['semantics'][group], semantics[group])
+                for group in ('physical', 'stack', 'container', 'charges', 'fluid', 'temporal'))
+            or any(fact({'semantics': semantics}, 'physical', field) is not True
+                   for field in ('movable', 'pickupable'))
+            or type(fact({'semantics': semantics}, 'physical', 'weight')) is not int):
+        return item
+    qualified = copy.deepcopy(item)
+    qualified['materializable'] = True
+    for group in ('fluid', 'container', 'charges', 'temporal'):
+        qualified['semantics'][group] = copy.deepcopy(semantics[group])
+    return qualified
+
+
 def claim_items(pilot_key, items):
-    item = CHARGED_QUEST_CLAIMS.get(pilot_key)
+    water = pilot_key in WATER_QUEST_CLAIMS
+    item = 2874 if water else CHARGED_QUEST_CLAIMS.get(pilot_key)
     if item is None:
         return items
     key = f'oteryn:item.tibia.i{item}'
@@ -112,7 +162,8 @@ def claim_items(pilot_key, items):
     matches = [p for p in profiles['records'] if p['production_definition']['production_key'] == key]
     if len(matches) != 1:
         return items
-    return {**items, key: native_charge_item(items.get(key), matches[0])}
+    qualify = native_water_vial if water else native_charge_item
+    return {**items, key: qualify(items.get(key), matches[0])}
 
 
 def source_charged_reward(pilot_key, reward, items):
@@ -392,6 +443,11 @@ def derive(definition, items, stack_problem):
                 return None
             child = copy.deepcopy(quantity)
             if selected_fluid is not None:
+                # Keep the exact raw literal-one vessel proof independently
+                # of the source-selected milk/wine reconciliation.
+                child = project_fluid_child(quantity, raw_count, item)
+                if child is None:
+                    return None
                 child['fluid_subtype'] = selected_fluid[1]
             if source_id in key_ids and key_number is not None:
                 if count != 1:

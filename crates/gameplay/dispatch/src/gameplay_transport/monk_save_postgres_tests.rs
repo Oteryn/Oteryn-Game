@@ -7,8 +7,7 @@ pub(in crate::gameplay_transport) mod equipment_scenarios;
 mod first_vocation_vitals;
 #[path = "../../../../../apps/game-server/tests/support/character_revision_sequencer_postgres_cases.rs"]
 mod fixture;
-#[path = "monk_save_fresh_fixture.rs"]
-mod fresh_fixture;
+use crate::gameplay_transport::composed_test_owner::fresh_fixture;
 #[path = "item_look_postgres_tests.rs"]
 mod item_look;
 #[path = "kill_reward_postgres_e2e_tests.rs"]
@@ -102,6 +101,7 @@ use fresh_session::prepare_current_session;
 
 struct Dependencies {
     runtime: Mutex<ChannelRuntimeV1>,
+    clock_origin: std::time::Instant,
     room: crate::content::QualifiedNativeEntryRoom,
     combat_room: Option<crate::content::QualifiedNativeEntryRoom>,
     door: Mutex<crate::world_runtime::LocalObjectRuntime>,
@@ -188,6 +188,7 @@ impl Dependencies {
         .map_err(debug)?;
         Ok(Self {
             runtime: Mutex::new(runtime),
+            clock_origin: std::time::Instant::now(),
             room,
             combat_room: None,
             door: Mutex::new(door),
@@ -252,6 +253,8 @@ impl Dependencies {
             room: &self.room,
         }
         .build();
+        // Rebuilt session projections share the retained runtime's monotonic clock.
+        owner.clock_origin = self.clock_origin;
         // Combat suites (creature move, kill reward) install their bundle combat view here.
         owner.rooms = crate::gameplay_transport::SeamRooms::new(None, self.combat_room.as_ref());
         owner

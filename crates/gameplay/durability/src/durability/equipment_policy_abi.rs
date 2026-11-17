@@ -9,7 +9,10 @@ use super::character_equipment::EquipmentError;
     unused_imports,
     reason = "compatibility exports for existing equipment consumers"
 )]
-pub use oteryn_gameplay_domain::domain::equipment_policy_abi::{EquipmentBaseVocation, EquipmentClaims, EquipmentPolicyLookup, QualifiedEquipmentPolicy, policy_registration};
+pub use oteryn_gameplay_domain::domain::equipment_policy_abi::{
+    EquipmentBaseVocation, EquipmentClaims, EquipmentPolicyLookup, QualifiedEquipmentPolicy,
+    policy_registration,
+};
 pub fn claims(
     policy: &QualifiedEquipmentPolicy,
     slot: u8,

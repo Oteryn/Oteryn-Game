@@ -212,13 +212,23 @@ impl Harness {
     /// `initialized`: seed the typed progression row at revision one (level
     /// 50, 1000 experience) instead of leaving the Character bootstrap-only.
     pub(crate) async fn create(admin: String, tag: &str, initialized: bool) -> TestResult<Self> {
+        Self::create_with_admission_seed(admin, tag, initialized, true).await
+    }
+
+    /// Omit legacy session/readiness rows when a caller commits typed fresh admission.
+    pub(crate) async fn create_with_admission_seed(
+        admin: String,
+        tag: &str,
+        initialized: bool,
+        seed_session: bool,
+    ) -> TestResult<Self> {
         let database = Database::create(admin, tag).await?;
         let cleanup = database.clone();
         let tag = tag.to_owned();
         let setup = tokio::task::LocalSet::new()
             .run_until(async move {
                 tokio::task::spawn_local(async move {
-                    Self::create_on_database(database, &tag, initialized)
+                    Self::create_on_database(database, &tag, initialized, seed_session)
                         .await
                         .map_err(|error| error.to_string())
                 })
@@ -242,6 +252,7 @@ impl Harness {
         database: Database,
         tag: &str,
         initialized: bool,
+        seed_session: bool,
     ) -> TestResult<Self> {
         let root = DurabilityRoot::connect_test_runtime(&database.url)?;
         assert!(root.maintain_ready_once().await?);
@@ -256,7 +267,7 @@ impl Harness {
                 .map_err(debug)?;
         }
         let node = register(&root, 1).await?;
-        seed_character(&pool, initialized).await?;
+        seed_character(&pool, initialized, seed_session).await?;
         sqlx::query(
             "INSERT INTO game_control_scope_grants \
              (control_role, world_id, channel_id, operation) \
@@ -285,7 +296,9 @@ impl Harness {
             return Err(format!("unexpected assignment outcome: {outcome:?}").into());
         };
         assert_eq!(assignment.assignment.ownership_generation, 1);
-        publish_readiness(&pool, &root, &node, 1).await?;
+        if seed_session {
+            publish_readiness(&pool, &root, &node, 1).await?;
+        }
         Ok(Self {
             database,
             root,
@@ -457,7 +470,7 @@ pub(crate) async fn publish_readiness_for_scope(
     Ok(())
 }
 
-async fn seed_character(pool: &sqlx::PgPool, initialized: bool) -> TestResult {
+async fn seed_character(pool: &sqlx::PgPool, initialized: bool, seed_session: bool) -> TestResult {
     sqlx::query(
         "INSERT INTO game_character_interpretations VALUES \
          (1,'profile-1','ruleset-1','content-1','starter-1',1)",
@@ -514,6 +527,9 @@ async fn seed_character(pool: &sqlx::PgPool, initialized: bool) -> TestResult {
         .bind(id(CHARACTER).as_slice())
         .execute(pool)
         .await?;
+    }
+    if !seed_session {
+        return Ok(());
     }
     sqlx::query(
         "INSERT INTO game_durability_reconnect_sessions(\

@@ -128,6 +128,10 @@ fn soulpit_scope_barrier_adopts_fresh_instance_and_return_without_replaying_sour
                         let envelope = decode_wire_envelope(&frame)?;
                         let command = envelope.client_command(2)?;
                         assert_eq!(command.command_id, 1, "source command is never retried");
+                        assert_eq!(
+                            envelope.client_command_session_id()?,
+                            Some(uuid_v7(4).as_slice())
+                        );
                         write_frame(
                             &mut server,
                             &encode_command_result(
@@ -144,6 +148,10 @@ fn soulpit_scope_barrier_adopts_fresh_instance_and_return_without_replaying_sour
                         let frame = read_frame(&mut server).await?;
                         let envelope = decode_wire_envelope(&frame)?;
                         assert_eq!(envelope.client_command(3)?.command_id, 1);
+                        assert_eq!(
+                            envelope.client_command_session_id()?,
+                            Some(uuid_v7(5).as_slice())
+                        );
                         write_frame(
                             &mut server,
                             &encode_command_result(
@@ -175,6 +183,7 @@ fn soulpit_scope_barrier_adopts_fresh_instance_and_return_without_replaying_sour
                         &uuid_v7(4)
                     );
                     assert_eq!(session.connection_generation, 2);
+                    assert_eq!(session.activity_scope(), Some(&receipt(1, 4, 2, false)));
                     assert_eq!(session.world_spatial.actor_position.x, 123);
                     assert_eq!(session.last_server_sequence, 0);
                     assert!(!session.unusable);
@@ -187,6 +196,7 @@ fn soulpit_scope_barrier_adopts_fresh_instance_and_return_without_replaying_sour
                     );
                     assert_eq!(session.world_spatial.actor_position.x, 0);
                     assert_eq!(session.connection_generation, 3);
+                    assert_eq!(session.activity_scope(), Some(&receipt(4, 5, 3, true)));
                     session.step(StepDirection::North).await?;
                     drop(session);
                     peer.await??;
@@ -270,7 +280,7 @@ fn soulpit_recovery_projection_is_bound_to_admitted_session_and_selection() -> R
         .stack_size(64 << 20)
         .spawn(|| {
             block_on(async {
-                for fault in 0..6 {
+                for fault in 0..7 {
                     let (client, mut server) = tokio::io::duplex(256 * 1024);
                     let peer = tokio::spawn(async move {
                         let mut restored = receipt(0, 1, 1, false);
@@ -288,13 +298,29 @@ fn soulpit_recovery_projection_is_bound_to_admitted_session_and_selection() -> R
                         } else {
                             encode_activity_scope(&restored).map_err(|e| format!("{e:?}"))?
                         };
+                        let mut projections =
+                            vec![(99, 1, if fault == 5 { 2 } else { 1 }, payload)];
+                        if fault == 6 {
+                            // Even a valid gameplay domain may not precede
+                            // the retained binding after the two core domains.
+                            projections.insert(
+                                0,
+                                (
+                                    3,
+                                    1,
+                                    1,
+                                    actor_spell::encode_actor_vitals(&vitals(150, 55))
+                                        .map_err(|error| format!("{error:?}"))?,
+                                ),
+                            );
+                        }
                         join_peer_with(
                             &mut server,
                             &[117],
                             &[117],
                             &[],
                             (1, spatial(0)),
-                            &[(99, 1, if fault == 5 { 2 } else { 1 }, payload)],
+                            &projections,
                         )
                         .await?;
                         Ok::<(), BoxError>(())

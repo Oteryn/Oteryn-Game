@@ -18,6 +18,7 @@ pub(super) struct State {
     visibility: Option<SessionVisibility>,
     appearances: SessionAppearance,
     spatial_revision: u64,
+    movement_effect_revision: u64,
     npc_shown: Option<WireEntityRef>,
     npc_active: bool,
     stash_rows: Option<Vec<[u8; 16]>>,
@@ -428,7 +429,15 @@ impl State {
             self.spatial_revision = revision;
             admitted.continuity.spatial_revision = revision;
         }
-        self.refresh_map(stream, authority, admitted).await
+        self.refresh_map(stream, authority, admitted).await?;
+        super::native_cues::refresh_house_effects(
+            stream,
+            authority,
+            self.actor,
+            admitted,
+            &mut self.movement_effect_revision,
+        )
+        .await
     }
 
     async fn vitals<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(

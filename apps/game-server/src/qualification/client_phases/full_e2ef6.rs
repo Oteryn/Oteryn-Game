@@ -876,10 +876,11 @@ async fn temple_respawn(
             .and_then(|id| towns.town(id))
             .and_then(|town| town.temple)
             .ok_or("compiled world has no default home temple")?;
+        let basis = spatial_basis::current(&mut client)?;
         let temple = ActorPosition {
             x: i32::from(home.x),
             y: i32::from(home.y),
-            floor: -i16::from(home.floor),
+            floor: basis.floor(home.floor),
         };
         travel_to_spawn(&mut client, world, spawns, "oteryn:creature.poison_spider").await?;
         let encounter = client.world_spatial().actor_position;
@@ -977,7 +978,10 @@ async fn temple_respawn(
 /// GeneralStats has a fixed native layout. Do not substitute a ranking snapshot:
 /// its scheduled cut can predate the kill or the vocation confirmation.
 fn progress_frame(payload: &[u8], vocation_selected: bool) -> TestResult<(u64, u32)> {
-    if general_stats::validate(payload, vocation_selected).is_err() || payload[0] != 1 || payload[33] > 1 {
+    if general_stats::validate(payload, vocation_selected).is_err()
+        || payload[0] != 1
+        || payload[33] > 1
+    {
         return Err("malformed native GeneralStats frame".into());
     }
     let xp = u64::from_le_bytes(payload[1..9].try_into()?);
@@ -1064,6 +1068,7 @@ async fn approach_oressa(
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
+    let basis = spatial_basis::current(client)?;
     let npc = npcs
         .npcs
         .iter()
@@ -1078,7 +1083,7 @@ async fn approach_oressa(
         entry.kind == oteryn_dev_client::EntityKind::Npc && npc.placements.iter().any(|placement| {
             entry.position.x == i32::from(placement.x)
                 && entry.position.y == i32::from(placement.y)
-                && entry.position.floor == -i16::from(placement.floor)
+                && entry.position.floor == basis.floor(placement.floor)
         })
     })).map(|entry| entry.entity)
         .ok_or_else(|| "Oressa prerequisite blocked: no native NPC actor at the compiled Oressa placement after walking there".into())
@@ -1523,6 +1528,7 @@ async fn approach_service(
     npcs: &oteryn_world_bundle::npc::Table,
     key: &str,
 ) -> TestResult<oteryn_dev_client::EntityRef> {
+    let basis = spatial_basis::current(client)?;
     let npc = npcs.npcs.iter().find(|npc| npc.key == key).ok_or_else(|| {
         format!("player prerequisite blocked: compiled world has no {key} placement")
     })?;
@@ -1545,7 +1551,7 @@ async fn approach_service(
                             == ActorPosition {
                                 x: i32::from(place.x),
                                 y: i32::from(place.y),
-                                floor: -i16::from(place.floor),
+                                floor: basis.floor(place.floor),
                             }
                     })
             })
@@ -1657,10 +1663,11 @@ async fn observed_death(
         .and_then(|id| world.base().subareas.town(id))
         .and_then(|town| town.temple)
         .ok_or("compiled default temple unavailable")?;
+    let basis = spatial_basis::current(client)?;
     let temple = ActorPosition {
         x: i32::from(home.x),
         y: i32::from(home.y),
-        floor: -i16::from(home.floor),
+        floor: basis.floor(home.floor),
     };
     travel_to_spawn(client, world, spawns, "oteryn:creature.poison_spider").await?;
     let encounter = client.world_spatial().actor_position;
@@ -2377,10 +2384,11 @@ async fn observed_pvp_death(
         .and_then(|id| world.base().subareas.town(id))
         .and_then(|town| town.temple)
         .ok_or("PvP default temple missing")?;
+    let basis = spatial_basis::current(victim)?;
     let temple = ActorPosition {
         x: i32::from(home.x),
         y: i32::from(home.y),
-        floor: -i16::from(home.floor),
+        floor: basis.floor(home.floor),
     };
     if victim.world_spatial().actor_position == temple {
         return Err("PvP encounter is at temple".into());

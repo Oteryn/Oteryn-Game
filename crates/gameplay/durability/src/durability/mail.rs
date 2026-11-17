@@ -4,13 +4,17 @@ use super::DurabilityError;
 use super::character_progression::uuid_text;
 use crate::domain::character_name::{CharacterName, NAMING_POLICY_REVISION};
 use crate::domain::{CharacterId, WorldId};
-use sqlx::{Postgres, Row, Transaction};
 use crate::durability::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
-use crate::durability::db::{begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations};
-use crate::durability::item_transfer::{CurrentCharacterItemFence, character_item_fence_is_current};
+use crate::durability::db::{
+    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+};
+use crate::durability::item_transfer::{
+    CurrentCharacterItemFence, character_item_fence_is_current,
+};
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::{CommandId, CommandRef, RuntimeScopeRefV1};
 use sha2::{Digest, Sha256};
+use sqlx::{Postgres, Row, Transaction};
 
 pub const MAIL_POSTS_PER_SECOND: u64 = 1;
 pub const MAIL_INBOX_ITEM_CEILING: u64 = 50_000;
@@ -45,7 +49,9 @@ impl crate::durability::DurabilityRoot {
         item: [u8; 16],
         mailbox_placement_key: u64,
     ) -> Result<MailPostOutcome, DurabilityError> {
-        let record = recovery.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;

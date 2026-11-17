@@ -447,6 +447,7 @@ impl ChannelRuntimeV1 {
             if restored.position != resident.channel_position.position {
                 restored.last_translation_revision = restored.revision;
             }
+            let order = self.carrier.next_tile_entry_order()?;
             let index = actor.actor_local_id() as usize - 1;
             let attacker = self
                 .carrier
@@ -469,6 +470,7 @@ impl ChannelRuntimeV1 {
                 }
                 _ => return Err(CarrierError::WrongScope),
             }
+            self.carrier.install_tile_entry_order(index, order);
             self.carrier.house_custody.remove(at);
             if !self.carrier.house_custody.iter().any(|resident| {
                 resident.key == house

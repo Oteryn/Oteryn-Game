@@ -189,8 +189,10 @@ impl Application {
             if play.view.target_move_input(&play.link, events) {
                 return;
             }
-            if !play.view.diagonal_movement_input(&play.link, events)
-                && let Some(direction) = arrow_step(events)
+            if let Some(direction) = play
+                .link
+                .diagonal_input(events)
+                .or_else(|| arrow_step(events, false).filter(|direction| !direction.is_diagonal()))
             {
                 play.view.arrow(direction);
             }
@@ -241,7 +243,7 @@ impl Application {
         if oteryn_client::reentry::login_key(events) {
             self.request_entry();
         }
-        if let Some(direction) = arrow_step(events) {
+        if let Some(direction) = arrow_step(events, false) {
             self.offline_own = direction.from(self.offline_own);
             self.offline_facing = direction;
             if self.rebuild_offline().is_err() {

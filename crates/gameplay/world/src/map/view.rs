@@ -23,6 +23,8 @@
 
 #![cfg_attr(not(test), allow(dead_code))]
 
+mod source_handles;
+
 use super::WorldBase;
 use super::overlay::{AddedItem, ChannelOverlay, EntryId, TileOverlayView, TilePos};
 use oteryn_protocol_oteryn::world_map::{
@@ -30,6 +32,7 @@ use oteryn_protocol_oteryn::world_map::{
     first_visible_floor_start, floors_in_view,
 };
 use oteryn_world_bundle::bundle::TerrainKind;
+use std::num::NonZeroU32;
 
 /// The facts of one composed entry that the view needs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -56,6 +59,10 @@ pub struct EntryFacts {
 /// The bundle and content facts of a map view, held by the owner of the bundle palette and the
 /// content generation.
 pub trait MapFacts {
+    /// A current scoped map phase replaces the complete base stack of this cell.
+    fn phase_tile(&self, _pos: TilePos) -> Result<Option<ComposedTile>, ViewError> {
+        Ok(None)
+    }
     /// Resolve a movement-created volatile item in this exact fact snapshot.
     fn movement_item(&self, _id: u64) -> Option<(TilePos, EntryId)> {
         None
@@ -70,6 +77,22 @@ pub trait MapFacts {
     }
 
     fn base_entry(&self, pos: TilePos, ordinal: u8, id: u32) -> Option<EntryFacts>;
+    /// The current native generation's qualified Ground-only amphora definition.
+    /// A static map alone grants no additional move handles.
+    fn ground_push_definition(&self) -> Option<NonZeroU32> {
+        None
+    }
+    /// Qualify the immutable empty source against that admitted definition.
+    fn base_ground_pushable(
+        &self,
+        _pos: TilePos,
+        _ordinal: u8,
+        _id: u32,
+        _depths: &[u8],
+        _definition: NonZeroU32,
+    ) -> bool {
+        false
+    }
     /// The facts of an overlay-added or Ground item, from its item content definition.
     fn added_entry(&self, item: &AddedItem) -> Option<EntryFacts>;
     /// Whether `pos` is a house tile.
@@ -84,11 +107,13 @@ pub trait MapFacts {
 /// Where a composed entry comes from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum EntrySource {
-    /// An unhidden base entry. `movable` entries carry a handle (contract §3 Move source).
+    /// An unhidden base entry. Movable leaves and read-only captured containers carry handles.
     Base {
         ordinal: u8,
         placement_key: u64,
         movable: bool,
+        /// A read-only captured container source, independent of pickup permission.
+        openable_source: bool,
     },
     /// An overlay-added volatile item.
     Added(EntryId),
@@ -103,7 +128,11 @@ impl EntrySource {
     /// Whether the entry carries a handle within the budget.
     pub const fn handle_bearing(&self) -> bool {
         match self {
-            Self::Base { movable, .. } => *movable,
+            Self::Base {
+                movable,
+                openable_source,
+                ..
+            } => *movable || *openable_source,
             Self::Added(_) | Self::Ground(_) | Self::House(_) => true,
         }
     }
@@ -112,7 +141,7 @@ impl EntrySource {
 /// The identity a handle-bearing entry's handle is bound to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum MapEntryKey {
-    /// A movable base entry, by its bundle placement key.
+    /// An interactive base entry, by its bundle placement key.
     Base(u64),
     Added(EntryId),
     Ground([u8; 16]),
@@ -215,7 +244,10 @@ pub fn compose_into(
     out: &mut Vec<ComposedEntry>,
 ) -> Result<u16, ViewError> {
     let mut ground_speed = 0;
-    if let Some(tile) = base.tile(pos.x, pos.y, pos.floor) {
+    if let Some(tile) = facts.phase_tile(pos)? {
+        ground_speed = tile.ground_speed;
+        out.extend(tile.entries);
+    } else if let Some(tile) = base.tile(pos.x, pos.y, pos.floor) {
         ground_speed = tile.stored_ground_speed();
         let (ids, depths) = (tile.ids(), tile.depths());
         let mut ordinal: u16 = 0;
@@ -244,12 +276,30 @@ pub fn compose_into(
                 .base_entry(pos, ordinal, *id)
                 .ok_or(ViewError::MissingFacts)?;
             let contents = depths.get(at + 1).is_some_and(|next| *next != 0);
-            let movable = entry.pickupable && !entry.bound && !contents && !facts.house_tile(pos);
+            let (movable, openable_source) = source_handles::base_handles(
+                entry.pickupable,
+                entry.bound,
+                contents,
+                facts.house_tile(pos),
+            );
+            let movable = movable
+                || facts.ground_push_definition().is_some_and(|definition| {
+                    entry.definition == MapDefinition::Item(definition)
+                        && !entry.bound
+                        && !contents
+                        && !facts.house_tile(pos)
+                        && placement_key(pos, ordinal)
+                            .is_some_and(|key| facts.object_revision(key) == 0)
+                        && facts.base_ground_pushable(pos, ordinal, *id, depths, definition)
+                });
+            let openable_source =
+                openable_source && matches!(entry.definition, MapDefinition::Item(_));
             out.push(ComposedEntry {
                 source: EntrySource::Base {
                     ordinal,
                     placement_key: placement_key(pos, ordinal).ok_or(ViewError::OrdinalReach)?,
                     movable,
+                    openable_source,
                 },
                 facts: entry,
             });

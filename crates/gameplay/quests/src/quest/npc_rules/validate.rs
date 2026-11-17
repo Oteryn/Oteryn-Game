@@ -91,6 +91,7 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
         }
         if document.quest == super::questpc2_gnomus_source::QUEST
             && !super::questpc2_gnomus_source::custody(document)
+            && !super::questpc2_gnomus_source::legacy_custody(document)
         {
             return Err(invalid("Gnomus source custody"));
         }
@@ -140,6 +141,32 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
         {
             return Err(invalid("Draconia source custody"));
         }
+        if document.program_key.as_deref() == Some("oteryn:quest-npc-program.m41_kilmaresh_finale")
+            && (document.quest != "oteryn:quest.kilmaresh_quest"
+                || document.source_files.len() != 1
+                || document.source_files.iter().any(|file| {
+                    file.revision != "201189f871d23597b82caf88fd611454a2ddefb8"
+                        || file.path != "data-global/npc/alyxo.lua"
+                        || file.sha256
+                            != "86f3cf5aa793d5ccffd14bdf35bda841bb00f8c3ce3352826b088f4f25c4b008"
+                }))
+        {
+            return Err(invalid("M41 Alyxo source custody"));
+        }
+        // Crystal 201189f data-global/npc/tamoril.lua:45-111: the calendar gate
+        // and all unconditional acceptance resets belong to this exact source.
+        if document.program_key.as_deref() == Some("oteryn:quest-npc-program.first-dragon-calendar")
+            && (document.quest != "oteryn:quest.the_first_dragon_quest"
+                || document.source_files.len() != 1
+                || document.source_files.iter().any(|file| {
+                    file.revision != "201189f871d23597b82caf88fd611454a2ddefb8"
+                        || file.path != "data-global/npc/tamoril.lua"
+                        || file.sha256
+                            != "d5d55a74c2bb9ade413c23442924b46ee6e5b05c9daf73ed8259e67f04576969"
+                }))
+        {
+            return Err(invalid("Tamoril source custody"));
+        }
         if !super::hidden_threats::custody(document) {
             return Err(invalid("Corym source custody"));
         }
@@ -179,6 +206,14 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                 return Err(invalid("invalid source file custody"));
             }
         }
+        let scoped = document.rules.iter().any(|rule| {
+            rule.effects
+                .iter()
+                .any(|effect| matches!(effect, NpcRuleEffect::CompleteSource { .. }))
+        });
+        if scoped && document.rules.iter().any(|rule| rule.completes) {
+            return Err(invalid("source saga cannot close a canonical quest"));
+        }
         for rule in &document.rules {
             if !valid_quest_key(&rule.key)
                 || !keys.insert(&rule.key)
@@ -193,7 +228,12 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                 })
                 || (rule.trigger == NpcRuleTrigger::Say
                     && rule.keywords.is_empty()
-                    && !rule.any_message)
+                    && !rule.any_message
+                    && !rule.match_player_name)
+                || (rule.match_player_name
+                    && (rule.trigger != NpcRuleTrigger::Say
+                        || !rule.keywords.is_empty()
+                        || rule.any_message))
                 || rule.reply.len() > 32
                 || rule
                     .reply
@@ -241,7 +281,18 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                         *value >= 0 && *op != NpcComparison::Between
                     }
                     NpcRuleGuard::CalendarMonth { value } => (1..=12).contains(value),
+                    NpcRuleGuard::CalendarWindow {
+                        start_month,
+                        start_day,
+                        end_month,
+                        end_day,
+                        ..
+                    } => {
+                        super::calendar::valid_date(*start_month, *start_day)
+                            && super::calendar::valid_date(*end_month, *end_day)
+                    }
                     NpcRuleGuard::Vocation { value } => valid_quest_key(value),
+                    NpcRuleGuard::Premium { .. } => true,
                     NpcRuleGuard::Sex { value } => *value <= 1,
                     NpcRuleGuard::Outfit { look_type, addon } => *look_type > 0 && *addon <= 3,
                 };
@@ -258,6 +309,13 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                     NpcRuleEffect::BigfootSoulMelody => {
                         document.quest == "oteryn:quest.bigfoot_s_burden_quest"
                             && (1..=7).all(|tone| tracks.contains_key(&format!("oteryn:quest-progress/quest/u9_60/bigfoots_burden/melody_tone{tone}")))
+                    }
+                    NpcRuleEffect::CompleteSource { track } => {
+                        let prefix = format!("oteryn:quest-progress/source-completion/{}/",
+                            document.quest.strip_prefix("oteryn:quest.").unwrap_or(""));
+                        track.strip_prefix(&prefix).is_some_and(|scope| !scope.is_empty() && !scope.contains('/'))
+                            && tracks.get(track).is_some_and(|definition|
+                                definition.initial == 0 && definition.min == 0 && definition.max == 1)
                     }
                     NpcRuleEffect::Set { track, value } => {
                         tracks.get(track).is_some_and(|definition| {

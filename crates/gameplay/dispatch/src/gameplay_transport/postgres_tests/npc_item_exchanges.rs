@@ -50,66 +50,15 @@ pub(super) async fn exercise(
         .fetch_one(&h.pool)
         .await?;
     eprintln!("NPC_EXCHANGE POSTGRES_STARTED version={version}");
-    let source = NpcRuleCatalog::runtime().map_err(debug)?;
-    let program = source.program("oteryn:quest.hot_cuisine_quest")
-        .ok_or("Hot Cuisine source programme")?;
-    let tracks = program.document.tracks.iter()
-        .map(|track| QuestTrack {
-            key: track.key.clone(),
-            quest: track.quest.clone(),
-            initial: track.initial,
-            min: track.min,
-            max: track.max,
-        })
-        .collect();
-    // A resumed apprenticeship is legal outside August. Establish only its
-    // preconditions; the recipe's item/progress transaction is the owner under test.
-    let mut transitions: Vec<_> = [6, 8, 14]
-        .into_iter()
-        .map(|index| QuestTransition {
-            key: format!("oteryn:quest-transition/fixture/resumed-cook-{index}"),
-            quest: "oteryn:quest.hot_cuisine_quest".into(),
-            effects: [("quest_start", 1), ("current_dish", index)]
-                .into_iter()
-                .map(|(suffix, value)| QuestEffect {
-                    track: format!("{PREFIX}{suffix}"),
-                    from: QuestComparison::Between(-1, i64::MAX),
-                    effect: QuestEffectKind::Set(value),
-                })
-                .collect(),
-            completes: false,
-            experience: None, world_change: None,
-        })
-        .collect();
-    let current_year: i64 =
-        sqlx::query_scalar("SELECT extract(year FROM now() AT TIME ZONE 'UTC')::bigint")
-            .fetch_one(&h.pool)
-            .await?;
-    transitions.push(QuestTransition {
-        key: "oteryn:quest-transition/fixture/bonus-cook-6".into(),
-        quest: "oteryn:quest.hot_cuisine_quest".into(),
-        effects: [
-            ("current_dish", 6),
-            ("kv/bonusyear", current_year),
-            ("kv/bonusused-7", 0),
-        ]
-        .into_iter()
-        .map(|(suffix, value)| QuestEffect {
-            track: format!("{PREFIX}{suffix}"),
-            from: QuestComparison::Any,
-            effect: QuestEffectKind::Set(value),
-        })
-        .collect(),
-        completes: false,
-        experience: None, world_change: None,
-    });
-    // Bind this resumed fixture to the real admitted programme, not merely shipped source.
-    let digest = program.digest.iter().map(|byte| format!("{byte:02x}")).collect::<String>();
-    let binding = format!("oteryn:quest-npc-pin/{digest}");
-    transitions.push(owner.quest_catalogue.as_ref().ok_or("native catalogue")?
-        .transition(&binding).ok_or("native Hot Cuisine binding")?.clone());
-    let catalogue =
-        Arc::new(QuestStateCatalogue::new("content-1", tracks, transitions).map_err(debug)?);
+    owner.admit_premium(super::fixture::id(40), admitted.game_session_id);
+    assert!(
+        owner
+            .premium_gate(super::fixture::id(40))
+            .await
+            .premium_current(),
+        "resumed cook requires delivered live Premium"
+    );
+    let catalogue = resumed_catalogue(owner, h).await?;
     owner.quest_catalogue = Some(catalogue.clone());
     let book: serde_json::Value = serde_json::from_str(include_str!(
         "../../../../../../content/quests/hot-cuisine-batch3.json"
@@ -118,7 +67,8 @@ pub(super) async fn exercise(
         .active_generation
         .and_then(|g| g.native_gameplay())
         .ok_or("native")?;
-    let weights = crate::gameplay_transport::item_ref_admission::NativeItemWeights(native);
+    let weights = crate::gameplay_transport::item_ref_admission::NativeItemWeights(native)
+        .with_wheel(owner.premium_coordinator);
     let mut mint_ordinal = 700;
     for index in [6_u64, 8, 14] {
         let recipe = &book["recipes"][usize::try_from(index - 1)?];
@@ -178,7 +128,10 @@ pub(super) async fn exercise(
             .commit_character_npc_program(
                 authority,
                 owner.holder,
-                &owner.spell_lane_permit().await.ok_or("NPC programme permit")?,
+                &owner
+                    .spell_lane_permit()
+                    .await
+                    .ok_or("NPC programme permit")?,
                 fence,
                 request.clone(),
                 catalogue.clone(),
@@ -230,7 +183,10 @@ pub(super) async fn exercise(
                 owner.root,
                 authority,
                 owner.holder,
-                &owner.spell_lane_permit().await.ok_or("NPC programme permit")?,
+                &owner
+                    .spell_lane_permit()
+                    .await
+                    .ok_or("NPC programme permit")?,
                 fence,
                 request.clone(),
                 catalogue.clone(),
@@ -407,8 +363,11 @@ pub(super) async fn exercise(
         .commit_character_npc_program(
             authority,
             owner.holder,
-            &owner.spell_lane_permit().await.ok_or("NPC programme permit")?,
-                fence,
+            &owner
+                .spell_lane_permit()
+                .await
+                .ok_or("NPC programme permit")?,
+            fence,
             request.clone(),
             catalogue.clone(),
             &weights,
@@ -468,7 +427,10 @@ pub(super) async fn exercise(
             .commit_character_npc_program(
                 authority,
                 owner.holder,
-                &owner.spell_lane_permit().await.ok_or("NPC programme permit")?,
+                &owner
+                    .spell_lane_permit()
+                    .await
+                    .ok_or("NPC programme permit")?,
                 stale,
                 stale_request,
                 catalogue,
@@ -479,4 +441,145 @@ pub(super) async fn exercise(
         Err(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected)
     ));
     Ok(())
+}
+
+pub(super) async fn resumed_catalogue(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+) -> TestResult<Arc<QuestStateCatalogue>> {
+    // A resumed level-35 cook is fixture history. Eligibility is subsequently
+    // reloaded by the real fenced NPC owner, never supplied by the command.
+    let mut fixture = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *fixture)
+        .await?;
+    sqlx::query("UPDATE game_character_progression_state SET level=35,total_experience=617100 WHERE character_id=encode($1,'hex')::uuid")
+        .bind(super::fixture::id(41).as_slice()).execute(&mut *fixture).await?;
+    fixture.commit().await?;
+    let source = NpcRuleCatalog::runtime().map_err(debug)?;
+    let program = source
+        .program("oteryn:quest.hot_cuisine_quest")
+        .ok_or("Hot Cuisine source programme")?;
+    let tracks = program
+        .document
+        .tracks
+        .iter()
+        .map(|track| QuestTrack {
+            key: track.key.clone(),
+            quest: track.quest.clone(),
+            initial: track.initial,
+            min: track.min,
+            max: track.max,
+        })
+        .collect();
+    // A resumed apprenticeship is legal outside August. Establish only its
+    // preconditions; the recipe's item/progress transaction is the owner under test.
+    let mut transitions: Vec<_> = [6, 8, 12, 14, 15]
+        .into_iter()
+        .map(|index| QuestTransition {
+            key: format!("oteryn:quest-transition/fixture/resumed-cook-{index}"),
+            quest: "oteryn:quest.hot_cuisine_quest".into(),
+            effects: [("quest_start", 1), ("current_dish", index)]
+                .into_iter()
+                .map(|(suffix, value)| QuestEffect {
+                    track: format!("{PREFIX}{suffix}"),
+                    from: QuestComparison::Between(-1, i64::MAX),
+                    effect: QuestEffectKind::Set(value),
+                })
+                .chain(
+                    (1..=14)
+                        .filter(move |_| index == 15)
+                        .map(|previous| QuestEffect {
+                            track: format!("{PREFIX}kv/cookcount-{}", previous + 1),
+                            from: QuestComparison::Any,
+                            effect: QuestEffectKind::Set(1),
+                        }),
+                )
+                .collect(),
+            completes: false,
+            experience: None,
+            world_change: None,
+        })
+        .collect();
+    let current_year: i64 =
+        sqlx::query_scalar("SELECT extract(year FROM now() AT TIME ZONE 'UTC')::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+    transitions.push(QuestTransition {
+        key: "oteryn:quest-transition/fixture/bonus-cook-6".into(),
+        quest: "oteryn:quest.hot_cuisine_quest".into(),
+        effects: [
+            ("current_dish", 6),
+            ("kv/bonusyear", current_year),
+            ("kv/bonusused-7", 0),
+        ]
+        .into_iter()
+        .map(|(suffix, value)| QuestEffect {
+            track: format!("{PREFIX}{suffix}"),
+            from: QuestComparison::Any,
+            effect: QuestEffectKind::Set(value),
+        })
+        .collect(),
+        completes: false,
+        experience: None,
+        world_change: None,
+    });
+    // Legal resumed preconditions for the terminal award. The selected dish's
+    // two cooks remain real item transactions; earlier courses are fixture history.
+    for selected in [12, 15] {
+        transitions.push(QuestTransition {
+            key: format!("oteryn:quest-transition/fixture/m42-prior-{selected}"),
+            quest: "oteryn:quest.hot_cuisine_quest".into(),
+            effects: (1..=15)
+                .filter(|index| *index != selected)
+                .map(|index| QuestEffect {
+                    track: format!("{PREFIX}kv/cookcount-{}", index + 1),
+                    from: QuestComparison::Any,
+                    effect: QuestEffectKind::Set(2),
+                })
+                .collect(),
+            completes: false,
+            experience: None,
+            world_change: None,
+        });
+        transitions.push(QuestTransition {
+            key: format!("oteryn:quest-transition/fixture/m42-bonus-{selected}"),
+            quest: "oteryn:quest.hot_cuisine_quest".into(),
+            effects: [
+                ("current_dish".to_string(), selected),
+                ("kv/bonusyear".into(), current_year),
+                (format!("kv/bonusused-{}", selected + 1), 0),
+                ("quest_start".into(), 2),
+            ]
+            .into_iter()
+            .map(|(suffix, value)| QuestEffect {
+                track: format!("{PREFIX}{suffix}"),
+                from: QuestComparison::Any,
+                effect: QuestEffectKind::Set(value),
+            })
+            .collect(),
+            completes: false,
+            experience: None,
+            world_change: None,
+        });
+    }
+    // Bind this resumed fixture to the real admitted programme, not merely shipped source.
+    let digest = program
+        .digest
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    let binding = format!("oteryn:quest-npc-pin/{digest}");
+    transitions.push(
+        owner
+            .quest_catalogue
+            .as_ref()
+            .ok_or("native catalogue")?
+            .transition(&binding)
+            .ok_or("native Hot Cuisine binding")?
+            .clone(),
+    );
+    let catalogue =
+        Arc::new(QuestStateCatalogue::new("content-1", tracks, transitions).map_err(debug)?);
+    Ok(catalogue)
 }
