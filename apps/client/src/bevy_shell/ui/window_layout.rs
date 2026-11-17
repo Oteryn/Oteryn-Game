@@ -22,11 +22,13 @@ pub(in crate::bevy_shell) use stack::{OpenWindows, WindowLayer, WindowStack};
 pub(in crate::bevy_shell) fn install(app: &mut App) {
     app.init_resource::<WindowLayouts>()
         .init_resource::<WindowStack>()
+        .init_resource::<LoadedLayoutTick>()
         .add_observer(stack::raise_on_press)
         .add_observer(menu::open)
         .add_observer(menu::dismiss)
-        .add_systems(Update, (zoom, persist))
-        .add_systems(Last, flush_on_exit.run_if(on_message::<AppExit>))
+        .add_systems(PreUpdate, load_layouts)
+        .add_systems(Update, (zoom, menu::fit_open))
+        .add_systems(Last, persist)
         .add_systems(
             PostUpdate,
             (
@@ -449,54 +451,47 @@ type Fonts<'w, 's> = Query<
 /// How long the layout must stay unchanged before it is written, so a drag writes once.
 const SAVE_DELAY: std::time::Duration = std::time::Duration::from_secs(1);
 
-#[derive(Default)]
-pub(in crate::bevy_shell) struct Persistence {
-    loaded: bool,
-    pending: Option<std::time::Duration>,
-}
+#[derive(Resource, Default)]
+struct LoadedLayoutTick(Option<bevy::ecs::change_detection::Tick>);
 
-/// Loads the saved layout once, then writes it after each settled change.
-pub(in crate::bevy_shell) fn persist(
+fn load_layouts(
     owner: Option<NonSend<crate::bevy_shell::owner::HostOwner>>,
-    time: Res<Time<Real>>,
     mut layouts: ResMut<WindowLayouts>,
-    mut state: Local<Persistence>,
+    mut loaded: ResMut<LoadedLayoutTick>,
 ) {
+    if loaded.0.is_some() {
+        return;
+    }
     let Some(path) = owner.and_then(|owner| owner.window_layouts_path()) else {
         return;
     };
-    let now = time.elapsed();
-    if !state.loaded {
-        state.loaded = true;
-        match WindowLayouts::load(&path) {
-            Ok(saved) => *layouts = saved,
-            Err(error) => eprintln!("Could not load window layouts: {error}"),
-        }
-        return;
+    match WindowLayouts::load(&path) {
+        Ok(saved) => *layouts = saved,
+        Err(error) => eprintln!("Could not load window layouts: {error}"),
     }
-    if layouts.is_changed() {
-        state.pending = Some(now);
+    loaded.0 = Some(layouts.last_changed());
+}
+
+/// Observe edits after the final resize correction, including on the exit frame.
+fn persist(
+    owner: Option<NonSend<crate::bevy_shell::owner::HostOwner>>,
+    time: Res<Time<Real>>,
+    layouts: Res<WindowLayouts>,
+    loaded: Res<LoadedLayoutTick>,
+    mut pending: Local<Option<std::time::Duration>>,
+    mut exits: MessageReader<AppExit>,
+) {
+    let exiting = exits.read().count() > 0;
+    if layouts.is_changed() && Some(layouts.last_changed()) != loaded.0 {
+        *pending = Some(time.elapsed());
     }
-    if state
-        .pending
-        .is_some_and(|since| now.saturating_sub(since) >= SAVE_DELAY)
+    if pending.is_some_and(|since| exiting || time.elapsed().saturating_sub(since) >= SAVE_DELAY)
+        && let Some(path) = owner.and_then(|owner| owner.window_layouts_path())
     {
-        state.pending = None;
+        *pending = None;
         if let Err(error) = layouts.save(&path) {
             leprintln!("Could not save window layout: {error}", error = error);
         }
-    }
-}
-
-/// Project has collected the final drag offset by the time Last runs.
-fn flush_on_exit(
-    owner: Option<NonSend<crate::bevy_shell::owner::HostOwner>>,
-    layouts: Res<WindowLayouts>,
-) {
-    if let Some(path) = owner.and_then(|owner| owner.window_layouts_path())
-        && let Err(error) = layouts.save(&path)
-    {
-        leprintln!("Could not save window layout: {error}", error = error);
     }
 }
 
@@ -523,7 +518,8 @@ pub(in crate::bevy_shell) fn project(
         let mut next = layouts.0.clone();
         next.values_mut().for_each(|layout| layout.fit(viewport));
         if next != layouts.0 {
-            layouts.0 = next;
+            // Fitting the viewport is a projection, not a player edit.
+            layouts.bypass_change_detection().0 = next;
         }
     }
     let changed = layouts.is_changed();

@@ -36,6 +36,35 @@ struct MenuTarget(&'static str);
 /// A press on one of these acts on the control, not on the window behind it.
 type Controls<'w, 's> = Query<'w, 's, (), Or<(With<Button>, With<TextInput>, With<Checkbox>)>>;
 
+const BUTTON_WIDTH: f32 = 120.;
+const PADDING: f32 = 4.;
+const GAP: f32 = 2.;
+
+fn bounded(at: Vec2, screen: Vec2) -> Vec2 {
+    let rows = (ZOOMS.len() + 1) as f32;
+    let size = Vec2::new(BUTTON_WIDTH, rows * 20. + (rows - 1.) * GAP) + 2. * PADDING;
+    at.clamp(Vec2::ZERO, (screen - size).max(Vec2::ZERO))
+}
+
+pub(super) fn fit_open(
+    screens: Query<&Window, With<PrimaryWindow>>,
+    scale: Option<Res<UiScale>>,
+    mut menus: Query<&mut Node, With<WindowMenu>>,
+) {
+    let Some(screen) = viewport(&screens, scale.as_deref()) else {
+        return;
+    };
+    for mut node in &mut menus {
+        if let (Val::Px(x), Val::Px(y)) = (node.left, node.top) {
+            let at = bounded(Vec2::new(x, y), screen);
+            if at != Vec2::new(x, y) {
+                node.left = px(at.x);
+                node.top = px(at.y);
+            }
+        }
+    }
+}
+
 /// Right-click on a window outside its controls opens the menu at the pointer.
 #[allow(clippy::too_many_arguments)]
 pub(in crate::bevy_shell) fn open(
@@ -71,15 +100,8 @@ pub(in crate::bevy_shell) fn open(
     for menu in &menus {
         commands.entity(menu).despawn();
     }
-    let mut at = event.pointer.position / scale.as_deref().map_or(1., |scale| scale.0);
-    const BUTTON_WIDTH: f32 = 120.;
-    const PADDING: f32 = 4.;
-    const GAP: f32 = 2.;
-    if let Some(screen) = viewport(&screens, scale.as_deref()) {
-        let rows = (ZOOMS.len() + 1) as f32;
-        let size = Vec2::new(BUTTON_WIDTH, rows * 20. + (rows - 1.) * GAP) + 2. * PADDING;
-        at = at.clamp(Vec2::ZERO, (screen - size).max(Vec2::ZERO));
-    }
+    let at = event.pointer.position / scale.as_deref().map_or(1., |scale| scale.0);
+    let at = viewport(&screens, scale.as_deref()).map_or(at, |screen| bounded(at, screen));
     let menu = commands
         .spawn((
             WindowMenu,

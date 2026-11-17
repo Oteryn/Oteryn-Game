@@ -173,14 +173,16 @@ pub(super) fn correction(anchor: Vec2, laid_out: Vec2) -> Option<Vec2> {
 
 /// After layout, keeps the edge opposite the dragged handle in place.
 pub(in crate::bevy_shell) fn anchor(
+    mut layouts: ResMut<WindowLayouts>,
     mut windows: Query<(
+        &WindowId,
         &ResizeAnchor,
         &ComputedNode,
         &UiGlobalTransform,
         &mut UiTransform,
     )>,
 ) {
-    for (anchor, node, global, mut transform) in &mut windows {
+    for (id, anchor, node, global, mut transform) in &mut windows {
         let value = |value| match value {
             Val::Px(value) => Some(value),
             Val::Auto => Some(0.),
@@ -193,7 +195,11 @@ pub(in crate::bevy_shell) fn anchor(
             continue;
         };
         if let Some(delta) = correction(anchor.0, rect(node, global).0) {
-            transform.translation = Val2::px(x + delta.x, y + delta.y);
+            let offset = Vec2::new(x, y) + delta;
+            transform.translation = Val2::px(offset.x, offset.y);
+            if let Some(layout) = layouts.0.get_mut(id.0) {
+                layout.offset = offset;
+            }
         }
     }
 }
