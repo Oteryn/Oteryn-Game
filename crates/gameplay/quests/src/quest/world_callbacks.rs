@@ -819,6 +819,19 @@ pub fn load() -> Result<Vec<Callback>, String> {
             "success_message":"Fail.",
             "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_coral.lua:8-10"]
         },{
+            "key":"oteryn:quest-callback/deeplings-coral-worker",
+            "quest":"oteryn:quest.deeplings_worldchange",
+            "trigger":"use",
+            "selector":{"action":28572,"appearance":14163},
+            "reversible":false,
+            "passages":[],
+            "storage":[{"track":"oteryn:quest-progress/deeplings_world_change/crystal","minimum":9,"maximum":9,"set":10}],
+            "offerings":[],
+            "return_on_failure":false,
+            "failure_message":"Sorry, not possible.",
+            "success_message":"Suddenly a guard jumps at you from behind!",
+            "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_coral.lua:3-7"]
+        },{
             "key":"oteryn:quest-callback/deeplings-ramp-1106",
             "quest":"oteryn:quest.deeplings_worldchange",
             "trigger":"use",
@@ -3374,6 +3387,21 @@ mod deepling_ramp_tests {
         };
         assert_eq!((phase.minimum, phase.maximum, phase.set), (10, 10, 11));
         assert!(failed.item_reward().is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn crystal_coral_worker_attempt_advances_from_nine() -> Result<(), String> {
+        let callbacks = super::load()?;
+        let worker = callbacks
+            .iter()
+            .find(|callback| callback.key == "oteryn:quest-callback/deeplings-coral-worker")
+            .ok_or("missing Coral Mine worker attempt")?;
+        assert_eq!(worker.selector.action, Some(28572));
+        let [phase] = worker.storage.as_slice() else {
+            return Err("expected one Crystal progress guard".into());
+        };
+        assert_eq!((phase.minimum, phase.maximum, phase.set), (9, 9, 10));
         Ok(())
     }
 

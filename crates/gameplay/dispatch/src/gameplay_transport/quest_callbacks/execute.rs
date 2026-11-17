@@ -1243,6 +1243,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         && let QuestCause::Use(command) = cause {
                         self.project_mead_blackout(runtime,states,actor,command,&committed.changes,map);
                     }
+                    if fresh && callback.key == "oteryn:quest-callback/deeplings-coral-worker" {
+                        // actions_coral.lua:3-7 advances even when placement fails.
+                        let creature = "oteryn:creature.deepling_worker";
+                        if let Ok(at) = runtime.read_actor_position(actor)
+                            && let Ok(policy) = runtime.companion_policy(creature)
+                        {
+                            let _ = runtime.commit_quest_creature_spawn(&[(
+                                creature, policy.maximum_health, at.position(),
+                            )]);
+                        }
+                    }
                     self.apply_committed_quest_copy(session, fresh, committed);
                     if callback.effects.encounter.is_some()
                         && !self.refresh_grizzly_kill_snapshot_in_turn(runtime, session)
