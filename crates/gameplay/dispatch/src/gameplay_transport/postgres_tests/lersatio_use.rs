@@ -89,5 +89,33 @@ pub(super) async fn exercise(
             .get("oteryn:quest-progress/crystalserver/quest/u8_4/blood_brothers/mirror_counter"),
         Some(&1)
     );
+    use crate::map::view::MapFacts;
+    let map = owner.bundle_map().ok_or("mirror map")?;
+    let key = crate::map::view::placement_key(
+        TilePos {
+            x: MIRROR.x,
+            y: MIRROR.y,
+            floor: MIRROR.floor,
+        },
+        1,
+    )
+    .ok_or("mirror key")?;
+    assert_eq!(
+        map.facts.object_revision(key),
+        1,
+        "USE publishes mirror transform"
+    );
+    let due = map
+        .facts
+        .next_movement_decay_time()
+        .ok_or("mirror reset timer")?;
+    assert_eq!(map.facts.expire_movement_items(due - 1), 0);
+    assert_eq!(map.facts.object_revision(key), 1);
+    assert_eq!(map.facts.expire_movement_items(due), 1);
+    assert_eq!(
+        map.facts.object_revision(key),
+        2,
+        "current mirror reset publishes once"
+    );
     Ok(())
 }
