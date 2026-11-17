@@ -524,3 +524,35 @@ mod qworld_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod deepling_boss_tests {
+    use super::*;
+
+    #[test]
+    fn crystal_deepling_boss_chests_clear_only_their_personal_flag() -> Result<(), String> {
+        let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let callbacks = crate::quest::world_callbacks::load()?;
+        for (boss, uid) in [
+            (&DEEPLING_BOSSES[0], 9302),
+            (&DEEPLING_BOSSES[1], 9304),
+            (&DEEPLING_BOSSES[2], 9303),
+        ] {
+            let kill = counter_for(catalogue, boss.transition).ok_or("missing boss kill")?;
+            assert_eq!((kill.gate_value, kill.maximum), (13, 1));
+            let chest = callbacks
+                .iter()
+                .find(|callback| callback.selector.unique == Some(uid))
+                .ok_or("missing boss chest")?;
+            let [flag] = chest.storage.as_slice() else {
+                return Err("expected one boss flag".into());
+            };
+            assert_eq!(flag.track, kill.track);
+            assert_eq!((flag.minimum, flag.maximum, flag.set), (1, 1, 0));
+            assert!(chest.item_reward().is_some());
+        }
+        Ok(())
+    }
+}

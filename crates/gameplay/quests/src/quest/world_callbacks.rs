@@ -846,6 +846,34 @@ pub fn load() -> Result<Vec<Callback>, String> {
             "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_boxramp.lua:3-14"]
         }]}"#,
     )?);
+    // Guaranteed rewards and flag clearing come from the same Crystal chest action.
+    for (uid, boss, coins, items) in [
+        (9302, "jaul", 50, &[14224, 14042][..]),
+        (9303, "tanjis", 20, &[14223, 13990, 14042][..]),
+        (9304, "obujos", 30, &[14222, 14043, 13987][..]),
+    ] {
+        let additional: Vec<_> = items
+            .iter()
+            .map(|id| serde_json::json!({"item": format!("oteryn:item.tibia.i{id}"), "count": 1}))
+            .collect();
+        callbacks.extend(parse(&serde_json::json!({"schema":1,"callbacks":[{
+            "key":format!("oteryn:quest-callback/deeplings-chest-{uid}"),
+            "quest":"oteryn:quest.deeplings_worldchange",
+            "trigger":"use",
+            "selector":{"unique":uid},
+            "reversible":false,
+            "passages":[],
+            "storage":[{
+                "track":format!("oteryn:quest-progress/deeplings_world_change/{boss}-chest"),
+                "minimum":1,"maximum":1,"set":0
+            }],
+            "effects":{"item_reward":{"item":"oteryn:item.tibia.i3035","count":coins,"additional":additional}},
+            "offerings":[],
+            "return_on_failure":false,
+            "failure_message":"Sorry, not possible.",
+            "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/worldchanges/deeplings/bosses_reward.lua:1-67"]
+        }]}).to_string())?);
+    }
     callbacks.extend(super::deepling_boss_access::callbacks(&callbacks)?);
     let keys: BTreeSet<_> = callbacks.iter().map(|c| &c.key).collect();
     if keys.len() != callbacks.len() {
