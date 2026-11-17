@@ -38,7 +38,7 @@ mod tests;
 // TibiaStyle.actionBarSlotSize / actionBarSlotMargin.
 const SLOT_SIZE: f32 = 34.;
 const SLOT_GAP: f32 = 2.;
-const ROW_SLOTS: usize = 50;
+pub(super) const ROW_SLOTS: usize = 50;
 // Tibia Global action bar QML: a 12 x 16 lock button on each bar, 17 x 17 scroll buttons.
 const LOCK_SIZE: Vec2 = Vec2::new(12., 16.);
 const SCROLL_SIZE: f32 = 17.;

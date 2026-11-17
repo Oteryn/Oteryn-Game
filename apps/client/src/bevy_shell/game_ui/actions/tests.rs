@@ -639,3 +639,60 @@ fn clear_on_a_bar_without_assignments_is_refused_visibly() -> TestResult {
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn each_side_shows_an_enabled_bar_on_its_own_dock() -> TestResult {
+    for (bar, dock) in [
+        (3, crate::play::BarDock::Bottom),
+        (5, crate::play::BarDock::Left),
+        (7, crate::play::BarDock::Right),
+    ] {
+        let (mut app, _) = fixture()?;
+        {
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            let mut preferences = owner.settings.preferences.clone();
+            preferences.bar_layout.rows[bar].enabled = true;
+            owner.settings.apply(preferences);
+            let owner = &mut *owner;
+            let link = &owner.play.as_ref().ok_or("play")?.link;
+            owner.settings.sync_bar_actions(link);
+        }
+        app.update();
+        app.update();
+        let anchor = app
+            .world_mut()
+            .query::<(Entity, &DockAnchor)>()
+            .iter(app.world())
+            .find_map(|(entity, anchor)| (anchor.0 == dock).then_some(entity))
+            .ok_or("anchor")?;
+        let mut shown = Vec::new();
+        for (row, node, parent) in app
+            .world_mut()
+            .query::<(&BarRow, &Node, &ChildOf)>()
+            .iter(app.world())
+        {
+            if node.display != Display::None {
+                shown.push(row.0);
+            }
+            if row.0 == bar {
+                assert_eq!(parent.parent(), anchor, "bar {bar} sits on its dock");
+                let vertical = dock != crate::play::BarDock::Bottom;
+                assert_eq!(
+                    node.flex_direction,
+                    if vertical {
+                        FlexDirection::Column
+                    } else {
+                        FlexDirection::Row
+                    }
+                );
+            }
+        }
+        shown.sort_unstable();
+        assert_eq!(
+            shown,
+            vec![0, bar],
+            "only the default and the enabled bar show"
+        );
+    }
+    Ok(())
+}

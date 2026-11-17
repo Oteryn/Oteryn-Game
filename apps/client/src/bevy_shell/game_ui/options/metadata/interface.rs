@@ -173,7 +173,23 @@ pub(super) const GAME_WINDOW: [Row; 8] = [
     ),
     check!("game_window.banner", "Show Banner", game_window.banner),
 ];
-pub(super) const ACTION_BARS: [Row; 17] = [
+macro_rules! side_bars {
+    ($id:literal,$label:literal,$($row:literal),+) => {
+        Row {
+            id: $id,
+            label: $label,
+            editor: Editor::Check {
+                read: |p| [$($row),+].iter().all(|&i| p.bar_layout.rows[i].enabled),
+                write: |p, v| {
+                    for i in [$($row),+] {
+                        p.bar_layout.rows[i].enabled = v;
+                    }
+                },
+            },
+        }
+    };
+}
+pub(super) const ACTION_BARS: [Row; 20] = [
     check!(
         "action_bars.visible",
         "Show Action Bars",
@@ -214,6 +230,13 @@ pub(super) const ACTION_BARS: [Row; 17] = [
         "Automatically Insert New Actions",
         action_bar.auto_insert
     ),
+    side_bars!(
+        "action_bars.bottom_all",
+        "Show All Bottom Action Bars",
+        0,
+        3,
+        4
+    ),
     check!(
         "action_bars.bottom_1",
         "Show Bottom Action Bar 1",
@@ -229,6 +252,7 @@ pub(super) const ACTION_BARS: [Row; 17] = [
         "Show Bottom Action Bar 3",
         bar_layout.rows[4].enabled
     ),
+    side_bars!("action_bars.left_all", "Show All Left Action Bars", 1, 5, 6),
     check!(
         "action_bars.left_1",
         "Show Left Action Bar 1",
@@ -243,6 +267,13 @@ pub(super) const ACTION_BARS: [Row; 17] = [
         "action_bars.left_3",
         "Show Left Action Bar 3",
         bar_layout.rows[6].enabled
+    ),
+    side_bars!(
+        "action_bars.right_all",
+        "Show All Right Action Bars",
+        2,
+        7,
+        8
     ),
     check!(
         "action_bars.right_1",
