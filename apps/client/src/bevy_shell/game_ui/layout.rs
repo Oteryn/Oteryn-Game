@@ -18,11 +18,15 @@ use std::path::PathBuf;
 
 /// Layout entry of the main window: position and physical size.
 const WINDOW: &str = "window";
+// The layout format caps rectangle sizes at 4096 but supports desktop coordinates
+// up to 32768. A point in window-local pixels records the full physical extent.
+const WINDOW_EXTENT: &str = "window.extent";
 /// The local layout file and what it holds; without a path the layout stays transient.
 #[derive(Resource, Default)]
 pub(in crate::bevy_shell) struct LayoutStore {
     path: Option<PathBuf>,
     layout: WindowLayout,
+    pending_save: bool,
 }
 impl LayoutStore {
     /// Reads the layout file; a missing or invalid file starts from the default layout.
@@ -31,11 +35,33 @@ impl LayoutStore {
             .as_deref()
             .and_then(|path| WindowLayout::load(path).ok())
             .unwrap_or_default();
-        Self { path, layout }
+        Self {
+            path,
+            layout,
+            pending_save: false,
+        }
     }
     /// The remembered main window position and physical size.
     pub(in crate::bevy_shell) fn window(&self) -> Option<[i32; 4]> {
-        self.layout.bounds(WINDOW)
+        let [x, y, width, height] = self.layout.bounds(WINDOW)?;
+        if let Some([w, h, 1, 1]) = self.layout.bounds(WINDOW_EXTENT)
+            && w.min(4096) == width
+            && h.min(4096) == height
+        {
+            return Some([x, y, w, h]);
+        }
+        Some([x, y, width, height])
+    }
+
+    fn record_window(&mut self, bounds: [i32; 4]) -> std::io::Result<()> {
+        let [x, y, width, height] = bounds;
+        let base = [x, y, width.min(4096), height.min(4096)];
+        if base != bounds || self.layout.bounds(WINDOW_EXTENT).is_some() {
+            // Validate the origin before changing the extent of an existing window.
+            WindowLayout::default().record(WINDOW, base)?;
+            self.layout.record(WINDOW_EXTENT, [width, height, 1, 1])?;
+        }
+        self.layout.record(WINDOW, base)
     }
 }
 
@@ -84,7 +110,6 @@ fn remember(
     if store.path.is_none() || splitters.iter().any(|splitter| splitter.gesture.is_some()) {
         return;
     }
-    let mut entries = Vec::new();
     for splitter in &splitters {
         let Ok(node) = nodes.get(splitter.target) else {
             continue;
@@ -93,33 +118,40 @@ fn remember(
             continue;
         };
         let size = size.round() as i32;
-        entries.push((splitter.id, [0, 0, 1, size]));
+        let bounds = [0, 0, 1, size];
+        if store.layout.bounds(splitter.id) != Some(bounds) {
+            match store.layout.record(splitter.id, bounds) {
+                Ok(()) => store.pending_save = true,
+                Err(error) => leprintln!("Could not save window layout: {error}", error = error),
+            }
+        }
     }
     if let Ok(window) = windows.single()
         && window.mode == WindowMode::Windowed
         && let WindowPosition::At(position) = window.position
     {
-        entries.push((
-            WINDOW,
-            [
-                position.x,
-                position.y,
-                window.resolution.physical_width() as i32,
-                window.resolution.physical_height() as i32,
-            ],
-        ));
-    }
-    let mut changed = false;
-    for (id, bounds) in entries {
-        if store.layout.bounds(id) != Some(bounds) {
-            changed |= store.layout.record(id, bounds).is_ok();
+        let bounds = [
+            position.x,
+            position.y,
+            window.resolution.physical_width() as i32,
+            window.resolution.physical_height() as i32,
+        ];
+        if store.window() != Some(bounds) {
+            match store.record_window(bounds) {
+                Ok(()) => store.pending_save = true,
+                Err(error) => {
+                    leprintln!("Could not save window layout: {error}", error = error)
+                }
+            }
         }
     }
-    if changed
+    if store.pending_save
         && let Some(path) = &store.path
-        && let Err(error) = store.layout.save(path)
     {
-        leprintln!("Could not save window layout: {error}", error = error);
+        match store.layout.save(path) {
+            Ok(()) => store.pending_save = false,
+            Err(error) => leprintln!("Could not save window layout: {error}", error = error),
+        }
     }
 }
 fn maintain(

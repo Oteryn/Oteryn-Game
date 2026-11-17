@@ -99,6 +99,21 @@ fn geometry(app: &mut App, splitter: Splitter) {
 }
 
 #[test]
+fn chat_float_toggle_stacks_with_its_window() -> TestResult {
+    let mut app = app();
+    let toggle = app
+        .world_mut()
+        .query::<(Entity, &Name)>()
+        .iter(app.world())
+        .find(|(_, name)| name.as_str() == "Chat float")
+        .ok_or("chat toggle")?
+        .0;
+    assert!(app.world().get::<GlobalZIndex>(toggle).is_none());
+    assert_eq!(app.world().get::<ZIndex>(toggle), Some(&ZIndex(1)));
+    Ok(())
+}
+
+#[test]
 fn console_drag_resizes_the_console_and_nothing_resizes_the_sidebar() -> TestResult {
     let mut app = app();
     let handles = handles(&mut app);
@@ -286,6 +301,28 @@ fn resized_regions_and_main_window_geometry_survive_a_restart() -> TestResult {
         LayoutStore::load(Some(path.clone())).window(),
         Some([40, 80, 1280, 900])
     );
+    for (width, height) in [(5120, 2880), (4096, 2880), (1280, 900)] {
+        let mut window = windows.single_mut(app.world_mut())?;
+        window.resolution = (width, height).into();
+        app.update();
+        assert_eq!(
+            LayoutStore::load(Some(path.clone())).window(),
+            Some([40, 80, width as i32, height as i32])
+        );
+    }
     std::fs::remove_file(path)?;
+    Ok(())
+}
+
+#[test]
+fn failed_layout_save_retries_after_directory_recovers() -> TestResult {
+    let dir = std::env::temp_dir().join(format!("layout-retry-{}", std::process::id()));
+    std::fs::write(&dir, [])?;
+    let path = dir.join("layout.json");
+    let mut app = app_with(LayoutStore::load(Some(path.clone())));
+    std::fs::remove_file(&dir)?;
+    app.update();
+    assert!(WindowLayout::load(&path)?.bounds("console").is_some());
+    std::fs::remove_dir_all(dir)?;
     Ok(())
 }

@@ -44,7 +44,54 @@ enum Kind {
 struct Overlay;
 #[derive(Component)]
 struct Search;
-type Editors = Or<(With<Search>, With<offers::Field>)>;
+type Editors = Or<(
+    With<Search>,
+    With<offers::Field>,
+    With<widgets::FilterEditor>,
+)>;
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum DraftRole {
+    Search,
+    Filter(widgets::FilterKind),
+    Depot,
+    Offer(offers::Field),
+}
+
+#[derive(Component)]
+struct Draft {
+    role: DraftRole,
+    initial: String,
+}
+
+// Keep the editor entity (including selection, focus and pending edits) when
+// the same field still represents the same retained value after a projection.
+#[derive(Default)]
+struct Drafts<'a>(Vec<(Entity, &'a Draft)>);
+
+impl Drafts<'_> {
+    fn field(
+        &mut self,
+        commands: &mut Commands,
+        role: DraftRole,
+        initial: &str,
+        spawn: impl FnOnce(&mut Commands) -> Entity,
+    ) -> Entity {
+        if let Some(index) = self
+            .0
+            .iter()
+            .position(|(_, d)| d.role == role && d.initial == initial)
+        {
+            return self.0.swap_remove(index).0;
+        }
+        let field = spawn(commands);
+        commands.entity(field).insert(Draft {
+            role,
+            initial: initial.into(),
+        });
+        field
+    }
+}
 #[derive(Resource, Default)]
 struct State {
     key: Option<Key>,
@@ -104,6 +151,7 @@ fn project(
     mut overlay: Query<(Entity, &mut Node), With<Overlay>>,
     mut focus: ResMut<InputFocus>,
     fields: Query<(), Editors>,
+    previous: Query<(Entity, &Draft)>,
 ) {
     let Ok((overlay, mut node)) = overlay.single_mut() else {
         return;
@@ -129,9 +177,20 @@ fn project(
     {
         return;
     }
-    if focus.get().is_some_and(|entity| fields.contains(entity)) {
-        focus.clear();
-    }
+    let same_session = state.key.is_some_and(|key| key.generation == generation);
+    let mut drafts = Drafts(
+        previous
+            .iter()
+            .filter(|(_, draft)| {
+                same_session
+                    && (!matches!(draft.role, DraftRole::Offer(_))
+                        || state
+                            .seen
+                            .as_ref()
+                            .is_some_and(|old| old.definition == panel.definition))
+            })
+            .collect(),
+    );
     if state.seen.as_ref() != Some(&panel) {
         state.offer = None;
     }
@@ -169,9 +228,7 @@ fn project(
     let root = *state
         .root
         .get_or_insert_with(|| widgets::build(&mut commands, &skin, overlay));
-    if let Some(body) = state.body.take() {
-        commands.entity(body).despawn();
-    }
+    let previous_body = state.body.take();
     state.body = Some(widgets::render(
         &mut commands,
         &skin,
@@ -181,7 +238,21 @@ fn project(
         state.selected.as_ref(),
         state.offer,
         state.sell.unwrap_or(panel.sell),
+        &mut drafts,
     ));
+    if let Some(body) = previous_body {
+        // Reused fields have already been reparented by render.
+        commands.entity(body).despawn();
+    }
+    if let Some(entity) = focus.get().filter(|id| fields.contains(*id)) {
+        commands.queue(move |world: &mut World| {
+            if world.get_entity(entity).is_err()
+                && world.resource::<InputFocus>().get() == Some(entity)
+            {
+                world.resource_mut::<InputFocus>().clear();
+            }
+        });
+    }
     state.seen = Some(panel);
 }
 fn activate(

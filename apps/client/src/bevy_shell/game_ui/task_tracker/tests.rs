@@ -241,6 +241,15 @@ fn task_tracker_click_opens_board_and_rejects_stale_session() -> TestResult {
         .world_mut()
         .query_filtered::<Entity, With<Tracker>>()
         .single(app.world())?;
+    assert_eq!(
+        app.world()
+            .get::<ChildOf>(root)
+            .ok_or("tracker parent")?
+            .parent(),
+        app.world()
+            .resource::<super::super::Sidebar>()
+            .right_widgets
+    );
     let generation = app.world().non_send::<HostOwner>().generation();
     app.world_mut()
         .entity_mut(root)

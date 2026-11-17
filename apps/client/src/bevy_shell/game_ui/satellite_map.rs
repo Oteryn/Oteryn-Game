@@ -39,6 +39,19 @@ impl State {
             oteryn_client_ui::minimap::floor_down(self.floor)
         };
     }
+    // Exploration is ordered by (floor, x, y). Seek the visible y interval
+    // separately for each column so distant cells never enter the render cache.
+    fn visible_cells<'a>(
+        &self,
+        cells: &'a std::collections::BTreeMap<(i16, i32, i32), u8>,
+    ) -> impl Iterator<Item = (&'a (i16, i32, i32), &'a u8)> {
+        let floor = self.floor;
+        let left = self.x.saturating_sub(240 / self.scale);
+        let right = self.x.saturating_add(239 / self.scale);
+        let top = self.y.saturating_sub(180 / self.scale);
+        let bottom = self.y.saturating_add(179 / self.scale);
+        (left..=right).flat_map(move |x| cells.range((floor, x, top)..=(floor, x, bottom)))
+    }
     fn point(&self, x: i32, y: i32, floor: i16) -> Option<(f32, f32)> {
         let px = (i64::from(x) - i64::from(self.x)) as f32 * self.scale as f32 + 240.;
         let py = (i64::from(y) - i64::from(self.y)) as f32 * self.scale as f32 + 180.;
@@ -136,8 +149,13 @@ fn project(
     use std::hash::{Hash, Hasher};
     let mut hash = std::collections::hash_map::DefaultHasher::new();
     play.view.satellite_map(|cells, markers| {
-        cells.hash(&mut hash);
-        for marker in markers {
+        for cell in state.visible_cells(cells) {
+            cell.hash(&mut hash);
+        }
+        for marker in markers
+            .iter()
+            .filter(|m| state.point(m.x, m.y, m.floor).is_some())
+        {
             (
                 marker.x,
                 marker.y,
@@ -225,7 +243,7 @@ fn project(
         .id();
     commands.entity(root).add_child(canvas);
     play.view.satellite_map(|cells, markers| {
-        for (&(floor, x, y), &color) in cells {
+        for (&(floor, x, y), &color) in state.visible_cells(cells) {
             if let Some((left, top)) = state.point(x, y, floor) {
                 let cell = commands
                     .spawn((
@@ -497,6 +515,34 @@ mod tests {
                 .any(|(text, color)| text.0.contains("Blue marker")
                     && color.0 == Color::srgb_u8(0, 0, 255))
         );
+        Ok(())
+    }
+    #[test]
+    fn offscreen_exploration_keeps_the_rendered_satellite_panel()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut owner = host()?;
+        owner.route_input(&[chord()?], false);
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+            .init_asset::<Font>()
+            .init_asset::<Image>()
+            .init_resource::<ButtonInput<KeyCode>>()
+            .insert_non_send(owner)
+            .add_systems(Startup, crate::bevy_shell::ui::setup);
+        install(&mut app);
+        app.update();
+        app.world_mut().resource_mut::<State>().x = 9000;
+        app.update();
+        let panel = app.world().resource::<State>().panel.ok_or("open map")?;
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .play
+            .as_mut()
+            .ok_or("play")?
+            .view
+            .bevy_minimap_colours_fixture();
+        app.update();
+        assert_eq!(app.world().resource::<State>().panel, Some(panel));
         Ok(())
     }
     #[test]

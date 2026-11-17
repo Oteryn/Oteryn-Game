@@ -20,6 +20,7 @@ pub(super) fn press(
 }
 pub(super) fn drag(
     event: On<PointerDrag>,
+    windows: Query<&Window>,
     mut nodes: Query<(&MiniImage, &mut DragState, &ComputedNode)>,
     mut owner: NonSendMut<HostOwner>,
     guard: super::super::modal::ModalGuard,
@@ -41,7 +42,14 @@ pub(super) fn drag(
         return;
     }
     state.dragged = true;
-    let size = computed.size();
+    use bevy::ecs::entity::ContainsEntity;
+    let dpi = match &event.pointer.target {
+        bevy::camera::NormalizedRenderTarget::Window(window) => windows
+            .get(window.entity())
+            .map_or(1., Window::scale_factor),
+        _ => 1.,
+    };
+    let size = computed.size() / dpi;
     let scale = if size.x > 0. && size.y > 0. {
         size / SIZE.as_vec2()
     } else {

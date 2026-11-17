@@ -64,6 +64,27 @@ fn book(app: &mut App, commands: &mut CommandsReceiver, outbox: &Outbox) -> Test
     Ok(())
 }
 #[test]
+fn sell_offer_actions_fit_in_a_wrapping_row() -> TestResult {
+    let (mut app, mut commands, outbox, _) = app()?;
+    book(&mut app, &mut commands, &outbox)?;
+    let buy = find(&mut app, "market.purchase.row")?;
+    let actions = app
+        .world()
+        .get::<ChildOf>(buy)
+        .ok_or("action row")?
+        .parent();
+    assert_eq!(
+        app.world().get::<Node>(actions).ok_or("row")?.flex_wrap,
+        FlexWrap::Wrap
+    );
+    assert_eq!(
+        app.world().get::<Children>(actions).ok_or("actions")?.len(),
+        2
+    );
+    Ok(())
+}
+
+#[test]
 fn native_named_sell_row_quantity_confirmation_submits_original_offer_once() -> TestResult {
     let (mut app, mut commands, outbox, _) = app()?;
     book(&mut app, &mut commands, &outbox)?;

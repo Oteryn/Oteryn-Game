@@ -49,6 +49,7 @@ pub(super) fn render(
     selected: Option<&Ware>,
     selected_offer: Option<usize>,
     sell: bool,
+    drafts: &mut Drafts,
 ) -> Entity {
     let root = commands
         .spawn(Node {
@@ -90,31 +91,38 @@ pub(super) fn render(
         category_button(commands, skin, categories, key, index + 1, category);
     }
     label(commands, skin, left, "Search catalogue");
-    let mut text = EditableText::new(&panel.details.filter.search);
-    text.max_characters = Some(80);
-    let field = commands
-        .spawn((
-            Search,
-            TextInput,
-            text,
-            source::font(skin.font.clone(), false),
-            TextColor(source::TEXT_COLOR),
-            TextLayout::no_wrap(),
-            TextCursorStyle::default(),
-            TabIndex(0),
-            Node {
-                width: percent(100.),
-                height: px(25.),
-                flex_shrink: 0.,
-                padding: px(4.).all(),
-                ..default()
-            },
-            source::frame(skin.inset.clone(), [1.; 4]),
-        ))
-        .id();
+    let field = drafts.field(
+        commands,
+        DraftRole::Search,
+        &panel.details.filter.search,
+        |commands| {
+            let mut text = EditableText::new(&panel.details.filter.search);
+            text.max_characters = Some(80);
+            commands
+                .spawn((
+                    Search,
+                    TextInput,
+                    text,
+                    source::font(skin.font.clone(), false),
+                    TextColor(source::TEXT_COLOR),
+                    TextLayout::no_wrap(),
+                    TextCursorStyle::default(),
+                    TabIndex(0),
+                    Node {
+                        width: percent(100.),
+                        height: px(25.),
+                        flex_shrink: 0.,
+                        padding: px(4.).all(),
+                        ..default()
+                    },
+                    source::frame(skin.inset.clone(), [1.; 4]),
+                ))
+                .id()
+        },
+    );
     commands.entity(left).add_child(field);
     button(commands, skin, left, key, Kind::Search, "Search", 140.);
-    catalogue_filters(commands, skin, left, key, panel);
+    catalogue_filters(commands, skin, left, key, panel, drafts);
     let items = scroll(commands, left, Val::Auto, 1);
     for (index, ware) in panel.details.items.iter().enumerate() {
         button(
@@ -200,7 +208,7 @@ pub(super) fn render(
                     })
                 {
                     // MarketRow carries no trader name or expiry: those cells stay empty.
-                    let cells = table_row(
+                    table_row(
                         commands,
                         skin,
                         offers,
@@ -212,9 +220,10 @@ pub(super) fn render(
                             String::new(),
                         ],
                     );
-                    offers::select_button(commands, skin, cells, key, index);
+                    let actions = row(commands, offers);
+                    offers::select_button(commands, skin, actions, key, index);
                     if offer.side == 2 {
-                        purchase::row(commands, skin, cells, key, offer);
+                        purchase::row(commands, skin, actions, key, offer);
                     }
                     count += 1;
                 }
@@ -257,6 +266,7 @@ pub(super) fn render(
             selected,
             selected_offer,
             sell,
+            drafts,
         );
     }
     if !panel.selected {
@@ -318,7 +328,7 @@ fn table_row(commands: &mut Commands, skin: &Skins, parent: Entity, cells: [Stri
                 Node {
                     width: px(width),
                     flex_grow: if fill { 1. } else { 0. },
-                    flex_shrink: if fill { 1. } else { 0. },
+                    flex_shrink: 1.,
                     min_width: px(0.),
                     overflow: Overflow::clip(),
                     ..default()
@@ -496,7 +506,7 @@ pub(super) fn button(
     commands.entity(parent).add_child(entity);
 }
 
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, PartialEq, Eq)]
 pub(super) enum FilterKind {
     Vocation,
     Minimum,

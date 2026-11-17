@@ -42,10 +42,7 @@ pub(super) fn click(
     let Ok((node, cursor)) = nodes.get(event.entity) else {
         return;
     };
-    let Some(point) = cursor
-        .normalized
-        .filter(|p| p.x >= 0. && p.x < 1. && p.y >= 0. && p.y < 1.)
-    else {
+    let Some(point) = image_position(cursor) else {
         return;
     };
     let Some(play) = &owner.play else {

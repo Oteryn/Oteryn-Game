@@ -156,7 +156,23 @@ fn market_accept_clamps_amount() -> TestResult {
             })?,
         );
         app.update();
+        edit(&mut app, "market.create.amount", "23")?;
+        edit(&mut app, "market.create.price", "456")?;
         click(&mut app, "market.offer.select.0")?;
+        for (name, draft) in [
+            ("market.create.amount", "23"),
+            ("market.create.price", "456"),
+        ] {
+            let id = find(&mut app, name)?;
+            assert_eq!(
+                app.world()
+                    .get::<EditableText>(id)
+                    .ok_or("editor")?
+                    .value()
+                    .to_string(),
+                draft
+            );
+        }
         edit(&mut app, "market.offer.quantity", input)?;
         click(&mut app, "market.offer.accept")?;
         let request = command(&mut commands)?;
@@ -560,6 +576,19 @@ fn market_own_offers_requery_after_the_interval_and_on_reopen() -> TestResult {
             .any(|text| text.0.contains("amount 5"))
     };
     assert!(shown(&mut app));
+    edit(&mut app, "market.filter.minimum", "017")?;
+    let search = app
+        .world_mut()
+        .query_filtered::<Entity, With<Search>>()
+        .single(app.world())?;
+    app.world_mut()
+        .get_mut::<EditableText>(search)
+        .ok_or("search")?
+        .editor_mut()
+        .set_text("draft");
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(search, bevy::input_focus::FocusCause::Navigated);
     app.world_mut()
         .resource_mut::<Time>()
         .advance_by(super::super::refresh::INTERVAL - std::time::Duration::from_secs(1));
@@ -573,6 +602,24 @@ fn market_own_offers_requery_after_the_interval_and_on_reopen() -> TestResult {
     assert_eq!((refresh.action, refresh.page), (3, 0));
     reply(&outbox, 3, vec![]);
     app.update();
+    let minimum = find(&mut app, "market.filter.minimum")?;
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(minimum)
+            .ok_or("minimum")?
+            .value()
+            .to_string(),
+        "017"
+    );
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(search)
+            .ok_or("search editor replaced")?
+            .value()
+            .to_string(),
+        "draft"
+    );
+    assert_eq!(app.world().resource::<InputFocus>().get(), Some(search));
     assert!(!shown(&mut app), "the expired offer leaves My Offers");
     for open in [false, true] {
         app.world()

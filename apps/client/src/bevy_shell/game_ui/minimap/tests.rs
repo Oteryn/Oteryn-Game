@@ -92,6 +92,31 @@ fn the_minimap_is_a_tibia_viewport_with_a_rose_and_icon_buttons() -> TestResult 
     ] {
         assert_eq!(size(&mut app, key), Some((px(20.), px(20.))), "{key}");
     }
+    let centre = app
+        .world_mut()
+        .query::<(&Name, &ChildOf)>()
+        .iter(app.world())
+        .find(|(name, _)| name.as_str() == "Rose centre")
+        .ok_or("centre")?
+        .1
+        .parent();
+    let cells = app.world().get::<Children>(centre).ok_or("grid")?;
+    let flow: Vec<_> = cells
+        .iter()
+        .filter(|id| {
+            app.world().get::<Node>(*id).is_some_and(|n| {
+                n.position_type == PositionType::Relative && n.display != Display::None
+            })
+        })
+        .collect();
+    assert_eq!(flow.len(), 9);
+    assert_eq!(
+        app.world()
+            .get::<Name>(flow[4])
+            .ok_or("centre cell")?
+            .as_str(),
+        "Rose centre"
+    );
     // No compass text buttons and no camera prose.
     let texts: Vec<String> = app
         .world_mut()
@@ -235,7 +260,7 @@ mod foreground_click {
             .spawn((
                 MiniImage(generation),
                 RelativeCursorPosition {
-                    normalized: Some(Vec2::splat(0.5)),
+                    normalized: Some(Vec2::ZERO),
                     ..default()
                 },
                 Node::default(),
@@ -290,7 +315,7 @@ fn secondary_minimap_click_edits_the_viewed_coordinate() -> TestResult {
     app.world_mut()
         .entity_mut(image)
         .insert(RelativeCursorPosition {
-            normalized: Some(Vec2::new(0.5, 0.5)),
+            normalized: Some(Vec2::ZERO),
             ..default()
         });
     app.world_mut().trigger(PointerClick {
@@ -337,6 +362,46 @@ fn secondary_minimap_click_edits_the_viewed_coordinate() -> TestResult {
 }
 
 #[test]
+fn minimap_drag_uses_the_pointer_windows_logical_pixels() -> TestResult {
+    use bevy::picking::{
+        events::{Pointer, PointerDrag},
+        pointer::{Location, PointerButton, PointerId},
+    };
+    use bevy::window::WindowRef;
+    let mut app = fixture()?;
+    let mut window = Window::default();
+    window.resolution.set_scale_factor_override(Some(2.));
+    let target = app.world_mut().spawn(window).id();
+    let image = app
+        .world_mut()
+        .query_filtered::<Entity, With<MiniImage>>()
+        .single(app.world())?;
+    app.world_mut().entity_mut(image).insert(ComputedNode {
+        size: SIZE.as_vec2() * 2.,
+        inverse_scale_factor: 0.5,
+        ..default()
+    });
+    let before = camera(&app)?;
+    app.world_mut().trigger(PointerDrag {
+        entity: image,
+        pointer: Pointer::new(
+            PointerId::Mouse,
+            Location {
+                target: bevy::camera::NormalizedRenderTarget::Window(
+                    WindowRef::Entity(target).normalize(None).ok_or("window")?,
+                ),
+                position: Vec2::ZERO,
+            },
+        ),
+        button: PointerButton::Primary,
+        distance: Vec2::new(8., 0.),
+        delta: Vec2::new(8., 0.),
+    });
+    assert_eq!(camera(&app)?.0, before.0 - 2 * before.3);
+    Ok(())
+}
+
+#[test]
 fn parity_a_minimap_pointer_gestures_use_pointed_camera_position() -> TestResult {
     use bevy::picking::{
         backend::HitData,
@@ -351,7 +416,7 @@ fn parity_a_minimap_pointer_gestures_use_pointed_camera_position() -> TestResult
     app.world_mut()
         .get_mut::<RelativeCursorPosition>(entity)
         .ok_or("cursor")?
-        .normalized = Some(Vec2::new(0.75, 0.5));
+        .normalized = Some(Vec2::new(0.25, 0.));
     let pointer = Pointer::new(
         PointerId::Mouse,
         Location {
@@ -445,7 +510,7 @@ fn secondary_minimap_cancel_does_not_persist_a_mark() -> TestResult {
     app.world_mut()
         .entity_mut(image)
         .insert(RelativeCursorPosition {
-            normalized: Some(Vec2::new(0.5, 0.5)),
+            normalized: Some(Vec2::new(-0.25, -0.25)),
             ..default()
         });
     app.world_mut().trigger(PointerClick {
