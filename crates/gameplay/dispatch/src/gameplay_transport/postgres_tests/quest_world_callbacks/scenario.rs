@@ -183,6 +183,8 @@ fn scenario_case(
     let draconia_escape = name.starts_with("draconia-escape-");
     let mut callback = if draconia_escape {
         super::super::draconia_escape::authored_callback()?
+    } else if super::super::qh_authored_cases::is_case(name) {
+        super::super::qh_authored_cases::callback(name)?
     } else if elvenbane {
         callback("elvenbane-basement-entry")?
     } else if native_signs || diprath_room {
@@ -845,6 +847,11 @@ fn scenario_case(
         } else if mead {
             super::super::l6_mead::world(
                 generation.native_gameplay().ok_or("native Mead policies")?,
+            )?
+        } else if super::super::qh_authored_cases::is_case(name) {
+            super::super::qh_authored_cases::world(
+                name,
+                generation.native_gameplay().ok_or("qh native policies")?,
             )?
         } else {
             world
@@ -1733,6 +1740,14 @@ fn scenario_case(
         } else if let Some(route) = super::super::questpc8_retrieval_routes::route(name) {
             Box::pin(super::super::questpc8_retrieval_routes::exercise(
                 route,
+                &mut owner,
+                &mut admitted,
+                &h,
+            ))
+            .await?;
+        } else if super::super::qh_authored_cases::is_case(name) {
+            Box::pin(super::super::qh_authored_cases::exercise(
+                name,
                 &mut owner,
                 &mut admitted,
                 &h,
