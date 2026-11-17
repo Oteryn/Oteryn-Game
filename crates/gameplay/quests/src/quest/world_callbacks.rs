@@ -790,6 +790,22 @@ pub fn load() -> Result<Vec<Callback>, String> {
         return Err("callback bounds including native source callbacks".into());
     }
     callbacks.extend(native_callbacks);
+    callbacks.extend(parse(
+        r#"{"schema":1,"callbacks":[{
+            "key":"oteryn:quest-callback/deeplings-ramp-1106",
+            "quest":"oteryn:quest.deeplings_worldchange",
+            "trigger":"use",
+            "selector":{"unique":1106,"appearance":14164},
+            "reversible":false,
+            "passages":[],
+            "storage":[{"track":"oteryn:quest-progress/deeplings_world_change/crystal","minimum":12,"maximum":12,"set":13}],
+            "effects":{"carried_inputs":[{"item":"oteryn:item.tibia.i14165","count":1}]},
+            "offerings":[],
+            "return_on_failure":false,
+            "success_message":"Clonk.",
+            "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/deeplings_worldchange/actions_boxramp.lua:3-14"]
+        }]}"#,
+    )?);
     callbacks.extend(super::deepling_boss_access::callbacks(&callbacks)?);
     let keys: BTreeSet<_> = callbacks.iter().map(|c| &c.key).collect();
     if keys.len() != callbacks.len() {
