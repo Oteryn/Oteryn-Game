@@ -50,7 +50,7 @@ impl DurabilityRoot {
         content: &C,
         template: &StarterTemplate,
     ) -> std::result::Result<StarterGrantOutcome, DurabilityError> {
-        self.grant_starter_plan(recovery, node, fence, content, template, None)
+        self.grant_starter_plan(recovery, node, fence, content, template, None, true)
             .await
     }
 
@@ -71,7 +71,31 @@ impl DurabilityRoot {
             revision: "starter-kit-r2".into(),
             ..StarterTemplate::main()
         };
-        self.grant_starter_plan(recovery, node, fence, content, &template, Some(loadout))
+        self.grant_starter_plan(recovery, node, fence, content, &template, Some(loadout), true)
+            .await
+    }
+
+    /// Newhaven roots: the main backpack with the donor's no-vocation first items (rope and
+    /// shovel). Every donor Newhaven Character first logs in without a vocation (Crystal 9f5a72c6
+    /// `data/scripts/creaturescripts/player/send_first_items.lua:2-7,106-127`), so these
+    /// contents do not follow the vocation current at first entry.
+    pub async fn grant_newhaven_backpack<C: ItemLoopContent>(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: &CurrentCharacterItemFence,
+        content: &C,
+        loadout: &StartingLoadout,
+    ) -> std::result::Result<StarterGrantOutcome, DurabilityError> {
+        if loadout.vocation != "none" || !loadout.matches_source() {
+            return Ok(StarterGrantOutcome::NotAdmitted);
+        }
+        let template = StarterTemplate {
+            definition: loadout.backpack.clone(),
+            revision: "newhaven-first-items-r1".into(),
+            ..StarterTemplate::main()
+        };
+        self.grant_starter_plan(recovery, node, fence, content, &template, Some(loadout), false)
             .await
     }
 
@@ -87,6 +111,7 @@ impl DurabilityRoot {
         content: &C,
         template: &StarterTemplate,
         loadout: Option<&StartingLoadout>,
+        bind_vocation: bool,
     ) -> std::result::Result<StarterGrantOutcome, DurabilityError> {
         let record = recovery
             .record_for(self)
@@ -127,7 +152,7 @@ impl DurabilityRoot {
                     .await
                     .map_err(grant_error)?;
                     let character = fence.character_id;
-                    if let Some(loadout) = &loadout {
+                    if let Some(loadout) = loadout.as_ref().filter(|_| bind_vocation) {
                         let vocation: String = sqlx::query_scalar("SELECT COALESCE((SELECT vocation FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid),'none')")
                             .bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
                         if vocation != loadout.vocation { return Err(DurabilityError::Unavailable); }
