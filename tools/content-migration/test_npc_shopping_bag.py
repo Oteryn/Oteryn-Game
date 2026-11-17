@@ -13,6 +13,8 @@ class ShoppingBagAdmission(unittest.TestCase):
 
     def test_only_the_selected_bag_is_admitted(self):
         bag = self.source()
+        bag["materializable"] = False
+        bag["stack_class"] = "Unknown"
         other = copy.deepcopy(bag)
         other['identity']['key'] = 'oteryn:item.tibia.i21412'
         other['materializable'] = False
