@@ -2292,8 +2292,10 @@ mod split_capacity_tests {
                     sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *fixture).await?;
                     // Historical inventory: one direct bag and a breadth-first tree with
                     // at most twenty children per bag and depth four, all live and weight one.
-                    let ids: Vec<String> = sqlx::query_scalar("SELECT uuidv7()::text FROM generate_series(0,505)").fetch_all(&mut *fixture).await?;
-                    for item in ids.iter().take(505) {
+                    // The main backpack is excluded from the 500-descendant ceiling:
+                    // 500 instances leave room for exactly one incoming leaf.
+                    let ids: Vec<String> = sqlx::query_scalar("SELECT uuidv7()::text FROM generate_series(0,500)").fetch_all(&mut *fixture).await?;
+                    for item in ids.iter().take(500) {
                         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES($1::uuid,encode($2,'hex')::uuid,'Item','fixture:split.bag','definition-r1',1,1,$1::uuid)")
                             .bind(item).bind(world.as_slice()).execute(&mut *fixture).await?;
                     }
@@ -2301,7 +2303,7 @@ mod split_capacity_tests {
                         .bind(character.as_bytes().as_slice()).bind(&ids[0]).bind(world.as_slice()).execute(&mut *fixture).await?;
                     sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES($1::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::uuid,1,$1::uuid)")
                         .bind(&ids[1]).bind(world.as_slice()).bind(character.as_bytes().as_slice()).bind(&ids[0]).execute(&mut *fixture).await?;
-                    for n in 2..505 {
+                    for n in 2..500 {
                         sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES($1::uuid,encode($2,'hex')::uuid,$3::uuid,$4,$1::uuid)")
                             .bind(&ids[n]).bind(world.as_slice()).bind(&ids[(n-2)/20+1]).bind(((n-2)%20+1) as i64).execute(&mut *fixture).await?;
                     }
@@ -2320,9 +2322,9 @@ mod split_capacity_tests {
                     let mut fixture = h.pool.begin().await?;
                     sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *fixture).await?;
                     sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES($1::uuid,encode($2,'hex')::uuid,'Item','fixture:split.bag','definition-r1',1,1,$1::uuid)")
-                        .bind(&ids[505]).bind(world.as_slice()).execute(&mut *fixture).await?;
+                        .bind(&ids[500]).bind(world.as_slice()).execute(&mut *fixture).await?;
                     sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES($1::uuid,encode($2,'hex')::uuid,$3::uuid,19,$1::uuid)")
-                        .bind(&ids[505]).bind(world.as_slice()).bind(&ids[25]).execute(&mut *fixture).await?;
+                        .bind(&ids[500]).bind(world.as_slice()).bind(&ids[25]).execute(&mut *fixture).await?;
                     fixture.commit().await?;
                     let mut tx = h.pool.begin().await?;
                     let result = plan_loop_destination(&mut tx, &Content, LoopPlan {
