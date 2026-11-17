@@ -292,6 +292,21 @@ mod e2ef1 {
         Err("no reachable exact authored target within town budget".into())
     }
 
+    /// Walk back to `to` over real server-confirmed steps.
+    async fn return_to(
+        client: &mut DevClientSession,
+        world: &BundleWorld,
+        to: TilePos,
+    ) -> TestResult {
+        let at = tile(client.world_spatial().actor_position)?;
+        let path = route(world, at, |tile| tile == to).ok_or("no return route to the start")?;
+        walk(client, world, &path).await?;
+        if tile(client.world_spatial().actor_position)? != to {
+            return Err("return route did not reach the start".into());
+        }
+        Ok(())
+    }
+
     async fn m01(
         client: &mut DevClientSession,
         peer: &mut DevClientSession,
@@ -630,7 +645,8 @@ mod e2ef1 {
                     if result.disposition != SpellCastDisposition::CoolingDown || client.actor_vitals().is_none_or(|v| v.mana != before.mana || v.soul != before.soul) || tokio::time::Instant::now() >= deadline { return Err(format!("aggressive action did not become executable after floor exhaust: {result:?}").into()); }
                 }
                 exhausted += 1;
-                Ok(())
+                // Back to the town floor so the next transition (and the next row) starts there.
+                return_to(client, world, from).await
             }.await;
             if let Err(error) = result {
                 evidence(&format!(
