@@ -63,7 +63,16 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
             break corpse;
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err("hunt produced no corpse before deadline".into());
+            let still_visible = client
+                .world_entities()
+                .and_then(|entities| entities.get(&target.entity).copied());
+            return Err(format!(
+                "hunt produced no corpse before deadline; target={:?} at={:?} damaged={damaged} last_position={last_position:?} still_visible={still_visible:?} actor={:?}",
+                target.display_name,
+                target.position,
+                client.world_spatial().actor_position
+            )
+            .into());
         }
     };
     if !damaged
