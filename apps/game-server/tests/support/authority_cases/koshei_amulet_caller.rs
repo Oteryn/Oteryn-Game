@@ -21,8 +21,7 @@ use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::Mutex;
 type TestResult<T = ()> = fixture::TestResult<T>;
-#[path = "engnpc2_paint_transport/world.rs"]
-mod world;
+use super::engnpc2_paint_transport::world;
 
 #[test]
 fn koshei_definition_validator_keeps_appearance_only_closed() -> TestResult {

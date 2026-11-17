@@ -16,7 +16,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 type TestResult<T = ()> = fixture::TestResult<T>;
 #[path = "engnpc2_paint_transport/world.rs"]
-mod world;
+pub(super) mod world;
 
 #[test]
 fn engnpc2_paint_postgres_native_three_seals_through_caller() -> TestResult {
