@@ -26,6 +26,8 @@ readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7
 readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two")
 # Runtime build writers bind to the shipped training formula's content revision,
 # just as the S3-B seam does; progression is initialized from this interpretation.
+# The served readiness.content_revision is this same revision: the quest and Task Board
+# owners refuse a Character whose stored progression content differs from the served one.
 readonly INTERPRETATION=(nb-profile-1 nb-ruleset-1 s3b-content-1 nb-starter-1)
 # The second, Open PvP (world_type=2) World of the World pass: its own Accounts, intents and node.
 readonly PVP_WORLD_ID=01934f10-7c02-7002-805b-3b1122334402

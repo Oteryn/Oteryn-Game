@@ -71,6 +71,8 @@ mod spell_book_sweep_tests;
 const SOURCE_AUTHORITY: &str = "platform";
 const PLATFORM_SOURCE: &str = "3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05";
 /// Interpretation requested by the Platform intents that `run.sh` issues.
+/// Its content revision is also the served `readiness.content_revision`: the quest and Task Board
+/// owners refuse a Character whose stored progression content differs from the served one.
 const INTERPRETATION: [&str; 4] = [
     "s3b-profile-1",
     "s3b-ruleset-1",

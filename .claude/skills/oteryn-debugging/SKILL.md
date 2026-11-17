@@ -142,6 +142,9 @@ Read a red node boot run from its causes, not its last lines.
   and `blocked-by`. `failure_summary.py` prints the failed rows grouped by
   `root=` at the top of the stage output and in the job summary: fix the
   roots, the `blocked-by` rows follow them.
+- **Refusal reasons.** Before a fix round for a refused fixture or qualification
+  precondition, make each refusal print its own reason into the runner log. One
+  shared message for several checks cost a full CI round on MP01.
 - **Fail-fast.** A row whose declared need (a fixture character released, an
   earlier row) already failed does not run: every check prints `FAIL
   cause=blocked-by root=<id> seconds=0`, still `status=FAIL`.
@@ -187,6 +190,8 @@ Read a red node boot run from its causes, not its last lines.
 | `busy` holder, lock timeout in one PG partition | contention or a missing retry of a busy durable holder (DEFLAKE-2..4) |
 | passes locally, fails in CI only | nextest per-process isolation, runner stack size, or `main` moved (CI tests the merge with `main`) |
 | integration count or file-family test red after a content change | a new import batch or spawn file nobody counted (#2684, #2691) |
+| hosted runner job killed (exit 143) or timed out, only on one branch | out of memory or a compile-size regression in the branch; before any re-run, compare its duration with the same job on recent PRs (the PostgreSQL harness build takes 10-15 min elsewhere), then shrink the build or escalate; do not re-run it a third time |
+| node boot shard green, scenario rows red | the job only proves the node started; read the rows (`SEAM_EVIDENCE ... status=FAIL`, `failure_summary.py`) |
 | red only on the post-merge run | a job the PR gate never runs (`oteryn-dev` `references/ci-merge.md`, *Blind spot*) |
 | post-merge red for several commits, mixed with cancelled runs | the culprit is the first red after the last green of that job; bisect with dispatched runs (section 6) |
 
