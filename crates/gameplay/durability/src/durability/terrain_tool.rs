@@ -302,22 +302,64 @@ pub(super) async fn apply_in_transaction(
     scope: &TerrainScope,
     mutation: &TerrainMutation,
 ) -> Result<bool, DurabilityError> {
-    apply_object_in_transaction(
-        tx,
-        fence,
-        command,
-        intent,
-        scope,
-        Some(mutation.tool),
-        &MapMutation {
-            placement: mutation.placement.clone(),
-            expected_revision: mutation.expected_revision,
-            before: mutation.before,
-            after: mutation.after,
-            decay: mutation.decay.clone(),
-        },
-    )
-    .await
+    use oteryn_gameplay_world_change::thornfire;
+    let mut map = MapMutation {
+        placement: mutation.placement.clone(),
+        expected_revision: mutation.expected_revision,
+        before: mutation.before,
+        after: mutation.after,
+        decay: mutation.decay.clone(),
+    };
+    let mut restore = None;
+    if mutation.tool_key == thornfire::FILLED_BUCKET
+        && mutation.after == 0
+        && thornfire::FIRE_APPEARANCES.contains(&mutation.before)
+    {
+        let world = fence.runtime_scope.world_id();
+        let clocks: Option<(i64, i64)> = sqlx::query_as(
+            "SELECT floor(extract(epoch FROM e.activated_at)*1000)::bigint,
+                    floor(extract(epoch FROM clock_timestamp())*1000)::bigint
+             FROM game_world_reset_epochs e
+             JOIN game_world_reset_active a USING(world_id, reset_epoch)
+             JOIN game_world_change_states s USING(world_id, reset_epoch)
+             WHERE e.world_id=encode($1,'hex')::uuid AND e.reset_epoch=$2::text::numeric
+               AND s.change_key='thornfire' AND s.active",
+        )
+        .bind(world.as_bytes().as_slice())
+        .bind(scope.reset_epoch.to_string())
+        .fetch_optional(&mut ***tx)
+        .await?;
+        let Some((saved, now)) = clocks else {
+            return Ok(false);
+        };
+        map.decay.clear();
+        if let Some(deadline) = thornfire::restore_deadline(saved, now) {
+            map.decay.push((mutation.before, deadline - now));
+            restore = Some(deadline);
+        }
+    }
+    let applied =
+        apply_object_in_transaction(tx, fence, command, intent, scope, Some(mutation.tool), &map)
+            .await?;
+    if let Some(deadline) = restore.filter(|_| applied) {
+        let stamped = sqlx::query(
+            "UPDATE game_terrain_tool_transforms t SET decay_at_unix_ms=$3
+             FROM game_terrain_tool_receipts r
+             WHERE (r.world_id,r.channel_id,r.placement,r.reset_epoch)=
+                   (t.world_id,t.channel_id,t.placement,t.reset_epoch)
+               AND r.game_session_id=encode($1,'hex')::uuid AND r.command_id=$2::text::numeric
+               AND r.created_xact_id=pg_current_xact_id()",
+        )
+        .bind(fence.game_session_id.as_bytes().as_slice())
+        .bind(command.command_id().get().to_string())
+        .bind(deadline)
+        .execute(&mut ***tx)
+        .await?;
+        if stamped.rows_affected() != 1 {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+    }
+    Ok(applied)
 }
 
 /// Shared with source map harvesting and world-event consumption. The caller holds the
