@@ -8,6 +8,7 @@ use oteryn_gameplay_entities::{
 
 #[derive(Clone, Copy, Debug)]
 pub struct SceneEvacuation {
+    pub cross_floor: bool,
     pub players_only: bool,
     pub from: MovementLocalPosition,
     pub players_to: MovementLocalPosition,
@@ -160,7 +161,12 @@ impl SourceSceneRelocation<'_> {
                 y: to.y,
                 z: i32::from(to.floor),
             };
-            if ground_of(self.cells)((to.x, to.y, i32::from(to.floor))) != Ground::Walkable
+            if (!self
+                .sources
+                .iter()
+                .any(|source| source.from == entry.position.position() && source.cross_floor)
+                && entry.position.position().floor != to.floor)
+                || ground_of(self.cells)((to.x, to.y, i32::from(to.floor))) != Ground::Walkable
                 || !landable_of(self.cells, true, self.closed)((to.x, to.y, i32::from(to.floor)))
                 || is_teleport(self.cells, cell)
                 || !self

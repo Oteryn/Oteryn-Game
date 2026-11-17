@@ -23,6 +23,7 @@ pub fn prepare_scene_relocations<'a>(
             }
         } else {
             sources.push(SceneEvacuation {
+                cross_floor: false,
                 players_only: false,
                 from,
                 players_to: change.destination,
