@@ -99,7 +99,7 @@ fn retained_world(
     Err("source chest has no enterable adjacent tile".into())
 }
 
-fn claim_case(
+pub(super) fn claim_case(
     claim: &str,
     chest: (u16, u16, i8),
     choices: &[(u16, u16)],

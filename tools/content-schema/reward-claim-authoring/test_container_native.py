@@ -70,7 +70,7 @@ class ContainerNativeTests(unittest.TestCase):
         self.assertEqual(recipe['placements'][0]['unique_id'], 6067)
         self.assertEqual([(c['item']['key'], c['count']) for c in recipe['placements'][0]['contents']],
                          [('oteryn:item.tibia.i3098', 1), ('oteryn:item.tibia.i3085', 1),
-                          ('oteryn:item.tibia.i3028', 7), ('oteryn:item.tibia.i3320', 1)])
+                          ('oteryn:item.tibia.i3028', 7)])  # Global: axe only in fireaxe2
         self.assertFalse(held_items['oteryn:item.tibia.i3085']['materializable'])
         self.assertEqual(items['oteryn:item.tibia.i3085']['semantics']['charges']['value']['count']['value'], 200)
         changed = copy.deepcopy(claim)

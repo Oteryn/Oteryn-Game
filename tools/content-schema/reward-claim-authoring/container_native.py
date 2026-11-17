@@ -12,6 +12,7 @@ import re
 from native_container_fluids import project_fluid_child
 from pathlib import Path
 
+import global_corrections
 import poison_daggers
 
 SOURCE = Path(__file__).with_name('container_native_source.json')
@@ -390,7 +391,8 @@ def derive(definition, items, stack_problem):
         if (root is None or root['identity'] != reward['container'] or item_id(reward['container']) != setting['container']
                 or stack_problem(root, 1) is not None or type(capacity) is not int or not 1 <= capacity <= 65535):
             return None
-        original = poison_daggers.source_reward(ids[0], setting['itemPos'], setting['reward'])
+        original = global_corrections.source_reward(
+            ids[0], setting['itemPos'], poison_daggers.source_reward(ids[0], setting['itemPos'], setting['reward']))
         if ids[0] in ACCEPTED_TWO_STACKS:
             selected = ACCEPTED_TWO_STACKS[ids[0]]
             original = [part for source_id, count in original

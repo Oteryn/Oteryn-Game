@@ -303,6 +303,7 @@ fn m35_fire_axe_two_floor_rewards_complete_only_after_both_in_either_order() -> 
     Ok(())
 }
 // Crystal 201189f8 chest.lua:1078-1087: complete bag, not a 200-item necklace stack.
+// Tibia Global (Fire Axe Quest/Spoiler rev 855030): the axe is only in the Pile of Bones.
 #[test]
 fn m35_fire_axe_bag_grants_all_children_without_finishing_on_first_chest() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -1148,7 +1149,6 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                         ("oteryn:item.tibia.i3028".to_owned(), 7),
                         ("oteryn:item.tibia.i3085".to_owned(), 1),
                         ("oteryn:item.tibia.i3098".to_owned(), 1),
-                        ("oteryn:item.tibia.i3320".to_owned(), 1),
                     ]
                 } else {
                     Vec::new()
