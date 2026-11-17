@@ -16,6 +16,246 @@
   ],
   "rules": [
     {
+      "key": "oteryn:quest-npc/sandra/bonus",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.sandra",
+      "trigger": "say",
+      "keywords": [
+        "bonus"
+      ],
+      "guards": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Would you like to join the bonus system now?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:94-101"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/sandra/bonus-join",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.sandra",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have joined the bonus system."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:102-106"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/sandra/deposit",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.sandra",
+      "trigger": "say",
+      "keywords": [
+        "deposit"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Would you like a lottery ticket for 100 identical empty vials?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:70-74"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/sandra/deposit-283",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.sandra",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i283",
+          "count": 100,
+          "op": "ge"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
+          "value": 1
+        },
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i283",
+          "count": 100
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i5957",
+          "count": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Here is your lottery ticket. Good luck."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:107-115"
+      ],
+      "topics": [
+        3
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/sandra/deposit-284",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.sandra",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i284",
+          "count": 100,
+          "op": "ge"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
+          "value": 1
+        },
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i284",
+          "count": 100
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i5957",
+          "count": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Here is your lottery ticket. Good luck."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:107-115"
+      ],
+      "topics": [
+        3
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/sandra/deposit-285",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.sandra",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i285",
+          "count": 100,
+          "op": "ge"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
+          "value": 1
+        },
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i285",
+          "count": 100
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i5957",
+          "count": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Here is your lottery ticket. Good luck."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:107-115"
+      ],
+      "topics": [
+        3
+      ]
+    },
+    {
       "key": "oteryn:quest-npc/sandra/lottery",
       "quest": "oteryn:quest.outfit_and_addon_quests",
       "npc": "oteryn:npc.sandra",

@@ -588,3 +588,27 @@ fn sandra_lottery_postgres_odds_table_equals_donor_values() -> super::TestResult
         )
     })
 }
+
+#[test]
+fn sandra_lottery_ticket_issuance_matches_donor_same_kind_vials() -> super::TestResult {
+    use oteryn_gameplay_quests::quest::npc_rules::{NpcRuleCatalog, NpcRuleEffect, NpcRuleGuard};
+    let source = NpcRuleCatalog::from_json_documents(&[include_str!(
+        "../../../../../../content/dialogues/quest-rules-supplemental/sandra-lottery.json"
+    )])?;
+    let rules = &source.programs()[0].document.rules;
+    for item in [283, 284, 285] {
+        let key = format!("oteryn:item.tibia.i{item}");
+        let rule = rules
+            .iter()
+            .find(|rule| rule.key == format!("oteryn:quest-npc/sandra/deposit-{item}"))
+            .ok_or("donor vial exchange")?;
+        assert!(rule.guards.iter().any(|guard| matches!(guard,
+            NpcRuleGuard::Item { item, count: 100, .. } if item == &key)));
+        assert!(rule.effects.iter().any(|effect| matches!(effect,
+            NpcRuleEffect::TakeItem { item, count: 100, optional: false, .. } if item == &key)));
+        assert!(rule.effects.iter().any(|effect| matches!(effect,
+            NpcRuleEffect::GiveItem { item, count: 1, .. } if item == SANDRA_LOTTERY.input)));
+    }
+    assert!(source.item_exchange_keys("oteryn:npc.sandra").is_some());
+    Ok(())
+}
