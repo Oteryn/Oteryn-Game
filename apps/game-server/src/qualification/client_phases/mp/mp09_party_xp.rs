@@ -1,6 +1,6 @@
 //! MP09. Oracle: Crystal 201189f871d23597b82caf88fd611454a2ddefb8:
 //! data/events/scripts/party.lua:73-91 (three vocations: ceil(pool * 1.70 / 3));
-//! data-global/monster/dragons/dragon.lua:5 (700 XP);
+//! base XP per target is the authored creature `experience` in content/creatures/definitions (see HUNT_TARGETS);
 //! src/creatures/players/grouping/party.cpp:548-594 (level, distance, activity);
 //! config.lua.dist:302 (share range multiplier 1.5, hence the 2/3 level rule).
 use super::*;
@@ -12,6 +12,21 @@ use oteryn_protocol_oteryn::{
     party_skull,
     presentation::{PresentationEventKind, PresentationValueKind},
 };
+
+/// Hunt targets in preference order (key, shown name, base XP): the first whose authored spawn the
+/// bots can walk to (no rope, shovel or ladder use) is hunted. The authored dragon spawns are not
+/// walk-reachable from the temple (run 44062547883). Experience is the authored `experience` of
+/// each creature record in content/creatures/definitions/creatures-*-*.json (one-line JSON, key
+/// `oteryn:creature.<name>`): giant_spider 900 (-00500-00999), ancient_scarab 720 and
+/// demon_skeleton 240 and bonelord 170 and cyclops 150 (-00000-00499), stone_golem 160 (-01500-01864).
+const HUNT_TARGETS: [(&str, &str, u64); 6] = [
+    ("oteryn:creature.giant_spider", "giant spider", 900),
+    ("oteryn:creature.ancient_scarab", "ancient scarab", 720),
+    ("oteryn:creature.demon_skeleton", "demon skeleton", 240),
+    ("oteryn:creature.bonelord", "bonelord", 170),
+    ("oteryn:creature.stone_golem", "stone golem", 160),
+    ("oteryn:creature.cyclops", "cyclops", 150),
+];
 
 const XP_SOURCE: &str = "crates/gameplay/social-rules/src/shared_experience_split.rs:128 (server three-vocation bonus=60%; Crystal=70%)";
 
@@ -102,20 +117,20 @@ pub(super) async fn run(
             tokio::time::timeout(Duration::from_secs(240), encounter(&mut bots, world)).await;
         let result = match encounter { Ok(result) => result, Err(_) => Err("encounter deadline;source:crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs:1905".into()) };
         match result {
-            Ok((start, end, hits)) => {
+            Ok((start, end, hits, pool)) => {
                 earned = Some(end);
                 check(
                     "all-contributed-kill",
                     Ok(format!(
-                        "dragon disappeared;positive attributed damage={hits:?};XP before={start:?} after={end:?}"
+                        "target disappeared;base_xp={pool};positive attributed damage={hits:?};XP before={start:?} after={end:?}"
                     )),
                     &mut failures,
                 );
                 for index in 0..3 {
                     let actual = end[index].checked_sub(start[index]);
-                    let expected = crystal_share(700);
+                    let expected = crystal_share(pool);
                     let detail = format!(
-                        "bot={index} actual={actual:?} expected={expected} base=700 vocations=3 bonus=70% ceil(700*170/300);Crystal data/events/scripts/party.lua:73-91;source:{XP_SOURCE}"
+                        "bot={index} actual={actual:?} expected={expected} base={pool} vocations=3 bonus=70% ceil({pool}*170/300);Crystal data/events/scripts/party.lua:73-91;source:{XP_SOURCE}"
                     );
                     check(
                         &format!("shared-xp-{index}"),
@@ -132,7 +147,7 @@ pub(super) async fn run(
                 let cause = error.to_string();
                 check("all-contributed-kill", Err(error), &mut failures);
                 for index in 0..3 {
-                    check(&format!("shared-xp-{index}"), Err(format!("expected={} actual=unproven;encounter_reply={cause};source:{XP_SOURCE}", crystal_share(700)).into()), &mut failures);
+                    check(&format!("shared-xp-{index}"), Err(format!("expected=ceil(base*170/300) actual=unproven;encounter_reply={cause};source:{XP_SOURCE}").into()), &mut failures);
                 }
             }
         }
@@ -498,42 +513,53 @@ fn far_route(
 async fn encounter(
     bots: &mut [Bot<'_, '_>],
     world: &BundleWorld,
-) -> TestResult<([u64; 3], [u64; 3], [bool; 3])> {
+) -> TestResult<([u64; 3], [u64; 3], [bool; 3], u64)> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let spawns: Vec<_> = metadata
-        .spawns
-        .sources
-        .iter()
-        .flat_map(|source| source.points.iter().map(move |p| (source.floor, p)))
-        .filter(|(_, p)| {
-            metadata
-                .spawns
-                .creatures
-                .get(p.creature as usize)
-                .is_some_and(|c| c.key == "oteryn:creature.dragon")
-        })
-        .map(|(floor, p)| TilePos {
-            x: p.x,
-            y: p.y,
-            floor,
-        })
-        .collect();
     let from = tile(bots[0].client()?.world_spatial().actor_position)?;
-    let goal = |at: TilePos| {
-        spawns
+    let mut tried = Vec::new();
+    let mut chosen = None;
+    for (key, name, xp) in HUNT_TARGETS {
+        let spawns: Vec<TilePos> = metadata
+            .spawns
+            .sources
             .iter()
-            .any(|p| p.floor == at.floor && p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)) <= 1)
-            && world
-                .base()
-                .tile(at.x, at.y, at.floor)
-                .is_some_and(|t| !t.protection_zone())
-    };
-    let path = far_route(world, from, goal).map_err(|reached| {
-        let nearest = reached.iter().filter_map(|at| spawns.iter().map(|p| (p.floor == at.floor, p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)))).filter(|(same, _)| *same).map(|(_, d)| d).min()).min();
-        let floors: std::collections::BTreeSet<i8> = reached.iter().map(|at| at.floor).collect();
-        format!("no reachable authored dragon spawn;observed_spawn_count={};walkable_reached={};reached_floors={floors:?};nearest_same_floor_distance={nearest:?};start={from:?};source:apps/game-server/src/qualification/client_phases/world.rs:441", spawns.len(), reached.len())
-    })?;
+            .flat_map(|source| source.points.iter().map(move |p| (source.floor, p)))
+            .filter(|(_, p)| {
+                metadata
+                    .spawns
+                    .creatures
+                    .get(p.creature as usize)
+                    .is_some_and(|c| c.key == key)
+            })
+            .map(|(floor, p)| TilePos {
+                x: p.x,
+                y: p.y,
+                floor,
+            })
+            .collect();
+        let goal = |at: TilePos| {
+            spawns
+                .iter()
+                .any(|p| p.floor == at.floor && p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)) <= 1)
+                && world
+                    .base()
+                    .tile(at.x, at.y, at.floor)
+                    .is_some_and(|t| !t.protection_zone())
+        };
+        match far_route(world, from, goal) {
+            Ok(path) => {
+                chosen = Some((name, xp, spawns, path));
+                break;
+            }
+            Err(reached) => tried.push(format!(
+                "{key}:spawns={},walkable_reached={}",
+                spawns.len(),
+                reached.len()
+            )),
+        }
+    }
+    let (name, pool, spawns, path) = chosen.ok_or_else(|| format!("no reachable authored hunt spawn;tried={tried:?};start={from:?};source:apps/game-server/src/qualification/client_phases/world.rs:441"))?;
     bots::walk_bot(bots, 0, world, &path).await?;
     let leader = tile(bots[0].client()?.world_spatial().actor_position)?;
     for actor in [1, 2] {
@@ -564,7 +590,7 @@ async fn encounter(
     bots::wait_observation(
         bots,
         deadline,
-        "visible dragon at authored spawn",
+        "visible hunt target at authored spawn",
         |bots, _| {
             let client = bots[0].session.as_ref().ok_or("A closed")?;
             target = client.world_entities().and_then(|entities| {
@@ -579,9 +605,10 @@ async fn encounter(
                                     ..
                                 }
                             )
-                            && e.display_name.is_some_and(|name| {
-                                name.as_str()
-                                    .is_ok_and(|name| name.eq_ignore_ascii_case("dragon"))
+                            && e.display_name.is_some_and(|label| {
+                                label
+                                    .as_str()
+                                    .is_ok_and(|shown| shown.eq_ignore_ascii_case(name))
                             })
                             && spawns.iter().any(|p| {
                                 i16::from(p.floor) == e.position.floor
@@ -597,7 +624,7 @@ async fn encounter(
         },
     )
     .await?;
-    let target = target.ok_or("dragon entity absent")?;
+    let target = target.ok_or("hunt target entity absent")?;
     let attackers = [bots[0].own()?, bots[1].own()?, bots[2].own()?];
     for bot in bots.iter_mut() {
         let modes = oteryn_protocol_oteryn::attack::FightModes {
@@ -613,20 +640,20 @@ async fn encounter(
         attack_target(bot, Some(&target)).await?;
     }
     let mut hits = [false; 3];
-    bots::wait_observation(bots, deadline, "all three damage dragon and kill", |bots, events| {
+    bots::wait_observation(bots, deadline, "all three damage the hunt target and kill", |bots, events| {
         for stream in events {
             for event in stream {
                 let SessionEvent::Presentation(delta) = event else { continue };
                 for event in &delta.value {
                     let PresentationEventKind::ValueText { kind, target: victim, attacker: Some(source), primary, .. } = event.kind else { continue };
                     if victim != target || primary.value == 0 || !matches!(kind, PresentationValueKind::DamageDealt | PresentationValueKind::DamageOthers) { continue; }
-                    if !attackers.contains(&source) { return Err(format!("foreign dragon damage reply={event:?};cannot assume full 700-XP party pool").into()); }
+                    if !attackers.contains(&source) { return Err(format!("foreign damage on the hunt target reply={event:?};cannot assume the full {pool}-XP party pool").into()); }
                     for (index, attacker) in attackers.iter().enumerate() { hits[index] |= source == *attacker; }
                 }
             }
         }
         let gone = bots[0].session.as_ref().and_then(|c| c.world_entities()).is_some_and(|e| e.get(&target).is_none());
-        if gone && !hits.iter().all(|hit| *hit) { return Err(format!("dragon removed before all contributions;attributed_damage={hits:?};source:crates/gameplay/dispatch/src/gameplay_transport/attack/shared_experience.rs:52").into()); }
+        if gone && !hits.iter().all(|hit| *hit) { return Err(format!("hunt target removed before all contributions;attributed_damage={hits:?};source:crates/gameplay/dispatch/src/gameplay_transport/attack/shared_experience.rs:52").into()); }
         Ok(gone && hits.iter().all(|hit| *hit))
     }).await?;
     for bot in bots.iter_mut() {
@@ -646,5 +673,5 @@ async fn encounter(
         }
         bots::pump(bots).await?;
     }
-    Ok((start, end, hits))
+    Ok((start, end, hits, pool))
 }
