@@ -60,20 +60,20 @@ pub(super) fn prepare_map(
     world: WorldId,
     changes: &DailyWorldChanges,
 ) -> crate::map::boot::CheckedBundle {
-    prepare_map_with_awash(checked, world, changes, None)
+    prepare_map_with_phases(checked, world, changes, Default::default())
 }
 
-pub(super) fn prepare_map_with_awash(
+pub(super) fn prepare_map_with_phases(
     checked: crate::map::boot::CheckedBundle,
     world: WorldId,
     changes: &DailyWorldChanges,
-    awash: Option<bool>,
+    phases: std::collections::BTreeMap<&'static str, bool>,
 ) -> crate::map::boot::CheckedBundle {
     if changes.reset_epoch == 0 {
         return checked;
     }
     let mut map = map_changes(world, changes);
-    map.phases.extend(awash.map(|active| ("awash", active)));
+    map.phases = phases;
     checked.with_daily_map(map)
 }
 

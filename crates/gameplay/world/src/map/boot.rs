@@ -691,6 +691,7 @@ impl BundleWorld {
         if let Some(daily) = &self.daily {
             sources.extend(super::daily::grimvale_spawns(self, daily, &profile)?);
             super::daily::awash::project_spawns(self, daily, &profile, &mut sources)?;
+            super::daily::thornfire::project_spawns(self, daily, &profile, &mut sources)?;
         }
         Some(sources)
     }

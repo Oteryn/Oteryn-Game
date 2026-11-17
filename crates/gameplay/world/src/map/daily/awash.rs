@@ -7,13 +7,6 @@ const SCOUT: &str = "oteryn:creature.deepling_scout";
 const GROAM: &str = "oteryn:creature.groam";
 const ENTRANCE: (u16, u16, i8) = (32516, 32018, 9);
 
-pub(super) struct PhaseTile {
-    at: (u16, u16, i8),
-    flags: u32,
-    pub(super) entries: &'static [u16],
-    exit: Option<(u16, u16, i8)>,
-}
-
 const DRY: &[PhaseTile] = &[
     PhaseTile {
         at: (32576, 32014, 10),
@@ -195,58 +188,6 @@ pub(super) fn tiles(manifest: &Manifest, phase: Option<bool>) -> &'static [Phase
         Some(false) => FLOODED,
         None => &[],
     }
-}
-
-pub(super) fn sectors(
-    manifest: &Manifest,
-    phase: Option<bool>,
-) -> Result<BTreeMap<u32, Sector>, Error> {
-    let mut out = BTreeMap::new();
-    for tile in tiles(manifest, phase) {
-        let (x, y, floor) = tile.at;
-        if x < manifest.world.min_x
-            || x >= manifest.world.max_x
-            || y < manifest.world.min_y
-            || y >= manifest.world.max_y
-        {
-            return Err(refusal("Awash layer outside world"));
-        }
-        let sector = Sector {
-            floor: -floor,
-            sx: x / 32,
-            sy: y / 32,
-            tiles: Vec::new(),
-        };
-        let items = tile
-            .entries
-            .iter()
-            .map(|&appearance| {
-                Ok(Item {
-                    palette: index(manifest, appearance)?,
-                    depth: 0,
-                    attrs: Attrs {
-                        teleport: tile
-                            .exit
-                            .filter(|_| appearance == 1949)
-                            .map(|(x, y, z)| (x, y, (-z).to_ne_bytes()[0])),
-                        ..Attrs::default()
-                    },
-                })
-            })
-            .collect::<Result<_, Error>>()?;
-        out.entry(key(&sector)).or_insert(sector).tiles.push(Tile {
-            x,
-            y,
-            flags: tile.flags,
-            house: 0,
-            zones: Vec::new(),
-            items,
-        });
-    }
-    for sector in out.values_mut() {
-        sector.tiles.sort_by_key(|tile| (tile.y, tile.x));
-    }
-    Ok(out)
 }
 
 fn creature_at(dry: bool, home: usize, roll: u64) -> Option<&'static str> {

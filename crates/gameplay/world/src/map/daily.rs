@@ -7,6 +7,7 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
 pub(super) mod awash;
+pub(super) mod thornfire;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DailyMap {
@@ -115,7 +116,7 @@ impl Projection {
                 }
             }
         }
-        for tile in awash::tiles(&manifest, daily.phases.get("awash").copied()) {
+        for tile in phase_tiles(&manifest, daily) {
             for appearance in tile.entries {
                 needed.entry(*appearance).or_insert(None);
             }
@@ -191,8 +192,76 @@ fn source_layer(town: &str) -> Result<Layer, Error> {
         .ok_or_else(|| refusal("unknown trader town"))
 }
 
+pub(super) struct PhaseTile {
+    at: (u16, u16, i8),
+    flags: u32,
+    pub(super) entries: &'static [u16],
+    exit: Option<(u16, u16, i8)>,
+}
+
+fn phase_sectors(
+    manifest: &Manifest,
+    tiles: impl IntoIterator<Item = &'static PhaseTile>,
+) -> Result<BTreeMap<u32, Sector>, Error> {
+    let mut out = BTreeMap::new();
+    for tile in tiles {
+        let (x, y, floor) = tile.at;
+        if x < manifest.world.min_x
+            || x >= manifest.world.max_x
+            || y < manifest.world.min_y
+            || y >= manifest.world.max_y
+        {
+            return Err(refusal("world-change phase layer outside world"));
+        }
+        let sector = Sector {
+            floor: -floor,
+            sx: x / 32,
+            sy: y / 32,
+            tiles: Vec::new(),
+        };
+        let items = tile
+            .entries
+            .iter()
+            .map(|&appearance| {
+                Ok(Item {
+                    palette: index(manifest, appearance)?,
+                    depth: 0,
+                    attrs: Attrs {
+                        teleport: tile
+                            .exit
+                            .filter(|_| appearance == 1949)
+                            .map(|(x, y, z)| (x, y, (-z).to_ne_bytes()[0])),
+                        ..Attrs::default()
+                    },
+                })
+            })
+            .collect::<Result<_, Error>>()?;
+        out.entry(key(&sector)).or_insert(sector).tiles.push(Tile {
+            x,
+            y,
+            flags: tile.flags,
+            house: 0,
+            zones: Vec::new(),
+            items,
+        });
+    }
+    for sector in out.values_mut() {
+        sector.tiles.sort_by_key(|tile| (tile.y, tile.x));
+    }
+    Ok(out)
+}
+
+fn phase_tiles(manifest: &Manifest, daily: &DailyMap) -> impl Iterator<Item = &'static PhaseTile> {
+    awash::tiles(manifest, daily.phases.get("awash").copied())
+        .iter()
+        .chain(thornfire::tiles(
+            manifest,
+            daily.phases.get("thornfire").copied(),
+        ))
+}
+
 fn layers(manifest: &Manifest, daily: &DailyMap) -> Result<BTreeMap<u32, Sector>, Error> {
-    let mut out = awash::sectors(manifest, daily.phases.get("awash").copied())?;
+    let mut out = phase_sectors(manifest, phase_tiles(manifest, daily))?;
     let Some(town) = daily.trader else {
         return Ok(out);
     };
