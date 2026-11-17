@@ -89,7 +89,7 @@ fn project(
     skin: Res<Skins>,
     mut state: ResMut<HouseWindow>,
     mut focus: ResMut<InputFocus>,
-    fields: Query<(), With<Field>>,
+    fields: Query<(&Field, &EditableText)>,
 ) {
     if state.generation != Some(owner.generation()) || owner.play.is_none() {
         state.open = false;
@@ -112,6 +112,7 @@ fn project(
     {
         return;
     }
+    let rebuilding = state.root.is_some();
     if let Some(root) = state.root.take() {
         if focus.get().is_some_and(|entity| fields.contains(entity)) {
             focus.clear();
@@ -121,6 +122,7 @@ fn project(
     state.model = None;
     state.request = None;
     let Some(panel) = projected else {
+        state.feedback.clear();
         return;
     };
     let mut message = oteryn_client_ui::house::panel_text(&panel.model);
@@ -138,11 +140,19 @@ fn project(
     }
     message.push_str(&state.feedback);
     state.ownership = ownership;
+    let mut editors = panel.fields.clone();
+    if rebuilding {
+        for (field, text) in &fields {
+            if panel.fields[field.0] == state.fields[field.0] {
+                editors[field.0] = text.value().to_string();
+            }
+        }
+    }
     let root = build(
         &mut commands,
         &skin,
         owner.generation(),
-        &panel.fields,
+        &editors,
         &panel.model,
         &message,
     );

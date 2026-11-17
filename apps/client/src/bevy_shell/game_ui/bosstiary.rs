@@ -93,6 +93,7 @@ fn project(
     let root = commands
         .spawn((
             Window,
+            super::GameModal,
             crate::bevy_shell::ui::window_layout::WindowLayer("bosstiary"),
             bevy::ui_widgets::ScrollArea,
             GlobalZIndex(150),
@@ -329,13 +330,6 @@ fn activate(
         && let Some(play) = &owner.play
     {
         match action.kind {
-            Kind::Request(
-                intent @ (Intent::Catalogue | Intent::CatalogueNext | Intent::CatalogueRefresh),
-            ) => {
-                play.link
-                    .boss_encounter_browse("", BossCategory::All, false);
-                play.link.boss_encounter_request(intent);
-            }
             Kind::Request(intent) => play.link.boss_encounter_request(intent),
             Kind::Boss(previous) => {
                 play.link

@@ -212,6 +212,10 @@ fn house_browser_opens_owned_and_incoming_catalogue() -> TestResult {
 fn house_browser_reviews_and_confirms_transfer() -> TestResult {
     house_window_action("Review transfer", 3, "200")
 }
+#[test]
+fn house_browser_clears_ownership_error_on_reopen() -> TestResult {
+    house_window_action("Review move-out", 2, "invalid")
+}
 fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestResult {
     use crate::{
         combat_input::PlayCommand,
@@ -316,12 +320,14 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
             "missing house list descriptor: {expected}"
         );
     }
-    let save = app
-        .world_mut()
-        .query::<(&Text, &ChildOf)>()
-        .iter(app.world())
-        .find_map(|(text, parent)| (text.0 == caption).then_some(parent.parent()))
-        .ok_or("save button")?;
+    let button = |app: &mut App, caption: &str| {
+        app.world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(app.world())
+            .find_map(|(text, parent)| (text.0 == caption).then_some(parent.parent()))
+            .ok_or("house button")
+    };
+    let save = button(&mut app, caption)?;
     for (field, mut text) in app
         .world_mut()
         .query::<(&super::super::houses::Field, &mut EditableText)>()
@@ -331,11 +337,14 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
             text.editor_mut().set_text(value);
         }
         if caption == "Review transfer" {
+            if field.0 == 2 {
+                text.editor_mut().set_text("1");
+            }
             if field.0 == 4 {
                 text.editor_mut().set_text("Mira Vale");
             }
             if field.0 == 5 {
-                text.editor_mut().set_text("2027-01-20 12:00:00 UTC");
+                text.editor_mut().set_text("invalid date");
             }
         }
         if field.0 == 6 {
@@ -344,7 +353,71 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
     }
     app.world_mut().trigger(Activate { entity: save });
     app.update();
+    if caption == "Review move-out" {
+        let has_error = |app: &mut App| {
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|text| text.0.contains("Select an ownership row"))
+        };
+        app.update();
+        assert!(has_error(&mut app));
+        let entity = button(&mut app, "Close")?;
+        app.world_mut().trigger(Activate { entity });
+        app.update();
+        press_h(&mut app);
+        let entity = button(&mut app, caption)?;
+        assert!(!has_error(&mut app));
+
+        for (field, mut text) in app
+            .world_mut()
+            .query::<(&super::super::houses::Field, &mut EditableText)>()
+            .iter_mut(app.world_mut())
+        {
+            if field.0 == 2 {
+                text.editor_mut().set_text("invalid");
+            }
+        }
+        app.world_mut().trigger(Activate { entity });
+        app.update();
+        app.update();
+        assert!(has_error(&mut app));
+        app.world_mut().non_send_mut::<HostOwner>().close();
+        app.update();
+        let (link, _commands, _outbox) = play_channel();
+        link.use_shared_frontend();
+        link.bevy_house_list_fixture();
+        let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+        view.use_shared_frontend();
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.phase = crate::bevy_shell::owner::Phase::Playing;
+        owner.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+        press_h(&mut app);
+        button(&mut app, caption)?;
+        assert!(!has_error(&mut app));
+        return Ok(());
+    }
     if caption == "Review transfer" {
+        app.update();
+        for (field, mut text) in app
+            .world_mut()
+            .query::<(&super::super::houses::Field, &mut EditableText)>()
+            .iter_mut(app.world_mut())
+        {
+            match field.0 {
+                2 => assert_eq!(text.value(), "1"),
+                3 => assert_eq!(text.value(), "200"),
+                4 => assert_eq!(text.value(), "Mira Vale"),
+                5 => {
+                    assert_eq!(text.value(), "invalid date");
+                    text.editor_mut().set_text("2027-01-20 12:00:00 UTC");
+                }
+                _ => {}
+            }
+        }
+        let retry = button(&mut app, caption)?;
+        app.world_mut().trigger(Activate { entity: retry });
+        app.update();
         assert!(receiver.try_recv().is_err(), "review sends no mutation");
         app.update();
         assert!(

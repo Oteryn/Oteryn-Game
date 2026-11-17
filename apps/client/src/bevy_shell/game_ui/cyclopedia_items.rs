@@ -24,6 +24,8 @@ enum Action {
     Category(bool),
     Select(u32),
     Details,
+    DropSources,
+    NextDropSources,
     Prices,
     Close,
 }
@@ -253,6 +255,12 @@ fn build(
             !panel.categories().is_empty(),
         ),
         (Action::Details, "Item details", selected),
+        (Action::DropSources, "Drop sources", selected),
+        (
+            Action::NextDropSources,
+            "Next drop sources",
+            selected && panel.catalogue_drop_next.is_some(),
+        ),
         (Action::Prices, "Market prices", selected),
         (Action::Close, "Close", true),
     ] {
@@ -383,6 +391,8 @@ fn finish(
             play.link.item_catalogue_select(id);
         }
         Action::Details => play.link.item_catalogue_request(6),
+        Action::DropSources => play.link.item_catalogue_request(7),
+        Action::NextDropSources => play.link.item_catalogue_request(8),
         Action::Prices => {
             play.link.item_catalogue_request(9);
             if let Ok(definition) = panel.catalogue_definition.parse() {
@@ -404,9 +414,12 @@ fn finish(
                     state.pending = Some((entity, control));
                     return;
                 }
-                changed = search.value().to_string() != panel.search;
-                play.link
-                    .item_catalogue_filter(&search.value().to_string(), &panel.category);
+                let value = search.value().to_string();
+                if !oteryn_client_ui::modal_dialogs::TextEditor::accepts(&value, 256) {
+                    return;
+                }
+                changed = value != panel.search;
+                play.link.item_catalogue_filter(&value, &panel.category);
             }
             let action = match control.action {
                 Action::Next if !changed => 1,

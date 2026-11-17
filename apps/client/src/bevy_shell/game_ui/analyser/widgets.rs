@@ -7,6 +7,7 @@ pub(super) struct Widgets {
     pub overlay: Entity,
     pub report: Entity,
     pub text: String,
+    pub needs_cooldowns: bool,
     pub tracker_filter: Option<Entity>,
 }
 pub(super) fn build(
@@ -227,6 +228,7 @@ pub(super) fn build(
         overlay,
         report,
         text: String::new(),
+        needs_cooldowns: tool == Tool::Bosses,
         tracker_filter,
     }
 }

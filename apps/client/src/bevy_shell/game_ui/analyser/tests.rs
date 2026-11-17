@@ -823,3 +823,44 @@ fn parity_a_loot_reset_retains_xp_and_supplies() -> TestResult {
     assert_eq!(panel.supplies, 2);
     Ok(())
 }
+
+#[test]
+fn boss_tracker_refreshes_cooldowns_after_pending_gallery_reply() -> TestResult {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::{boss_encounter::catalogue::Page, raw_feature::GatedCommandResult};
+    use oteryn_client_ui::boss_encounter::Intent;
+    let (mut app, outbox) = app()?;
+    outbox.bevy_bosstiary_initialize();
+    let link = &app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link;
+    link.boss_encounter_request(Intent::Catalogue);
+    select(&mut app, Tool::Bosses)?;
+    outbox.bevy_bosstiary_result(&GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: oteryn_session::CommandStatus::Accepted,
+        payload: Page {
+            next: None,
+            points: 0,
+            entries: vec![],
+        }
+        .encode()
+        .ok_or("page")?,
+    });
+    app.world_mut()
+        .non_send_mut::<tokio::sync::mpsc::UnboundedReceiver<PlayCommand>>()
+        .try_recv()?;
+    app.update();
+    {
+        let mut commands = app
+            .world_mut()
+            .non_send_mut::<tokio::sync::mpsc::UnboundedReceiver<PlayCommand>>();
+        assert!(std::iter::from_fn(|| commands.try_recv().ok()).any(|c| matches!(c, PlayCommand::Feature(c) if c.kind == 133 && !c.payload.starts_with(b"BCT1"))));
+    }
+    Ok(())
+}
