@@ -4621,6 +4621,59 @@
           "close": []
         }
       }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-outlaw-camp-reward",
+      "quest": "oteryn:quest.the_outlaw_camp_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32620,
+          "y": 32198,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472,
+        "ordinal": 2
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u6_4/outlaw_camp_quest",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "return_on_failure": false,
+      "failure_message": "It is empty.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_outlaw_camp/actions_the_outlaw_camp_quest.lua:1-33",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:3491-3495"
+      ],
+      "completes": true,
+      "success_message": "You have found a bag.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i2853",
+          "count": 1,
+          "contents": [
+            {
+              "item": "oteryn:item.tibia.i3295",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i3039",
+              "count": 1
+            }
+          ]
+        }
+      }
     }
   ]
 }

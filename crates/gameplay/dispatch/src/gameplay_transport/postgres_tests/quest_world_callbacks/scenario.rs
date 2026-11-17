@@ -28,7 +28,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
     admin_override: Option<String>,
 ) -> TestResult {
-    use super::super::{outlaw_camp_oven, outlaw_camp_power};
+    use super::super::{outlaw_camp_oven, outlaw_camp_power, outlaw_camp_reward};
     let oven = match name {
         outlaw_camp_oven::CASE => Some(2535),
         outlaw_camp_oven::LIT_CASE => Some(2536),
@@ -691,6 +691,8 @@ fn scenario_case(
         super::super::questpc8_life_ring::world()?
     } else if name == "authored-life-ring-bridge" {
         super::super::questpc8_life_ring_bridge::world()?
+    } else if name == outlaw_camp_reward::CASE {
+        outlaw_camp_reward::world()?
     } else if let Some(burn) = power {
         outlaw_camp_power::world(burn)?
     } else if let Some(appearance) = oven {
@@ -2805,6 +2807,8 @@ fn scenario_case(
                 &mut admitted,
             ))
             .await?;
+        } else if name == outlaw_camp_reward::CASE {
+            Box::pin(outlaw_camp_reward::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if let Some(burn) = power {
             if burn {
                 Box::pin(outlaw_camp_power::exercise_burn(

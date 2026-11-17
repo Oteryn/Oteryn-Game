@@ -112,6 +112,21 @@ quest_case!(waterfall_rewards, "Waterfall Quest");
 quest_case!(wedding_ring_rewards, "Wedding Ring Quest");
 quest_case!(what_a_foolish_rewards, "What a Foolish Quest");
 
+#[test]
+fn outlaw_camp_untagged_key_chest_grants_key_3304_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    let chest = cases()?
+        .into_iter()
+        .flat_map(|quest| quest.chests)
+        .find(|chest| chest.key_number == Some(3304))
+        .ok_or("Crystal key 3304")?;
+    super::kill_reward_e2e::scenario_thread::run("outlaw-camp-native-key", move || {
+        scenario_inner(&chest, std::slice::from_ref(&chest), Some(admin))
+    })
+}
+
 fn definition(key: &str) -> TypedDefinitionRef {
     TypedDefinitionRef {
         family: "Item".into(),
@@ -133,6 +148,14 @@ pub(super) fn legacy_world_owned(claim: &str) -> TestResult<bool> {
 }
 
 fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
+    scenario_inner(chest, cohort, None)
+}
+
+fn scenario_inner(
+    chest: &Chest,
+    cohort: &[Chest],
+    native_alias_admin: Option<String>,
+) -> TestResult {
     let choices: Vec<_> = cohort
         .iter()
         .filter(|other| other.claim == chest.claim)
@@ -142,7 +165,9 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
             (other.position.0, other.position.1, other.unique)
         })
         .collect();
-    run(async |admin| {
+    run(async |configured| {
+        let native_alias = native_alias_admin.is_some();
+        let admin = native_alias_admin.unwrap_or(configured);
         let h = Harness::create_with_admission_seed(admin, "source_quest_rewards", false, false)
             .await?;
         prepare_current_session(&h).await?;
@@ -160,7 +185,15 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
             )?;
         let generation = controller.active().ok_or("generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
-        let world = source_world_positions(chest.position, &choices, chest.appearance)?;
+        let world = if native_alias {
+            source_world_positions(
+                chest.position,
+                &[(chest.position.0, chest.position.1, 0)],
+                chest.appearance,
+            )?
+        } else {
+            source_world_positions(chest.position, &choices, chest.appearance)?
+        };
         let bound = crate::content::world_reward_claims::bind_embedded_reward_claims(
             world.base().as_ref(),
             &|_| true,

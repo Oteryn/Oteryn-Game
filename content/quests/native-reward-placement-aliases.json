@@ -12,6 +12,18 @@
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua",
         "Committed region-z14-x127-y125.b3: ground351 and chest2472 at32591,32097,14; both entries have no retained unique tag. Original source identity, reward and claim policy are unchanged."
       ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.key.id3304",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 5022,
+      "project_position": { "x": 32623, "y": 32187, "z": 9 },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:539-546",
+        "Committed region-z09-x127-y125.b3: untagged appearance 2472 at ordinal 1, above ground appearance 351."
+      ]
     }
   ]
 }
