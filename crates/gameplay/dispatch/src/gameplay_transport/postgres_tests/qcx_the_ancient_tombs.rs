@@ -28,6 +28,16 @@ fn sarcophagi_grant_their_pieces_once() -> TestResult {
     run("sarcophagi", true)
 }
 
+#[test]
+fn ashmunrah_north_table_assembles_helmet() -> TestResult {
+    super::l6_floor_native::run("l6-floor-assembly-native")
+}
+
+#[test]
+fn ashmunrah_north_table_enchants_helmet() -> TestResult {
+    super::l6_floor_native::run("l6-floor-assembly-native-ruby-stack")
+}
+
 fn run(name: &'static str, rewards: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
