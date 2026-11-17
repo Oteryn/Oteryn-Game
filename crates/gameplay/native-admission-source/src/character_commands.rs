@@ -1034,26 +1034,23 @@ pub async fn run_account_closure_publications<C: ReportClock, S: CommandSource, 
 ) {
     let mut backoff = POLL;
     let mut create_cursor: Option<String> = None;
-    let mut creates_drained = false;
     loop {
-        if !creates_drained {
-            match decider
-                .next_retained_create_receipt(create_cursor.as_deref())
-                .await
-            {
-                Ok(Some((operation, receipt))) => {
-                    if let Ok(body) = std::str::from_utf8(&receipt)
-                        && let Ok(raw) = source
-                            .exchange(Operation::PublishCharacterCommandReceiptV1, body)
-                            .await
-                        && decode_receipt_response(&raw).is_ok()
-                    {
-                        create_cursor = Some(operation);
-                    }
+        match decider
+            .next_retained_create_receipt(create_cursor.as_deref())
+            .await
+        {
+            Ok(Some((operation, receipt))) => {
+                if let Ok(body) = std::str::from_utf8(&receipt)
+                    && let Ok(raw) = source
+                        .exchange(Operation::PublishCharacterCommandReceiptV1, body)
+                        .await
+                    && decode_receipt_response(&raw).is_ok()
+                {
+                    create_cursor = Some(operation);
                 }
-                Ok(None) => creates_drained = true,
-                Err(_) => {}
             }
+            Ok(None) => create_cursor = None,
+            Err(_) => {}
         }
 
         let mut delay = POLL;

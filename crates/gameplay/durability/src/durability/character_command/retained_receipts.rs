@@ -3,7 +3,7 @@ use super::*;
 
 impl DurabilityRoot {
     /// Read the next committed create receipt under current recovery and node fences.
-    /// The caller advances its startup cursor only after Platform accepts these exact bytes.
+    /// The caller advances its reconciliation cursor only after Platform accepts these exact bytes.
     pub async fn next_retained_create_receipt(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -14,7 +14,9 @@ impl DurabilityRoot {
         if !source_authority_valid(source) || after.is_some_and(|id| !uuid_v7(id)) {
             return Err(DurabilityError::InvalidStoredState);
         }
-        let recovery = authority.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
         let proof = proof.clone();
         let source = source.to_owned();
         let after = after.map(str::to_owned);

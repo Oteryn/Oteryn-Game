@@ -239,7 +239,9 @@ historical receipt; do not reissue it as a new creation. Historical tag-2/tag-3
 receipts remain verifiable, and stored v1 create receipts remain republishable.
 
 Game reconciles retained committed create receipts independently of the pending
-intent feed at command-publisher startup. Each read revalidates the recovery fence
+intent feed at command-publisher startup and on subsequent bounded passes.
+An exhausted cursor restarts the scan, covering a late commit from the cutover
+window; already accepted receipts replay idempotently. Each read revalidates the recovery fence
 and current node incarnation, and verifies the receipt's source, operation,
 immutable row fields and canonical v1 encoding. The bounded publisher advances its
 operation cursor only after an accepted v1 receipt acknowledgement; a publication
