@@ -92,6 +92,8 @@ fn scenario() -> TestResult {
         .await?;
         assert_eq!(today, 0);
         tx.rollback().await?;
+        drop(authority);
+        drop(seal);
         h.cleanup().await
     })
 }
@@ -188,6 +190,9 @@ fn junkar_scenario() -> TestResult {
             0
         );
         tx.rollback().await?;
+        drop(owner);
+        drop(authority);
+        drop(seal);
         h.cleanup().await
     })
 }
