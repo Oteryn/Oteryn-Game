@@ -18,7 +18,7 @@ class ZarifanContactTest(unittest.TestCase):
                           for name, text in files.items() if name.startswith("placements-")
                           for r in json.loads(text)["records"]
                           if r["declaration"].get("block_solid_contact", False)},
-                         {"oteryn:npc.gnommander", "oteryn:npc.vescu", "oteryn:npc.zarifan"})
+                         {"oteryn:npc.bron", "oteryn:npc.gnommander", "oteryn:npc.vescu", "oteryn:npc.zarifan"})
         candidate = next(c for c in json.loads(cp.CANDIDATES.read_text())["candidates"]
                          if c["identity"]["key"] == "oteryn:npc.zarifan")
         self.assertEqual(candidate["movement"]["walk_interval_ms"], 2000)

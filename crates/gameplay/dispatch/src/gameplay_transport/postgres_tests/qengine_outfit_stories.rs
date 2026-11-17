@@ -885,6 +885,30 @@ pub(super) async fn exercise(
             ],
             136,
         ),
+        // TibiaWiki `Barbarian_Outfits_Quest/Spoiler`: Bron's wig and Ajax's axe near Northport.
+        "qengine-rewards-qb-barbarian-story" => (
+            "barbarian",
+            &[
+                ("bron-start", None, None, None),
+                ("ajax-please", None, None, None),
+                ("ajax-wait", None, None, None),
+                ("bron-person", None, None, None),
+                ("ajax-gelagos", None, None, None),
+                ("bron-spirit", Some((5884, 1)), None, None),
+                ("bron-task", None, None, None),
+                ("bron-cloth", Some((5911, 50)), None, None),
+                ("bron-yarn", Some((5886, 10)), None, None),
+                ("bron-sweat", Some((5885, 1)), None, None),
+                ("bron-wig", None, None, Some(2)),
+                ("ajax-axe-start", None, None, None),
+                ("ajax-ore", Some((5880, 100)), None, None),
+                ("ajax-crude-iron", Some((5892, 1)), None, None),
+                ("ajax-fangs", Some((5893, 50)), None, None),
+                ("ajax-leather", Some((5876, 50)), None, None),
+                ("ajax-axe", None, None, Some(1)),
+            ],
+            143,
+        ),
         // TibiaWiki `Citizen_Outfits_Quest/Spoiler`: Lubo and Hanna on the mainland.
         "qengine-rewards-qb-citizen-story" => (
             "citizen",
@@ -986,6 +1010,9 @@ pub(super) async fn exercise(
                 .iter()
                 .map(amount)
                 .collect();
+        }
+        if family == "barbarian" && *suffix == "bron-cloth" {
+            expected_take = [(5910, 50), (5911, 50)].iter().map(amount).collect();
         }
         if family == "pirate" && *suffix == "hat" {
             expected_take = [(6101, 1), (6102, 1), (6100, 1), (6099, 1)]
@@ -1561,6 +1588,12 @@ pub(super) async fn exercise(
         } else {
             ["oteryn:npc.sandra", "oteryn:npc.myra", "oteryn:npc.zoltan"]
         };
+        let actors = super::classic_quests::install(owner, admitted, keys).await?;
+        for (key, actor) in keys.into_iter().zip(actors) {
+            npcs.insert(key.to_owned(), actor);
+        }
+    } else if family == "barbarian" {
+        let keys = ["oteryn:npc.ajax", "oteryn:npc.bron"];
         let actors = super::classic_quests::install(owner, admitted, keys).await?;
         for (key, actor) in keys.into_iter().zip(actors) {
             npcs.insert(key.to_owned(), actor);

@@ -35,6 +35,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.ajax",
+      "greet": "Greetings, |PLAYERNAME|.",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:81:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
       "npc": "oteryn:npc.alesar",
       "greet": "Greetings, |PLAYERNAME|.",
       "farewell": "Finally.",
@@ -164,6 +175,17 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/broken_servant_sentry.lua:125:sha256:d46dec4a9ad615539e6e918d650770a9e7dbe86777e4e9c842bc94c2f8380796",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.bron",
+      "greet": "Greetings, |PLAYERNAME|.",
+      "farewell": "Take care, |PLAYERNAME|!",
+      "walkaway": "Take care!",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:81:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bron.lua:192:sha256:81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bron.lua:193:sha256:81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0"
       ]
     },
     {

@@ -115,3 +115,36 @@ Known global-parity gaps (later batches or the server lane):
   random-outcome NPC exchange.
 - The full-outfit achievement on owning both addons, from any source, has
   been sent to the server lane.
+
+## QB-barbarian — Barbarian addons (Bron, Ajax)
+
+Gap: Bron and Ajax had no placement and no addon conversation. New generator module
+`tools/content-schema/quest-authoring/qb_barbarian.py`, registered in `qengine_rewards.py`,
+writes both routes from the Bron and Ajax donors; Bron 32366,31628,7 and Ajax 32417,31583,7 are
+placed at their single agreeing promotion-candidate cells (Bron as a source-backed `block_solid_contact`: his donor cell holds a BlockSolid item and no adjacent cell is clear single-item ground; `test_m38_zarifan.py` pins the exception set with Bron added). Global wins over the donors.
+
+| Step | TibiaWiki | Global mechanic |
+|---|---|---|
+| Start | `Barbarian_Outfits_Quest/Spoiler` | Bron asks about "violence"; two confirmations start the task |
+| Provocation | `Barbarian_Outfits_Quest/Spoiler` | Ajax: "mine", three times "no", "say please", then "yes"; the player must then stay silent for one hour (3601 s) |
+| Report and Gelagos | `Barbarian_Outfits_Quest/Spoiler` | Ajax reports; Bron hears "Brother is right. Fist not always good."; "person" and "yes"; Ajax names the fighting spirit |
+| Wig (addon 2) | `Barbarian_Outfits_Quest/Spoiler` | Bron takes a fighting spirit, then 50 red and 50 green pieces of cloth, 10 spools of yarn and a warrior's sweat, and gives the wig |
+| Axe (addon 1) | `Barbarian_Outfits_Quest/Spoiler` | Ajax takes 100 iron ore, a huge chunk of crude iron, 50 perfect behemoth fangs and 50 lizard leathers, then forges the axe two hours later (7201 s) |
+| Outfit | `Barbarian_Outfits` | Premium outfit (looktype 143 male, 147 female); addons from this quest |
+
+- The Brutal Politeness achievement is granted by the generic full-outfit table, not here.
+- Items are the catalogue ids 5884, 5910, 5911, 5886, 5885, 5880, 5892, 5893 and 5876.
+- Tracks are the existing `u7_8/barbarian_outfits/barbarian_addon` and `barbarian_addon_wait_timer`.
+
+Not modelled (reported, not faked):
+
+- Ajax setting the player on fire when he accepts "please" (no apply-condition in the callback schema).
+- The one-hour silence restarting when the player talks to Ajax early (the timer is only read).
+- The stage-dependent greetings of Ajax ("You back...") and Bron ("Oh no! Was that really me?"); the
+  engine has no greeting-triggered callback, so Ajax's report is bound to "back" or "brother" and
+  Bron's follow-up to "yes".
+- Ajax's "Axe is not done yet!" reply before the wait ends (the callback is refused instead).
+
+Tests: `postgres_tests/qb_barbarian.rs` (placement index, the 3601 s and 7201 s waits and
+`qengine-rewards-qb-barbarian-story` on PostgreSQL in CI), `tests/npcs/qb_barbarian_npcs.rs`
+and `test_qb_barbarian_placements.py`.
