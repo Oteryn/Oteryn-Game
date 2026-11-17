@@ -1,6 +1,6 @@
 //! House catalogue, auctions, access lists and reviewed ownership transfers.
 use super::*;
-use crate::play::PlayLink;
+
 use bevy::{
     input::keyboard::KeyboardInput,
     input_focus::tab_navigation::{TabGroup, TabIndex},
@@ -328,34 +328,28 @@ fn finish(
         }
         state.redraw = true;
     } else {
-        if submit(&play.link, model, &state.fields, values, selection) {
+        if submit(
+            &play.link,
+            state.activity_revision,
+            model,
+            &state.fields,
+            values,
+            selection,
+        ) {
             state.model = None;
         }
         state.review = None;
     }
 }
 pub(super) fn submit(
-    link: &PlayLink,
+    link: &crate::play::PlayLink,
+    revision: u64,
     expected: &Panel,
     expected_fields: &[String; 7],
     fields: [String; 7],
     selection: usize,
 ) -> bool {
-    let current = link.house_panel();
-    if current.model != *expected
-        || current.fields != *expected_fields
-        || fields
-            .iter()
-            .any(|value| !oteryn_client_ui::modal_dialogs::TextEditor::accepts(value, 8192))
-        || current.model.pending.is_some()
-    {
-        return false;
-    }
-    for (index, value) in fields.into_iter().enumerate() {
-        link.house_edit(index, value);
-    }
-    link.house_request(selection);
-    true
+    link.house_submit(revision, expected, expected_fields, fields, selection)
 }
 
 pub(super) fn build(

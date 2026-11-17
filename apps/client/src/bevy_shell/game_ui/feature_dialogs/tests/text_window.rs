@@ -165,6 +165,31 @@ fn house_list_window() -> TestResult {
 }
 
 #[test]
+fn house_query_rejects_identical_panel_from_new_activity() {
+    let (link, mut receiver, _) = crate::play::play_channel();
+    link.bevy_house_list_fixture();
+    let expected = link.house_panel();
+    link.bevy_house_list_fixture();
+    let current = link.house_panel();
+    assert_ne!(expected.activity_revision, current.activity_revision);
+    assert_eq!(expected.model, current.model);
+    assert_eq!(expected.fields, current.fields);
+    let mut drafts = expected.fields.clone();
+    drafts[4] = "origin member".into();
+    drafts[6] = "CONFIRM".into();
+    assert!(!super::super::houses::submit(
+        &link,
+        expected.activity_revision,
+        &expected.model,
+        &expected.fields,
+        drafts,
+        0
+    ));
+    assert_eq!(link.house_panel().fields, current.fields);
+    assert!(receiver.try_recv().is_err());
+}
+
+#[test]
 fn house_list_window_sends_existing_list_intent() -> TestResult {
     use crate::{combat_input::PlayCommand, play::play_channel};
     use oteryn_protocol_oteryn::house as wire;
@@ -174,7 +199,14 @@ fn house_list_window_sends_existing_list_intent() -> TestResult {
     let mut fields = expected.fields.clone();
     fields[4] = "02020202-0202-7202-8202-020202020202\n03030303-0303-7303-8303-030303030303".into();
     fields[6] = "CONFIRM".into();
-    super::super::houses::submit(&link, &expected.model, &expected.fields, fields, 3);
+    super::super::houses::submit(
+        &link,
+        expected.activity_revision,
+        &expected.model,
+        &expected.fields,
+        fields,
+        3,
+    );
     let PlayCommand::Feature(command) = receiver.try_recv()? else {
         return Err("list intent".into());
     };
@@ -187,6 +219,7 @@ fn house_list_window_sends_existing_list_intent() -> TestResult {
     // A response invalidates the old descriptor; it cannot submit a second mutation.
     super::super::houses::submit(
         &link,
+        expected.activity_revision,
         &expected.model,
         &expected.fields,
         expected.fields.clone(),
@@ -930,11 +963,25 @@ fn house_browser_bid_sends_existing_auction_intent() -> TestResult {
     let expected = link.house_panel();
     let mut fields = expected.fields.clone();
     fields[3] = "1250".into();
-    super::super::houses::submit(&link, &expected.model, &expected.fields, fields.clone(), 2);
+    super::super::houses::submit(
+        &link,
+        expected.activity_revision,
+        &expected.model,
+        &expected.fields,
+        fields.clone(),
+        2,
+    );
     assert!(receiver.try_recv().is_err());
     let expected = link.house_panel();
     fields[6] = "CONFIRM".into();
-    super::super::houses::submit(&link, &expected.model, &expected.fields, fields, 2);
+    super::super::houses::submit(
+        &link,
+        expected.activity_revision,
+        &expected.model,
+        &expected.fields,
+        fields,
+        2,
+    );
     let PlayCommand::Feature(command) = receiver.try_recv()? else {
         return Err("auction intent".into());
     };
