@@ -542,7 +542,8 @@ async fn resting_bonuses(
             return Err("P10 unopened refusal changed daily state or item custody".into());
         }
         row.pass("unopened-claim-refused", initial);
-        let (inside, outside) = resting_tiles(&mut client, world, tile(client.world_spatial().actor_position)?).await?;
+        let start = tile(client.world_spatial().actor_position)?;
+        let (inside, outside) = resting_tiles(&mut client, world, start).await?;
         resting_walk(&mut client, world, inside).await?;
         let opened = client.session_mut().use_object(b"oteryn:placement/daily-reward-shrine", 0).await?;
         if opened.disposition != UseDisposition::Committed {
