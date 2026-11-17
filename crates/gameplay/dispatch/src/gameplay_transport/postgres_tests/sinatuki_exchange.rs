@@ -188,7 +188,16 @@ fn scenario() -> TestResult {
                 fixture.commit().await?;
             }
             let outcome = talk(&mut owner, deps.actor, command(id), npc, "nupi").await?;
-            assert_eq!(outcome.conversation.ok_or("exchange reply")?.lines, [reply]);
+            assert_eq!(
+                outcome
+                    .conversation
+                    .ok_or_else(|| format!(
+                        "missing exchange reply for command {id}, inventory_changed={}",
+                        outcome.inventory_changed
+                    ))?
+                    .lines,
+                [reply]
+            );
             assert_eq!(outcome.inventory_changed, changed);
             assert_inventory(&h, expected).await?;
         }
