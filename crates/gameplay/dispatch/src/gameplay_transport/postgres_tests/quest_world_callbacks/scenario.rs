@@ -640,7 +640,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if name == "authored-wrath-crystals" {
+    let world = if name == super::super::lersatio_use::NAME {
+        super::super::lersatio_use::world(&callback)?
+    } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::world()?
     } else if name == "nx6-wayfarer" {
         super::super::questpc8_wrath_source_dragon::world()?
@@ -1854,7 +1856,9 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if m03_use {
+        if name == super::super::lersatio_use::NAME {
+            super::super::lersatio_use::exercise(&mut owner, &mut admitted).await?;
+        } else if m03_use {
             Box::pin(super::super::qengine_m03_use::exercise(
                 &mut owner,
                 &mut admitted,
