@@ -1703,3 +1703,14 @@ fn m54_citizen_source_aliases_require_both_local_sagas() -> Result<(), NpcRuleEr
     );
     Ok(())
 }
+
+#[test]
+fn postman_mission_dialogue_is_live() -> Result<(), NpcRuleError> {
+    let catalogue = NpcRuleCatalog::runtime()?;
+    assert!(
+        catalogue
+            .program("oteryn:quest.the_postman_missions_quest")
+            .is_some()
+    );
+    Ok(())
+}
