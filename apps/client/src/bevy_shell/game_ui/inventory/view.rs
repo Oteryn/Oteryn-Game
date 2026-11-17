@@ -337,23 +337,6 @@ fn slot_node(
             ))
             .id();
         commands.entity(entity).add_child(icon);
-        if item.count.get() > 1 {
-            let count = commands
-                .spawn((
-                    source::text(
-                        item.count.to_string(),
-                        source::font(skins.font.clone(), false),
-                    ),
-                    Node {
-                        position_type: PositionType::Absolute,
-                        right: px(1.),
-                        bottom: px(0.),
-                        ..default()
-                    },
-                ))
-                .id();
-            commands.entity(entity).add_child(count);
-        }
     } else if let Some(empty) = empty {
         label(commands, skins, entity, empty);
     }

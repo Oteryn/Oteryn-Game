@@ -149,6 +149,8 @@ A red or cancelled run costs a full gate cycle (about 12 minutes) and, with
   `cargo fmt --all --check`, strict Clippy and the unit tests of every changed
   crate, plus the content and pin regeneration when you touched content
   (`local-checks.md` has the commands).
+- Run `python3 tools/repository/reliability_checklist.py` and every check it
+  lists; it maps the diff to failures that already reached a gate twice.
 - Push once, when all of them pass. Collect follow-up fixes into the next push
   instead of pushing each one; a new push cancels the run in progress.
 - Merge `origin/main` into the branch only when it conflicts, when the PR is

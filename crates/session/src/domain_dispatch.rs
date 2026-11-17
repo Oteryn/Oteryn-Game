@@ -23,6 +23,69 @@ impl<S: SessionStream> Session<S> {
             }
         }
         match domain_id {
+            stash::DOMAIN_STASH
+            | market::STATE_DOMAIN_MARKET
+            | cyclopedia_tracker::STATE_DOMAIN_CYCLOPEDIA_TRACKER => {
+                if !capability_of_domain(domain_id).is_some_and(|id| self.is_selected(id)) {
+                    return Err(SessionError::UnselectedDomain { domain_id });
+                }
+                let revision = self
+                    .gated_revisions
+                    .iter()
+                    .find(|(id, _)| *id == domain_id)
+                    .map_or(0, |(_, revision)| *revision);
+                check_delta(&delta, 1, revision)?;
+                let malformed = || SessionError::Protocol(FoundationProtocolError::MalformedFrame);
+                let payload = match domain_id {
+                    stash::DOMAIN_STASH => {
+                        stash::decode_stash_reply(delta.payload).map_err(|_| malformed())?;
+                        delta.payload.to_vec()
+                    }
+                    market::STATE_DOMAIN_MARKET => {
+                        market::decode_reply(delta.payload).map_err(|_| malformed())?;
+                        delta.payload.to_vec()
+                    }
+                    _ => {
+                        let tracker = cyclopedia_tracker::decode_snapshot(delta.payload)
+                            .ok_or_else(malformed)?;
+                        let previous = self
+                            .gated_snapshot(domain_id)
+                            .ok_or(SessionError::MissingDomain(domain_id))?;
+                        let (mut bestiary, mut bosstiary) =
+                            cyclopedia_tracker::decode_domain_snapshot(&previous.payload)
+                                .ok_or_else(malformed)?;
+                        if tracker.boss {
+                            bosstiary = tracker;
+                        } else {
+                            bestiary = tracker;
+                        }
+                        cyclopedia_tracker::encode_domain_snapshot(&bestiary, &bosstiary)
+                            .ok_or_else(malformed)?
+                    }
+                };
+                let snapshot = GatedSnapshot {
+                    domain_id,
+                    snapshot_type: 1,
+                    revision: new_revision,
+                    payload,
+                };
+                self.gated_snapshots.retain(|row| row.domain_id != domain_id);
+                self.gated_snapshots.push(snapshot.clone());
+                match self
+                    .gated_revisions
+                    .iter_mut()
+                    .find(|(id, _)| *id == domain_id)
+                {
+                    Some((_, revision)) => *revision = new_revision,
+                    None => self.gated_revisions.push((domain_id, new_revision)),
+                }
+                Ok(SessionEvent::GatedSnapshotReplaced(applied(
+                    server_sequence,
+                    base_revision,
+                    new_revision,
+                    snapshot,
+                )))
+            }
             103 => crate::cast_chat::apply(self, server_sequence, payload),
             15 => crate::analyser_transport::apply(self, server_sequence, payload),
             100 => crate::spell_catalog::apply(self, server_sequence, payload),
@@ -326,9 +389,10 @@ impl<S: SessionStream> Session<S> {
                     item_view::DELTA_TYPE_CHARACTER_INVENTORY_V1,
                     self.inventory_revision,
                 )?;
-                let value = item_view::decode_character_inventory_with_equip_drop(
+                let value = item_view::decode_character_inventory_with_appearances(
                     delta.payload,
                     self.is_selected(item_view::CAPABILITY_ITEM_EQUIP_DROP_V1),
+                    self.is_selected(item_view::CAPABILITY_ITEM_APPEARANCE_V1),
                 )
                 .map_err(SessionError::ItemView)?;
                 self.inventory = Some(value.clone());
@@ -346,8 +410,11 @@ impl<S: SessionStream> Session<S> {
                     item_view::DELTA_TYPE_OPEN_CONTAINER_V1,
                     self.container_revision,
                 )?;
-                let value = item_view::decode_open_container(delta.payload)
-                    .map_err(SessionError::ItemView)?;
+                let value = item_view::decode_open_container_with_appearances(
+                    delta.payload,
+                    self.is_selected(item_view::CAPABILITY_ITEM_APPEARANCE_V1),
+                )
+                .map_err(SessionError::ItemView)?;
                 self.open_container = Some(value.clone());
                 self.container_revision = new_revision;
                 Ok(SessionEvent::OpenContainer(applied(

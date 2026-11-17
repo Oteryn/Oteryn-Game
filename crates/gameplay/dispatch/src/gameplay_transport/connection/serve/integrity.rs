@@ -196,10 +196,19 @@ pub(super) fn refusal(session: &ServeState, command_type: u32) -> Dispatch {
             0,
         ),
         oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT => {
-            encode_use_result(UseDisposition::Exhausted).unwrap_or_default()
+            return Dispatch::Reply(
+                CommandStatus::Accepted,
+                encode_use_result(UseDisposition::Exhausted).unwrap_or_default(),
+            );
         }
         oteryn_protocol_oteryn::actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT => {
-            encode_spell_cast_result(SpellCastDisposition::CoolingDown)
+            return Dispatch::Reply(
+                CommandStatus::Accepted,
+                encode_spell_cast_result(SpellCastDisposition::CoolingDown),
+            );
+        }
+        oteryn_protocol_oteryn::item_view::COMMAND_TYPE_ITEM_MOVE_INTENT => {
+            return Dispatch::ItemMove(ItemMoveOutcome::Rejected, Vec::new(), None);
         }
         _ => Vec::new(),
     };

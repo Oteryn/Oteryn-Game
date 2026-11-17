@@ -21,6 +21,24 @@ impl PlayView {
         &self.scene
     }
 
+    #[cfg(feature = "bevy-shell")]
+    pub(crate) fn prepare_item_icons<'a>(
+        &mut self,
+        items: impl Iterator<Item = &'a oteryn_session::ItemEntry>,
+    ) -> Result<(), BatchError> {
+        if self.scene.prepare_item_icons(items)? {
+            self.weather_scene();
+            self.light_scene()?;
+            self.project_presentation(std::time::Instant::now())?;
+        }
+        Ok(())
+    }
+
+    #[cfg(all(test, feature = "bevy-shell"))]
+    pub(crate) fn prime_icon_assets(&mut self, root: std::path::PathBuf) {
+        self.scene.prime_visual_assets(root);
+    }
+
     /// The floor the camera shows.
     #[must_use]
     pub const fn floor(&self) -> i16 {

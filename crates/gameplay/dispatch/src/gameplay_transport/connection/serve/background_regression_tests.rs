@@ -15,6 +15,7 @@ struct MoveOwner {
 
 fn item(tag: u8) -> ViewItem {
     ViewItem {
+        appearance_id: 0,
         key: ItemKey::Instance([tag; 16]),
         item_definition_ref: NonZeroU32::MIN,
         count: NonZeroU32::MIN,

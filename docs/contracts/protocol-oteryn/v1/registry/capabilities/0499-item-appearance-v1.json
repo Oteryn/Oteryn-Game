@@ -1,0 +1,13 @@
+{
+  "id": 499,
+  "name": "ITEM_APPEARANCE_V1",
+  "owner_decision": "ItemEntry appearance compatibility review; owner pre-assigned capability 499",
+  "owner": "Existing item-view owners",
+  "requires": [
+    4
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Offered exactly where ITEM_VIEW_MOVE_V1 (4) is offered. Selected 499 adds ItemEntryV1 field 5 and its larger byte bounds in domains 9, 11 and 14; without 499, legacy bytes and bounds are retained."
+}

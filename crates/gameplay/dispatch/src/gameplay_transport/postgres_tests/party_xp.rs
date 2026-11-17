@@ -65,6 +65,7 @@ pub(super) enum Case {
     CharmBless,
     CharmParry,
     T94,
+    CharmSecondary,
 }
 impl Case {
     fn forge(self) -> bool {
@@ -201,7 +202,7 @@ pub(super) fn run(case: Case) -> TestResult {
                     // recovery directory, which concurrent cases must not share.
                     let tag = format!("party_xp_{}", case as u8);
                     let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
-                    let (controller, pin) = if matches!(case, Case::Eqmod2) {
+                    let (controller, pin) = if matches!(case, Case::Eqmod2 | Case::CharmSecondary) {
                         super::equipment_mods::activate(world)?
                     } else {
                         crate::content::native_gameplay::test_support::activated_with_loot_tables(
@@ -337,7 +338,10 @@ async fn scenario(
             key
         };
         if y == 12
-            && !matches!(case, Case::Concurrent | Case::OneHit | Case::Eqmod2)
+            && !matches!(
+                case,
+                Case::Concurrent | Case::OneHit | Case::Eqmod2 | Case::CharmSecondary
+            )
             && !matches!(task_board_case, Case::TaskBoardTalisman)
         {
             continue;
@@ -598,6 +602,9 @@ async fn scenario(
     }
     if matches!(case, Case::Stamina) {
         return super::hunting_stamina::qualify(&mut owner, h, &players).await;
+    }
+    if matches!(case, Case::CharmSecondary) {
+        return super::all_charms_secondary::qualify(&mut owner, h, &players).await;
     }
     if matches!(case, Case::Eqmod2) {
         return super::equipment_mods::qualify(&mut owner, h, &players).await;

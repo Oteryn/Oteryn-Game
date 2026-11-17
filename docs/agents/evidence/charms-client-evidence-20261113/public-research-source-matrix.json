@@ -1,0 +1,530 @@
+{
+  "schema": "OTERYN_CHARMS_PUBLIC_RESEARCH/v1",
+  "created_utc": "2026-11-13T11:34:32.477753+00:00",
+  "source_head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+  "predecessor_pr_head": "f9ebce83c0540948b7e456170716e7e8ef952aec",
+  "runtime_patch_included": false,
+  "game_actions_by_worker": false,
+  "current_global_combat_parity_verified": false,
+  "mechanic_status_promotions": [],
+  "sources": [
+    {
+      "id": "OFFICIAL-AGONY",
+      "url": "https://www.tibia.com/gameguides/?section=characters&subtopic=manual",
+      "source_class": "OFFICIAL_MANUAL",
+      "published_date": null,
+      "accessed_utc": "2026-11-13T11:34:32.477753+00:00",
+      "read_method": "web indexed official text, section5.1.10",
+      "supports": [
+        "Agony cannot be cured, blocked or resisted; the player endures until expiry."
+      ],
+      "does_not_establish": [
+        "No Cleanse repro trace, internal immunity algorithm or condition-instance selection."
+      ],
+      "timestamps": [],
+      "current_global_runtime_verified": false
+    },
+    {
+      "id": "OFFICIAL-HEX",
+      "url": "https://www.tibia.com/news/?id=8935&subtopic=newsarchive",
+      "source_class": "OFFICIAL_CHANGELOG",
+      "published_date": "2026-08-25",
+      "accessed_utc": "2026-11-13T11:34:32.477753+00:00",
+      "read_method": "web indexed official article",
+      "supports": [
+        "Cleanse can remove Hex and grant corresponding immunity."
+      ],
+      "does_not_establish": [
+        "Agony support, reproc refresh, simultaneous conditions and RNG ordering not specified."
+      ],
+      "timestamps": [],
+      "current_global_runtime_verified": false
+    },
+    {
+      "id": "CLEANSE-QA",
+      "url": "https://www.tibiaqa.com/36769/how-cleanse-works-after-the-2024-charm-overhaul-winter-update",
+      "source_class": "COMMUNITY_EXPLANATION",
+      "published_date": "2024-12-29",
+      "accessed_utc": "2026-11-13T11:34:32.477753+00:00",
+      "read_method": "web text; Yalthus question/accepted answer",
+      "supports": [
+        "Reports11sec immunity, one random condition and trigger from assigned creature even when condition came from elsewhere."
+      ],
+      "does_not_establish": [
+        "No controlled footage/logs provided in inspected answer; condition list is not authority excluding later Hex change; no reproc proof."
+      ],
+      "timestamps": [],
+      "current_global_runtime_verified": false
+    },
+    {
+      "id": "LEECH-CREATOR",
+      "url": "https://www.youtube.com/watch?v=MxiCFl3OT_8",
+      "source_class": "PRIMARY_CREATOR_TRANSCRIPT",
+      "published_date": null,
+      "accessed_utc": "2026-11-13T11:34:32.477753+00:00",
+      "read_method": "YouTube page verified title/channel Alytreta; exported pt auto-generated transcript",
+      "supports": [
+        "Creator describes timestamped hit/heal collection and AoE target-count dilution.",
+        "Creator describes cave-rat overkill healing larger than its remaining/max HP on test server."
+      ],
+      "does_not_establish": [
+        "Auto captions not manually checked against every frame; no exact AoE integer-rounding specification.",
+        "Pre2024 context (linked2022-07-07) uses old4%/2% charms, not current stage values; not currentGlobal parity."
+      ],
+      "timestamps": [
+        {
+          "start_seconds": 646,
+          "end_seconds": 928,
+          "verification": "AUTO_TRANSCRIPT_READ",
+          "topic": "data collection and1/2/3-target examples; approximate curves"
+        },
+        {
+          "start_seconds": 1308,
+          "end_seconds": 1396,
+          "verification": "AUTO_TRANSCRIPT_READ",
+          "topic": "test-server cave-rat overkill example"
+        }
+      ],
+      "current_global_runtime_verified": false
+    },
+    {
+      "id": "LEECH-POST",
+      "url": "https://www.reddit.com/r/TibiaMMO/comments/vtilgh/",
+      "source_class": "COMMUNITY_VIDEO_INTERPRETATION",
+      "published_date": "2022-07-07",
+      "accessed_utc": "2026-11-13T11:34:32.477753+00:00",
+      "read_method": "web post text",
+      "supports": [
+        "Links Alytreta video and proposes gearPercent*(1+0.1*(N-1))/N."
+      ],
+      "does_not_establish": [
+        "The printed3/4-target denominators are internally inconsistent; not a verified rounding oracle or creator-authored formula."
+      ],
+      "timestamps": [],
+      "current_global_runtime_verified": false
+    },
+    {
+      "id": "PARRY-CREATOR",
+      "url": "https://www.reddit.com/r/TibiaMMO/comments/1dcn54n/",
+      "source_class": "PRIMARY_CREATOR_SELF_REPORT",
+      "published_date": "2024-06-10",
+      "accessed_utc": "2026-11-13T11:34:32.477753+00:00",
+      "read_method": "web post; u/Venitze_king",
+      "supports": [
+        "Creator links own six-video frame-by-frame comparisons of Parry against elementals in hunting contexts."
+      ],
+      "does_not_establish": [
+        "No controlled armor isolation or mana-drain-only experiment identified in inspected post; effectiveness ranking does not qualify arithmetic."
+      ],
+      "timestamps": [],
+      "current_global_runtime_verified": false
+    },
+    {
+      "id": "PARRY-PLAYLIST",
+      "url": "https://youtube.com/playlist?list=PL8RHZhXFhc7NSjGT5_0QIsmjJJkxgdu2t",
+      "source_class": "PRIMARY_CREATOR_VIDEO_LEAD",
+      "published_date": null,
+      "accessed_utc": "2026-11-13T11:34:32.477753+00:00",
+      "read_method": "creator link verified; web playlist fetch throttled",
+      "supports": [
+        "Six-video comparison playlist locator retained."
+      ],
+      "does_not_establish": [
+        "Individual frames/timestamps not inspected; no armor/mana-drain claim promoted."
+      ],
+      "timestamps": [],
+      "current_global_runtime_verified": false
+    },
+    {
+      "id": "PARRY-VIDEO",
+      "url": "https://www.youtube.com/watch?v=7-NYvD2kjYI",
+      "source_class": "PRIMARY_CREATOR_VIDEO_LEAD",
+      "published_date": null,
+      "accessed_utc": "2026-11-13T11:34:32.477753+00:00",
+      "read_method": "YouTube page title Testing the charm Parry, Tibia Guides,4:31; transcript unavailable",
+      "supports": [
+        "Direct test-video identity and availability verified; linked by creator in2020 help thread."
+      ],
+      "does_not_establish": [
+        "Playback content not frame-qualified; no armor or mana-drain outcome claimed."
+      ],
+      "timestamps": [],
+      "current_global_runtime_verified": false
+    },
+    {
+      "id": "PARRY-SECONDARY",
+      "url": "https://www.reddit.com/r/TibiaMMO/comments/1trziuw/",
+      "source_class": "COMMUNITY_ASSERTION",
+      "published_date": null,
+      "accessed_utc": "2026-11-13T11:34:32.477753+00:00",
+      "read_method": "web comment u/SmokedSalmonMan",
+      "supports": [
+        "Comment claims premitigation reflection minus monster armor, unaffected by physical resistance."
+      ],
+      "does_not_establish": [
+        "No experiment/log/footage supports that comment in inspected excerpt; independent claim only."
+      ],
+      "timestamps": [],
+      "current_global_runtime_verified": false
+    },
+    {
+      "id": "CARNAGE-QA",
+      "url": "https://www.tibiaqa.com/36586/how-does-charm-carnage-range-work",
+      "source_class": "COMMUNITY_VIDEO_INTERPRETATION",
+      "published_date": "2024-11-27",
+      "accessed_utc": "2026-11-13T11:34:32.477753+00:00",
+      "read_method": "web answer faulklls and dated video-link comment",
+      "supports": [
+        "Reports four cardinal neighbours, excluding diagonals; links Vda_pedro demonstration at34:02."
+      ],
+      "does_not_establish": [
+        "No recursion, kill-credit, simultaneous-death or loot attribution qualification."
+      ],
+      "timestamps": [],
+      "current_global_runtime_verified": false
+    },
+    {
+      "id": "CARNAGE-VIDEO",
+      "url": "https://www.youtube.com/watch?v=1Bs8nL7D8UM&t=2042s",
+      "source_class": "PRIMARY_CREATOR_VIDEO_LEAD",
+      "published_date": null,
+      "accessed_utc": "2026-11-13T11:34:32.477753+00:00",
+      "read_method": "YouTube title/channel Vda_pedro verified;51:31; transcript unavailable",
+      "supports": [
+        "Practical-charms tutorial exists; linked timestamp opens the video."
+      ],
+      "does_not_establish": [
+        "34:02 is source-linked, not independently frame-qualified in this batch; no chain or attribution claim."
+      ],
+      "timestamps": [
+        {
+          "start_seconds": 2042,
+          "end_seconds": null,
+          "verification": "SOURCE_LINK_ONLY",
+          "topic": "Carnage geometry demonstration reported by TibiaQA"
+        }
+      ],
+      "current_global_runtime_verified": false
+    },
+    {
+      "id": "CALC-TIBIAPAL",
+      "url": "https://tibiapal.com/scripts/charm_calculator.js",
+      "source_class": "PRIMARY_PUBLIC_CALCULATOR_CODE",
+      "published_date": null,
+      "accessed_utc": "2026-11-13T11:34:32.477753+00:00",
+      "read_method": "local source inspection by lead; SHA25604a94974bea35657987085fcc8eaa08060d5478b5a744a0993304a590c4b9811",
+      "supports": [
+        "Calculates Overpower min(round(playerHP*.05),round(monsterHP*.08)); Overflux uses mana*.025; elemental monsterHP*.05*sensitivity."
+      ],
+      "does_not_establish": [
+        "No player-level cap, proc rates or stage selector in inspected JS; no Parry/Cleanse/Dodge ordering/leech/Carnage authority."
+      ],
+      "timestamps": [],
+      "current_global_runtime_verified": false
+    },
+    {
+      "id": "CALC-TIBIAMAPS",
+      "url": "https://tibiamaps.io/tools/charms",
+      "source_class": "PRIMARY_PUBLIC_CALCULATOR",
+      "published_date": null,
+      "accessed_utc": "2026-11-13T11:34:32.477753+00:00",
+      "read_method": "lead web inspection, companion https://tibiamaps.io/blog/charms",
+      "supports": [
+        "Seven-elemental assignment optimization uses baseDamage capped level*2, HP/kills/resistance weights."
+      ],
+      "does_not_establish": [
+        "Optimization model is not combat execution; missing mechanics in this research remain unqualified."
+      ],
+      "timestamps": [],
+      "current_global_runtime_verified": false
+    },
+    {
+      "id": "CALC-EXEVOPAN",
+      "url": "https://www.exevopan.com/calculators/charm-damage",
+      "source_class": "PRIMARY_PUBLIC_CALCULATOR",
+      "published_date": null,
+      "accessed_utc": "2026-11-13T11:34:32.477753+00:00",
+      "read_method": "lead web inspection",
+      "supports": [
+        "LowBlow versus elemental average-damage calculator with displayed+10% LowBlow input."
+      ],
+      "does_not_establish": [
+        "No current stage/level qualification or missing interaction mechanics; displayed assumption differs current stage list."
+      ],
+      "timestamps": [],
+      "current_global_runtime_verified": false
+    },
+    {
+      "id": "DISCORD-OWNER-1",
+      "url": "https://discord.com/channels/1431612466818977814/1431633212995670078",
+      "source_class": "OWNER_SUPPLIED_SOURCE_REGISTRY",
+      "published_date": null,
+      "accessed_utc": "2026-11-13T11:34:32.477753+00:00",
+      "read_method": "owner supplied; lead verified server Tibia Analysers",
+      "supports": [
+        "Authorized read source locator."
+      ],
+      "does_not_establish": [
+        "Registry entry only; no mechanic confirmation."
+      ],
+      "timestamps": [],
+      "current_global_runtime_verified": false
+    },
+    {
+      "id": "DISCORD-OWNER-2",
+      "url": "https://discord.com/channels/836592213327609957/1196180558322089984",
+      "source_class": "OWNER_SUPPLIED_SOURCE_REGISTRY",
+      "published_date": null,
+      "accessed_utc": "2026-11-13T11:34:32.477753+00:00",
+      "read_method": "owner supplied; lead verified Kusnier server rules and server-wide Parry search",
+      "supports": [
+        "Authorized read source locator; dedicated server search available."
+      ],
+      "does_not_establish": [
+        "Rules channel is not mechanic evidence; bounded parry armor query0 results does not show no evidence exists."
+      ],
+      "timestamps": [],
+      "current_global_runtime_verified": false
+    },
+    {
+      "id": "DISCORD-LOWBLOW",
+      "url": "https://discord.com/channels/1431612466818977814/1431632652603232397/1566097294812520590",
+      "source_class": "COMMUNITY_ASSERTION",
+      "published_date": "2026-10-31",
+      "accessed_utc": "2026-11-13T11:34:32.477753+00:00",
+      "read_method": "lead CUA observation: Wojtek Agresja15:31; preceding parys90 question",
+      "supports": [
+        "Community claim: activated LowBlow crits all hit mobs in AoE context; useful correlated-roll hypothesis."
+      ],
+      "does_not_establish": [
+        "No supplied footage/logs in this observation; same-type/all-type applicability and exact random-draw correlation remain unqualified."
+      ],
+      "timestamps": [],
+      "current_global_runtime_verified": false
+    }
+  ],
+  "topics": [
+    {
+      "id": "parry",
+      "sources": [
+        "PARRY-CREATOR",
+        "PARRY-PLAYLIST",
+        "PARRY-VIDEO",
+        "PARRY-SECONDARY"
+      ],
+      "decision": "PARTIAL_CORROBORATION_NOT_QUALIFIED",
+      "source_pointers": [
+        [
+          "crates/gameplay/dispatch/src/gameplay_transport/attack/charm_combat.rs",
+          227
+        ],
+        [
+          "crates/gameplay/dispatch/src/gameplay_transport/attack/charm_combat.rs",
+          395
+        ],
+        [
+          "crates/gameplay/dispatch/src/gameplay_transport/attack/player_block.rs",
+          194
+        ]
+      ],
+      "comparison": "Current damage_amount applies armor iff reduced_by_armor and bypasses resistance iff ignores_resistances. Health reflection calls it; native incoming_conditions explicitly guards reflection with !mana. Secondary armor claim is compatible with catalogue flags, not independent proof of Global arithmetic.",
+      "unresolved": [
+        "controlled armor isolation",
+        "mana-drain-only Parry trigger/reflection",
+        "pre/post mitigation exact input in every attack path"
+      ]
+    },
+    {
+      "id": "dodge_minor_order",
+      "sources": [
+        "OFFICIAL-HEX",
+        "CLEANSE-QA"
+      ],
+      "decision": "UNRESOLVED_EXTERNAL_ORDER",
+      "source_pointers": [
+        [
+          "rulesets/progression/charms/mechanics.json",
+          1
+        ],
+        [
+          "crates/gameplay/dispatch/src/gameplay_transport/attack/player_block.rs",
+          106
+        ],
+        [
+          "crates/gameplay/dispatch/src/gameplay_transport/attack/player_block.rs",
+          153
+        ]
+      ],
+      "comparison": "mechanics retains Canary minor-before-major versus Crystal major-before-minor conflict. Rust uses IncomingCreatureAttack for Dodge, then a distinct IncomingCreatureHit seam for hit effects. Generic purchase-priority pages and old pre2024 single-assignment videos do not resolve modern same-hit ordering.",
+      "unresolved": [
+        "whether Dodge suppresses eligible Minor on same hit",
+        "health vs mana path ordering",
+        "combined VoidInversion/Dodge proc outcome distribution"
+      ]
+    },
+    {
+      "id": "cleanse_agony_reproc",
+      "sources": [
+        "OFFICIAL-AGONY",
+        "OFFICIAL-HEX",
+        "CLEANSE-QA"
+      ],
+      "decision": "OFFICIAL_AGONY_CONSTRAINT_WITH_SOURCE_REVIEW_CANDIDATE",
+      "source_pointers": [
+        [
+          "crates/gameplay/foundation/src/foundation/condition.rs",
+          66
+        ],
+        [
+          "crates/gameplay/foundation/src/foundation/condition.rs",
+          1021
+        ],
+        [
+          "crates/gameplay/foundation/src/foundation/condition.rs",
+          1417
+        ],
+        [
+          "crates/gameplay/foundation/src/foundation/condition.rs",
+          1463
+        ],
+        [
+          "crates/gameplay/dispatch/src/gameplay_transport/actor_conditions.rs",
+          1555
+        ]
+      ],
+      "comparison": "11sec immunity already exists. prepare_cleanse selects negative live instances excluding Drown, with no explicit Agony exclusion; commit removes one retained instance and replaces matching immunity. Apply explicitly bypasses immunity for Agony. Official manual disallows curing Agony; potential candidate-selection conflict needs exact eligible Agony instance trace, not a declared reproduced defect. Official2026 Hex change supersedes older community lists.",
+      "unresolved": [
+        "Agony eligibility end-to-end reproduction",
+        "Hex versus IntenseHex exact condition representation",
+        "new successful reproc refresh versus receipt replay",
+        "multiple instances of same condition selection/removal"
+      ]
+    },
+    {
+      "id": "leech_aoe_rounding",
+      "sources": [
+        "LEECH-CREATOR",
+        "LEECH-POST"
+      ],
+      "decision": "HISTORICAL_PRIMARY_EVIDENCE_SOURCE_CONFLICT_CANDIDATE",
+      "source_pointers": [
+        [
+          "rulesets/progression/charms/mechanics.json",
+          1
+        ],
+        [
+          "crates/gameplay/combat-rules/src/resolution/equipped_offence.rs",
+          153
+        ],
+        [
+          "crates/gameplay/dispatch/src/gameplay_transport/attack/equipped_offence.rs",
+          74
+        ]
+      ],
+      "comparison": "mechanics retains candidate target-count multiplier and rounding conflicts. Current leech_amount rounds positive real*skill/10000 half-up and clamps to real damage; leech_hit supplies health_before minus max(health_after,0), without target-count argument in this function. Historical creator test reports overkill healing and target-count dilution; meaningful divergence candidate, not currentGlobal proof or a complete callgraph audit.",
+      "unresolved": [
+        "currentGlobal AoE denominator/target counting",
+        "rounding per target vs aggregate",
+        "current overkill behavior",
+        "mixed race/resistance grouping"
+      ]
+    },
+    {
+      "id": "carnage_chain_attribution",
+      "sources": [
+        "CARNAGE-QA",
+        "CARNAGE-VIDEO"
+      ],
+      "decision": "GEOMETRY_CORROBORATION_CHAIN_UNRESOLVED",
+      "source_pointers": [
+        [
+          "crates/gameplay/progression/src/charm_effects.rs",
+          86
+        ],
+        [
+          "crates/gameplay/progression/src/charm_effects.rs",
+          164
+        ],
+        [
+          "crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs",
+          1028
+        ],
+        [
+          "crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs",
+          1093
+        ]
+      ],
+      "comparison": "Current Rust explicitly forbids CharmDamage reentry; cardinal same-floor neighbours receive source damage and lethal child uses captured reward principal. Public geometry explanation corroborates cardinal neighbourhood only. No inspected material qualifies recursive kills or Global reward attribution.",
+      "unresolved": [
+        "Global Carnage-triggered-kill chain/reentry",
+        "kill/loot/bestiary credit source",
+        "simultaneous deaths and exact rounding"
+      ]
+    }
+  ],
+  "source_receipts": [
+    {
+      "path": "crates/gameplay/combat-rules/src/resolution/equipped_offence.rs",
+      "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "bytes": 12521,
+      "sha256": "42c6832c817302f540044daac545b07ae844a6211c1ced57a3fc96128384c0d9"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/actor_conditions.rs",
+      "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "bytes": 59261,
+      "sha256": "2ec675f2392ace7174fe120addb16b29dc83664b2785ab2b8fb43fb09c4f2da6"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/attack/charm_combat.rs",
+      "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "bytes": 20851,
+      "sha256": "51763f2e41469df8e85097f4328c775a3e7a50fd338c74b1cdb15d2d5248aae5"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs",
+      "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "bytes": 93567,
+      "sha256": "0540b74d858964c5bb16a9b5f7465a03e42303bebb821066e6f43570db8d83a9"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/attack/equipped_offence.rs",
+      "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "bytes": 5846,
+      "sha256": "50eeebdc0f6ad2a6803f019b8b855125f7071fa7081ad604ddf6a0920bdef907"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/attack/player_block.rs",
+      "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "bytes": 16468,
+      "sha256": "54ffe4893187c8309c802fc021befb53ed7c821a79814b0041d04a5829c306a0"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/condition.rs",
+      "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "bytes": 84802,
+      "sha256": "bc8f20b6a6ba76dca1f78c41511a56672c15bc23685e6a9f6e72641dd6470888"
+    },
+    {
+      "path": "crates/gameplay/progression/src/charm_effects.rs",
+      "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "bytes": 21513,
+      "sha256": "b0ff811efcb4e3c68df626914f31f881d3864e1fd6bca9bf1027264c2f1bca0c"
+    },
+    {
+      "path": "rulesets/progression/charms/mechanics.json",
+      "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "bytes": 194173,
+      "sha256": "42712916354e3414b2c980b13ca0dc9a1710dd84b6d10ca4bde75954dea3b823"
+    }
+  ],
+  "search_boundary": "Bounded English/Portuguese searches and supplied leads. No-result queries and unavailable transcripts do not prove absence of data. Discord reading belongs to lead; source registry and its observed claim are attributed to lead, not independent worker UI inspection.",
+  "private_transcript_receipt": {
+    "path": "C:\\Users\\barte\\AppData\\Local\\Temp\\browser-use\\exports\\youtube-MxiCFl3OT_8-3323d2fb-855f-483f-bee8-b3d4c7f311d0.txt",
+    "bytes": 37287,
+    "sha256": "8ffdc35e89e010ed4545d1eb09b1f49344cf7c74c415342b37c0475c889d1fbe",
+    "published": false,
+    "language": "pt",
+    "automatic_captions": true
+  }
+}

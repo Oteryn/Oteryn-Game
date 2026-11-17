@@ -50,7 +50,7 @@ use oteryn_protocol_oteryn::item_view::{
     EquipmentSlot, EquippedItem, ItemEntry, ItemHandle, MAX_LIVE_ITEM_HANDLES, OpenContainer,
     SNAPSHOT_TYPE_CHARACTER_INVENTORY_V1, SNAPSHOT_TYPE_OPEN_CONTAINER_V1,
     STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
-    encode_character_inventory_with_equip_drop, encode_open_container,
+    encode_character_inventory_with_appearances, encode_open_container_with_appearances,
 };
 use oteryn_protocol_oteryn::world_map::MAX_MAP_VIEW_HANDLES;
 use std::collections::HashMap;
@@ -82,10 +82,17 @@ pub enum ItemKey {
 /// One item of a view, with its server-internal key.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ViewItem {
+    pub appearance_id: u16,
     pub key: ItemKey,
     pub item_definition_ref: NonZeroU32,
     pub count: NonZeroU32,
     pub sub_type: u32,
+}
+
+/// Matches the world map's content-key binding, including provisional donor keys.
+pub(super) fn appearance_of(definition: &TypedDefinitionRef) -> u16 {
+    let key = &definition.production_key;
+    crate::map::view::appearance_id(key, crate::map::palette_appearance(key).map(u32::from))
 }
 
 /// Domain 9's content: the main backpack slot and its direct entries in display order, and under
@@ -109,6 +116,7 @@ pub fn inventory_from_backpack(
     };
     let item = |item: &crate::durability::item_transfer::InventoryItem| {
         Some(ViewItem {
+            appearance_id: appearance_of(&item.definition),
             key: ItemKey::Instance(item.item_instance_id),
             item_definition_ref: definition_ref(&item.definition)?,
             count: NonZeroU32::new(item.quantity)?,
@@ -542,6 +550,7 @@ pub struct SessionItemView {
     carried_open: Option<ItemKey>,
     /// Capability 12 is selected: domain 9 shows the equipment.
     equip_drop: bool,
+    appearances: bool,
     /// WRITE-1: the last depot box opened by this connection. Observation data only:
     /// a text compositor must recheck locker reach and custody under its retained lane.
     /// Like container-tree views, this is deliberately absent from continuity.
@@ -566,6 +575,7 @@ impl SessionItemView {
             open_entries: Vec::new(),
             carried_open: continuity.open_corpse,
             equip_drop: false,
+            appearances: false,
             open_depot: None,
             depot_items: Vec::new(),
         }
@@ -606,6 +616,15 @@ impl SessionItemView {
     pub const fn with_equip_drop(mut self) -> Self {
         self.equip_drop = true;
         self
+    }
+
+    pub const fn with_appearances(mut self) -> Self {
+        self.appearances = true;
+        self
+    }
+
+    pub const fn appearances(&self) -> bool {
+        self.appearances
     }
 
     pub const fn equip_drop(&self) -> bool {
@@ -922,7 +941,8 @@ impl SessionItemView {
                 .collect::<Result<_, _>>()?,
         };
         // Without capability 12 a view with equipment does not encode and is never shown.
-        match encode_character_inventory_with_equip_drop(&view, self.equip_drop) {
+        match encode_character_inventory_with_appearances(&view, self.equip_drop, self.appearances)
+        {
             Ok(payload) => {
                 self.inventory = inventory;
                 Ok(payload)
@@ -954,7 +974,7 @@ impl SessionItemView {
                 .map(|item| self.entry(item))
                 .collect::<Result<_, _>>()?,
         };
-        match encode_open_container(&view) {
+        match encode_open_container_with_appearances(&view, self.appearances) {
             Ok(payload) => {
                 self.open = open;
                 self.open_entries = entries;
@@ -969,6 +989,7 @@ impl SessionItemView {
 
     fn entry(&self, item: &ViewItem) -> Result<ItemEntry, ItemViewError> {
         Ok(ItemEntry {
+            appearance_id: item.appearance_id,
             handle: self.table.handle(&item.key).ok_or(ItemViewError::Encode)?,
             item_definition_ref: item.item_definition_ref,
             count: item.count,

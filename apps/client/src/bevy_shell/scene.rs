@@ -20,6 +20,11 @@ pub(super) struct SceneCache {
     entities: Vec<Entity>,
     floor_alpha: std::collections::BTreeMap<i16, f32>,
 }
+impl SceneCache {
+    pub(crate) fn atlas_image(&self) -> Option<&Handle<Image>> {
+        self.image.as_ref()
+    }
+}
 #[derive(Component)]
 pub(super) struct WorldQuad;
 

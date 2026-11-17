@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 import hireling_item_profiles as hireling
+from import_cyclopedia_global import apply_profile_weights
 
 ROOT = Path(__file__).resolve().parents[2]
 PROFILES = "content/items/definitions/spell-native-profiles.json"
@@ -18,6 +19,12 @@ class HirelingItemProfiles(unittest.TestCase):
         cls.raw = (ROOT / PROFILES).read_bytes()
         cls.profiles = {row["production_definition"]["production_key"]: row
                         for row in json.loads(cls.raw)["records"]}
+        # As admission sees the capture: outside the decided weight pairs the Global client
+        # weight replaces the donor weight; the committed capture itself stays donor.
+        decided = hireling.SHARED_NATIVE_WEIGHTS.keys() | hireling.MERGED_MAIN_NATIVE_WEIGHTS.keys()
+        cls.admitted = copy.deepcopy([row for row in cls.overlay["records"]])
+        apply_profile_weights([row for row in cls.admitted
+                               if row["production_definition"]["production_key"] not in decided], ROOT)
 
     def test_all_source_trade_food_and_package_operands_are_profiled(self):
         self.assertEqual(self.overlay["source_revision"], hireling.REVISION)
@@ -25,7 +32,7 @@ class HirelingItemProfiles(unittest.TestCase):
         self.assertEqual(self.overlay["catalogue"]["trader_items"], 1409)
         self.assertEqual(self.overlay["catalogue"]["packages"], 23)
         self.assertEqual(self.overlay["catalogue"]["package_ingredients"], 69)
-        for source in self.overlay["records"]:
+        for source in self.admitted:
             key = source["production_definition"]["production_key"]
             row = self.profiles[key]
             self.assertEqual(row["production_definition"], source["production_definition"])

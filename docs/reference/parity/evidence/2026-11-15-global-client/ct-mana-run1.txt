@@ -1,0 +1,6 @@
+MANA 2629/8305
+1548:11 Using one of 481 ultimate spirit potions...
+13:48:11 You gained 161 mana.
+TSA8S4 Using one of 88 great spirit potions...
+134834 You gained 135 mana.
+DONE

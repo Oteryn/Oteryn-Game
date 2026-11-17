@@ -179,7 +179,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 let talisman=crate::durability::task_board::read_talisman_in_item_transaction(&mut tx,*fence).await?;
                 let resolved = super::super::native_combat_cast::prepare_strike_due(&mut tx, authority.read_authority(), runtime, states,
-                    room, &objects, content, &owned, self.spells, saved, self.owner_now(), &talisman, decision, &mut draw).await.map_err(|_|DurabilityError::Unavailable)?;
+                    room, &objects, content, self.imported_charms, &owned, self.spells, saved, self.owner_now(), &talisman, decision, &mut draw).await.map_err(|_|DurabilityError::Unavailable)?;
                 if invalid { return Err(DurabilityError::Unavailable); }
                 let Some(resolved) = resolved else {
                     cancel(runtime, states, saved.binding.command).map_err(|_|DurabilityError::Unavailable)?;
@@ -192,7 +192,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .retain_strike(runtime, saved, resolved, crate::foundation::owner_timer::SemanticTimeMicros::from_micros(self.owner_now().get()))
                     .map_err(|_|DurabilityError::Unavailable)?;
             }
-            **accepted = Some(apply_due_under_current_owners(runtime, states, self.spells, casters, self.owner_now()).map_err(|_|DurabilityError::Unavailable)?);
+            **accepted = Some(apply_due_under_current_owners(runtime, states, self.spells, casters, self.owner_now(), content, self.imported_charms).map_err(|_|DurabilityError::Unavailable)?);
             tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;
             Ok(())
         })).await.map_err(|_|Error::StaleOwner)?;

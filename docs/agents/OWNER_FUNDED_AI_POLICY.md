@@ -53,7 +53,9 @@ turned into a new owner prompt.
 ### Owner review rule for every PR (2026-11-09)
 
 The owner authorizes one manual Codex review (`codex exec`, read-only, single
-agent, model `gpt-6.1-sol`, reasoning effort `high`) of every Game PR before it merges. This
+agent, model `gpt-6.1-sol`, reasoning effort `high`, or, from a session without
+the PC, one native `@codex review` PR comment naming the exact head) of every
+Game PR before it merges. This
 replaces the 2026-10-29 trial and its "at most 5 a day" limit. These reviews
 are owner-authorized, not optional extras:
 

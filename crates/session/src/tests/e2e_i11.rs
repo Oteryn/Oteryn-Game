@@ -141,6 +141,7 @@ fn fixture() -> Result<(Vec<u8>, Vec<u8>, String, String), BoxError> {
         ));
     }
     let item = |handle, definition| ItemEntry {
+        appearance_id: 0,
         handle: ItemHandle::new(handle).unwrap_or(ItemHandle::MIN),
         item_definition_ref: std::num::NonZeroU32::new(definition)
             .unwrap_or(std::num::NonZeroU32::MIN),

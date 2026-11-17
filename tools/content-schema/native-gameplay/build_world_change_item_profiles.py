@@ -89,6 +89,10 @@ def build(source_root: Path = ROOT) -> dict:
                               bindings, None) for number in sorted(IDS)]
     bound = native.bind_profiles({"schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
                                   "records": records}, bindings, IDS)
+    # The donor weight stays in the capture; the Global client weight wins (ITEMGLOB).
+    sys.path.insert(0, str(source_root / "tools/content-migration"))
+    importlib.import_module("import_cyclopedia_global").apply_profile_weights(
+        bound["records"], source_root)
     return {
         "schema": SCHEMA,
         "producer": "tools/content-schema/native-gameplay/build_world_change_item_profiles.py",

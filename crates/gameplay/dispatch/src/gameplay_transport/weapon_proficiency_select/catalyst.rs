@@ -8,11 +8,11 @@ use crate::gameplay_transport::connection::UseOutcome;
 use crate::gameplay_transport::item_view::ItemKey;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
-fn disposition(disposition: UseDisposition) -> Option<UseOutcome> {
-    Some(UseOutcome {
+fn disposition(disposition: UseDisposition) -> Option<Result<UseOutcome, ()>> {
+    Some(Ok(UseOutcome {
         disposition,
         ..UseOutcome::rejected()
-    })
+    }))
 }
 
 /// A UUIDv7-shaped identity of one catalyst use, stable across retries of its CommandRef.
@@ -43,7 +43,7 @@ pub(in crate::gameplay_transport) async fn use_catalyst(
     command: UseCommand,
     catalyst: ItemKey,
     weapon: ItemKey,
-) -> Option<UseOutcome> {
+) -> Option<Result<UseOutcome, ()>> {
     let (ItemKey::Instance(catalyst), ItemKey::Instance(weapon)) = (catalyst, weapon) else {
         return None;
     };
@@ -213,7 +213,7 @@ pub(in crate::gameplay_transport) async fn use_catalyst(
             | CharacterProgressionError::ConflictingOccurrence,
         ) => return disposition(UseDisposition::Rejected),
         // An unknown outcome is reconciled by the occurrence; still unknown disconnects.
-        Err(_) => owner
+        Err(_) => match owner
             .root
             .reconcile_character_proficiency_with_definitions(
                 owner.character,
@@ -223,7 +223,10 @@ pub(in crate::gameplay_transport) async fn use_catalyst(
                 Some(Arc::clone(&definitions)),
             )
             .await
-            .ok()??,
+        {
+            Ok(Some(receipt)) => receipt,
+            Ok(None) | Err(_) => return Some(Err(())),
+        },
     };
     drop(slot);
     let committed = StoredProficiencyTrack {

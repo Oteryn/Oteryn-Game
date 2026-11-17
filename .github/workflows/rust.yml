@@ -168,6 +168,10 @@ jobs:
     # build-smoke on the same SHA). Compile and lint the protected merged tree to warm every shared
     # Cargo artifact without repeating tests or runs.
     timeout-minutes: 60
+    # Two attempts on 719b33ac lost the hosted runner mid-build ("runner lost communication",
+    # resource starvation). Cap parallel rustc/link jobs so the 4-core runner keeps headroom.
+    env:
+      CARGO_BUILD_JOBS: "2"
     steps:
       - name: Check out exact revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -197,6 +201,12 @@ jobs:
 
       - name: Normalize source mtimes for the restored Cargo cache
         run: python tools/repository/normalize_cargo_mtimes.py
+
+      - name: Report runner disk and memory before the build
+        run: |
+          df -h / "$GITHUB_WORKSPACE"
+          free -m
+          du -sh target/ 2>/dev/null || true
 
       - name: Build workspace
         run: cargo +1.100.0 build --locked --workspace --all-targets

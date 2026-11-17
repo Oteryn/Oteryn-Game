@@ -46,3 +46,19 @@ in `details_from_alias_id`. The 98 targets the Cyclopedia item search could not 
 ids above 54768 added by the current client) were captured one id at a time through the client's
 own item inspection call, with the same record mapping. Total: 6470 records; every catalog target
 and every alias has one.
+
+## Weight errata (2026-11-15)
+
+`weight-corrections.json` is the import input for five decimal-place errors in the
+retained capture. The original bytes and capture manifest remain intact. The importer
+checks each original string before applying the correction, so a replacement capture
+cannot silently inherit stale errata. Units remain ounces, converted to centi-ounces
+by multiplying by 100; there is no global scale change. These corrections use known
+Tibia Global item weights (gold also corroborated by the pre-ITEMGLOB
+native Canary coin profile), rather than
+treating every captured wiki disagreement as authoritative. They are corrections to
+the capture, not a fresh native-client observation. Platinum and crystal coins already
+read 0.10 oz and need no correction.
+
+See [weight-change-audit.md](weight-change-audit.md) for every exact factor-ten
+change in #3213 and the disposition of each.

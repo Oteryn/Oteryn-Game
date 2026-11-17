@@ -95,6 +95,7 @@ fn hotkey_use_with_crosshair_arms_mode()
     assert!(commands.try_recv().is_err());
     let item = |handle: u64| -> Result<oteryn_session::ItemEntry, Box<dyn std::error::Error>> {
         Ok(oteryn_session::ItemEntry {
+            appearance_id: 0,
             handle: handle.try_into()?,
             item_definition_ref: 900u32.try_into()?,
             count: 1u32.try_into()?,

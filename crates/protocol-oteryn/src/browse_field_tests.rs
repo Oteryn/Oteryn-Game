@@ -19,6 +19,7 @@ fn page(view_id: u8, index: u16, total: u16) -> Result<ContainerView, String> {
     let entries = (0..count)
         .map(|entry| {
             Ok(ItemEntry {
+                appearance_id: 0,
                 handle: handle(u64::MAX - base - u64::from(entry))?,
                 item_definition_ref: NonZeroU32::MAX,
                 count: NonZeroU32::MAX,
@@ -551,5 +552,38 @@ fn browse_field_registry_reuses_container_views_without_a_second_domain() -> Res
         .ok_or("browse command")?;
     assert_eq!(command["max_payload_bytes"], MAX_BROWSE_FIELD_INTENT_BYTES);
     assert_eq!(command["max_result_payload_bytes"], 4);
+    Ok(())
+}
+
+#[test]
+fn browse_appearance_byte_extension_requires_499() -> Result<(), String> {
+    use crate::container_tree::{
+        decode_container_views_with_appearances, encode_container_views_with_appearances,
+    };
+    let mut views = ContainerViews {
+        views: (0..16)
+            .map(|id| page(id, 0, 30))
+            .collect::<Result<_, _>>()?,
+    };
+    let legacy = encode_container_views_for(&views, true).map_err(|e| format!("{e:?}"))?;
+    for view in &mut views.views {
+        for item in &mut view.entries {
+            item.appearance_id = u16::MAX;
+        }
+    }
+    let extended = encode_container_views_with_appearances(&views, true, false, true)
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        extended.len(),
+        legacy.len() + 16 * 4 * MAX_BROWSE_FIELD_PAGE_ENTRIES
+    );
+    assert_eq!(
+        decode_container_views_with_appearances(&extended, true, false, true),
+        Ok(views)
+    );
+    assert_eq!(
+        decode_container_views_for(&extended, true),
+        Err(ItemViewWireError::LimitExceeded)
+    );
     Ok(())
 }

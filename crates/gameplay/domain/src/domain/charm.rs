@@ -829,26 +829,54 @@ mod tests {
 mod reset_tests {
     use super::*;
     #[test]
-    fn crystal_reset_all_level_boundary_and_expansion_discount() {
+    fn reset_fee_matches_official_examples_and_observed_expansion_payment() {
+        // Tibia news #8140 (2024-11-21): only levels above 100 add 11,000 gold.
+        for (level, expected) in [
+            (0, 100_000),
+            (99, 100_000),
+            (100, 100_000),
+            (101, 111_000),
+            (500, 4_500_000),
+            (757, 7_327_000),
+            (1_000, 10_000_000),
+            (2_000, 21_000_000),
+        ] {
+            for entitlement in [CharmSlotEntitlement::Free, CharmSlotEntitlement::Premium] {
+                assert_eq!(reset_all_fee(level, entitlement), Some(expected));
+            }
+            assert_eq!(
+                reset_all_fee(level, CharmSlotEntitlement::CharmExpansion),
+                Some(expected * 75 / 100)
+            );
+        }
+        assert_eq!(
+            reset_all_fee(757, CharmSlotEntitlement::CharmExpansion),
+            Some(5_495_250)
+        );
+        assert_eq!(reset_all_fee(u64::MAX, CharmSlotEntitlement::Free), None);
+        assert_eq!(
+            reset_all_fee(u64::MAX, CharmSlotEntitlement::CharmExpansion),
+            None
+        );
+    }
+
+    #[test]
+    fn reset_all_level_boundary_and_expansion_discount() {
         assert_eq!(reset_all_fee(100, CharmSlotEntitlement::Free), Some(100000));
         assert_eq!(
             reset_all_fee(101, CharmSlotEntitlement::Premium),
-            Some(1211000)
+            Some(111000)
         );
         assert_eq!(
             reset_all_fee(101, CharmSlotEntitlement::CharmExpansion),
-            Some(908250)
+            Some(83250)
         );
     }
 }
 
-/// Crystal src/io/iobestiary.cpp:648-653: reset all stages and assignments, refund balances.
+/// Tibia news #8140 (2024-11-21): 100,000 gold plus 11,000 per level above 100.
 pub fn reset_all_fee(level: u64, entitlement: CharmSlotEntitlement) -> Option<u64> {
-    let fee = 100000_u64.checked_add(if level > 100 {
-        level.checked_mul(11000)?
-    } else {
-        0
-    })?;
+    let fee = 100000_u64.checked_add(level.saturating_sub(100).checked_mul(11000)?)?;
     if entitlement == CharmSlotEntitlement::CharmExpansion {
         fee.checked_mul(75).map(|n| n / 100)
     } else {

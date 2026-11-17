@@ -28,6 +28,7 @@ impl Stepper for Peer {
                 .inventory
                 .entries
                 .push(oteryn_client_runtime::depot::ItemEntry {
+                    appearance_id: 0,
                     handle: NonZeroU64::MIN.saturating_add(41),
                     item_definition_ref: std::num::NonZeroU32::MIN,
                     count: std::num::NonZeroU32::MIN,

@@ -45,6 +45,9 @@ def admit(root,generated,profile_path,manifest_path,order,canonical):
             or packet['source_xml_sha256']!=capture_source.XML_SHA
             or packet['records']!=capture_source.records(packet['source_rows'],root,expected_ids)):
         raise ValueError('WRITING_ADMISSION_SOURCE_DRIFT')
+    # The captured Global client weight wins over the donor capture (ITEMGLOB).
+    from import_cyclopedia_global import apply_profile_weights
+    apply_profile_weights(packet['records'],root)
     document=json.loads(generated[profile_path])
     old={row['production_definition']['production_key']:row for row in document['records']}
     for row in packet['records']:
