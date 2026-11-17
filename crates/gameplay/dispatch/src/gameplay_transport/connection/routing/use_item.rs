@@ -526,30 +526,31 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 };
                 match (item_view.as_mut(), key, observation) {
                     (view, Some(key), _) if consumable => {
-                        let definition = view.and_then(|view| view.backpack_entry_definition(key))
-                            .or_else(|| container_views.as_ref()?.visible_entry_definition(key));
+                        if admitted.continuity.selected_capabilities.contains(
+                            oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1,
+                        )
+                            && let ItemKey::Instance(item) = key
+                            && let Some(definition) = view
+                                .and_then(|view| view.backpack_entry_definition(key))
+                                .or_else(|| container_views.as_ref()?.visible_entry_definition(key))
+                            && let Some(outcome) = tokio::time::timeout(
+                                std::time::Duration::from_secs(10),
+                                authority.server_modal_read_book(*admitted, item, definition),
+                            ).await.ok()?
+                        {
+                            return Some(Dispatch::Use(outcome));
+                        }
                         let outcome = tokio::time::timeout(
                             std::time::Duration::from_secs(10),
-                            async {
-                                if admitted.continuity.selected_capabilities.contains(
-                                    oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1,
-                                )
-                                    && let ItemKey::Instance(item) = key
-                                    && let Some(definition) = definition
-                                    && let Some(outcome) = authority.server_modal_read_book(*admitted, item, definition).await
-                                {
-                                    return Some(outcome);
-                                }
-                                authority.use_item_completion(
-                                    actor,
-                                    UseCommand {
-                                        game_session_id: admitted.game_session_id,
-                                        command_id: command.command_id,
-                                        item_fence: admitted.item_fence,
-                                    },
-                                    key,
-                                ).await
-                            },
+                            authority.use_item_completion(
+                                actor,
+                                UseCommand {
+                                    game_session_id: admitted.game_session_id,
+                                    command_id: command.command_id,
+                                    item_fence: admitted.item_fence,
+                                },
+                                key,
+                            ),
                         ).await.ok().flatten()?;
                         if authority.item_use_pending(actor, admitted.game_session_id).await { return None; }
                         Dispatch::Use(outcome)
