@@ -24,6 +24,8 @@ struct Request {
 }
 enum Content {
     Logout,
+    /// chsw (capability 512): the Change Channel window, its confirmation and its errors.
+    ChannelSwitch,
     Context {
         menu: Option<Box<Menu>>,
         party: Option<Box<party::Target>>,
@@ -35,6 +37,9 @@ enum Content {
 enum Choice {
     Cancel,
     Logout,
+    SwitchRow([u8; 16]),
+    SwitchConfirm,
+    SwitchBack,
     Context(usize),
     Inspect,
     Invite,
@@ -65,6 +70,12 @@ impl HostOwner {
     pub(super) fn request_logout_confirmation(&mut self) {
         if self.phase == Phase::Playing && self.play.is_some() {
             self.dialogs.open(self.generation(), Content::Logout);
+        }
+    }
+    pub(super) fn request_channel_switch(&mut self) {
+        if let Some(play) = &self.play {
+            play.link.channel_switch_open();
+            self.dialogs.open(self.generation(), Content::ChannelSwitch);
         }
     }
     pub(super) fn request_world_context(&mut self, tile: TileCoord) {
@@ -109,6 +120,9 @@ impl HostOwner {
             || self.play.is_none()
         {
             return false;
+        }
+        if matches!(request.content, Content::ChannelSwitch) {
+            return self.choose_channel_switch(request, choice);
         }
         match (request.content, choice) {
             (
@@ -161,6 +175,31 @@ impl HostOwner {
             ) => rule_violation::open(self, &target),
             _ => false,
         }
+    }
+}
+impl HostOwner {
+    /// The window stays up for a row, a confirmation or a step back; Cancel closes it.
+    fn choose_channel_switch(&mut self, request: Request, choice: Choice) -> bool {
+        let Some(play) = self.play.as_ref() else {
+            return false;
+        };
+        let keep = match choice {
+            Choice::SwitchRow(channel) => {
+                play.link.channel_switch_select(channel);
+                true
+            }
+            Choice::SwitchConfirm => play.link.channel_switch_confirm(),
+            Choice::SwitchBack => {
+                play.link.channel_switch_back();
+                true
+            }
+            _ => {
+                play.link.channel_switch_close();
+                return matches!(choice, Choice::Cancel);
+            }
+        };
+        self.dialogs.pending = Some(request);
+        keep
     }
 }
 #[derive(Component)]
@@ -251,12 +290,27 @@ fn project(
     owner: NonSend<HostOwner>,
     skin: Res<Skin>,
     mut overlays: Query<(Entity, &mut Node), With<Overlay>>,
-    mut previous: Local<Option<u64>>,
+    mut previous: Local<Option<(u64, Option<SwitchView>)>>,
     mut panel: Local<Option<Entity>>,
     mut focus: ResMut<InputFocus>,
 ) {
     let pending = owner.dialogs.pending.as_ref();
-    let id = pending.map(|request| request.id);
+    // The Change Channel window follows its panel and redraws its countdown once a second.
+    let switch = pending
+        .filter(|request| matches!(request.content, Content::ChannelSwitch))
+        .and_then(|_| owner.play.as_ref())
+        .map(|play| {
+            let now_ms = crate::play::feature_0512_channel_switch::view::now_ms();
+            (play.link.channel_switch_panel(), now_ms, now_ms / 1000)
+        });
+    let id = pending.map(|request| {
+        (
+            request.id,
+            switch
+                .as_ref()
+                .map(|(panel, _, second)| (panel.clone(), *second)),
+        )
+    });
     let Ok((overlay, mut node)) = overlays.single_mut() else {
         return;
     };
@@ -284,7 +338,11 @@ fn project(
                 modal: true,
             },
             Node {
-                width: px(300.),
+                width: px(if matches!(request.content, Content::ChannelSwitch) {
+                    460.
+                } else {
+                    300.
+                }),
                 max_width: percent(95.),
                 max_height: percent(95.),
                 padding: UiRect::axes(px(16.), px(29.)),
@@ -299,6 +357,7 @@ fn project(
     *panel = Some(window);
     let title = match request.content {
         Content::Logout => "Logout",
+        Content::ChannelSwitch => "Change Channel",
         Content::Context { .. } => "Actions",
     };
     source::dialog_caption(&mut commands, window, title, skin.font.clone());
@@ -319,6 +378,11 @@ fn project(
                 "Ok",
                 Choice::Logout,
             );
+        }
+        Content::ChannelSwitch => {
+            if let Some((panel, now_ms, _)) = &switch {
+                channel_switch_body(&mut commands, &skin, window, request.id, panel, *now_ms);
+            }
         }
         Content::Context {
             menu,
@@ -405,6 +469,61 @@ fn project(
     );
     focus.set(cancel, FocusCause::Navigated);
 }
+type SwitchView = (oteryn_client_ui::channel_switch::ChannelSwitchPanel, i64);
+
+fn dialog_text(commands: &mut Commands, skin: &Skin, parent: Entity, text: &str) {
+    let text = commands
+        .spawn(source::text(text, source::font(skin.font.clone(), false)))
+        .insert(Node {
+            width: percent(100.),
+            ..default()
+        })
+        .id();
+    commands.entity(parent).add_child(text);
+}
+
+/// chsw: the error dialog, the confirmation (with the Open PvP warning), the wait notice, or
+/// the Channel table with one button per Channel.
+fn channel_switch_body(
+    commands: &mut Commands,
+    skin: &Skin,
+    window: Entity,
+    id: u64,
+    panel: &oteryn_client_ui::channel_switch::ChannelSwitchPanel,
+    now_ms: i64,
+) {
+    use oteryn_client_ui::channel_switch as model;
+    if let Some(error) = &panel.error {
+        dialog_text(commands, skin, window, error);
+        button(commands, skin, window, id, "Ok", Choice::SwitchBack);
+    } else if panel.switching.is_some() {
+        dialog_text(commands, skin, window, model::wait_text());
+    } else if let Some(text) = model::confirm_text(panel) {
+        dialog_text(commands, skin, window, &text);
+        button(commands, skin, window, id, "Ok", Choice::SwitchConfirm);
+    } else {
+        // Each Channel: its columns (Channel | Type | Ping | Load | Status), then its button. A
+        // greyed row still answers a click with the error of what blocks it.
+        let rows = model::panel_rows(panel, now_ms);
+        for (index, (cells, _greyed)) in rows.iter().enumerate() {
+            dialog_text(commands, skin, window, &cells.join(" | "));
+            if let Some(row) = index.checked_sub(1).and_then(|row| panel.rows.get(row)) {
+                button(
+                    commands,
+                    skin,
+                    window,
+                    id,
+                    &row.name,
+                    Choice::SwitchRow(row.channel),
+                );
+            }
+        }
+        if panel.pending {
+            dialog_text(commands, skin, window, "Updating…");
+        }
+    }
+}
+
 fn button(
     commands: &mut Commands,
     skin: &Skin,

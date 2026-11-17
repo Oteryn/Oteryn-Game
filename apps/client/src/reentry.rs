@@ -135,6 +135,20 @@ impl Reentry {
         true
     }
 
+    /// chsw (capability 512): the fresh admission of a Channel switch, into `channel_id` of the
+    /// same World for `character_id`, without the character picker.
+    pub fn request_switch(&mut self, character_id: String, channel_id: String) -> bool {
+        let Some(config) = self.client.native_login.as_mut() else {
+            return false;
+        };
+        config.channel_switch = Some((character_id, channel_id));
+        let started = self.request();
+        if let Some(config) = self.client.native_login.as_mut() {
+            config.channel_switch = None;
+        }
+        started
+    }
+
     /// Emits only changed countdown text, so a slow form cannot accumulate frame-rate updates.
     pub fn poll_wait(&mut self, now: Instant) -> Option<String> {
         if self.state != EntryState::Entering {

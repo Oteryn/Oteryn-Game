@@ -1,0 +1,15 @@
+{
+  "id": 513,
+  "name": "SOCIAL_CHANNEL_V1",
+  "owner_decision": "chsw owner decisions 2026-11-17 (social views are Channel-aware within one World); GAME-CHANNEL-01",
+  "owner": "Game social projection (Party, VIP, Guild)",
+  "requires": [
+    40,
+    42,
+    258
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Negotiates the optional current-Channel field on Party member entries (query 46, field 7), VIP presence entries (delta 5, field 6) and Guild roster members (field 5). Without selection the server omits the field; existing peers retain their exact wire shape."
+}

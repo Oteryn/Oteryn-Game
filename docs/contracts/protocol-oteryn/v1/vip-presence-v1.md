@@ -15,9 +15,11 @@ separately delivered player-typing capability 233.
 Each batch replaces the complete presence view, with at most 100 entries sorted
 by distinct positive list-local entry numbers. Each row contains the current
 character name, coarse status, announcement bit and confirmation lifetime.
-No AccountId, CharacterId, WorldId, ChannelId, node, position or instance is encoded.
-The maximum encoded batch is 14,400 bytes (100 bounded names and worst-case
-protobuf fields). Unknown fields, duplicated scalar fields, malformed names,
+No AccountId, CharacterId, WorldId, node, position or instance is encoded. A ChannelId
+is encoded only under capability 513 `SOCIAL_CHANNEL_V1` (owner decision 2026-11-17): field 6
+names the Channel of the same World an ONLINE target is on; other statuses never carry it.
+The maximum encoded batch is 16,200 bytes (100 bounded names, worst-case protobuf fields
+and the optional 18-byte Channel field). Unknown fields, duplicated scalar fields, malformed names,
 invalid statuses, out-of-order/duplicate entry numbers and excess rows are refused.
 
 Status values are `UNCONFIRMED=0`, `OFFLINE=1` and `ONLINE=2`. ONLINE carries

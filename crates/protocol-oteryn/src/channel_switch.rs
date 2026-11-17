@@ -8,10 +8,22 @@
 
 /// Registered capability `CHANNEL_SWITCH_V1`.
 pub const CAPABILITY_CHANNEL_SWITCH_V1: u32 = 512;
+/// Registered capability `SOCIAL_CHANNEL_V1` (owner, 2026-11-17): Party member entries
+/// (query 46, field 7), VIP presence entries (delta 5, field 6) and Guild roster members
+/// (field 5) carry the member's current Channel of the same World. Without selection the
+/// server omits the field and existing peers keep their exact wire shape.
+pub const CAPABILITY_SOCIAL_CHANNEL_V1: u32 = 513;
 /// Registered command type `CHANNEL_SWITCH_STATUS` (capability 512): empty request.
 pub const COMMAND_TYPE_CHANNEL_SWITCH_STATUS: u32 = 6247;
 /// Registered command type `CHANNEL_SWITCH_REQUEST` (capability 512): the target ChannelId.
 pub const COMMAND_TYPE_CHANNEL_SWITCH_REQUEST: u32 = 6248;
+/// Registered command type `CHANNEL_LOAD` (capability 512): empty request; the result lists the
+/// online count of every current Channel of the caller's World, read from the durable sessions.
+pub const COMMAND_TYPE_CHANNEL_LOAD: u32 = 6251;
+/// At most this many Channels in one World's load result.
+pub const MAX_LOAD_CHANNELS: usize = 64;
+/// The load result: a count byte, then per Channel its 16-byte ChannelId and a big-endian u32.
+pub const MAX_LOAD_RESULT_BYTES: usize = 1 + MAX_LOAD_CHANNELS * 20;
 /// Five minutes between voluntary switches, timed by the server clock (owner, 2026-11-17).
 pub const COOLDOWN_MS: u32 = 300_000;
 /// The request: one 16-byte ChannelId.
@@ -127,9 +139,70 @@ pub fn decode_status(payload: &[u8]) -> Option<SwitchStatus> {
     status.valid().then_some(status)
 }
 
+/// The load result, strictly ascending by ChannelId; `None` above `MAX_LOAD_CHANNELS` or for
+/// unsorted or repeated Channels.
+pub fn encode_load(channels: &[([u8; 16], u32)]) -> Option<Vec<u8>> {
+    if channels.len() > MAX_LOAD_CHANNELS || channels.windows(2).any(|pair| pair[0].0 >= pair[1].0)
+    {
+        return None;
+    }
+    let mut bytes = Vec::with_capacity(1 + channels.len() * 20);
+    bytes.push(u8::try_from(channels.len()).ok()?);
+    for (channel, online) in channels {
+        bytes.extend_from_slice(channel);
+        bytes.extend_from_slice(&online.to_be_bytes());
+    }
+    Some(bytes)
+}
+
+pub fn decode_load(payload: &[u8]) -> Option<Vec<([u8; 16], u32)>> {
+    let (&count, rest) = payload.split_first()?;
+    let count = usize::from(count);
+    if count > MAX_LOAD_CHANNELS || rest.len() != count * 20 {
+        return None;
+    }
+    let channels: Vec<([u8; 16], u32)> = rest
+        .chunks_exact(20)
+        .map(|entry| {
+            let (channel, online) = entry.split_at(16);
+            Some((channel.try_into().ok()?, u32::from_be_bytes(online.try_into().ok()?)))
+        })
+        .collect::<Option<_>>()?;
+    channels
+        .windows(2)
+        .all(|pair| pair[0].0 < pair[1].0)
+        .then_some(channels)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn load_round_trips_and_refuses_unsorted_or_oversized_lists() {
+        let channels = [([1; 16], 7), ([2; 16], 0)];
+        let bytes = encode_load(&channels);
+        assert_eq!(bytes.as_ref().map(Vec::len), Some(41));
+        assert_eq!(
+            bytes.as_deref().and_then(decode_load),
+            Some(channels.to_vec())
+        );
+        assert_eq!(encode_load(&[([2; 16], 1), ([1; 16], 1)]), None);
+        assert_eq!(encode_load(&[([1; 16], 1), ([1; 16], 1)]), None);
+        let mut unsorted = vec![2];
+        unsorted.extend_from_slice(&[[2; 16].as_slice(), &[0; 4], &[1; 16], &[0; 4]].concat());
+        assert_eq!(decode_load(&unsorted), None);
+        assert_eq!(decode_load(&[1, 0]), None);
+        let many: Vec<_> = (0..=MAX_LOAD_CHANNELS)
+            .map(|index| {
+                let mut channel = [0; 16];
+                channel[15] = u8::try_from(index).unwrap_or(u8::MAX);
+                (channel, 1)
+            })
+            .collect();
+        assert_eq!(encode_load(&many), None);
+        assert_eq!(decode_load(&[0]), Some(Vec::new()));
+    }
 
     #[test]
     fn status_round_trips_and_refuses_values_outside_the_wire() {

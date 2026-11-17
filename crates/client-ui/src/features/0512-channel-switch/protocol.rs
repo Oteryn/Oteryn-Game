@@ -3,7 +3,8 @@ use oteryn_client_runtime::{
     CommandStatus,
     channel_switch::{
         CAPABILITY_CHANNEL_SWITCH_V1, COMMAND_TYPE_CHANNEL_SWITCH_REQUEST,
-        COMMAND_TYPE_CHANNEL_SWITCH_STATUS, SwitchLock, decode_status, encode_request,
+        COMMAND_TYPE_CHANNEL_LOAD, COMMAND_TYPE_CHANNEL_SWITCH_STATUS, SwitchLock, decode_load,
+        decode_status, encode_request,
     },
     raw_feature::{FeatureCommand, GatedCommandResult},
 };
@@ -24,6 +25,30 @@ pub fn request_status(panel: &mut ChannelSwitchPanel) -> Option<FeatureCommand> 
         kind: COMMAND_TYPE_CHANNEL_SWITCH_STATUS,
         payload: Vec::new(),
     })
+}
+
+/// The online count of each Channel, asked with the status when the window opens.
+#[must_use]
+pub fn request_load(panel: &ChannelSwitchPanel) -> Option<FeatureCommand> {
+    panel.selected.then(|| FeatureCommand {
+        capability: CAPABILITY_CHANNEL_SWITCH_V1,
+        kind: COMMAND_TYPE_CHANNEL_LOAD,
+        payload: Vec::new(),
+    })
+}
+
+/// Takes the online counts; a Channel the server did not list shows "—".
+pub fn apply_load(panel: &mut ChannelSwitchPanel, result: &GatedCommandResult) {
+    let counts = (result.status == CommandStatus::Accepted)
+        .then(|| decode_load(&result.payload))
+        .flatten()
+        .unwrap_or_default();
+    for row in &mut panel.rows {
+        row.online = counts
+            .iter()
+            .find(|(channel, _)| *channel == row.channel)
+            .map(|(_, online)| *online);
+    }
 }
 
 /// Takes the server's status; a refusal or an unreadable answer keeps the one shown before.

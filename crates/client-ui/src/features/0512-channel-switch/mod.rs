@@ -4,7 +4,9 @@
 mod protocol;
 mod state;
 mod view;
-pub use protocol::{apply_request, apply_status, confirm, request_status, select};
+pub use protocol::{
+    apply_load, apply_request, apply_status, confirm, request_load, request_status, select,
+};
 pub use state::{ChannelRow, ChannelSwitchPanel, PvpType};
 pub use view::{
     arrival_text, confirm_text, cooldown_text, lock_text, panel_rows, recommended, wait_text,

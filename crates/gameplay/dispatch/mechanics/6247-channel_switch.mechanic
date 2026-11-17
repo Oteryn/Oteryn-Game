@@ -1,5 +1,5 @@
 name=channel_switch
-commands=6247,6248
+commands=6247,6248,6251
 transport=channel_switch
 composed=channel_switch
 authority=channel_switch

@@ -34,7 +34,7 @@
       "id": 5,
       "name": "VIP_PRESENCE_DELTA_V1",
       "payload_schema": "docs/contracts/protocol-oteryn/v1/vip-presence-v1.proto#VipPresenceBatchV1",
-      "max_payload_bytes": 14400
+      "max_payload_bytes": 16200
     }
   ],
   "snapshot_types": [

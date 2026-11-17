@@ -18,5 +18,7 @@ impl Outbox {
             mailbox.served_channel = channel;
             mailbox.pushed.served_channel = Some(channel);
         }
+        // chsw (capability 513): Party rows compare each member's Channel with the own one.
+        mailbox.party.own_channel = channel.map(|channel| channel.channel_id);
     }
 }

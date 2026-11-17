@@ -166,6 +166,7 @@ impl Stack {
             account_services: Arc::new(crate::account_services::present),
             coin_shop: Arc::new(crate::coin_shop::present),
             premium: Arc::new(crate::premium::present),
+            channel_switch: None,
             training_queue: Default::default(),
             select_character: Arc::new(|rows, _, _| {
                 crate::character_selection::SelectionAction::Play {

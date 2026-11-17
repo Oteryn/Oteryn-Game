@@ -17,8 +17,8 @@ pub struct ChannelRow {
     pub pvp: Option<PvpType>,
     /// Round trip from this client to the Channel node, measured by the client.
     pub ping_ms: Option<u32>,
-    /// Occupancy in percent, as Platform reports it.
-    pub load_percent: Option<u8>,
+    /// Characters online on the Channel, from the server's durable sessions (command 6251).
+    pub online: Option<u32>,
     pub full: bool,
 }
 

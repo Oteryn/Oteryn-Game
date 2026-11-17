@@ -90,8 +90,15 @@ pub(crate) async fn enter_observed(
         &config.oauth_client_id,
         config.retry_unit,
     )?;
-    let (ticket, selected_character, selected_channel, character_name, training_requested) =
-        authorize::authorize(&client, config, cancellation.clone()).await?;
+    let authorize::Authorized {
+        ticket,
+        character_id: selected_character,
+        channel_id: selected_channel,
+        character_name,
+        training_requested,
+        channels,
+    } = authorize::authorize(&client, config, cancellation.clone()).await?;
+
     let character_id = parse_uuid_v7(&selected_character)
         .and_then(|bytes| CharacterId::decode(&bytes).ok())
         .ok_or(GameplayEntryError::InvalidConfiguration)?;
@@ -121,6 +128,7 @@ pub(crate) async fn enter_observed(
         character_id,
         character_name,
         training_requested,
+        channels,
         config,
     };
     oteryn_client_runtime::connection::enter(&mut attempt, config.retry_unit, cancellation).await
@@ -137,6 +145,7 @@ struct NativeAttempt<'a> {
     character_id: CharacterId,
     character_name: String,
     training_requested: bool,
+    channels: Vec<crate::character_selection::ChannelChoice>,
     config: &'a NativeLoginConfig,
 }
 
@@ -195,6 +204,7 @@ impl AdmissionAttempt for NativeAttempt<'_> {
             session,
             world_id: self.grant.world_id.clone(),
             channel_id: self.grant.channel_id.clone(),
+            channels: self.channels.clone(),
         })
     }
 

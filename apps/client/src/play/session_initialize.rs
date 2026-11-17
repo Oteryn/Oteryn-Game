@@ -133,6 +133,9 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.store_tokens_initialize(session.server_mechanic_selected(479));
     outbox.premium_game_initialize(session.feature_selected(97));
     outbox.vip_presence_initialize(session.feature_selected(258));
+    outbox.channel_switch_initialize(session.feature_selected(
+        oteryn_client_runtime::channel_switch::CAPABILITY_CHANNEL_SWITCH_V1,
+    ));
     outbox.weapon_proficiency_initialize(session.feature_selected(195));
     outbox.weapon_proficiency_state_initialize(session.feature_selected(448));
     outbox.depot_initialize(session.feature_selected(37));

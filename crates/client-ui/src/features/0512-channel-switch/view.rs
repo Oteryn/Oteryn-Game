@@ -89,7 +89,7 @@ pub fn recommended(panel: &ChannelSwitchPanel) -> Option<[u8; 16]> {
             (
                 current_pvp.is_none() || row.pvp != current_pvp,
                 row.ping_ms.unwrap_or(u32::MAX),
-                row.load_percent.unwrap_or(u8::MAX),
+                row.online.unwrap_or(u32::MAX),
             )
         })
         .map(|row| row.channel)
@@ -127,7 +127,7 @@ pub fn panel_rows(panel: &ChannelSwitchPanel, now_ms: i64) -> Vec<([String; 5], 
             tr!("Channel").to_owned(),
             tr!("Type").to_owned(),
             tr!("Ping").to_owned(),
-            tr!("Load").to_owned(),
+            tr!("Online").to_owned(),
             tr!("Status").to_owned(),
         ],
         false,
@@ -139,8 +139,7 @@ pub fn panel_rows(panel: &ChannelSwitchPanel, now_ms: i64) -> Vec<([String; 5], 
                 row.name.clone(),
                 row.pvp.map_or_else(unknown, |pvp| pvp_text(pvp).to_owned()),
                 row.ping_ms.map_or_else(unknown, |ms| format!("{ms} ms")),
-                row.load_percent
-                    .map_or_else(unknown, |load| format!("{load}%")),
+                row.online.map_or_else(unknown, |online| online.to_string()),
                 status_cell(panel, row, best, left),
             ],
             grey,

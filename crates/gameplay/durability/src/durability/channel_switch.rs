@@ -10,13 +10,25 @@ use super::db::{
 use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
-use oteryn_protocol_oteryn::channel_switch::{COOLDOWN_MS, SwitchLock, SwitchStatus};
+use oteryn_protocol_oteryn::channel_switch::{
+    COOLDOWN_MS, MAX_LOAD_CHANNELS, SwitchLock, SwitchStatus,
+};
 use sqlx::Row;
 
 /// `$3` NULL reads the locks that do not depend on a target.
 pub const PREFLIGHT_SQL: &str = "SELECT COALESCE((SELECT cooldown_left_ms FROM game_channel_switch_status(encode($1,'hex')::uuid,encode($2,'hex')::uuid)),0) AS cooldown_left_ms,\
  game_channel_switch_lock(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid) AS lock_reason,\
  $3::bytea IS NULL OR EXISTS(SELECT 1 FROM game_runtime_scope_assignments WHERE scope_kind=1 AND state=1 AND world_id=encode($2,'hex')::uuid AND channel_id=encode($3,'hex')::uuid) AS destination";
+
+/// Characters online per current Channel of the World `$1`, from the durable non-terminal
+/// sessions (a house session counts on its origin Channel), in ascending Channel order. No
+/// heartbeat and no capacity: the count is what the reconnect journal already proves.
+pub const LOAD_SQL: &str = "WITH channels AS (SELECT DISTINCT channel_id FROM game_runtime_scope_assignments \
+ WHERE scope_kind=1 AND state=1 AND world_id=encode($1,'hex')::uuid ORDER BY channel_id LIMIT $2) \
+ SELECT uuid_send(c.channel_id) AS channel_id, count(s.game_session_id) AS online FROM channels c \
+ LEFT JOIN game_durability_reconnect_sessions s ON s.world_id=encode($1,'hex')::uuid AND s.session_state IN(1,2) \
+ AND COALESCE(s.runtime_scope_channel_id,s.origin_channel_id)=c.channel_id \
+ GROUP BY c.channel_id ORDER BY c.channel_id";
 
 /// The stored facts as one wire status. The cooldown outranks a database lock only when no lock
 /// applies; a skull lock counts only against a named target.
@@ -93,6 +105,49 @@ impl DurabilityRoot {
                     .ok_or(DurabilityError::InvalidStoredState)?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Some(status))
+                })
+            })
+            .await
+    }
+
+    /// Command 6251: the online count of each current Channel of `world`. `Ok(None)` when the
+    /// session fence is no longer current.
+    pub async fn read_channel_load(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        world: [u8; 16],
+    ) -> Result<Option<Vec<([u8; 16], u32)>>, DurabilityError> {
+        let record = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &record).await?;
+                    if assert_session_fence(&mut tx, &fence, &node).await?.is_err() {
+                        return Ok(None);
+                    }
+                    let rows = sqlx::query(LOAD_SQL)
+                        .bind(world.as_slice())
+                        .bind(i64::try_from(MAX_LOAD_CHANNELS).map_err(|_| DurabilityError::InvalidStoredState)?)
+                        .fetch_all(&mut *tx)
+                        .await?;
+                    let mut load = Vec::with_capacity(rows.len());
+                    for row in rows {
+                        let channel: Vec<u8> = row.try_get("channel_id")?;
+                        let online: i64 = row.try_get("online")?;
+                        load.push((
+                            <[u8; 16]>::try_from(channel.as_slice())
+                                .map_err(|_| DurabilityError::InvalidStoredState)?,
+                            u32::try_from(online).map_err(|_| DurabilityError::InvalidStoredState)?,
+                        ));
+                    }
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Some(load))
                 })
             })
             .await

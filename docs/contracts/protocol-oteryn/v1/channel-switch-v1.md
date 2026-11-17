@@ -64,3 +64,20 @@ holds the membership for two minutes (migration 2859). The committed admission i
 takes the hold back; a refused admission leaves it. An expired hold without a current session
 leaves the Party through the World Party expiry drain, as an ordinary logout would. Party chat,
 Guild chat and private messages use the World relay and reach every Channel of the World.
+
+## Load
+
+Command 6251 `CHANNEL_LOAD`: the payload is empty; any byte is `REJECTED` with an empty result.
+The `ACCEPTED` result lists every current Channel of the caller's World with its online count:
+one count byte (`0..=64`), then per Channel its 16-byte ChannelId and a big-endian `u32`,
+strictly ascending by ChannelId (at most 1,281 bytes). The count is read from the durable current
+sessions (`session_state` 1 or 2) of each Channel, so it is never stale and never invented. No
+capacity, "full" state or full-Channel refusal exists yet; the window shows the count only.
+
+## Channel on social rows (capability 513)
+
+`SOCIAL_CHANNEL_V1` requires capabilities 40, 42 and 258. A session that selects it receives the
+member's current ChannelId (16 bytes) on Party member entries (field 7; never on an invitation),
+on Online VIP presence entries (field 6; never on Offline or Unconfirmed) and on Guild roster
+members (field 5, UUID). The server omits the field for a session without 513, so existing peers
+keep their exact wire shape. The VIP presence payload limit grows to 16,200 bytes.

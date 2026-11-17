@@ -188,6 +188,15 @@ pub(super) struct Mailbox {
     pub(super) premium_game: crate::premium::game::Panel,
     pub(super) coin_shop: Option<Arc<crate::coin_shop::launcher::Launcher>>,
     pub(super) vip_presence: oteryn_client_ui::vip_presence::VipPresencePanel,
+    /// chsw (capability 513): VIP login, logout and Channel-change notices naming the Channel,
+    /// numbered so each is shown once.
+    pub(super) vip_channel_notices: Vec<(u64, String)>,
+    pub(super) vip_channel_notice_serial: u64,
+    /// chsw (capability 512): the Change Channel window, and the target once the server
+    /// released the session for a switch.
+    pub(super) channel_switch: oteryn_client_ui::channel_switch::ChannelSwitchPanel,
+    pub(super) channel_switch_target: Option<[u8; 16]>,
+    pub(super) channel_switch_character: String,
     pub(super) weapon_proficiency: oteryn_client_ui::weapon_proficiency::WeaponProficiencyPanel,
 
     pub(super) achievements: oteryn_client_ui::account_achievements::AchievementsPanel,

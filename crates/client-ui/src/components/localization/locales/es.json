@@ -407,7 +407,6 @@
  "Change Channel": "Cambiar canal",
  "Type": "Tipo",
  "Ping": "Ping",
- "Load": "Carga",
  "Full": "Lleno",
  "Current": "Actual",
  "Available": "Disponible",
@@ -433,5 +432,10 @@
  "Wait {time}": "Espera {time}",
  "Do you want to change to channel {name}?": "¿Quieres cambiar al canal {name}?",
  "You are now on channel {name} ({kind}).": "Ahora estás en el canal {name} ({kind}).",
- "You are now on channel {name}.": "Ahora estás en el canal {name}."
+ "You are now on channel {name}.": "Ahora estás en el canal {name}.",
+ "Online": "En línea",
+ "Unconfirmed": "Sin confirmar",
+ "{name} has logged in on channel {channel}.": "{name} se ha conectado en el canal {channel}.",
+ "{name} has logged out of channel {channel}.": "{name} se ha desconectado del canal {channel}.",
+ "{name} has changed to channel {channel}.": "{name} ha cambiado al canal {channel}."
 }

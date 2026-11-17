@@ -285,6 +285,9 @@ pub mod channel_switch;
 pub mod sanction_record;
 #[path = "features/0075-server-save-countdown/protocol.rs"]
 pub mod server_save_countdown;
+/// The Channel on Party, VIP and Guild rows (capability 513).
+#[path = "features/0513-social-channel/mod.rs"]
+pub mod social_channel;
 
 /// Weekly Task Board state and controls.
 #[path = "features/0072-task-board/mod.rs"]

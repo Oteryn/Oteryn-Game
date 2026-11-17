@@ -148,6 +148,11 @@ impl ClientBootstrap {
         }
         link.configure_coin_shop(self.native_login.clone(), admitted.character_id());
         link.party_own_character(admitted.character_name());
+        link.world_channels(
+            admitted.character_id(),
+            admitted.channel_id(),
+            admitted.channels(),
+        );
         link.house_world(admitted.world_id());
         if admitted.training_requested() {
             let remaining = self

@@ -135,6 +135,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         wire::encode_status(status).map(ChannelSwitchOutcome::Status)
     }
 
+    /// Command 6251: the online count of each current Channel of this World.
+    pub(super) async fn channel_load_wire(
+        &self,
+        admitted: AdmittedSession,
+        id: u64,
+        payload: &[u8],
+    ) -> Option<ChannelSwitchOutcome> {
+        wire::decode_status_request(payload)?;
+        if !self.switch_session_current(admitted, id).await {
+            return None;
+        }
+        let load = self
+            .root
+            .read_channel_load(
+                self.character,
+                self.holder,
+                admitted.item_fence?,
+                *admitted.world_id.as_bytes(),
+            )
+            .await
+            .ok()
+            .flatten()?;
+        wire::encode_load(&load).map(ChannelSwitchOutcome::Status)
+    }
+
     /// Command 6248: every lock first, then the ordinary logout release as the safe exit.
     pub(super) async fn channel_switch_request_wire(
         &self,
@@ -197,6 +222,9 @@ macro_rules! composed_methods {
                 }
                 oteryn_protocol_oteryn::channel_switch::COMMAND_TYPE_CHANNEL_SWITCH_REQUEST => {
                     Box::pin(self.channel_switch_request_wire(admitted, id, payload)).await
+                }
+                oteryn_protocol_oteryn::channel_switch::COMMAND_TYPE_CHANNEL_LOAD => {
+                    self.channel_load_wire(admitted, id, payload).await
                 }
                 _ => None,
             }

@@ -80,6 +80,16 @@ impl Outbox {
             oteryn_client_ui::chat_party_room::replace_rooms(&mut mailbox.chat_party_room, rooms);
         }
         if let Some(presence) = mailbox.pushed.vip_presence.take() {
+            let notices = oteryn_client_ui::social_channel::presence_notices(
+                &mailbox.party.channel_names,
+                &mailbox.vip_presence.presence,
+                &presence,
+            );
+            for notice in notices {
+                mailbox.vip_channel_notice_serial += 1;
+                let serial = mailbox.vip_channel_notice_serial;
+                mailbox.vip_channel_notices.push((serial, notice));
+            }
             oteryn_client_ui::vip_presence::replace(&mut mailbox.vip_presence, presence);
         }
         if let Some(position) = mailbox.pushed.own

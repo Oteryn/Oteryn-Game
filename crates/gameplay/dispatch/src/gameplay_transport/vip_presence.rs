@@ -175,6 +175,7 @@ impl VipPresenceRuntime {
                             == Some(&(row.status == Status::Online))
                 });
             let value = PresenceEntry {
+                channel: row.channel.filter(|_| row.status == Status::Online),
                 entry: row.entry,
                 name: row.name,
                 status: row.status,
@@ -294,6 +295,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .is_some_and(super::chat_relay::ChatRelay::is_ready)
                     .then_some(rows)
                     .flatten();
+                // chsw: the target's Channel is negotiated by capability 513.
+                let social = selected
+                    .contains(oteryn_protocol_oteryn::channel_switch::CAPABILITY_SOCIAL_CHANNEL_V1);
+                let rows = rows.map(|mut rows| {
+                    if !social {
+                        rows.iter_mut().for_each(|row| row.channel = None);
+                    }
+                    rows
+                });
                 self.states.chat.vip.complete(
                     admitted.game_session_id,
                     plan,

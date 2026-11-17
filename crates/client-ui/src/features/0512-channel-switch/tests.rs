@@ -25,7 +25,7 @@ fn row(channel: [u8; 16], name: &str, pvp: PvpType, ping: Option<u32>, full: boo
         name: name.into(),
         pvp: Some(pvp),
         ping_ms: ping,
-        load_percent: Some(40),
+        online: Some(40),
         full,
     }
 }
@@ -60,7 +60,7 @@ fn c0512_window_sends_the_status_query_and_shows_the_columns() -> Result<(), &'s
     let rows = panel_rows(&p, 0);
     assert_eq!(
         rows[0].0,
-        ["Channel", "Type", "Ping", "Load", "Status"].map(String::from)
+        ["Channel", "Type", "Ping", "Online", "Status"].map(String::from)
     );
     assert_eq!(rows[1].0[4], "Current");
     assert!(rows[1].1, "the current Channel is greyed");
@@ -169,5 +169,32 @@ fn c0512_every_refusal_opens_the_error_of_its_lock() -> Result<(), &'static str>
         p.error.as_deref(),
         Some("Channel switching is unavailable in this session")
     );
+    Ok(())
+}
+
+#[test]
+fn c0512_load_fills_the_online_column_and_unknown_channels_stay_unknown() -> Result<(), &'static str> {
+    let mut p = panel();
+    let command = request_load(&p).ok_or("a load query")?;
+    assert_eq!((command.capability, command.kind), (512, 6251));
+    assert!(command.payload.is_empty());
+    let payload = oteryn_client_runtime::channel_switch::encode_load(&[(A, 7), (C, 0)])
+        .ok_or("a load payload")?;
+    let load = |status, payload: Vec<u8>| GatedCommandResult {
+        command_id: 2,
+        server_sequence: 2,
+        status,
+        payload,
+    };
+    apply_load(&mut p, &load(CommandStatus::Accepted, payload));
+    let rows = panel_rows(&p, 0);
+    assert_eq!(rows[1].0[3], "7");
+    assert_eq!(rows[3].0[3], "0");
+    assert_eq!(rows[2].0[3], "—", "a Channel the server did not count stays unknown");
+    // A refused or malformed answer shows no count rather than a stale one.
+    apply_load(&mut p, &load(CommandStatus::Rejected, Vec::new()));
+    assert!(p.rows.iter().all(|row| row.online.is_none()));
+    p.selected = false;
+    assert!(request_load(&p).is_none(), "no query without the capability");
     Ok(())
 }

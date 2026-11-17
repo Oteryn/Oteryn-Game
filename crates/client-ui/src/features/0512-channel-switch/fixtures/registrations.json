@@ -37,6 +37,24 @@
   },
   {
     "mechanic": "0512-channel-switch",
+    "kind": "handlers",
+    "id": "0512-channel-switch-command6251",
+    "status": "supported",
+    "commands": [
+      6251
+    ],
+    "direction": "client_to_server",
+    "capability": 512,
+    "entry": "protocol.rs::request_load",
+    "reducer": "protocol.rs::apply_load",
+    "test": "tests.rs::c0512_load_fills_the_online_column_and_unknown_channels_stay_unknown",
+    "not_applicable": {
+      "input": "The Change Channel window sends the empty command 6251 with the status query when it opens; the menu entry next to Logout carries it.",
+      "settings": "Channel switching has no client setting."
+    }
+  },
+  {
+    "mechanic": "0512-channel-switch",
     "kind": "panels",
     "id": "0512-channel-switch-panel",
     "status": "supported",

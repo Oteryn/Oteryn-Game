@@ -52,7 +52,7 @@ pub(super) async fn authorize(
     client: &NativeLoginClient,
     config: &NativeLoginConfig,
     cancellation: CancellationToken,
-) -> Result<(NativeTicket, String, Option<String>, String, bool), GameplayEntryError> {
+) -> Result<Authorized, GameplayEntryError> {
     let mut device = config
         .device_sessions
         .begin(
@@ -78,7 +78,7 @@ pub(super) async fn authorize(
         .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
     let directory_client = oteryn_platform_client::PlatformClient::new(platform)
         .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
-    let (character_id, channel_id, character_name, training_requested) = loop {
+    let (character_id, channel_id, character_name, training_requested, channels) = loop {
         let characters = if let Some(token) = &token {
             client
                 .owner_characters(token, cancellation.clone())
@@ -115,7 +115,16 @@ pub(super) async fn authorize(
             .map_err(retry_login)?;
         let rows = crate::character_selection::join(characters, &directory);
         use crate::character_selection::SelectionAction;
-        let action = if let Some(selection) = config.training_queue.next() {
+        let action = if quick
+            && let Some((character_id, channel_id)) = config.channel_switch.clone()
+        {
+            // chsw: the switch's fresh admission; the selection check below still requires the
+            // target to be a listed Channel of the character's World.
+            SelectionAction::Play {
+                character_id,
+                channel_id: Some(channel_id),
+            }
+        } else if let Some(selection) = config.training_queue.next() {
             SelectionAction::Train {
                 character_id: selection.character_id,
                 channel_id: selection.channel_id,
@@ -173,6 +182,7 @@ pub(super) async fn authorize(
                     channel_id,
                     selected.character.name.clone(),
                     training_requested,
+                    selected.channels.clone(),
                 );
             }
             SelectionAction::TrainMany { .. } => return Err(rejected(PublicClass::RetryLogin)),
@@ -245,13 +255,25 @@ pub(super) async fn authorize(
     if let Some(attempt) = &device {
         attempt.remember_selection(&character_id, channel_id.as_deref());
     }
-    Ok((
+    Ok(Authorized {
         ticket,
         character_id,
         channel_id,
         character_name,
         training_requested,
-    ))
+        channels,
+    })
+}
+
+/// The consuming ticket and the selection it was issued for.
+pub(super) struct Authorized {
+    pub ticket: NativeTicket,
+    pub character_id: String,
+    pub channel_id: Option<String>,
+    pub character_name: String,
+    pub training_requested: bool,
+    /// The Channels of the selected World, as the directory listed them (chsw, capability 513).
+    pub channels: Vec<crate::character_selection::ChannelChoice>,
 }
 
 async fn enroll_or_fresh_browser(
