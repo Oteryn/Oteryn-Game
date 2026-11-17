@@ -83,6 +83,8 @@ STATIC_IDS = {8995, 8996, 9527, 17677, 17679, 17681, 21573, 23163, 32173, 32537}
 SIDE_IDS |= STATIC_IDS | {3114, 3456, 3661, 32197, 32225, 32226, 32227, 32228, 32582, 32583, 32584, 32585, 32602, 32757}
 SIDE_IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
 
+# QB Shaman: Chondur takes 5 tribal masks and 5 banana staffs for the voodoo mask addon.
+IDS |= {3348, 3403}
 IDS |= SIDE_IDS
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'

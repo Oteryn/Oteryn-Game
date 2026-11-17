@@ -115,3 +115,36 @@ Known global-parity gaps (later batches or the server lane):
   random-outcome NPC exchange.
 - The full-outfit achievement on owning both addons, from any source, has
   been sent to the server lane.
+
+## QB-shaman — Shaman outfit and addons (Hairycles, Chondur)
+
+Gap: Hairycles and Chondur had no placement and no outfit or addon conversation. New generator
+module `tools/content-schema/quest-authoring/qb_shaman.py`, registered in `qengine_rewards.py`,
+writes the three stages from the Hairycles and Chondur donors; Hairycles 32826,32574,6 and
+Chondur 32361,32550,7 are placed at their single agreeing promotion-candidate cells. Global wins
+over the donors.
+
+| Step | TibiaWiki | Global mechanic |
+|---|---|---|
+| Outfit | `Shaman_Outfits_Quest/Spoiler`, `Shaman_Outfits` | After the Banuta questline (Ape City track 18), Hairycles gives the outfit for "shamanic powers" (looktype 154 male, 158 female) |
+| Staff start | `Shaman_Outfits_Quest/Spoiler` | Chondur: "task", "addon", "yes", once the 5 pirate voodoo dolls of the Sabrehaven mission are handed in (reputation track 12 or more) and the outfit is owned |
+| Voodoo Staff (addon 2) | `Shaman_Outfits_Quest/Spoiler` | Chondur takes 5 dworc voodoo dolls (3002) and 1 mandrake (5014) |
+| Mask start | `Shaman_Outfits_Quest/Spoiler` | "addon", "yes", "yes" after the staff |
+| Voodoo Mask (addon 1) | `Shaman_Outfits_Quest/Spoiler` | Chondur takes 5 tribal masks (3403) and 5 banana staffs (3348) |
+
+- The Way of the Shaman achievement is granted by the generic full-outfit table, not here.
+- Tracks are the existing `u7_8/shaman_outfits/addon_staff_mask`, `mission_staff`, `mission_mask`
+  and `u7_6/the_ape_city/shaman_outfit`; the items 3403 and 3348 were added to the native
+  custody profile list (`qengine_reward_item_profiles.py`) and the regenerated pins follow.
+
+Not modelled (reported, not faked):
+
+- The donor's extra Counterspell and Djinn in Love requirements (the global wiki asks only for
+  the pirate voodoo dolls).
+- Chondur's stage-dependent greeting, his "Maybe next time" reply to "no", and Hairycles'
+  "You already are shaman and doctor" and "journey for wisdom" replies.
+- Premium-account gating of the outfit and addons (the wiki lists them as premium; the other QB
+  outfit callbacks do not gate either).
+
+Tests: `postgres_tests/qb_shaman.rs` (placement index and `qengine-rewards-qb-shaman-story` on
+PostgreSQL in CI), `tests/npcs/qb_shaman_npcs.rs` and `test_qb_shaman_placements.py`.
