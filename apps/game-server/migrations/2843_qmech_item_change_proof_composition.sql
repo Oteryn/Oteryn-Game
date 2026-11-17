@@ -3,7 +3,7 @@
 -- Each arm is the exact one its owner migration (2401, 2405, 2605, 2707) used to
 -- insert; they are applied in that order, so the latest owner is checked first.
 DO $migration$
-DECLARE body TEXT; arm TEXT; at INTEGER;
+DECLARE body TEXT; arm TEXT; arms TEXT:=''; at INTEGER; anchor TEXT; exclusions TEXT;
 BEGIN
  -- owner migration 2401.
  body:=pg_get_functiondef('game_item_instance_change_proven()'::regprocedure);
@@ -15,7 +15,7 @@ BEGIN
        PERFORM game_elemental_arrival_complete(NEW.last_transaction_id); RETURN NULL;
      END IF;
      $arm$;
- EXECUTE overlay(body placing E'BEGIN\n'||arm FROM at FOR 5);
+ arms:=arm||arms;
  -- owner migration 2405.
  body:=pg_get_functiondef('game_item_instance_change_proven()'::regprocedure);
  at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
@@ -26,7 +26,7 @@ BEGIN
        PERFORM game_elemental_loot_retire_complete(NEW.item_instance_id); RETURN NULL;
      END IF;
      $arm$;
- EXECUTE overlay(body placing E'BEGIN\n'||arm FROM at FOR 5);
+ arms:=arm||arms;
  -- owner migration 2605.
  body:=pg_get_functiondef('game_item_instance_change_proven()'::regprocedure);
  at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
@@ -37,7 +37,7 @@ BEGIN
        PERFORM game_elemental_altar_complete(NEW.last_transaction_id); RETURN NULL;
      END IF;
      $arm$;
- EXECUTE overlay(body placing E'BEGIN\n'||arm FROM at FOR 5);
+ arms:=arm||arms;
  -- owner migration 2707.
  body:=pg_get_functiondef('game_item_instance_change_proven()'::regprocedure);
  at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
@@ -48,8 +48,47 @@ BEGIN
      PERFORM game_dreamer_ring_complete(NEW.last_transaction_id); RETURN NULL;
     END IF;
 $arm$;
- EXECUTE overlay(body placing E'BEGIN\n'||arm FROM at FOR 5);
+ arms:=arm||arms;
+ -- Keep main's complete MAX501 terminal proof first. Add these owners to
+ -- its existing mixed-owner exclusion, so a QMECH receipt still selects the
+ -- exact before-image/completion arms below. Ordinary reset children must not
+ -- pay four extra SPI before-image probes ahead of their bounded cohort proof.
+ anchor:=$anchor$    UNION ALL SELECT 1 FROM game_player_death_item_records r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()$anchor$;
+ exclusions:=$exclude$
+    UNION ALL SELECT 1 FROM game_elemental_arrival_receipts r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_elemental_loot_retire_receipts r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_elemental_altar_receipts r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()
+    UNION ALL SELECT 1 FROM game_dreamer_ring_offerings r
+     WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id()$exclude$;
+ IF (length(body)-length(replace(body,anchor,'')))/length(anchor)<>1 THEN
+  RAISE EXCEPTION 'unexpected MAX501 mixed-owner exclusion';
+ END IF;
+ body:=replace(body,anchor,anchor||exclusions);
+ anchor:=E'  IF EXISTS(SELECT 1 FROM game_item_imbuement_records r\n    WHERE r.action=3';
+ at:=strpos(body,anchor);
+ IF at=0 OR (length(body)-length(replace(body,anchor,'')))/length(anchor)<>1 THEN
+  RAISE EXCEPTION 'unexpected Item proof following MAX501';
+ END IF;
+ EXECUTE overlay(body placing arms FROM at FOR 0);
 END $migration$;
+
+-- Each cached positive branch is already inside the same membership test.
+-- `cached` is a local record, unchanged by either snapshot/fence branch. Do not
+-- scan the up-to-501 UUID array twice for each of the terminal custody proofs.
+-- Keep the outer membership, cache-owner, snapshot and write-fence predicates.
+DO $membership$
+DECLARE body TEXT; redundant TEXT:='IF p_item=ANY(cached.proven_items) THEN RETURN TRUE; END IF;';
+BEGIN
+ body:=pg_get_functiondef('game_world_reset_item_proven(uuid)'::regprocedure);
+ IF (length(body)-length(replace(body,redundant,'')))/length(redundant)<>2 THEN
+  RAISE EXCEPTION 'unexpected MAX501 cached membership branches';
+ END IF;
+ EXECUTE replace(body,redundant,'RETURN TRUE;');
+END $membership$;
 
 -- Compose the 2500 live-creature output arm with main's 1552 bounded carried
 -- exchange. 2500 re-created game_quest_carried_use_complete() from its 1005

@@ -253,9 +253,11 @@ async fn scenario(admin: String) -> TestResult {
             .source_started_for_test(),
         "the real reserved onThink initializes the source wave clock"
     );
-    // This fixed occurrence schedules the native duplicate-cell regression;
-    // the source oracle below still proves both requests and exact admissions.
-    let wave_at = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(12_000_015);
+    // Crystal the_primal_menace.lua uses whole-second os.time. The native
+    // decision root includes the content digest, so refresh this subsecond
+    // occurrence after content changes while retaining the same source second
+    // and the exact duplicate-cell requests and admission proofs below.
+    let wave_at = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(12_006_617);
     let root_bytes: [u8; 32] = Sha256::new()
         .chain_update(b"srx3:primal:callbacks:v1")
         .chain_update(native.source_digest())

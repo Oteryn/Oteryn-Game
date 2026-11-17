@@ -1571,8 +1571,38 @@ fn source_herald_grouped_writer_death_replay_ineligible_and_stale_session_are_at
             Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))
         );
         assert_eq!(snapshot(&harness.pool).await?, before);
-        let start=QuestTransitionRequest {transition_key:"oteryn:quest-transition/crystalserver/quest/u15_24/targuna/burning_heart/mission/npc_1".into(),cause:QuestCause::Command(command(51)?)};
-        committed(commit(harness, &authority, fence(1)?, start, &catalogue).await)?;
+        let start = QuestTransitionRequest {
+            transition_key: "oteryn:quest-transition/crystalserver/quest/u15_24/targuna/burning_heart/mission/npc_1".into(),
+            cause: QuestCause::Command(command(51)?),
+        };
+        // Crystal emiliana.lua owns the mission=1 NPC dialogue predecessor.
+        // Reliable Ram now protects this shared track (actions_reliable_ram.lua
+        // :20-50, mission 4 -> 5), so a bare catalogue Command must stay refused.
+        // Import that prior NPC receipt with the existing guarded SQL fixture;
+        // every Herald death below still uses the real fenced native writer.
+        assert_eq!(
+            commit(harness, &authority, fence(1)?, start.clone(), &catalogue).await,
+            Err("InvalidInput".into())
+        );
+        assert_eq!(snapshot(&harness.pool).await?, before);
+        let initial = catalogue
+            .track(mission)
+            .ok_or("source mission track")?
+            .initial;
+        let mut history = Receipt::new(1, 51, &[(mission, initial, 1)]);
+        history.transition = start.transition_key;
+        history.quest = "oteryn:quest.targuna_quest".into();
+        history.pin = (
+            "content-1",
+            catalogue
+                .definition_hash(&history.quest)
+                .ok_or("source quest hash")?,
+        );
+        let mut tx = harness.pool.begin().await?;
+        sqlx::raw_sql(sqlx::AssertSqlSafe(history.start()))
+            .execute(&mut *tx)
+            .await?;
+        tx.commit().await?;
         let sequencer = CharacterRevisionSequencer::new();
         let mut slot = sequencer
             .acquire(CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?)

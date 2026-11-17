@@ -23,19 +23,58 @@ struct SelectedPass {
 }
 
 pub(super) async fn actual_source_suffix(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     player: ExactActorRef,
     session: GameSessionId,
     boss: ExactActorRef,
 ) -> TestResult {
-    let start = owner.owner_now().get();
+    use oteryn_protocol_oteryn::world_spatial::StepDirection;
+    // Crystal goshnar's_megalomania_purple.lua has directional beams and
+    // staticAttackChance=80: the boss can move even while adjacent. The lever's
+    // Aspect also obstructs the direct approach. Use real paced Player steps
+    // around it, then follow the live boss onto a cardinal beam line below.
+    // A stationary diagonal Player cannot supply the asserted beam HP receipt.
+    for direction in [
+        StepDirection::East,
+        StepDirection::North,
+        StepDirection::North,
+        StepDirection::North,
+        StepDirection::North,
+        StepDirection::North,
+    ] {
+        step_onto_beam(owner, player, session, direction).await?;
+    }
     let mut selected = None;
     // Exercise the actual source chance/interval owner. No fabricated proposal,
     // selected seed, replacement AI clock or manually accepted cast is admitted.
     'turns: for turn in 0..64_u64 {
-        let now = start
-            .checked_add(turn.checked_mul(7_000_000).ok_or("native turn interval")?)
-            .ok_or("native turn time")?;
+        if turn > 0 {
+            // Advance the existing owner clock, as the other source-entry cases
+            // do, so both Player STEP and native Think observe the same time.
+            owner.clock_origin = owner
+                .clock_origin
+                .checked_sub(Duration::from_secs(7))
+                .ok_or("native turn time")?;
+        }
+        let direction = {
+            let runtime = owner.runtime.lock().await;
+            let player_at = runtime
+                .read_actor_position(player)
+                .map_err(debug)?
+                .position();
+            let boss_at = runtime.read_actor_position(boss).map_err(debug)?.position();
+            (player_at.x != boss_at.x && player_at.y != boss_at.y).then_some(
+                if player_at.y > boss_at.y {
+                    StepDirection::North
+                } else {
+                    StepDirection::South
+                },
+            )
+        };
+        if let Some(direction) = direction {
+            step_onto_beam(owner, player, session, direction).await?;
+        }
+        let now = owner.owner_now().get();
         {
             let runtime = owner.runtime.lock().await;
             let mut states = owner.states.spell_states.lock().await;
@@ -312,6 +351,25 @@ pub(super) async fn actual_source_suffix(
         Some(receipt),
         "replay preserves the original heal receipt and vitals revision"
     );
+    Ok(())
+}
+
+async fn step_onto_beam(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    player: ExactActorRef,
+    session: GameSessionId,
+    direction: oteryn_protocol_oteryn::world_spatial::StepDirection,
+) -> TestResult {
+    owner.root.await_ready().await?;
+    let (step, duration) = owner
+        .ordinary_paced_step(player, session, direction, None, None)
+        .await;
+    assert_eq!(
+        step.disposition,
+        oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved,
+        "actual Player STEP onto source beam line"
+    );
+    tokio::time::sleep(duration.ok_or("source beam approach pacing receipt")?).await;
     Ok(())
 }
 

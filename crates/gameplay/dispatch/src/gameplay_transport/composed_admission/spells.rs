@@ -67,6 +67,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         intent: actor_spell::SpellCastIntent,
         parameter: Option<&oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastIntent>,
     ) -> Option<actor_spell::SpellCastOutcome> {
+        // A timed-out native pass retires its SQL holder. Service the root's
+        // coalesced readiness window before the first session read, so retrying
+        // this same command does not depend on a separate node maintenance pump.
+        // Readiness grants no pass or cast authority; all normal fences and the
+        // retained commit owner still run below, within the existing command wait.
+        if !matches!(
+            tokio::time::timeout(
+                crate::gameplay_transport::COMMAND_HOLDER_WINDOW,
+                self.root.await_ready(),
+            )
+            .await,
+            Ok(Ok(()))
+        ) {
+            return None;
+        }
         // Magic Rope has no text parameter, but shares the vertical relocation owner.
         // Levitate still requires its explicit up/down parameter in that owner.
         let vertical = self.spells.source_indexed(intent.spell).is_some_and(|(spell, _)| {

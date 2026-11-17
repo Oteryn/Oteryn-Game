@@ -169,7 +169,7 @@ fn run_source_entry_case(
                 .activity_runtimes
                 .get(instance, fence.scope_ownership_generation.get())
                 .ok_or("actual source owner")?;
-            let view = owner.runtime_view(&registered);
+            let mut view = owner.runtime_view(&registered);
             let boss = {
                 let runtime = view.runtime.lock().await;
                 runtime
@@ -182,7 +182,7 @@ fn run_source_entry_case(
             };
             if attack_cancellation {
                 super::srx3_soul_war_attacks::actual_source_suffix(
-                    &view,
+                    &mut view,
                     admitted
                         .runtime_actor
                         .ok_or("actual source attack Player")?,

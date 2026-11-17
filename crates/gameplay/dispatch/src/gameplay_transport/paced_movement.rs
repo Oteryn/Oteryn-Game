@@ -247,6 +247,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .and_then(|active| active.native_gameplay())
                 .is_some_and(|native| {
                     super::soul_war_callbacks::qualifies_source(&runtime, native)
+                        && self.rooms().gate_field_step_ingress().is_some_and(|room| {
+                            // The content digest qualifies the callback body, not
+                            // every Bundle map as its source. Legacy regional
+                            // Bundles retain ordinary movement; pinned activity
+                            // rooms and the published World own durable blood
+                            // reads even after volatile MINT hints are lost.
+                            room.pinned_activity_source_room().is_some()
+                                || self.active_generation.is_some_and(|active| {
+                                    active
+                                        .qualify_published_world_context(
+                                            room,
+                                            runtime.content_pin(),
+                                        )
+                                        .is_some()
+                                })
+                        })
                 });
         let origin = runtime.read_actor_position(actor).ok();
         let snow_origin = self.bundle_map().is_some_and(|map| {
