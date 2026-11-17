@@ -270,6 +270,11 @@ pub(super) async fn run(
         let before = backpack_inspection(&mut client).await?;
         let session = client.join_snapshot().game_session_id;
         let saved_position = client.world_spatial().actor_position;
+        let diag_own = diag_identity(&client);
+        evidence(&format!(
+            "E2EF3_DIAG phase=pre-logout stage=e2ef3 tile={saved_position:?} own={diag_own:?} occupants={}",
+            diag_occupants(&client, saved_position, &diag_own)
+        ));
         let (result, logout, attempts, busy_timed_out) = super::logout_retrying_busy(&mut client).await?;
         if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Err(format!("E2EF3 fresh admission logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
@@ -278,6 +283,10 @@ pub(super) async fn run(
         client = connect_world(clients, 0x79).await?;
         let fresh_session = client.join_snapshot().game_session_id;
         let fresh_position = client.world_spatial().actor_position;
+        evidence(&format!(
+            "E2EF3_DIAG phase=post-admit stage=e2ef3 saved={saved_position:?} fresh={fresh_position:?} occupants_on_saved={}",
+            diag_occupants(&client, saved_position, &diag_own)
+        ));
         if fresh_session == session || fresh_position != saved_position {
             return Err(format!(
                 "E2EF3 fresh admission session/position mismatch: same_session={}; saved_position={saved_position:?}; fresh_position={fresh_position:?}",

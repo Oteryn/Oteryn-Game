@@ -600,6 +600,41 @@ async fn walk(
     Ok(())
 }
 
+/// Diagnostic only: the own identity of the session's actor, or empty without an entity view.
+fn diag_identity(client: &oteryn_dev_client::DevClientSession) -> Vec<u8> {
+    client
+        .world_entities()
+        .map(|entities| entities.own_identity().to_vec())
+        .unwrap_or_default()
+}
+
+/// Diagnostic only: every entity other than self on `at`, as the client's spatial view sees it,
+/// with its identity and whether that identity equals `previous_own` (the re-admitted
+/// character's own identity from the pre-logout session).
+fn diag_occupants(
+    client: &oteryn_dev_client::DevClientSession,
+    at: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+    previous_own: &[u8],
+) -> String {
+    let Some(entities) = client.world_entities() else {
+        return "[no-entity-view]".into();
+    };
+    let list: Vec<String> = entities
+        .others()
+        .filter(|entity| entity.position == at)
+        .map(|entity| {
+            format!(
+                "{:?},{:?},{:?},same_character={}",
+                entity.kind,
+                entity.entity,
+                entity.display_name,
+                entity.entity.identity.as_slice() == previous_own
+            )
+        })
+        .collect();
+    format!("[{}]", list.join(";"))
+}
+
 pub(super) async fn logout_retrying_busy(
     client: &mut oteryn_dev_client::DevClientSession,
 ) -> TestResult<(
@@ -662,6 +697,12 @@ pub(super) async fn journeys(
         )
         .into());
     }
+    let diag_saved = client.world_spatial().actor_position;
+    let diag_own = diag_identity(&client);
+    evidence(&format!(
+        "E2EF3_DIAG phase=pre-logout stage=first_town tile={diag_saved:?} own={diag_own:?} occupants={}",
+        diag_occupants(&client, diag_saved, &diag_own)
+    ));
     let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("first town entry logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
@@ -2826,6 +2867,11 @@ pub(super) async fn journeys(
     if map.header.bundle_digest != world.base().digest() || map.tiles.is_empty() {
         return Err("town join served a different or empty World bundle".into());
     }
+    evidence(&format!(
+        "E2EF3_DIAG phase=post-admit stage=first_town saved={diag_saved:?} fresh={:?} occupants_on_saved={}",
+        client.world_spatial().actor_position,
+        diag_occupants(&client, diag_saved, &diag_own)
+    ));
     // Resume from the profile journey's saved cell and travel normally to town.
     let from = tile(client.world_spatial().actor_position)?;
     evidence(&format!(
