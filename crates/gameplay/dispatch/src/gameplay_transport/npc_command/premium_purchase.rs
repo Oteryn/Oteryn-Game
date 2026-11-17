@@ -184,14 +184,7 @@ pub(super) async fn apply(
     let Service::Premium(premium_service) = &pending.service else {
         use crate::durability::item_fee_burn::{FeeBurnCause, FeeBurnRequest};
         use oteryn_gameplay_world_change::horse_station::RENTAL_PRICE_GOLD;
-        let derive = |slot: u8| {
-            let tag = format!("oteryn:npc-horse-rental:v1:{slot}");
-            super::super::npc_trade_command::derived(
-                tag.as_bytes(),
-                command.game_session_id,
-                command.command_id,
-            )
-        };
+        let derive = |slot| horse_rental_id(command, slot);
         let fee = FeeBurnRequest {
             cause: FeeBurnCause::HorseRental {
                 occurrence: derive(0),
@@ -351,6 +344,46 @@ fn completion(intent: &NpcTalkIntent, receipt: &PurchaseReceipt) -> NpcTalkOutco
     }
 }
 
+fn horse_rental_id(command: UseCommand, slot: u8) -> [u8; 16] {
+    let tag = format!("oteryn:npc-horse-rental:v1:{slot}");
+    super::super::npc_trade_command::derived(
+        tag.as_bytes(),
+        command.game_session_id,
+        command.command_id,
+    )
+}
+
+async fn resume_horse_rental(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    command: UseCommand,
+) -> Option<NpcTalkOutcome> {
+    let expected = command.item_fence?;
+    let fence = admission
+        .current_quest_fence(command.game_session_id)
+        .await
+        .ok()??;
+    if fence.item_fence() != expected {
+        return None;
+    }
+    match admission
+        .root
+        .horse_rental_committed(
+            admission.character,
+            admission.holder,
+            fence,
+            horse_rental_id(command, 0),
+        )
+        .await
+    {
+        Ok(true) => Some(NpcTalkOutcome {
+            inventory_changed: true,
+            ..NpcTalkOutcome::only(NpcIntentDisposition::Ok)
+        }),
+        Ok(false) => None,
+        Err(_) => Some(held_bank_outcome()),
+    }
+}
+
 pub(in crate::gameplay_transport) async fn resume_premium_talk(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     _actor: ExactActorRef,
@@ -430,6 +463,9 @@ pub(in crate::gameplay_transport) async fn resume_npc_talk(
         return Some(outcome);
     }
     if let Some(outcome) = admission.resume_paid_travel(actor, command).await {
+        return Some(outcome);
+    }
+    if let Some(outcome) = resume_horse_rental(admission, command).await {
         return Some(outcome);
     }
     if let Some(outcome) = resume_premium_talk(admission, actor, command).await {

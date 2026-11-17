@@ -159,3 +159,34 @@ impl DurabilityRoot {
         })).await
     }
 }
+
+impl DurabilityRoot {
+    /// Resolve a possibly committed confirmation without rerolling or charging again.
+    pub async fn horse_rental_committed(
+        &self,
+        authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+        node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
+        fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
+        occurrence: [u8; 16],
+    ) -> Result<bool, DurabilityError> {
+        let recovery = authority.record_for(self).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            if crate::durability::character_progression::assert_gameplay_fence(&mut tx, &fence, &node).await?.is_err() {
+                return Ok(false);
+            }
+            let committed = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM game_horse_rental_receipts
+                 WHERE occurrence_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid
+                   AND world_id=encode($3,'hex')::uuid)",
+            ).bind(occurrence.as_slice()).bind(fence.character_id.as_bytes().as_slice())
+             .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+             .fetch_one(&mut *tx).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(committed)
+        })).await
+    }
+}

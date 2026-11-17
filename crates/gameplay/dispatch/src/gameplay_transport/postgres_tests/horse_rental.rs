@@ -182,6 +182,22 @@ fn scenario() -> TestResult {
                 );
             }
         }
+        let replay = owner
+            .resume_npc_bank(
+                dependencies.actor,
+                UseCommand {
+                    game_session_id: session,
+                    command_id: confirm,
+                    item_fence: Some(fence),
+                },
+            )
+            .await
+            .ok_or("committed rental replay")?;
+        assert!(replay.inventory_changed);
+        let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_horse_rental_receipts")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(receipts, 1);
         let (price, duration): (i64, i64) = sqlx::query_as(
             "SELECT f.fee_gold_units::bigint, r.expires_at_ms-r.rented_at_ms
              FROM game_horse_rental_receipts r JOIN game_item_fee_burns f ON f.transaction_id=r.fee_transaction_id",
