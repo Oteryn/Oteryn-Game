@@ -9,6 +9,7 @@ use crate::content::channel_content_pin::ChannelContentPin;
 use crate::foundation::ChannelRuntimeV1;
 use crate::gameplay_transport::connection::FirstEntryOutcome;
 use oteryn_gameplay_quests::quest::{loader, world_callbacks::Position};
+use oteryn_gameplay_world::map::view::MapFacts;
 use oteryn_protocol_oteryn::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
     encode_step_intent,
