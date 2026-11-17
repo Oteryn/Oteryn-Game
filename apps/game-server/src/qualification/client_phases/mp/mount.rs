@@ -4,6 +4,7 @@ use super::*;
 mod bots;
 mod diagnostics;
 mod mp01_party_pvp;
+mod mp04_market;
 
 pub(super) async fn run(
     core: &SeamClients<'_>,
@@ -16,4 +17,5 @@ pub(super) async fn run(
         mp01_party_pvp::run(core, packets, world, towns),
     )
     .await;
+    verdict::indexed("MP04.full", mp04_market::run(core, packets, world)).await;
 }
