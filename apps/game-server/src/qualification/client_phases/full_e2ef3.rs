@@ -276,10 +276,14 @@ pub(super) async fn run(
         }
         drop(client);
         client = connect_world(clients, 0x79).await?;
-        if client.join_snapshot().game_session_id == session
-            || client.world_spatial().actor_position != saved_position
-        {
-            return Err("E2EF3 fresh admission session/position mismatch".into());
+        let fresh_session = client.join_snapshot().game_session_id;
+        let fresh_position = client.world_spatial().actor_position;
+        if fresh_session == session || fresh_position != saved_position {
+            return Err(format!(
+                "E2EF3 fresh admission session/position mismatch: same_session={}; saved_position={saved_position:?}; fresh_position={fresh_position:?}",
+                fresh_session == session
+            )
+            .into());
         }
         open_backpack(&mut client).await?;
         if backpack_inspection(&mut client).await? != before
