@@ -2,6 +2,7 @@ use super::super::GameModal;
 use super::view::Projection;
 use super::*;
 use crate::bevy_shell::game_ui::modal::ModalGuard;
+use crate::bevy_shell::gameplay_dialogs::popup;
 use oteryn_client_ui_bevy as source;
 pub(super) fn button(
     commands: &mut Commands,
@@ -21,36 +22,44 @@ pub(super) fn button(
     commands.entity(entity).add_child(caption);
     commands.entity(parent).add_child(entity);
 }
-fn modal(commands: &mut Commands, skins: &Skins, width: f32) -> Entity {
-    commands
-        .spawn((
-            Projection,
-            GameModal,
-            bevy::input_focus::tab_navigation::TabGroup {
-                order: 4,
-                modal: true,
-            },
-            source::frame(skins.frame.clone(), [4., 17., 4., 4.]),
-            Node {
-                position_type: PositionType::Absolute,
-                width: px(width),
-                max_width: percent(95.),
-                padding: UiRect::axes(px(8.), px(22.)),
-                flex_direction: FlexDirection::Column,
-                row_gap: px(4.),
-                ..default()
-            },
-            GlobalZIndex(80),
-        ))
-        .id()
-}
-/// Logical height of the item context menu: six fixed rows plus the admitted `extra` rows,
-/// each a 20-pixel button with 2-pixel gaps inside 5-pixel padding.
+/// Logical height of the item context menu: five fixed entries plus the admitted `extra`
+/// entries, each 16 pixels high with 3-pixel spacing inside the 4-pixel popup padding.
 pub(super) fn menu_height(extra: (bool, bool)) -> f32 {
-    let rows = 6. + f32::from(u8::from(extra.0) + u8::from(extra.1));
-    rows * 20. + (rows - 1.) * 2. + 10.
+    let rows = 5. + f32::from(u8::from(extra.0) + u8::from(extra.1));
+    rows * popup::ENTRY_HEIGHT + (rows - 1.) * popup::ENTRY_SPACING + 8.
 }
-/// `extra` admits the writing and timed item windows (capabilities 115 and 39).
+/// The item menu entries in Tibia order. `extra` admits the writing and timed item windows
+/// (capabilities 115 and 39).
+pub(super) fn menu_entries(slot: Slot, extra: (bool, bool)) -> Vec<(popup::Item, Control)> {
+    use oteryn_client_ui::world_interaction::menu::Action;
+    let mut entries = vec![
+        (
+            popup::Item::shortcut("Look", "Shift"),
+            Control::Context(slot, Action::Look),
+        ),
+        (
+            popup::Item::shortcut("Use", "Ctrl"),
+            Control::Context(slot, Action::Use),
+        ),
+        (
+            popup::Item::shortcut("Use with ...", "Ctrl"),
+            Control::Context(slot, Action::UseWith),
+        ),
+        (
+            popup::Item::entry("Use rune ..."),
+            Control::Context(slot, Action::UseRune),
+        ),
+        (popup::Item::entry("Open"), Control::Open(slot)),
+    ];
+    if extra.0 {
+        entries.push((popup::Item::entry("Write ..."), Control::Write(slot)));
+    }
+    if extra.1 {
+        entries.push((popup::Item::entry("Timed item ..."), Control::Timed(slot)));
+    }
+    entries
+}
+/// The item popup menu at `position`; a click outside or Escape closes it.
 pub(super) fn context(
     commands: &mut Commands,
     skins: &Skins,
@@ -58,12 +67,19 @@ pub(super) fn context(
     position: Vec2,
     extra: (bool, bool),
 ) {
-    use oteryn_client_ui::world_interaction::menu::Action;
-    let overlay = commands
+    let entries = menu_entries(slot, extra);
+    let items: Vec<_> = entries.iter().map(|(item, _)| item.clone()).collect();
+    let look = popup::Look {
+        font: skins.font.clone(),
+        frame: skins.frame.clone(),
+        checked: Some(skins.checked.clone()),
+        unchecked: Some(skins.unchecked.clone()),
+    };
+    let opened = popup::spawn(commands, &look, position, &items);
+    commands
         .spawn((
             Projection,
             GameModal,
-            MenuScrim,
             Node {
                 position_type: PositionType::Absolute,
                 width: percent(100.),
@@ -71,60 +87,15 @@ pub(super) fn context(
                 ..default()
             },
             GlobalZIndex(80),
-            BackgroundColor(Color::srgba(0., 0., 0., 0.01)),
         ))
-        .observe(dismiss_menu)
-        .id();
-    let panel = modal(commands, skins, 140.);
-    commands.entity(panel).remove::<Projection>();
-    commands.entity(overlay).add_child(panel);
-    // Keep the popover inside the primary viewport, including near the right sidebar.
-    commands.entity(panel).insert(Node {
-        position_type: PositionType::Absolute,
-        left: px(position.x.max(0.)),
-        top: px(position.y.max(0.)),
-        width: px(140.),
-        max_width: percent(95.),
-        padding: UiRect::all(px(5.)),
-        flex_direction: FlexDirection::Column,
-        row_gap: px(2.),
-        ..default()
-    });
-    button(commands, skins, panel, "Open", Control::Open(slot), 126.);
-    for (text, action) in [
-        ("Use", Action::Use),
-        ("Look", Action::Look),
-        ("Use with…", Action::UseWith),
-        ("Use rune…", Action::UseRune),
-    ] {
-        button(
-            commands,
-            skins,
-            panel,
-            text,
-            Control::Context(slot, action),
-            126.,
-        );
+        .add_children(&[opened.scrim, opened.root]);
+    commands
+        .entity(opened.scrim)
+        .insert(MenuScrim)
+        .observe(dismiss_menu);
+    for (entity, (_, control)) in opened.entries.iter().zip(entries) {
+        commands.entity(*entity).insert(control).observe(activate);
     }
-    for (shown, text, control) in [
-        (extra.0, "Write…", Control::Write(slot)),
-        (extra.1, "Timed item…", Control::Timed(slot)),
-    ] {
-        if shown {
-            button(commands, skins, panel, text, control, 126.);
-        }
-    }
-    button(
-        commands,
-        skins,
-        panel,
-        "Cancel",
-        Control::Cancel {
-            generation: slot.generation,
-            prompt: None,
-        },
-        126.,
-    );
 }
 #[derive(Component)]
 struct MenuScrim;

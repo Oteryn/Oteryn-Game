@@ -1,6 +1,10 @@
 //! Source-sized action rows; assignment and activation stay with the existing owner.
 use super::super::{owner::HostOwner, ui::Skins};
 use crate::bevy_shell::game_ui::modal::ModalGuard;
+use crate::bevy_shell::gameplay_dialogs::{
+    art::{self, ArtSlot},
+    popup,
+};
 use crate::play::BarGesture;
 use bevy::{prelude::*, ui_widgets::Activate};
 use oteryn_client_ui_bevy as source;
@@ -20,14 +24,36 @@ mod tests;
 const SLOT_SIZE: f32 = 34.;
 const SLOT_GAP: f32 = 2.;
 const ROW_SLOTS: usize = 50;
+// Tibia Global action bar QML: a 12 x 16 lock button on each bar, 17 x 17 scroll buttons.
+const LOCK_SIZE: Vec2 = Vec2::new(12., 16.);
+const SCROLL_SIZE: f32 = 17.;
 
 #[derive(Component, Clone, Copy)]
 enum ActionControl {
     Slot(usize),
-    Toggle(usize),
     Lock(usize),
     Scroll(usize, i8),
 }
+/// A row of the slot popup menu.
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
+enum MenuChoice {
+    AssignSpell,
+    AssignObject,
+    SetText,
+    EditHotkey,
+    Clear,
+    Lock,
+    Hide,
+}
+#[derive(Component)]
+struct MenuEntry {
+    slot: usize,
+    generation: u64,
+    choice: MenuChoice,
+}
+/// The open slot popup menu.
+#[derive(Resource, Default)]
+struct SlotMenu(Option<Entity>);
 #[derive(Component)]
 struct Generation(u64);
 #[derive(Component)]
@@ -37,8 +63,6 @@ struct DockAnchor(crate::play::BarDock);
 #[derive(Component)]
 struct SlotCaption(usize);
 #[derive(Component)]
-struct ToolCaption(ActionControl);
-#[derive(Component)]
 struct ActionHint;
 #[derive(Component)]
 struct CooldownLine;
@@ -46,42 +70,21 @@ struct CooldownLine;
 pub(super) fn install(app: &mut App) {
     editor::install(app);
     app.init_resource::<editor::EditorState>()
+        .init_resource::<SlotMenu>()
         .add_systems(Startup, (setup, editor::setup).after(super::setup))
         .add_systems(
             Update,
-            (projection::project, editor::project, cooldown::project).chain(),
+            (
+                close_menu,
+                projection::project,
+                editor::project,
+                cooldown::project,
+            )
+                .chain(),
         );
 }
 
 fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegions>) {
-    let tools = commands
-        .spawn(Node {
-            width: percent(100.),
-            height: Val::Auto,
-            min_height: px(20.),
-            flex_wrap: FlexWrap::Wrap,
-            column_gap: px(2.),
-            ..default()
-        })
-        .id();
-    for bar in 0..9 {
-        let toggle = button(
-            &mut commands,
-            &skins,
-            ActionControl::Toggle(bar),
-            30.,
-            &format!("{}", bar + 1),
-        );
-        let lock = button(
-            &mut commands,
-            &skins,
-            ActionControl::Lock(bar),
-            48.,
-            "Locked",
-        );
-        commands.entity(tools).add_children(&[toggle, lock]);
-    }
-    commands.entity(regions.bars).add_child(tools);
     for dock in [
         crate::play::BarDock::Bottom,
         crate::play::BarDock::Left,
@@ -143,7 +146,7 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
             &mut commands,
             &skins,
             ActionControl::Scroll(bar, -1),
-            17.,
+            SCROLL_SIZE,
             "<",
         );
         commands.entity(row).add_child(previous);
@@ -191,10 +194,37 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
             &mut commands,
             &skins,
             ActionControl::Scroll(bar, 1),
-            17.,
+            SCROLL_SIZE,
             ">",
         );
-        commands.entity(row).add_child(next);
+        // The bar's lock replaces the old "1 on / Locked" configuration row.
+        let lock = commands
+            .spawn((
+                source::button(skins.buttons.clone(), LOCK_SIZE.x),
+                ActionControl::Lock(bar),
+                Generation(u64::MAX),
+            ))
+            .insert(Node {
+                width: px(LOCK_SIZE.x),
+                min_width: px(LOCK_SIZE.x),
+                height: px(LOCK_SIZE.y),
+                min_height: px(LOCK_SIZE.y),
+                flex_shrink: 0.,
+                align_self: AlignSelf::Center,
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..default()
+            })
+            .observe(activate)
+            .id();
+        let icon = art::icon(
+            &mut commands,
+            ArtSlot::ActionBarLocked,
+            skins.font.clone(),
+            LOCK_SIZE - Vec2::splat(2.),
+        );
+        commands.entity(lock).add_child(icon);
+        commands.entity(row).add_children(&[next, lock]);
         commands.entity(regions.bars).add_child(row);
     }
     let cooldown = commands
@@ -241,10 +271,7 @@ fn button(
         .observe(activate)
         .id();
     let label = commands
-        .spawn((
-            source::button_caption(caption, skins.font.clone()),
-            ToolCaption(control),
-        ))
+        .spawn(source::button_caption(caption, skins.font.clone()))
         .id();
     commands.entity(button).add_child(label);
     button
@@ -287,41 +314,73 @@ fn activate(
                 play.link.cast_spell_slot(slot);
             }
         }
-        ActionControl::Toggle(bar) | ActionControl::Lock(bar) => {
-            let Some(row) = layout.rows.get(bar) else {
-                return;
-            };
-            play.link.bar_gesture(BarGesture::Configure {
-                bar,
-                dock: row.dock,
-                enabled: if matches!(control, ActionControl::Toggle(_)) {
-                    !row.enabled
-                } else {
-                    row.enabled
-                },
-                locked: if matches!(control, ActionControl::Lock(_)) {
-                    !row.locked
-                } else {
-                    row.locked
-                },
-            });
-        }
+        ActionControl::Lock(bar) => configure(&play.link, bar, false, true),
         ActionControl::Scroll(bar, by) => {
             play.link.bar_gesture(BarGesture::Scroll { bar, by });
         }
     }
 }
 
+/// Flips a bar's visibility (`hide`) or lock (`lock`) through the existing layout owner.
+fn configure(link: &crate::play::PlayLink, bar: usize, hide: bool, lock: bool) {
+    let layout = link.bar_layout();
+    let Some(row) = layout.rows.get(bar) else {
+        return;
+    };
+    link.bar_gesture(BarGesture::Configure {
+        bar,
+        dock: row.dock,
+        enabled: row.enabled != hide,
+        locked: row.locked != lock,
+    });
+}
+
+/// The slot popup: the slot's assignments, then the bar's lock and visibility, which moved
+/// here from the removed configuration row. Assignments are refused on a locked bar.
+fn menu_items(locked: bool) -> Vec<(popup::Item, Option<MenuChoice>)> {
+    vec![
+        (
+            popup::Item::entry("Assign Spell"),
+            Some(MenuChoice::AssignSpell),
+        ),
+        (
+            popup::Item::entry("Assign Object"),
+            Some(MenuChoice::AssignObject),
+        ),
+        (popup::Item::entry("Set Text"), Some(MenuChoice::SetText)),
+        (
+            popup::Item::entry("Edit Hotkey"),
+            Some(MenuChoice::EditHotkey),
+        ),
+        (popup::Item::entry("Clear"), Some(MenuChoice::Clear)),
+        (popup::Item::Separator, None),
+        (
+            popup::Item::check("Lock Action Bar", locked),
+            Some(MenuChoice::Lock),
+        ),
+        (
+            popup::Item::entry("Hide Action Bar"),
+            Some(MenuChoice::Hide),
+        ),
+    ]
+}
+
+// The menu owns its own widgets and the shared editor; the queries do not alias.
+#[allow(clippy::too_many_arguments)]
 fn edit_click(
     event: On<PointerClick>,
     guard: ModalGuard,
     controls: Query<(&ActionControl, &Generation)>,
     owner: NonSend<HostOwner>,
-    mut editor: ResMut<editor::EditorState>,
+    editor: Res<editor::EditorState>,
+    skins: Res<Skins>,
+    mut menu: ResMut<SlotMenu>,
+    mut commands: Commands,
 ) {
     if event.button != bevy::picking::pointer::PointerButton::Secondary
         || !guard.allows(event.entity)
         || owner.modal_active()
+        || editor.active()
     {
         return;
     }
@@ -331,15 +390,138 @@ fn edit_click(
     let Some(play) = &owner.play else {
         return;
     };
-    if generation.0 == owner.generation()
-        && !play.view.gameplay_input_blocked(&play.link)
-        && play
-            .link
-            .bar_layout()
-            .rows
-            .get(*slot / ROW_SLOTS)
-            .is_some_and(|row| row.enabled && !row.locked)
+    if generation.0 != owner.generation() || play.view.gameplay_input_blocked(&play.link) {
+        return;
+    }
+    let Some(row) = play.link.bar_layout().rows.get(*slot / ROW_SLOTS).cloned() else {
+        return;
+    };
+    if !row.enabled {
+        return;
+    }
+    if let Some(old) = menu.0.take() {
+        commands.entity(old).despawn();
+    }
+    let rows = menu_items(row.locked);
+    let items: Vec<_> = rows.iter().map(|(item, _)| item.clone()).collect();
+    let look = popup::Look {
+        font: skins.font.clone(),
+        frame: skins.frame.clone(),
+        checked: Some(skins.checked.clone()),
+        unchecked: Some(skins.unchecked.clone()),
+    };
+    let opened = popup::spawn(
+        &mut commands,
+        &look,
+        event.pointer.location().position,
+        &items,
+    );
+    let layer = commands
+        .spawn((
+            super::GameModal,
+            GlobalZIndex(200),
+            Node {
+                position_type: PositionType::Absolute,
+                width: percent(100.),
+                height: percent(100.),
+                ..default()
+            },
+        ))
+        .add_children(&[opened.scrim, opened.root])
+        .id();
+    commands.entity(opened.scrim).observe(dismiss_menu);
+    for (entity, choice) in opened
+        .entries
+        .iter()
+        .zip(rows.iter().filter_map(|(_, choice)| *choice))
     {
-        editor.open(*slot, owner.generation());
+        commands
+            .entity(*entity)
+            .insert(MenuEntry {
+                slot: *slot,
+                generation: owner.generation(),
+                choice,
+            })
+            .observe(menu_action);
+        if row.locked && !matches!(choice, MenuChoice::Lock | MenuChoice::Hide) {
+            commands
+                .entity(*entity)
+                .insert(bevy::ui::InteractionDisabled);
+        }
+    }
+    menu.0 = Some(layer);
+}
+
+fn dismiss_menu(_event: On<PointerClick>, mut menu: ResMut<SlotMenu>, mut commands: Commands) {
+    if let Some(layer) = menu.0.take() {
+        commands.entity(layer).despawn();
+    }
+}
+
+/// Escape closes the slot menu; a new session generation drops it.
+fn close_menu(
+    keys: Option<Res<ButtonInput<KeyCode>>>,
+    owner: NonSend<HostOwner>,
+    entries: Query<&MenuEntry>,
+    mut menu: ResMut<SlotMenu>,
+    mut commands: Commands,
+) {
+    let Some(layer) = menu.0 else {
+        return;
+    };
+    let escape = keys.is_some_and(|keys| keys.just_pressed(KeyCode::Escape));
+    let stale = owner.play.is_none()
+        || entries
+            .iter()
+            .any(|entry| entry.generation != owner.generation());
+    if escape || stale {
+        commands.entity(layer).despawn();
+        menu.0 = None;
+    }
+}
+
+fn menu_action(
+    event: On<Activate>,
+    guard: ModalGuard,
+    entries: Query<&MenuEntry>,
+    owner: NonSend<HostOwner>,
+    mut editor: ResMut<editor::EditorState>,
+    mut menu: ResMut<SlotMenu>,
+    mut commands: Commands,
+) {
+    if !guard.allows(event.entity) {
+        return;
+    }
+    let Ok(entry) = entries.get(event.entity) else {
+        return;
+    };
+    if let Some(layer) = menu.0.take() {
+        commands.entity(layer).despawn();
+    }
+    let Some(play) = &owner.play else {
+        return;
+    };
+    if entry.generation != owner.generation() || play.view.gameplay_input_blocked(&play.link) {
+        return;
+    }
+    let bar = entry.slot / ROW_SLOTS;
+    let Some(row) = play.link.bar_layout().rows.get(bar).cloned() else {
+        return;
+    };
+    match entry.choice {
+        MenuChoice::Lock => configure(&play.link, bar, false, true),
+        MenuChoice::Hide => configure(&play.link, bar, true, false),
+        _ if !row.enabled || row.locked => {}
+        // The shared editor holds the spell catalogue, object, text and hotkey fields.
+        MenuChoice::AssignSpell
+        | MenuChoice::AssignObject
+        | MenuChoice::SetText
+        | MenuChoice::EditHotkey => editor.open(entry.slot, owner.generation()),
+        MenuChoice::Clear => {
+            if entry.slot < ROW_SLOTS * 3 {
+                play.link.clear_bar_action(entry.slot);
+                play.link.assign_spell_slot(entry.slot, None);
+            }
+        }
     }
 }

@@ -31,22 +31,9 @@ pub(super) struct Projection<'w, 's> {
         'w,
         's,
         (&'static SlotCaption, &'static mut Text),
-        (
-            Without<ToolCaption>,
-            Without<CooldownLine>,
-            Without<ActionHint>,
-        ),
+        (Without<CooldownLine>, Without<ActionHint>),
     >,
-    tools: Query<
-        'w,
-        's,
-        (&'static ToolCaption, &'static mut Text),
-        (
-            Without<SlotCaption>,
-            Without<CooldownLine>,
-            Without<ActionHint>,
-        ),
-    >,
+    locks: Query<'w, 's, (&'static ChildOf, &'static mut art::ArtIcon)>,
     hints: Query<
         'w,
         's,
@@ -55,7 +42,6 @@ pub(super) struct Projection<'w, 's> {
             With<ActionHint>,
             Without<CooldownLine>,
             Without<SlotCaption>,
-            Without<ToolCaption>,
         ),
     >,
     hovered: Query<'w, 's, (&'static Hovered, &'static ActionControl)>,
@@ -111,8 +97,8 @@ pub(super) fn project(
         generation.0 = owner.generation();
         if let ActionControl::Scroll(bar, _) = control {
             let side = layout.rows[*bar].dock != crate::play::BarDock::Bottom;
-            node.width = px(if side { SLOT_SIZE } else { 17. });
-            node.height = px(if side { 17. } else { SLOT_SIZE });
+            node.width = px(if side { SLOT_SIZE } else { SCROLL_SIZE });
+            node.height = px(if side { SCROLL_SIZE } else { SLOT_SIZE });
             node.min_height = node.height;
             node.flex_shrink = 0.;
         }
@@ -146,27 +132,17 @@ pub(super) fn project(
             text.0 = compact;
         }
     }
-    for (tool, mut text) in &mut ui.tools {
-        let caption = match tool.0 {
-            ActionControl::Toggle(bar) => format!(
-                "{} {}",
-                bar + 1,
-                if layout.rows[bar].enabled {
-                    "on"
-                } else {
-                    "off"
-                }
-            ),
-            ActionControl::Lock(bar) => if layout.rows[bar].locked {
-                "Locked"
-            } else {
-                "Edit"
-            }
-            .into(),
-            _ => continue,
+    for (parent, mut icon) in &mut ui.locks {
+        let Ok((ActionControl::Lock(bar), _, _)) = ui.controls.get(parent.parent()) else {
+            continue;
         };
-        if text.0 != caption {
-            text.0 = caption;
+        let slot = if layout.rows[*bar].locked {
+            ArtSlot::ActionBarLocked
+        } else {
+            ArtSlot::ActionBarUnlocked
+        };
+        if icon.0 != slot {
+            icon.0 = slot;
         }
     }
     let hint = ui

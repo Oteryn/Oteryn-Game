@@ -161,6 +161,12 @@ fn install_history(app: &mut App) {
 struct ChatRoot;
 #[derive(Component)]
 struct Tabs;
+/// The tab bar: scroll buttons, the tabs, and the channel list and close buttons.
+#[derive(Component)]
+struct TabRow;
+/// The input row: mode button, text field and Chat On/Off.
+#[derive(Component)]
+struct ComposeRow;
 #[derive(Component)]
 struct Transcript;
 #[derive(Component)]
@@ -184,8 +190,9 @@ enum Field {
 #[derive(Clone)]
 enum Action {
     ComposerMode,
-    Send,
     Mode,
+    PreviousTab,
+    NextTab,
     Channels,
     Close,
     Conversation,
@@ -360,6 +367,7 @@ fn project(
     transcripts: Query<Entity, With<TranscriptRoot>>,
     mut captions: Query<&mut Text, Without<Transcript>>,
     mode_buttons: Query<&Children, With<ModeButton>>,
+    mut icons: Query<&mut crate::bevy_shell::gameplay_dialogs::art::ArtIcon>,
     chat_mode_buttons: Query<&Children, With<ChatModeButton>>,
     guard: ModalGuard,
     tabs: Query<Entity, With<Tabs>>,
@@ -405,6 +413,18 @@ fn project(
             }
         }
         play.link.open_chat();
+        // Tibia Global opens Local Chat and Server Log; Local Chat stays selected.
+        let panel = play.link.chat_panel();
+        if !panel
+            .console
+            .channels
+            .contains(&oteryn_client_ui::chat::ChannelTab::ServerLog)
+        {
+            play.link.chat_open_entry(&ChannelEntry::Local(
+                oteryn_client_ui::chat::ChannelTab::ServerLog,
+            ));
+            play.link.chat_console_tab(ConsoleTab::All);
+        }
     }
     let panel = play.link.chat_panel();
     let mut changed = false;
@@ -441,13 +461,6 @@ fn project(
             }
         }
     }
-    let mode = match state.mode {
-        Mode::Say => "Say",
-        Mode::Whisper => "Whisper",
-        Mode::Yell => "Yell",
-        Mode::Guild => "Guild",
-        Mode::Private => "Private",
-    };
     let composer_mode = match panel.console.mode {
         oteryn_client_ui::chat::ComposerMode::On => "Chat On",
         oteryn_client_ui::chat::ComposerMode::Off => "Chat Off",
@@ -462,21 +475,18 @@ fn project(
             }
         }
     }
+    let mode = widgets::mode_art(state.mode);
     for children in &mode_buttons {
         for child in children {
-            if let Ok(mut text) = captions.get_mut(*child)
-                && text.0 != mode
+            if let Ok(mut icon) = icons.get_mut(*child)
+                && icon.0 != mode
             {
-                text.0 = mode.into();
+                icon.0 = mode;
             }
         }
     }
-    let mut current_tabs = vec![
-        commands::Tab::Fixed(ConsoleTab::All),
-        commands::Tab::Fixed(ConsoleTab::Local),
-        commands::Tab::Fixed(ConsoleTab::Private),
-        commands::Tab::Fixed(ConsoleTab::Guild),
-    ];
+    // Local Chat is the one fixed tab; opened channels follow it.
+    let mut current_tabs = vec![commands::Tab::Fixed(ConsoleTab::All)];
     current_tabs.extend(
         panel
             .console

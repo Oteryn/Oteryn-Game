@@ -132,7 +132,7 @@ fn chat_channels_help_tab_opens_sends_and_closes_through_the_session_callers()
     ));
     outbox.chat_public_state(ChatRoomSet::default(), Vec::new());
     assert_eq!(link.chat_panel().console.current, None);
-    assert_eq!(link.chat_panel().console.tab_count(), 4);
+    assert_eq!(link.chat_panel().console.tab_count(), 1);
     Ok(())
 }
 
@@ -626,7 +626,7 @@ fn channel_dialog_reuses_a_conversation_with_different_name_case()
     let tab = ChannelTab::Conversation("Bryn".into());
     assert_eq!(panel.console.channels, std::slice::from_ref(&tab));
     assert_eq!(panel.console.current, Some(tab));
-    assert_eq!(panel.console.tab_index(), 4);
+    assert_eq!(panel.console.tab_index(), 1);
     link.chat_close_current();
     assert!(link.chat_panel().console.channels.is_empty());
     assert!(commands.try_recv().is_err());

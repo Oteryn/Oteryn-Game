@@ -169,24 +169,13 @@ fn enter_waits_for_async_paste_without_sending_the_old_draft() -> TestResult {
     Ok(())
 }
 #[test]
-fn send_button_waits_for_queued_editor_edits() -> TestResult {
+fn enter_waits_for_queued_editor_edits() -> TestResult {
     let (mut app, editor, mut commands) = app()?;
     app.world_mut()
         .get_mut::<EditableText>(editor)
         .ok_or("editor")?
         .queue_edit(bevy::text::TextEdit::Insert("o".into()));
-    let generation = app.world().non_send::<HostOwner>().generation();
-    let send = app
-        .world_mut()
-        .spawn(Control {
-            action: Action::Send,
-            generation,
-        })
-        .observe(widgets::activate)
-        .id();
-    app.world_mut()
-        .trigger(bevy::ui_widgets::Activate { entity: send });
-    assert!(commands.try_recv().is_err());
+    key(&mut app, KeyCode::Enter, Key::Enter, None);
     app.update();
     assert!(matches!(sent(&mut commands), Some(ChatIntent::Say { text, .. }) if text == "hello"));
     Ok(())
@@ -506,4 +495,62 @@ fn sent_history_shift_arrows_restore_the_unsent_draft() -> TestResult {
         "unsent draft"
     );
     Ok(())
+}
+
+#[test]
+fn chat_console_uses_tibia_tab_and_input_geometry() -> TestResult {
+    use bevy::ecs::system::RunSystemOnce;
+    let (mut app, _, _) = app()?;
+    app.world_mut()
+        .run_system_once(crate::bevy_shell::ui::setup)
+        .map_err(|error| format!("{error:?}"))?;
+    let root = app.world_mut().spawn(Node::default()).id();
+    app.insert_resource(GameRegions {
+        vitals: root,
+        minimap: root,
+        equipment: root,
+        containers: root,
+        battle: root,
+        skills: root,
+        vip: root,
+        analyzers: root,
+        chat: root,
+        bars: root,
+        world: root,
+    });
+    app.world_mut()
+        .run_system_once(widgets::setup)
+        .map_err(|error| format!("{error:?}"))?;
+    let world = app.world_mut();
+    let size = |node: &Node| (node.width, node.height);
+    let mut controls = world.query::<(&Control, &Node)>();
+    let tab_buttons: Vec<_> = controls
+        .iter(world)
+        .filter(|(control, _)| matches!(control.action, Action::PreviousTab | Action::NextTab))
+        .map(|(_, node)| size(node))
+        .collect();
+    assert_eq!(tab_buttons, [(px(18.), px(18.)); 2]);
+    let mut chat_mode = world.query_filtered::<&Node, With<ChatModeButton>>();
+    assert_eq!(chat_mode.single(world).map(size)?, (px(64.), px(16.)));
+    let mut rows = world.query_filtered::<(&Node, &Children), With<ComposeRow>>();
+    let (row, children) = rows.single(world)?;
+    assert_eq!(row.height, px(16.));
+    assert_eq!(row.column_gap, px(2.));
+    // Chat On/Off is the last control of the input row; Enter sends, so no Send button.
+    let last = children.last().copied().ok_or("compose row")?;
+    assert!(world.get::<ChatModeButton>(last).is_some());
+    let mut texts = world.query::<&Text>();
+    assert!(!texts.iter(world).any(|text| text.0 == "Send"));
+    Ok(())
+}
+#[test]
+fn say_mode_button_cycles_say_whisper_yell_with_art() {
+    use oteryn_client_ui::chat::Mode;
+    assert_eq!(widgets::next_mode(Mode::Say), Mode::Whisper);
+    assert_eq!(widgets::next_mode(Mode::Whisper), Mode::Yell);
+    assert_eq!(widgets::next_mode(Mode::Yell), Mode::Say);
+    assert_eq!(
+        widgets::mode_art(Mode::Yell),
+        crate::bevy_shell::gameplay_dialogs::art::ArtSlot::ChatYell
+    );
 }

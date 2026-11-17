@@ -82,10 +82,77 @@ fn previous_generation_and_wrong_context_target_cannot_dispatch() -> Result {
             trade: None,
             browse: None,
             npc: None,
+            player: None,
+            attack: None,
         },
     );
     let id = host.dialogs.pending.as_ref().ok_or("context")?.id;
     assert!(!host.choose_dialog(id, Choice::Context(0)));
     assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn context_menu_follows_tibia_order_with_shortcuts_and_uses_a_bed() -> Result {
+    use oteryn_client_runtime::world_interaction::{
+        Action, Target, world_object::WorldObjectTarget,
+    };
+    let tile = TileCoord::new(100, 100);
+    let menu = Menu {
+        tile: Some(tile),
+        binding: None,
+        target: Target::Object(WorldObjectTarget {
+            placement: vec![1; 40],
+            expected_revision: 0,
+        }),
+        entries: vec![
+            ("Look", Action::Look),
+            ("Use", Action::Use),
+            ("Open", Action::Open),
+            ("Bed", Action::BedInteract),
+        ],
+    };
+    let content = Content::Context {
+        menu: Some(Box::new(menu)),
+        party: None,
+        inspection: None,
+        report: None,
+        trade: None,
+        browse: Some((tile, 0)),
+        npc: None,
+        player: Some("Bryn".into()),
+        attack: Some(tile),
+    };
+    let items = projection::context_items(&content, true, false);
+    let rows: Vec<String> = items
+        .iter()
+        .map(|(item, _)| match item {
+            super::popup::Item::Entry {
+                label, shortcut, ..
+            } => shortcut.map_or_else(|| label.clone(), |key| format!("{label}\t{key}")),
+            super::popup::Item::Separator => "-".into(),
+        })
+        .collect();
+    assert_eq!(
+        rows,
+        [
+            "Attack\tAlt",
+            "Look\tShift",
+            "Use\tCtrl",
+            "Open",
+            "-",
+            "Rotate",
+            "Browse Field",
+            "-",
+            "Message to Bryn",
+            "Add to VIP list",
+            "Ignore Bryn",
+            "-",
+            "Copy Name",
+        ]
+    );
+    // The bed is used like any item: its Use entry runs the bed owner action.
+    assert!(matches!(items[2].1, Choice::Context(3)));
+    assert!(matches!(items[0].1, Choice::Attack));
     Ok(())
 }

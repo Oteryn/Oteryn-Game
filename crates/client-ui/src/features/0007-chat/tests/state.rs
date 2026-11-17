@@ -407,10 +407,10 @@ mod channels {
         let (mut chat, mut public, mut private) = selected();
         // The default (fixed) tabs cannot be closed.
         assert_eq!(close_current(&mut chat, &mut public, &mut private), None);
-        assert_eq!(chat.console.tab_count(), 4);
+        assert_eq!(chat.console.tab_count(), 1);
         public.rooms = rooms(&[ChatRoom::World, ChatRoom::Help]);
         chat.console.sync_rooms(public.rooms);
-        chat.console.select_index(5);
+        chat.console.select_index(2);
         assert_eq!(chat.console.current, Some(ChannelTab::Room(ChatRoom::Help)));
         assert_eq!(
             close_current(&mut chat, &mut public, &mut private),
@@ -422,7 +422,7 @@ mod channels {
             chat.console.current,
             Some(ChannelTab::Room(ChatRoom::World))
         );
-        assert_eq!(chat.console.tab_count(), 5);
+        assert_eq!(chat.console.tab_count(), 2);
     }
 
     #[test]
@@ -445,12 +445,9 @@ mod channels {
         );
         console.cycle(false);
         assert_eq!(console.current, Some(ChannelTab::Private(101)));
-        assert_eq!(
-            console.tab_labels(),
-            ["All", "Local", "Private", "Guild", "Bryn", "Channel 101"]
-        );
+        assert_eq!(console.tab_labels(), ["Local Chat", "Bryn", "Channel 101"]);
         // Closing the left-most opened tab falls back to the fixed tab.
-        console.select_index(4);
+        console.select_index(1);
         assert_eq!(
             console.close_current(),
             Some(ChannelTab::Conversation("Bryn".into()))
@@ -638,7 +635,7 @@ mod channels {
                 ]
             );
             assert_eq!(chat.console.current, Some(chat.console.channels[0].clone()));
-            assert_eq!(chat.console.tab_index(), 4);
+            assert_eq!(chat.console.tab_index(), 1);
         }
         assert_eq!(close_current(&mut chat, &mut public, &mut private), None);
         assert_eq!(
@@ -685,7 +682,7 @@ mod channels {
             );
         }
         assert_eq!(
-            chat.console.tab_labels()[4..],
+            chat.console.tab_labels()[1..],
             ["Loot", "Server Log", "NPC"]
         );
         assert_eq!(chat.console.current, Some(ChannelTab::Npc));

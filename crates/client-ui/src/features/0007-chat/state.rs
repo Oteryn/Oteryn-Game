@@ -33,11 +33,11 @@ impl ChannelTab {
     pub fn label(&self) -> String {
         match self {
             ChannelTab::Room(room) => crate::chat_public_channels::room_name(*room).to_owned(),
-            ChannelTab::Private(id) => lfmt!("Channel {id}", id = id),
+            ChannelTab::Private(id) => format!("Channel {id}"),
             ChannelTab::Conversation(name) => name.clone(),
-            ChannelTab::Loot => tr!("Loot").to_owned(),
-            ChannelTab::ServerLog => tr!("Server Log").to_owned(),
-            ChannelTab::Npc => tr!("NPC").to_owned(),
+            ChannelTab::Loot => "Loot".to_owned(),
+            ChannelTab::ServerLog => "Server Log".to_owned(),
+            ChannelTab::Npc => "NPC".to_owned(),
         }
     }
     /// Loot, Server Log and NPC are receive-only: typed text goes to local chat instead.
@@ -51,12 +51,9 @@ pub enum PendingFocus {
     Tab(ChannelTab),
     OwnChannel,
 }
-const FIXED_TABS: [ConsoleTab; 4] = [
-    ConsoleTab::All,
-    ConsoleTab::Local,
-    ConsoleTab::Private,
-    ConsoleTab::Guild,
-];
+/// The console tab that cannot be closed: Local Chat, the Global client's default channel. It
+/// shows every received line; the Local/Private/Guild views stay filters, not tabs.
+const FIXED_TABS: [ConsoleTab; 1] = [ConsoleTab::All];
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum ComposerMode {
     #[default]
@@ -198,7 +195,10 @@ impl Console {
                 .iter()
                 .position(|tab| tab == current)
                 .map_or(0, |at| FIXED_TABS.len() + at),
-            None => self.tab as usize,
+            None => FIXED_TABS
+                .iter()
+                .position(|tab| *tab == self.tab)
+                .unwrap_or(0),
         }
     }
     pub fn select_index(&mut self, index: usize) -> bool {
@@ -217,12 +217,8 @@ impl Console {
     }
     /// Tab captions in tab order: the fixed tabs, then the opened channels.
     pub fn tab_labels(&self) -> Vec<String> {
-        let mut labels = vec![
-            tr!("All").to_owned(),
-            tr!("Local").to_owned(),
-            tr!("Private").to_owned(),
-            tr!("Guild").to_owned(),
-        ];
+        // One English locale for the console tabs until the catalog carries these captions.
+        let mut labels = vec!["Local Chat".to_owned()];
         labels.extend(self.channels.iter().map(|tab| self.tab_label(tab)));
         labels
     }

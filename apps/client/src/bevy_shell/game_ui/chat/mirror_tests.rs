@@ -135,7 +135,7 @@ fn mirrored_conversation_keeps_its_partner_shares_the_console_and_closes_with_it
     with_link(&mut app, |link| {
         link.chat_open_conversation("Alice");
     })?;
-    menu(&mut app, "from alice", "Mirror this tab")?;
+    menu(&mut app, "from alice", "Mirror This Tab")?;
     let (display, text, width) = panes(&mut app)?;
     assert_eq!(display, Display::Flex);
     assert!(text.contains("from alice"), "{text}");
@@ -192,7 +192,7 @@ fn mirrored_public_channel_shows_its_own_messages() -> TestResult {
             )),
         );
     })?;
-    menu(&mut app, "help answer", "Mirror this tab")?;
+    menu(&mut app, "help answer", "Mirror This Tab")?;
     let (display, text, _) = panes(&mut app)?;
     assert_eq!(display, Display::Flex);
     assert!(

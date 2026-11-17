@@ -209,6 +209,37 @@ fn unlocking_and_selecting_slot_opens_shared_editor_without_casting() -> TestRes
         count: 1,
     });
     app.update();
+    // The secondary click opens the Tibia slot menu; its Assign Spell entry opens the editor.
+    let mut labels = Vec::new();
+    let mut assign = None;
+    for (entity, entry) in app
+        .world_mut()
+        .query::<(Entity, &MenuEntry)>()
+        .iter(app.world())
+    {
+        labels.push(entry.choice);
+        if entry.choice == MenuChoice::AssignSpell {
+            assign = Some(entity);
+        }
+    }
+    assert_eq!(labels.len(), 7);
+    for choice in [
+        MenuChoice::AssignSpell,
+        MenuChoice::AssignObject,
+        MenuChoice::SetText,
+        MenuChoice::EditHotkey,
+        MenuChoice::Clear,
+        MenuChoice::Lock,
+        MenuChoice::Hide,
+    ] {
+        assert!(labels.contains(&choice), "{choice:?}");
+    }
+    assert!(!app.world().resource::<editor::EditorState>().active());
+    app.world_mut().trigger(Activate {
+        entity: assign.ok_or("Assign Spell")?,
+    });
+    app.update();
+    assert!(app.world().resource::<SlotMenu>().0.is_none());
     assert!(app.world().resource::<editor::EditorState>().active());
     assert!(commands.try_recv().is_err());
     // Disconnect clears the session-bound edit and its text focus.
@@ -465,5 +496,72 @@ fn side_bars_project_their_dock_and_vertical_capacity() -> TestResult {
             assert_eq!(node.flex_direction, FlexDirection::Row);
         }
     }
+    Ok(())
+}
+
+#[test]
+fn slot_menu_lists_tibia_entries_and_the_bar_lock_state() {
+    let labels = |locked| {
+        menu_items(locked)
+            .into_iter()
+            .map(|(item, _)| match item {
+                popup::Item::Entry { label, checked, .. } => {
+                    format!(
+                        "{label}{}",
+                        checked.map_or("", |on| if on { " [x]" } else { " [ ]" })
+                    )
+                }
+                popup::Item::Separator => "-".to_owned(),
+            })
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        labels(true),
+        [
+            "Assign Spell",
+            "Assign Object",
+            "Set Text",
+            "Edit Hotkey",
+            "Clear",
+            "-",
+            "Lock Action Bar [x]",
+            "Hide Action Bar",
+        ]
+    );
+    assert_eq!(labels(false)[6], "Lock Action Bar [ ]");
+}
+
+#[test]
+fn each_bar_has_a_twelve_by_sixteen_lock_and_no_configuration_row() -> TestResult {
+    let (mut app, _) = fixture()?;
+    let mut locks = app
+        .world_mut()
+        .query::<(&ActionControl, &Node, &Children)>();
+    let mut found = Vec::new();
+    for (control, node, children) in locks.iter(app.world()) {
+        if let ActionControl::Lock(bar) = control {
+            found.push(*bar);
+            assert_eq!((node.width, node.height), (px(12.), px(16.)));
+            assert!(
+                children
+                    .iter()
+                    .any(|child| app.world().get::<art::ArtIcon>(child).is_some())
+            );
+        }
+    }
+    found.sort_unstable();
+    assert_eq!(found, (0..9).collect::<Vec<_>>());
+    // The removed "1 on / Locked" row left no text captions behind.
+    let captions: Vec<String> = app
+        .world_mut()
+        .query::<&Text>()
+        .iter(app.world())
+        .map(|text| text.0.clone())
+        .collect();
+    assert!(
+        !captions
+            .iter()
+            .any(|text| text == "Locked" || text.ends_with(" on"))
+    );
     Ok(())
 }
