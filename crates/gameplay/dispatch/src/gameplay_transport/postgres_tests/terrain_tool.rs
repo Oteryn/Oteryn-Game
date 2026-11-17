@@ -141,6 +141,17 @@ fn worldchg_voice_case(active: bool) -> TestResult {
     Ok(())
 }
 
+#[test]
+fn worldchg_deeplings_soul_net_refuses_without_writes() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run("wcdeep-soul-net", || {
+        scenario_with_voice("oteryn:item.tibia.i14020", 14167, 14167, &[], None)
+    })
+}
+
 fn scenario_with_voice(
     tool: &str,
     before: u16,
@@ -410,6 +421,24 @@ fn scenario_with_voice(
             exchange(&owner, admitted, 1, &payload, reference(shovel))
                 .await
                 .map_err(|e| format!("initial use: {e}"))?;
+        if tool == "oteryn:item.tibia.i14020" {
+            assert_eq!(
+                oteryn_protocol_oteryn::refusal_detail::RefusalDetail::of_use(result),
+                Some(oteryn_protocol_oteryn::refusal_detail::RefusalDetail::NotPossible)
+            );
+            for query in [
+                "SELECT count(*) FROM game_terrain_tool_receipts",
+                "SELECT count(*) FROM game_terrain_tool_transforms",
+                "SELECT count(*) FROM game_world_change_credit_receipts",
+            ] {
+                let count: i64 = sqlx::query_scalar(query).fetch_one(&harness.pool).await?;
+                assert_eq!(count, 0);
+            }
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         if voice == Some(false) {
             assert_eq!(result, UseDisposition::Rejected);
             for query in [
