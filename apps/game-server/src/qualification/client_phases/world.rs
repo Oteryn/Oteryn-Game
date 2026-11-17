@@ -513,7 +513,7 @@ pub(super) async fn reach_route(
             break;
         }
         expanded += 1;
-        if expanded % REACH_CHUNK == 0 {
+        if expanded.is_multiple_of(REACH_CHUNK) {
             verdict::Harness::global().progress("route-search");
             client.service_liveness(Duration::from_millis(1)).await?;
         }
