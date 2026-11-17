@@ -245,6 +245,14 @@ fn channel_switch_guard_classifies_admissions_and_enforces_the_cooldown() -> Tes
                     };
                     assert_eq!(code(admit(pool, 10, CHANNEL_B).await).as_deref(), Some("OTH02"));
                     assert_eq!(held().await?, 1, "a refused admission keeps the hold");
+                    let mut late = pool.begin().await?;
+                    sqlx::query("UPDATE game_channel_switch_party_holds SET held_until_ms=1 WHERE character_id=$1::uuid")
+                        .bind(hex(id(CHARACTER))).execute(&mut *late).await?;
+                    admit(&mut *late, 15, CHANNEL_A).await?;
+                    let member: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_party_members WHERE character_id=$1::uuid)")
+                        .bind(hex(id(CHARACTER))).fetch_one(&mut *late).await?;
+                    assert!(!member, "late admission expires membership before returning");
+                    late.rollback().await?;
                     admit(pool, 11, CHANNEL_A).await?;
                     assert_eq!(held().await?, 0, "the admission takes the hold back");
                     Ok(())

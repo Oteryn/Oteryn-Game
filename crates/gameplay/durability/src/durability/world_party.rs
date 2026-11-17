@@ -843,33 +843,11 @@ async fn remove_member_with_succession(
     party: [u8; 16],
     character: [u8; 16],
 ) -> Result<()> {
-    let row=sqlx::query("SELECT leader_character_id::text FROM game_parties WHERE party_id=encode($1,'hex')::uuid FOR UPDATE")
-        .bind(party.as_slice()).fetch_optional(&mut **tx).await?;
-    let Some(row) = row else { return Ok(()) };
-    let leader = uuid(row.try_get("leader_character_id")?)?;
-    // The exact accepted succession rule prefers current state1/2 sessions, then invitation seq.
-    if leader == character {
-        let next:Option<String>=sqlx::query_scalar("SELECT m.character_id::text FROM game_party_members m WHERE m.party_id=encode($1,'hex')::uuid AND m.character_id<>encode($2,'hex')::uuid ORDER BY EXISTS(SELECT 1 FROM game_durability_reconnect_sessions s WHERE s.character_id=m.character_id AND s.session_state IN(1,2)) DESC,m.seq LIMIT 1 FOR UPDATE OF m")
-            .bind(party.as_slice()).bind(character.as_slice()).fetch_optional(&mut **tx).await?;
-        if let Some(next) = next {
-            sqlx::query("UPDATE game_parties SET leader_character_id=$1::uuid,revision=revision+1 WHERE party_id=encode($2,'hex')::uuid").bind(next).bind(party.as_slice()).execute(&mut **tx).await?;
-        } else {
-            sqlx::query("DELETE FROM game_parties WHERE party_id=encode($1,'hex')::uuid")
-                .bind(party.as_slice())
-                .execute(&mut **tx)
-                .await?;
-            return Ok(());
-        }
-    } else {
-        sqlx::query(
-            "UPDATE game_parties SET revision=revision+1 WHERE party_id=encode($1,'hex')::uuid",
-        )
+    sqlx::query("SELECT game_party_remove_with_succession(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
         .bind(party.as_slice())
+        .bind(character.as_slice())
         .execute(&mut **tx)
         .await?;
-    }
-    sqlx::query("DELETE FROM game_party_members WHERE party_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid").bind(party.as_slice()).bind(character.as_slice()).execute(&mut **tx).await?;
-    close_leader_only_party_without_invitations(tx, party).await?;
     Ok(())
 }
 /// At most100 oldest expired invitations, exactly one party per transaction, after one expired
