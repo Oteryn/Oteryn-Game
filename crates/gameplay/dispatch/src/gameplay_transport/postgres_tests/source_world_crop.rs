@@ -151,8 +151,6 @@ pub(super) fn compiled_region(
     start: crate::map::overlay::TilePos,
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    use oteryn_world_bundle_compiler::{compile, project};
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
     if minimum.x / 256 != maximum.x / 256
         || minimum.y / 256 != maximum.y / 256
         || minimum.floor > maximum.floor
@@ -160,30 +158,7 @@ pub(super) fn compiled_region(
     {
         return Err("invalid source region route bounds".into());
     }
-    let project = source::project_regions(&root, &[(minimum.x / 256, minimum.y / 256)])?;
-    let (registry, palette) = source::registry(&root, &project)?;
-    let identity: bundle::Identity = serde_json::from_slice(&std::fs::read(
-        root.join("content/world/pins/oteryn.identity.json"),
-    )?)?;
-    let pins = crate::map::BundlePins {
-        digest: [0; 32],
-        project_format_version: identity.project_format_version.clone(),
-        world_schema_version: identity.world_schema_version.clone(),
-        content_revision: identity.content_revision.clone(),
-        production: false,
-    };
-    let compiled = compile::compile(
-        &compile::Input {
-            regions: &project.regions,
-            palette: &palette,
-            identity,
-            world: source::world_extent(&root)?,
-            build_class: bundle::BuildClass::NonProduction,
-            draft_areas: project::draft_areas(&project.index)?,
-            families: &project.families,
-        },
-        &registry,
-    )?;
+    let (compiled, identity) = compile_source_regions(&[(minimum.x / 256, minimum.y / 256)])?;
     assert!(
         compiled
             .diagnostics
@@ -200,9 +175,95 @@ pub(super) fn compiled_region(
                 && (minimum.y..=maximum.y).contains(&d.y))
             .collect::<Vec<_>>()
     );
+    boot_source(compiled, identity, start, native)
+}
+
+/// Validate the exact footprint of a discontinuous route, then boot the unchanged
+/// region compiled from repository B3. Every entry on each required tile must
+/// resolve; provisional scenery between teleport endpoints is not traversed.
+pub(super) fn compiled_positions(
+    positions: &[crate::map::overlay::TilePos],
+    start: crate::map::overlay::TilePos,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    let required = |x, y, floor| {
+        positions
+            .iter()
+            .any(|point| point.x == x && point.y == y && point.floor == floor)
+    };
+    if positions.is_empty() || !required(start.x, start.y, start.floor) {
+        return Err("source route requires its starting tile".into());
+    }
+    let regions = positions
+        .iter()
+        .map(|point| (point.x / 256, point.y / 256))
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
+    let (compiled, identity) = compile_source_regions(&regions)?;
+    let unresolved = compiled
+        .diagnostics
+        .iter()
+        .filter(|d| required(d.x, d.y, d.floor))
+        .collect::<Vec<_>>();
+    assert!(
+        unresolved.is_empty(),
+        "unresolved source route geometry: {unresolved:?}"
+    );
+    let data = bundle::read(&compiled.bytes)?;
+    for point in positions {
+        assert!(
+            data.sectors.iter().any(|sector| sector.floor == point.floor
+                && sector
+                    .tiles
+                    .iter()
+                    .any(|tile| tile.x == point.x && tile.y == point.y)),
+            "missing compiled source route tile {point:?}"
+        );
+    }
+    boot_source(compiled, identity, start, native)
+}
+
+fn compile_source_regions(
+    regions: &[(u16, u16)],
+) -> TestResult<(
+    oteryn_world_bundle_compiler::compile::Compiled,
+    bundle::Identity,
+)> {
+    use oteryn_world_bundle_compiler::{compile, project};
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let project = source::project_regions(&root, regions)?;
+    let (registry, palette) = source::registry(&root, &project)?;
+    let identity: bundle::Identity = serde_json::from_slice(&std::fs::read(
+        root.join("content/world/pins/oteryn.identity.json"),
+    )?)?;
+    let compiled = compile::compile(
+        &compile::Input {
+            regions: &project.regions,
+            palette: &palette,
+            identity: identity.clone(),
+            world: source::world_extent(&root)?,
+            build_class: bundle::BuildClass::NonProduction,
+            draft_areas: project::draft_areas(&project.index)?,
+            families: &project.families,
+        },
+        &registry,
+    )?;
+    Ok((compiled, identity))
+}
+
+fn boot_source(
+    compiled: oteryn_world_bundle_compiler::compile::Compiled,
+    identity: bundle::Identity,
+    start: crate::map::overlay::TilePos,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<crate::map::boot::BundleWorld> {
     let pins = crate::map::BundlePins {
         digest: compiled.digest,
-        ..pins
+        project_format_version: identity.project_format_version,
+        world_schema_version: identity.world_schema_version,
+        content_revision: identity.content_revision,
+        production: false,
     };
     let base = crate::map::load(&compiled.bytes, &pins).map_err(debug)?;
     crate::map::boot::boot(

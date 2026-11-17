@@ -140,13 +140,12 @@ pub(super) fn native_world(
     let from = callback.selector.position.ok_or("stair source")?;
     let to = callback.teleport.ok_or("stair destination")?;
     let tile = |x, y, floor| crate::map::overlay::TilePos { x, y, floor };
-    super::source_world_crop::compiled_region(
-        tile(
-            (from.x - 1).min(to.x),
-            from.y.min(to.y),
-            from.floor.min(to.floor),
-        ),
-        tile(from.x.max(to.x), from.y.max(to.y), from.floor.max(to.floor)),
+    super::source_world_crop::compiled_positions(
+        &[
+            tile(from.x - 1, from.y, from.floor),
+            tile(from.x, from.y, from.floor),
+            tile(to.x, to.y, to.floor),
+        ],
         tile(from.x - 1, from.y, from.floor),
         native,
     )
