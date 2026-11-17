@@ -1206,12 +1206,11 @@ async fn cast_through_retired_holder(
     intent: actor_spell::SpellCastIntent,
 ) -> TestResult {
     let mut blocker = h.pool.begin().await?;
-    // The spell item transaction's channel lock: only the native cast pass takes it.
+    // The caster's equipment row: the cast pass locks it, the party presence pass does not.
     sqlx::query(
-        "SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'), 33))",
+        "SELECT 1 FROM game_character_equipment_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE",
     )
-    .bind(id(42).as_slice())
-    .bind(id(43).as_slice())
+    .bind(id(41).as_slice())
     .execute(&mut *blocker)
     .await?;
     let release = async {
