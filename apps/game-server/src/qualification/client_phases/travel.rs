@@ -815,7 +815,7 @@ impl Planner<'_> {
             encode_item_use_intent(&intent).map_err(|error| format!("rope encode: {error:?}"))?;
         let response = client
             .session_mut()
-            .gated_command(CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, &payload)
+            .world_context_use(&payload)
             .await?;
         if response.status != CommandStatus::Accepted {
             return Err(format!("rope USE command not accepted: {response:?}").into());
@@ -859,6 +859,8 @@ pub(super) async fn converse(
         for event in client.take_events() {
             if let SessionEvent::NpcConversation(delta) = event
                 && delta.server_sequence > reply.server_sequence
+                && (delta.value.open.is_some_and(|(actor, _)| actor == npc)
+                    || (text == "yes" && delta.value.open.is_none() && delta.value.lines == ["Set the sails!"]))
             {
                 return Ok(delta.value.lines);
             }
@@ -917,10 +919,10 @@ async fn travel_by_npc(client: &mut DevClientSession, label: &str, offer: &Offer
     if !quote.iter().any(|line| line.contains("passage")) {
         return Err(format!("{} refused: {quote:?}", need()).into());
     }
-    let reply = converse(client, npc, "yes").await.unwrap_or_default();
+    let reply = converse(client, npc, "yes").await?;
     evidence(&format!("TRAVEL_NPC {label} say=\"yes\" reply={reply:?}"));
-    if let Some(line) = reply.iter().find(|line| !line.contains("sails")) {
-        return Err(format!("{} refused: {line}", need()).into());
+    if reply.is_empty() || reply.iter().any(|line| !line.contains("sails")) {
+        return Err(format!("{} refused: {reply:?}", need()).into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     loop {

@@ -23,10 +23,8 @@ pub(super) async fn provision(
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
-    let task = tokio::task::spawn_blocking(move || {
-        std::process::Command::new("sudo")
-            .args(["-n", "python3"])
-            .arg(script)
+    let task = FixtureCommand::start(move || {
+        fixture_command(&script)
             .args([
                 "--socket",
                 &socket,
@@ -37,9 +35,10 @@ pub(super) async fn provision(
             ])
             .status()
             .map_err(|error| error.to_string())
-    });
+    })?;
     let status = wait_fixture_command(task, async || {
         client.service_liveness(Duration::from_millis(100)).await?;
+        client.take_events();
         Ok(())
     })
     .await?;

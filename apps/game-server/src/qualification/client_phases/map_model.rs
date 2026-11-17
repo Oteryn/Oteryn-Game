@@ -19,6 +19,7 @@ struct MapTile {
     house: u32,
     field: Option<String>,
     ladder: bool,
+    ladder_ordinal: Option<u8>,
     rope_spot: bool,
     rope_ordinal: Option<u8>,
     shovel_ordinal: Option<u8>,
@@ -38,6 +39,49 @@ pub(super) struct MapModel<'a> {
     world: &'a BundleWorld,
     tiles: BTreeMap<TilePos, MapTile>,
     samples: Vec<Sample>,
+    actor_names: BTreeMap<String, String>,
+}
+
+pub(super) fn actor_names(root: &Path) -> TestResult<BTreeMap<String, String>> {
+    use oteryn_protocol_oteryn::entity_names::EntityDisplayName;
+    let mut names = BTreeMap::new();
+    for (directory, prefix) in [("creatures", "creatures-"), ("npcs", "npcs-")] {
+        for entry in std::fs::read_dir(root.join("content").join(directory).join("definitions"))? {
+            let entry = entry?;
+            if !entry.file_name().to_string_lossy().starts_with(prefix) {
+                continue;
+            }
+            let document: serde_json::Value = serde_json::from_slice(&std::fs::read(entry.path())?)?;
+            for record in document["records"].as_array().into_iter().flatten() {
+                if directory == "creatures" {
+                    if let (Some(key), Some(name)) = (
+                        record["definition"]["identity"]["key"].as_str(),
+                        record["authoring"]["profile"]["details"]["display_name"].as_str(),
+                    ) {
+                        names.insert(key.to_owned(), name.to_owned());
+                    }
+                } else {
+                    let declaration = &record["declaration"];
+                    let Some(key) = declaration["identity"]["key"].as_str() else { continue; };
+                    let name = declaration["fields"].as_array().into_iter().flatten()
+                        .filter(|field| field["field_path"] == "oteryn:source.npc.display_name")
+                        .filter_map(|field| field["value"]["value"].as_str())
+                        .find(|name| EntityDisplayName::new(name).is_ok())
+                        .map_or_else(|| npc_default_name(key), str::to_owned);
+                    names.insert(key.to_owned(), name);
+                }
+            }
+        }
+    }
+    Ok(names)
+}
+
+// The server's NPC catalogue title-cases the slug when no display name was authored.
+fn npc_default_name(key: &str) -> String {
+    key.rsplit('.').next().unwrap_or(key).split('_').filter_map(|word| {
+        let mut chars = word.chars();
+        Some(chars.next()?.to_uppercase().chain(chars).collect::<String>())
+    }).collect::<Vec<_>>().join(" ")
 }
 
 impl<'a> MapModel<'a> {
@@ -91,6 +135,7 @@ impl<'a> MapModel<'a> {
                 };
                 let mut field = None;
                 let mut ladder = false;
+                let mut ladder_ordinal = None;
                 let mut rope_spot = false;
                 let mut rope_ordinal = None;
                 let mut shovel_ordinal = None;
@@ -111,6 +156,9 @@ impl<'a> MapModel<'a> {
                     ladder |= kind == Some("ladder");
                     door |= kind == Some("door");
                     if let Some(id) = crate::map::palette_appearance(&entry.key) {
+                        if kind == Some("ladder") && crate::map::floor::is_ladder_appearance(id) {
+                            ladder_ordinal = Some(u8::try_from(ordinal).map_err(|_| oteryn_world_bundle::Error::Limit("map ladder ordinal".into()))?);
+                        }
                         let id = u32::from(id);
                         let ground = entry.terrain.is_some_and(|terrain| {
                             terrain.kind == oteryn_world_bundle::bundle::TerrainKind::Ground
@@ -149,6 +197,7 @@ impl<'a> MapModel<'a> {
                         house: tile.house,
                         field,
                         ladder,
+                        ladder_ordinal,
                         rope_spot,
                         rope_ordinal,
                         shovel_ordinal,
@@ -167,6 +216,7 @@ impl<'a> MapModel<'a> {
             world,
             tiles,
             samples: Vec::new(),
+            actor_names: actor_names(root)?,
         };
         for (&position, facts) in &model.tiles {
             let mut add = |kind, content| {

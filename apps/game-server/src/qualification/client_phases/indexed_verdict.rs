@@ -67,6 +67,12 @@ impl Watch {
     }
 }
 
+async fn run_indexed(watch: &Watch, journey: impl Future<Output = TestResult>) -> TestResult {
+    watch
+        .bound(Duration::from_secs(3_000), "indexed row deadline", journey)
+        .await
+}
+
 /// Enroll the dispatch boundary without changing any row's coverage assertions.
 pub(crate) fn indexed(
     scenario: &'static str,
@@ -77,7 +83,7 @@ pub(crate) fn indexed(
     Box::pin(async move {
         let mut watch = Watch::new(scenario, Harness::global());
         watch.scenario = Some(scenario);
-        let result = watch.run(None, "indexed row", journey).await;
+        let result = run_indexed(&watch, journey).await;
         if let Err(error) = result {
             watch.remember(error.as_ref());
             watch.state().failed_exit = true;
@@ -169,6 +175,32 @@ mod tests {
         let mut watch = Watch::new("C03.full", harness);
         watch.scenario = Some("C03.full");
         watch
+    }
+
+    #[test]
+    fn qualification_indexed_progress_cannot_outlive_wall_deadline() -> TestResult {
+        runtime()?.block_on(async {
+            let harness = Box::leak(Box::new(Harness::new(true, None)));
+            let watch = new_watch(harness);
+            let journey = async {
+                for _ in 0..=100 {
+                    tokio::time::sleep(Duration::from_secs(30)).await;
+                    watch.touch("active-search");
+                }
+                Ok(())
+            };
+            let error = run_indexed(&watch, journey)
+                .await
+                .err()
+                .ok_or("indexed row completed past deadline")?;
+            assert_eq!(
+                classify(error.as_ref()),
+                Cause::Deadline {
+                    phase: "active-search"
+                }
+            );
+            Ok(())
+        })
     }
 
     #[test]

@@ -1,6 +1,13 @@
 //! Hunt through network attack, visibility, corpse USE and item-move replies.
 use super::*;
 pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<()> {
+    hunt_named(client, None).await
+}
+
+pub(super) async fn hunt_named(
+    client: &mut oteryn_dev_client::DevClientSession,
+    name: Option<&str>,
+) -> TestResult {
     use oteryn_dev_client::{EntityDetail, EntityKind};
     if !client
         .selected_capabilities()
@@ -15,6 +22,7 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
         .and_then(|entities| {
             entities.iter().find(|entry| {
                 entry.kind == EntityKind::Creature
+                    && name.is_none_or(|expected| client_world::has_display_name(entry, expected))
                     && entry.position.floor == position.floor
                     && entry
                         .position

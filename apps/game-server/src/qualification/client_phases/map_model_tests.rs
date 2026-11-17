@@ -167,6 +167,7 @@ fn map_journey_bundle_wall_detour_rope_and_unknown_ladder_facts() -> TestResult 
     assert!(model.tiles[&at(1, 2, -8)].rope_spot);
     assert_eq!(model.tiles[&at(1, 2, -8)].rope_ordinal, Some(0));
     assert!(model.tiles[&at(3, 2, -8)].ladder);
+    assert_eq!(model.tiles[&at(3, 2, -8)].ladder_ordinal, Some(1));
     assert!(
         !world.floors().contains(at(3, 2, -8)),
         "UNKNOWN ladder fact must not invent an automatic ascent"
@@ -179,5 +180,21 @@ fn map_journey_bundle_wall_detour_rope_and_unknown_ladder_facts() -> TestResult 
     }
     assert!(selected.iter().any(|sample| sample.kind == "rope_spot"));
     assert!(selected.iter().any(|sample| sample.kind == "ladder"));
+    Ok(())
+}
+
+#[test]
+fn qualification_immovable_ladder_uses_placement_and_observes_ascent() -> TestResult {
+    let source = include_str!("map_journey.rs");
+    let ladder = source
+        .split_once("if sample.kind == \"ladder\" && !transition")
+        .ok_or("missing immovable ladder check")?
+        .1
+        .split_once("if matches!(sample.kind, \"rope_spot\"")
+        .ok_or("missing check after ladder")?
+        .0;
+    assert!(ladder.contains("travel::use_map_object(client, &placement).await?"));
+    assert!(ladder.contains("UseDisposition::Committed"));
+    assert!(ladder.contains("observe_ascent(client, expected).await"));
     Ok(())
 }

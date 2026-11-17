@@ -392,7 +392,7 @@ mod travel {
     const MARGIN: u16 = 160;
     /// The search gives up after this many settled tiles instead of exhausting memory.
     const SEARCH_LIMIT: usize = 2_000_000;
-    const MAX_REPLANS: usize = 12;
+    pub(super) const MAX_REPLANS: usize = 12;
     const STEP_COST: u32 = 10;
     /// A closed door costs a USE and may be refused, so an open way round is preferred.
     const DOOR_COST: u32 = 40;
@@ -1009,7 +1009,7 @@ mod travel {
     }
 
     /// The first tile of `OFFSETS` around `spot`, one floor up, that `free` accepts.
-    fn first_landing(spot: TilePos, free: impl Fn(TilePos) -> bool) -> Option<TilePos> {
+    pub(super) fn first_landing(spot: TilePos, free: impl Fn(TilePos) -> bool) -> Option<TilePos> {
         let floor = spot.floor.checked_add(1).filter(|floor| *floor <= 0)?;
         OFFSETS.iter().find_map(|&(dx, dy)| {
             let at = TilePos {
@@ -1019,6 +1019,15 @@ mod travel {
             };
             free(at).then_some(at)
         })
+    }
+
+    pub(super) fn missing_tool_error(tool: u32, context: &str) -> Box<dyn std::error::Error> {
+        verdict::HarnessError::boxed(
+            verdict::Cause::Precondition {
+                name: format!("fixture-tool-{tool}"),
+            },
+            format!("{} {context}", missing_fixture_tool(tool)),
+        )
     }
 
     fn missing_fixture_tool(tool: u32) -> String {
@@ -1276,30 +1285,54 @@ mod travel {
         segments.chunks(24).map(|chunk| chunk.join(" ")).collect()
     }
 
-    fn tool_revision(events: &[SessionEvent], spot: TilePos, ordinal: u8) -> Option<Option<u64>> {
+    fn base_ordinal_revision(
+        tiles: &[oteryn_protocol_oteryn::world_map::MapTile],
+        spot: TilePos,
+        ordinal: u8,
+    ) -> Option<u64> {
         use oteryn_protocol_oteryn::world_map::MapOrigin;
+        let position = ActorPosition {
+            x: i32::from(spot.x),
+            y: i32::from(spot.y),
+            floor: -i16::from(spot.floor),
+        };
+        tiles
+            .iter()
+            .find(|tile| tile.position == position)?
+            .items
+            .iter()
+            .find_map(|item| match item.origin {
+                MapOrigin::BaseOrdinal {
+                    ordinal: actual,
+                    object_revision,
+                } if actual == ordinal => Some(object_revision),
+                _ => None,
+            })
+    }
+
+    fn tool_revision(events: &[SessionEvent], spot: TilePos, ordinal: u8) -> Option<u64> {
         events.iter().rev().find_map(|event| {
             let tiles = match event {
                 SessionEvent::WorldMap(delta) => &delta.value.tiles,
                 SessionEvent::WorldMapSnapshot(snapshot) => &snapshot.value.tiles,
                 _ => return None,
             };
-            let tile = tiles.iter().find(|tile| {
-                tile.position
-                    == (ActorPosition {
-                        x: i32::from(spot.x),
-                        y: i32::from(spot.y),
-                        floor: -i16::from(spot.floor),
-                    })
-            })?;
-            Some(tile.items.iter().find_map(|item| match item.origin {
-                MapOrigin::BaseOrdinal {
-                    ordinal: actual,
-                    object_revision,
-                } if actual == ordinal => Some(object_revision),
-                _ => None,
-            }))
+            base_ordinal_revision(tiles, spot, ordinal)
         })
+    }
+
+    pub(super) fn observed_revision(
+        client: &mut DevClientSession,
+        placement: &[u8],
+        at: TilePos,
+        ordinal: u8,
+    ) -> u64 {
+        let event_revision = tool_revision(&client.take_events(), at, ordinal);
+        let view_revision = event_revision.or_else(|| {
+            let snapshot = client.session_mut().world_map_snapshot()?;
+            base_ordinal_revision(&snapshot.tiles, at, ordinal)
+        });
+        overlay_revision(client, placement).max(view_revision.unwrap_or_default())
     }
 
     fn overlay_revision(client: &DevClientSession, placement: &[u8]) -> u64 {
@@ -1408,7 +1441,8 @@ mod travel {
                     hits,
                     direction,
                 } => {
-                    let mut revision = overlay_revision(client, &self.placement(spot, ordinal)?);
+                    let mut revision =
+                        observed_revision(client, &self.placement(spot, ordinal)?, spot, ordinal);
                     for hit in 1..=hits {
                         verdict::Harness::global().progress("travel descent");
                         let reply = if let Some(tool) = tool {
@@ -1473,8 +1507,12 @@ mod travel {
                     let reply = if kind == "ladder" {
                         use_map_object(client, &self.placement(spot, ordinal)?).await?
                     } else {
-                        let mut revision =
-                            overlay_revision(client, &self.placement(spot, ordinal)?);
+                        let mut revision = observed_revision(
+                            client,
+                            &self.placement(spot, ordinal)?,
+                            spot,
+                            ordinal,
+                        );
                         self.use_tool(client, spot, ordinal, ROPE_ITEM, &mut revision)
                             .await?
                     };
@@ -1538,11 +1576,7 @@ mod travel {
                             .find(|entry| entry.item_definition_ref == reference)
                     })
                     .ok_or_else(|| {
-                        format!(
-                            "MISSING {} required at {}",
-                            missing_fixture_tool(tool),
-                            show(spot)
-                        )
+                        missing_tool_error(tool, &format!("required at {}", show(spot)))
                     })?
                     .handle;
                 let intent = UseIntent {
@@ -1556,6 +1590,7 @@ mod travel {
                 };
                 let payload = encode_item_use_intent(&intent)
                     .map_err(|error| format!("tool {tool} USE encode: {error:?}"))?;
+                client.take_events();
                 let response = client.session_mut().world_context_use(&payload).await?;
                 if response.status != CommandStatus::Accepted {
                     return Err(format!("tool {tool} USE command refused: {response:?}").into());
@@ -1570,11 +1605,9 @@ mod travel {
                     loop {
                         verdict::Harness::global().progress("travel tool map update");
                         if let Some(observed) = tool_revision(&client.take_events(), spot, ordinal)
-                            && observed != Some(before)
+                            && observed > before
                         {
-                            if let Some(observed) = observed {
-                                *revision = observed;
-                            }
+                            *revision = observed;
                             return Ok(disposition);
                         }
                         if tokio::time::Instant::now() >= deadline {
@@ -1595,11 +1628,36 @@ mod travel {
         }
     }
 
+    fn conversation_lines(
+        delta: oteryn_dev_client::AppliedDelta<service::NpcConversation>,
+        after: u64,
+        npc: EntityRef,
+        paid_confirmation: bool,
+    ) -> Option<Vec<String>> {
+        let named_reply = delta.value.open.is_some_and(|(actor, _)| actor == npc);
+        // A successful paid passage closes the focus in the same publication.
+        // Other anonymous closes do not carry a correlatable reply.
+        let passage_committed = paid_confirmation
+            && delta.value.open.is_none()
+            && delta.value.lines == ["Set the sails!"];
+        (delta.server_sequence > after && (named_reply || passage_committed))
+            .then_some(delta.value.lines)
+    }
+
     /// One line to the NPC through the production dialogue protocol, and the lines it answers.
     pub(super) async fn converse(
         client: &mut DevClientSession,
         npc: EntityRef,
         text: &str,
+    ) -> TestResult<Vec<String>> {
+        converse_with(client, npc, text, false).await
+    }
+
+    async fn converse_with(
+        client: &mut DevClientSession,
+        npc: EntityRef,
+        text: &str,
+        paid_confirmation: bool,
     ) -> TestResult<Vec<String>> {
         client.take_events();
         let payload = service::encode_npc_talk_intent(&service::NpcTalkIntent {
@@ -1630,9 +1688,10 @@ mod travel {
         loop {
             for event in client.take_events() {
                 if let SessionEvent::NpcConversation(delta) = event
-                    && delta.server_sequence > reply.server_sequence
+                    && let Some(lines) =
+                        conversation_lines(delta, reply.server_sequence, npc, paid_confirmation)
                 {
-                    return Ok(delta.value.lines);
+                    return Ok(lines);
                 }
             }
             if tokio::time::Instant::now() >= deadline {
@@ -1695,10 +1754,10 @@ mod travel {
         if !quote.iter().any(|line| line.contains("passage")) {
             return Err(format!("{} refused: {quote:?}", need()).into());
         }
-        let reply = converse(client, npc, "yes").await.unwrap_or_default();
+        let reply = converse_with(client, npc, "yes", true).await?;
         evidence(&format!("TRAVEL_NPC {label} say=\"yes\" reply={reply:?}"));
-        if let Some(line) = reply.iter().find(|line| !line.contains("sails")) {
-            return Err(format!("{} refused: {line}", need()).into());
+        if reply.is_empty() || reply.iter().any(|line| !line.contains("sails")) {
+            return Err(format!("{} refused: {reply:?}", need()).into());
         }
         let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
         loop {
@@ -1760,12 +1819,16 @@ mod travel {
                 return Ok(());
             }
             verdict::Harness::global().progress("walk");
+            client.take_events();
             let mut service_error = None;
             let planned = planner
                 .plan_serviced(from, target, goal, rope, passages, async || {
                     verdict::Harness::global().progress("travel session liveness");
                     match client.service_liveness(Duration::from_millis(25)).await {
-                        Ok(()) => Ok(()),
+                        Ok(()) => {
+                            client.take_events();
+                            Ok(())
+                        }
                         Err(error) => {
                             let reason = error.to_string();
                             service_error = Some(error);
@@ -1776,6 +1839,15 @@ mod travel {
                 .await;
             if let Some(error) = service_error {
                 return Err(error.into());
+            }
+            let observed = tile(client.world_spatial().actor_position)?;
+            if observed != from {
+                evidence(&format!(
+                    "TRAVEL_REPLAN {label} origin={} observed={}",
+                    show(from),
+                    show(observed)
+                ));
+                continue;
             }
             let route = planned.map_err(|reason| {
                 format!(
@@ -1804,12 +1876,10 @@ mod travel {
                 } = leg
                     && !carries(client, tool)?
                 {
-                    return Err(format!(
-                        "MISSING {} required for descent at {}",
-                        missing_fixture_tool(tool),
-                        show(spot)
-                    )
-                    .into());
+                    return Err(missing_tool_error(
+                        tool,
+                        &format!("required for descent at {}", show(spot)),
+                    ));
                 }
             }
             let mut at = from;
@@ -1880,6 +1950,97 @@ mod travel {
 
     #[cfg(test)]
     mod tests {
+        #[test]
+        fn qualification_dialogue_ignores_other_npcs_and_anonymous_closes() {
+            let npc = EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            };
+            let other = EntityRef {
+                identity: [2; 16],
+                generation: 1,
+            };
+            let delta = |server_sequence, actor: Option<EntityRef>, line: &str| {
+                oteryn_dev_client::AppliedDelta {
+                    server_sequence,
+                    base_revision: 1,
+                    new_revision: 2,
+                    value: service::NpcConversation {
+                        open: actor.map(|id| (id, service::NpcConversationState::Open)),
+                        lines: vec![line.into()],
+                    },
+                }
+            };
+            assert_eq!(
+                conversation_lines(delta(8, Some(other), "wrong"), 7, npc, false),
+                None
+            );
+            assert_eq!(
+                conversation_lines(delta(8, None, "farewell"), 7, npc, true),
+                None
+            );
+            assert_eq!(
+                conversation_lines(delta(7, Some(npc), "stale"), 7, npc, false),
+                None
+            );
+            assert_eq!(
+                conversation_lines(delta(8, Some(npc), "hello"), 7, npc, false),
+                Some(vec!["hello".into()])
+            );
+            assert_eq!(
+                conversation_lines(delta(8, None, "Set the sails!"), 7, npc, true),
+                Some(vec!["Set the sails!".into()])
+            );
+        }
+
+        #[test]
+        fn qualification_tool_revision_requires_matching_ordinal() {
+            use oteryn_protocol_oteryn::world_map::*;
+            let spot = TilePos {
+                x: 100,
+                y: 100,
+                floor: -8,
+            };
+            let position = ActorPosition {
+                x: 100,
+                y: 100,
+                floor: 8,
+            };
+            let event = |ordinal, object_revision| {
+                SessionEvent::WorldMapSnapshot(oteryn_dev_client::AppliedDelta {
+                    server_sequence: 2,
+                    base_revision: 1,
+                    new_revision: 2,
+                    value: WorldMapViewSnapshot {
+                        header: MapViewHeader {
+                            content_generation: [0; 32],
+                            bundle_digest: [0; 32],
+                            reset_epoch: 1,
+                            origin: position,
+                            first_visible_floor: 8,
+                        },
+                        tiles: vec![MapTile {
+                            position,
+                            items: vec![MapItem {
+                                definition: MapDefinition::Terrain(std::num::NonZeroU32::MIN),
+                                count: 1,
+                                sub_type: 0,
+                                appearance_id: 0,
+                                origin: MapOrigin::BaseOrdinal {
+                                    ordinal,
+                                    object_revision,
+                                },
+                            }],
+                            more: false,
+                            ground_speed: 150,
+                        }],
+                    },
+                })
+            };
+            assert_eq!(tool_revision(&[event(2, 9)], spot, 1), None);
+            assert_eq!(tool_revision(&[event(1, 4), event(2, 9)], spot, 1), Some(4));
+        }
+
         include!("travel_tests.rs");
     }
 }
@@ -2145,7 +2306,7 @@ pub(super) async fn reach_route(
     goal: impl Fn(TilePos) -> bool,
 ) -> TestResult<Result<Vec<StepDirection>, ReachFailure>> {
     let mut origin = from;
-    loop {
+    for attempt in 0..=travel::MAX_REPLANS {
         client.service_liveness(Duration::from_millis(1)).await?;
         client.take_events(); // Canonical session stores retain the applied observations.
         let observed = tile(client.world_spatial().actor_position)?;
@@ -2166,10 +2327,15 @@ pub(super) async fn reach_route(
             return Ok(path);
         }
         evidence(&format!(
-            "route_search replan=true from={origin:?} observed={observed:?}"
+            "route_search replan=true attempt={attempt} from={origin:?} observed={observed:?}"
         ));
         origin = observed;
     }
+    Err(format!(
+        "reachability origin kept changing after {} replans",
+        travel::MAX_REPLANS
+    )
+    .into())
 }
 
 // Keep the search shared with the offline production-bundle regression. Live
@@ -2231,60 +2397,6 @@ async fn reach_route_serviced(
         searched: parents.len(),
         component: (low, high),
     }))
-}
-
-const REACH_SEARCH_NODES: usize = 3_000_000;
-const REACH_CHUNK: usize = 20_000;
-
-/// Like `route` without its 160-tile and two-floor window: it searches the whole bundle (stairs,
-/// ladders and floor changes included) up to `REACH_SEARCH_NODES` tiles. The search yields to the
-/// connection every `REACH_CHUNK` expansions so liveness is served and the harness sees progress.
-/// `Ok(Err(searched))` means the goal is not reachable (or the cap was hit) after `searched` tiles.
-pub(super) async fn reach_route(
-    client: &mut oteryn_dev_client::DevClientSession,
-    world: &BundleWorld,
-    from: TilePos,
-    goal: impl Fn(TilePos) -> bool,
-) -> TestResult<Result<Vec<StepDirection>, usize>> {
-    let mut queue = VecDeque::from([from]);
-    let mut parents = BTreeMap::from([(from, None)]);
-    let mut expanded = 0usize;
-    while let Some(at) = queue.pop_front() {
-        if goal(at) {
-            let mut path = Vec::new();
-            let mut cursor = at;
-            while let Some(Some((previous, direction))) = parents.get(&cursor) {
-                path.push(*direction);
-                cursor = *previous;
-            }
-            path.reverse();
-            return Ok(Ok(path));
-        }
-        if parents.len() > REACH_SEARCH_NODES {
-            break;
-        }
-        expanded += 1;
-        if expanded.is_multiple_of(REACH_CHUNK) {
-            verdict::Harness::global().progress("route-search");
-            client.service_liveness(Duration::from_millis(1)).await?;
-        }
-        for direction in [
-            StepDirection::North,
-            StepDirection::East,
-            StepDirection::South,
-            StepDirection::West,
-        ] {
-            let Some(next) = destination(world, at, direction) else {
-                continue;
-            };
-            if parents.contains_key(&next) {
-                continue;
-            }
-            parents.insert(next, Some((at, direction)));
-            queue.push_back(next);
-        }
-    }
-    Ok(Err(parents.len()))
 }
 
 /// Use the production floor resolver over the production bundle's collision facts.
@@ -2364,15 +2476,15 @@ async fn request_spawn(session: String, key: String) -> Result<String, String> {
     let socket = required("NODE_BOOT_CONTROL_SOCKET").map_err(|error| error.to_string())?;
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
-    let output = tokio::task::spawn_blocking(move || {
-        std::process::Command::new("sudo")
-            .args(["-n", "python3"])
-            .arg(script)
-            .args(["--socket", &socket, "--session", &session, "--spawn", &key])
-            .output()
+    let mut command = fixture_command(&script);
+    command.args(["--socket", &socket, "--session", &session, "--spawn", &key]);
+    let task = FixtureCommand::start(move || command.output().map_err(|error| error.to_string()))
+        .map_err(|error| error.to_string())?;
+    let output = wait_fixture_command(task, async || {
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        Ok(())
     })
     .await
-    .map_err(|error| error.to_string())?
     .map_err(|error| error.to_string())?;
     if output.status.success() {
         return Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned());
@@ -2477,12 +2589,12 @@ pub(super) async fn logout_retrying_busy_observed(
     let mut attempts = 0;
     loop {
         attempts += 1;
-        let outcome = client.session_mut().logout().await.map_err(|error| {
-            if let Some(observe) = observe.as_mut() {
-                observe(attempts, &format!("command_error={error}"));
-            }
-            format!("logout attempt {attempts} failed: {error}")
-        })?;
+        let outcome = logout_observation(
+            client.session_mut().logout().await,
+            &mut observe,
+            attempts,
+            "command",
+        )?;
         if let Some(observe) = observe.as_mut() {
             observe(attempts, &format!("reply={outcome:?}"));
         }
@@ -2492,14 +2604,60 @@ pub(super) async fn logout_retrying_busy_observed(
         if tokio::time::Instant::now() >= deadline {
             return Ok((outcome.result, format!("{outcome:?}"), attempts, true));
         }
-        client.service_liveness(Duration::from_millis(250)).await
-            .map_err(|error| {
-                if let Some(observe) = observe.as_mut() {
-                    observe(attempts, &format!("busy_liveness_error={error}"));
-                }
-                format!("logout Busy retry liveness failed after attempt {attempts}: {outcome:?}; error={error}")
-            })?;
+        logout_observation(
+            client.service_liveness(Duration::from_millis(250)).await,
+            &mut observe,
+            attempts,
+            "busy_liveness",
+        )?;
     }
+}
+
+fn logout_observation<T, E: std::fmt::Display>(
+    result: Result<T, E>,
+    observe: &mut Option<&mut LogoutObserver<'_>>,
+    attempt: usize,
+    phase: &str,
+) -> Result<T, E> {
+    result.inspect_err(|error| {
+        if let Some(observe) = observe.as_mut() {
+            observe(attempt, &format!("{phase}_error={error}"));
+        }
+    })
+}
+
+#[test]
+fn qualification_logout_retains_server_close_for_indexed_classifier() -> TestResult {
+    use oteryn_dev_client::SessionError;
+    use verdict::Cause;
+
+    let trace = [0xab; 16];
+    let mut messages = Vec::new();
+    let mut observe = |attempt, message: &str| messages.push((attempt, message.to_owned()));
+    let error = logout_observation(
+        Err::<(), _>(SessionError::ServerProtocolError {
+            code: 1200,
+            connection_trace: Some(trace),
+        }),
+        &mut Some(&mut observe),
+        2,
+        "command",
+    )
+    .err()
+    .ok_or("expected transport error")?;
+    assert_eq!(
+        verdict::classify(&error),
+        Cause::Transport {
+            code: Some(1200),
+            trace: Some("ab".repeat(16)),
+            phase: None,
+            last_frame: None,
+        }
+    );
+    assert_eq!(messages.len(), 1);
+    assert_eq!(messages[0].0, 2);
+    assert!(messages[0].1.contains("command_error="));
+    Ok(())
 }
 
 pub(super) async fn journeys(
@@ -4889,7 +5047,7 @@ pub(super) async fn journeys(
     });
     client = client_disconnect_resume::recover(client, clients, after).await?;
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-    client_hunt::hunt(&mut client).await?;
+    client_hunt::hunt_named(&mut client, Some("Rat")).await?;
     travel_to_spawn(
         &mut client,
         world,
@@ -4914,20 +5072,36 @@ pub(super) async fn journeys(
     }
     drop(client);
     client = connect_world(clients, 0x73).await?;
-    if client.join_snapshot().game_session_id == old_session
-        || client.world_spatial().actor_position != respawn
-        || client
-            .actor_vitals()
-            .is_none_or(|vitals| vitals.health != vitals.max_health)
-    {
-        return Err("death relog did not retain the saved respawn position and full vitals".into());
-    }
-    evidence(&format!(
-        "mechanic=death state=relogged position={respawn:?} health={}",
-        client.actor_vitals().ok_or("death relog vitals")?.health
-    ));
+    let snapshot_result: TestResult = (|| {
+        if client.join_snapshot().game_session_id == old_session
+            || client.world_spatial().actor_position != respawn
+            || client
+                .actor_vitals()
+                .is_none_or(|vitals| vitals.health != vitals.max_health)
+        {
+            return Err(
+                "death relog did not retain the saved respawn position and full vitals".into(),
+            );
+        }
+        evidence(&format!(
+            "mechanic=death state=relogged position={respawn:?} health={}",
+            client.actor_vitals().ok_or("death relog vitals")?.health
+        ));
 
+        Ok(())
+    })();
+    let logout: TestResult = async {
+        let (result, detail, _, _) = logout_retrying_busy(&mut client).await?;
+        if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("death relog final logout refused: {detail}").into());
+        }
+        Ok(())
+    }
+    .await;
     drop(client);
+    wait_character_released(clients, 1).await?;
+    snapshot_result?;
+    logout?;
     profile_result
 }
 
@@ -4972,7 +5146,7 @@ async fn profile_journey(
     walk(&mut client, world, &back).await?;
     let map = map_journey::run(&mut client, world, &model).await;
     let combat = match travel_to_spawn(&mut client, world, spawns, "oteryn:creature.rat").await {
-        Ok(()) => client_combat_journey::combat_journey(&mut client).await,
+        Ok(()) => client_combat_journey::combat_journey(&mut client, "Rat").await,
         Err(error) => Err(error),
     };
     let spells = client_spell_journey::spell_journey(&mut client, pz).await;
@@ -5033,20 +5207,76 @@ fn fresh_grant_material(tag: u8) -> TestResult<([u8; 32], [u8; 16])> {
     Ok((nonce, attempt))
 }
 
-async fn wait_fixture_command<T: Send + 'static>(
-    task: tokio::task::JoinHandle<Result<T, String>>,
+// Bound the unprivileged launcher and the privileged process independently.
+pub(super) fn fixture_command(script: &Path) -> std::process::Command {
+    let mut command = std::process::Command::new("timeout");
+    command
+        .args([
+            "--kill-after=2s",
+            "35s",
+            "sudo",
+            "-n",
+            "timeout",
+            "--kill-after=2s",
+            "30s",
+            "python3",
+        ])
+        .arg(script);
+    command
+}
+
+pub(super) struct FixtureCommand<T> {
+    worker: Option<std::thread::JoinHandle<()>>,
+    result: tokio::sync::oneshot::Receiver<Result<T, String>>,
+}
+
+impl<T: Send + 'static> FixtureCommand<T> {
+    pub(super) fn start(
+        command: impl FnOnce() -> Result<T, String> + Send + 'static,
+    ) -> std::io::Result<Self> {
+        let (send, result) = tokio::sync::oneshot::channel();
+        let worker = std::thread::Builder::new().spawn(move || {
+            let _ = send.send(command());
+        })?;
+        Ok(Self {
+            worker: Some(worker),
+            result,
+        })
+    }
+}
+
+impl<T> Drop for FixtureCommand<T> {
+    fn drop(&mut self) {
+        // A watchdog can drop the entire row. The bounded command still owns
+        // its fixture until its process exits, so join before releasing the row.
+        if let Some(worker) = self.worker.take() {
+            let _ = worker.join();
+        }
+    }
+}
+
+async fn wait_fixture_command<T>(
+    mut task: FixtureCommand<T>,
     mut service: impl AsyncFnMut() -> TestResult,
 ) -> TestResult<T> {
-    let mut live = Ok(());
-    while !task.is_finished() && live.is_ok() {
+    use tokio::sync::oneshot::error::TryRecvError;
+
+    loop {
+        match task.result.try_recv() {
+            Ok(result) => return Ok(result?),
+            Err(TryRecvError::Closed) => {
+                return Err("fixture command worker exited without a result".into());
+            }
+            Err(TryRecvError::Empty) => {}
+        }
         verdict::Harness::global().progress("fixture provisioning liveness");
-        live = service().await;
+        // Complete the liveness read before observing command completion. A
+        // partially read frame would otherwise poison the next command.
+        if let Err(error) = service().await {
+            let _ = (&mut task.result).await;
+            return Err(error);
+        }
     }
-    // Even after transport loss, retain the fenced operation until its bounded
-    // control request completes; never detach a writer into the next row.
-    let result = task.await?;
-    live?;
-    result.map_err(Into::into)
 }
 
 #[cfg(test)]
@@ -5059,11 +5289,11 @@ fn qualification_fixture_command_services_liveness_and_joins_after_loss() -> Tes
             let finished = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
             let writer_finished = finished.clone();
             let (release, gate) = std::sync::mpsc::sync_channel(1);
-            let task = tokio::task::spawn_blocking(move || -> Result<(), String> {
+            let task = FixtureCommand::start(move || -> Result<(), String> {
                 gate.recv().map_err(|error| error.to_string())?;
                 writer_finished.store(true, std::sync::atomic::Ordering::SeqCst);
                 Ok(())
-            });
+            })?;
             let mut serviced = 0;
             let result = wait_fixture_command(task, async || {
                 serviced += 1;
@@ -5125,12 +5355,92 @@ pub(super) async fn connect_character(
     Ok(client)
 }
 
+pub(super) fn has_display_name(
+    entity: &oteryn_dev_client::WorldSpatialEntity,
+    expected: &str,
+) -> bool {
+    entity
+        .display_name
+        .as_ref()
+        .and_then(|name| name.as_str().ok())
+        == Some(expected)
+}
+
+fn nearest_spawn<'a>(
+    entities: impl Iterator<Item = &'a oteryn_dev_client::WorldSpatialEntity>,
+    here: ActorPosition,
+    name: &str,
+) -> Option<&'a oteryn_dev_client::WorldSpatialEntity> {
+    entities
+        .filter(|entry| {
+            entry.kind == oteryn_dev_client::EntityKind::Creature
+                && entry.position.floor == here.floor
+                && has_display_name(entry, name)
+        })
+        .min_by_key(|entry| {
+            entry
+                .position
+                .x
+                .abs_diff(here.x)
+                .max(entry.position.y.abs_diff(here.y))
+        })
+}
+
+#[test]
+fn qualification_spawn_prefers_requested_species_over_nearer_creature() -> TestResult {
+    use oteryn_dev_client::{EntityDetail, EntityKind, EntityRef, WorldSpatialEntity};
+    use oteryn_protocol_oteryn::entity_names::EntityDisplayName;
+    let here = ActorPosition {
+        x: 100,
+        y: 100,
+        floor: 7,
+    };
+    let entity = |id, name, x| -> TestResult<WorldSpatialEntity> {
+        Ok(WorldSpatialEntity {
+            entity: EntityRef {
+                identity: [id; 16],
+                generation: 1,
+            },
+            kind: EntityKind::Creature,
+            display_name: Some(
+                EntityDisplayName::new(name).map_err(|error| format!("test name: {error:?}"))?,
+            ),
+            position: ActorPosition { x, ..here },
+            detail: EntityDetail::Actor {
+                direction: StepDirection::North,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        })
+    };
+    let other = entity(1, "Poison Spider", 101)?;
+    let rat = entity(2, "Rat", 102)?;
+    assert_eq!(
+        nearest_spawn([&other, &rat].into_iter(), here, "Rat"),
+        Some(&rat)
+    );
+    assert_eq!(nearest_spawn([&other].into_iter(), here, "Rat"), None);
+    Ok(())
+}
+
 async fn travel_to_spawn(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
     creature: &str,
 ) -> TestResult {
+    static NAMES: std::sync::OnceLock<Result<BTreeMap<String, String>, String>> =
+        std::sync::OnceLock::new();
+    let names = NAMES
+        .get_or_init(|| {
+            let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+            map_journey::actor_names(&root).map_err(|error| error.to_string())
+        })
+        .as_ref()
+        .map_err(Clone::clone)?;
+    let name = names
+        .get(creature)
+        .ok_or_else(|| format!("spawn definition {creature} has no authored display name"))?;
     let from = tile(client.world_spatial().actor_position)?;
     let points: Vec<_> = spawns
         .sources
@@ -5186,23 +5496,8 @@ async fn travel_to_spawn(
         let here = client.world_spatial().actor_position;
         let target = client
             .world_entities()
-            .and_then(|entities| {
-                entities
-                    .iter()
-                    .filter(|entry| {
-                        entry.kind == oteryn_dev_client::EntityKind::Creature
-                            && entry.position.floor == here.floor
-                    })
-                    .min_by_key(|entry| {
-                        entry
-                            .position
-                            .x
-                            .abs_diff(here.x)
-                            .max(entry.position.y.abs_diff(here.y))
-                    })
-            })
-            .copied()
-            .ok_or("spawn route has no visible creature")?;
+            .and_then(|entities| nearest_spawn(entities.iter(), here, name))
+            .ok_or_else(|| format!("spawn route has no visible {name}"))?;
         let target = tile(target.position)?;
         let path = route(world, tile(here)?, |at| {
             at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1
@@ -5327,10 +5622,7 @@ async fn shop_journey(
 ) -> TestResult<()> {
     let basis = spatial_basis::current(client)?;
     let Some(npc) = npcs.npcs.iter().find(|npc| npc.key == "oteryn:npc.sam") else {
-        evidence(
-            "mechanic=npc_shop skipped=authored_shop_npc_missing content_id=oteryn:npc.sam source=content/npcs/definitions/index.json:1",
-        );
-        return Ok(());
+        return Err("mechanic=npc_shop reason=authored_shop_npc_missing content_id=oteryn:npc.sam source=content/npcs/definitions/index.json:1".into());
     };
     let from = tile(client.world_spatial().actor_position)?;
     let Some(path) = route(world, from, |at| {
@@ -5339,10 +5631,7 @@ async fn shop_journey(
                 && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
         })
     }) else {
-        evidence(
-            "mechanic=npc_shop skipped=no_route_to_authored_shop_within_town_budget content_id=oteryn:npc.sam source=apps/game-server/src/qualification/client_phases/world.rs:126",
-        );
-        return Ok(());
+        return Err("mechanic=npc_shop reason=no_route_to_authored_shop_within_town_budget content_id=oteryn:npc.sam source=apps/game-server/src/qualification/client_phases/world.rs:126".into());
     };
     walk(client, world, &path).await?;
     let target = client
@@ -5359,10 +5648,7 @@ async fn shop_journey(
         })
         .copied();
     let Some(target) = target else {
-        evidence(
-            "mechanic=npc_shop skipped=authored_shop_has_no_visible_actor_at_placement content_id=oteryn:npc.sam source=crates/protocol-oteryn/src/world_spatial_entities.rs:105",
-        );
-        return Ok(());
+        return Err("mechanic=npc_shop reason=authored_shop_has_no_visible_actor_at_placement content_id=oteryn:npc.sam source=crates/protocol-oteryn/src/world_spatial_entities.rs:105".into());
     };
     client_npc_shop::transact(client, target.entity, clients).await
 }
@@ -5617,7 +5903,7 @@ fn qualification_q01_bundle_route_reaches_noble_armor_door() -> TestResult {
 
 #[cfg(test)]
 #[test]
-fn qualification_flr2_q03a_descends_to_adjacent_reward() -> TestResult {
+fn qualification_flr2_q03a_town_route_currently_exhausts_search() -> TestResult {
     flr2_reward_route(
         "Q03a",
         TilePos {
@@ -5676,8 +5962,8 @@ fn flr2_reward_route(label: &'static str, target: TilePos) -> TestResult {
             if label == "Q03a" {
                 let reason = planned.err().ok_or("Q03a unexpectedly has a route")?;
                 assert_eq!(reason, "every reachable tile of the search box exhausted (114052 settled); closest tile reached 32305,32254,7");
-                let result: TestResult = Err(full_row_q01::Q03A_MISSING.into());
-                assert_eq!(full_row_q01::row_status(&result), "MISSING");
+                let result: TestResult = Err(reason.into());
+                assert_eq!(full_row_q01::row_status(&result), "FAIL");
                 return Ok(());
             }
             let route = planned?;
@@ -5926,5 +6212,219 @@ fn flr2_catalogue_admission() -> TestResult {
         }),
         "catalogue blocking stone must block movement"
     );
+    Ok(())
+}
+
+#[test]
+fn qualification_core_shop_requires_all_preconditions() -> TestResult {
+    let world = include_str!("world.rs");
+    let between = |start, end| -> TestResult<&str> {
+        Ok(world
+            .split_once(start)
+            .ok_or("start")?
+            .1
+            .split_once(end)
+            .ok_or("end")?
+            .0)
+    };
+    let shop = between("async fn shop_journey(", "fn qualification_nbtown_checks")?;
+    assert_eq!(shop.matches("return Err(").count(), 3, "shop preconditions");
+    Ok(())
+}
+
+#[test]
+fn qualification_paid_confirmation_propagates_failure() {
+    let world = include_str!("world.rs")
+        .split_once("fn qualification_paid_confirmation_propagates_failure")
+        .map_or("", |(implementation, _)| implementation);
+    let reference = include_str!("travel.rs");
+    assert!(world.contains("converse_with(client, npc, \"yes\", true).await?"));
+    assert!(reference.contains("converse(client, npc, \"yes\").await?"));
+}
+
+#[test]
+fn qualification_map_tool_uses_command_owning_capability() {
+    for source in [include_str!("map_journey.rs"), include_str!("travel.rs")] {
+        assert!(source.contains(".world_context_use(&payload)"));
+    }
+}
+
+#[test]
+fn qualification_q03a_successful_preflight_admits_client() -> TestResult {
+    let source = include_str!("full_row_q01.rs");
+    let after_preflight = source
+        .split_once("from_town(planner, chest, &label)?;")
+        .ok_or("preflight")?
+        .1;
+    assert!(
+        after_preflight
+            .trim_start()
+            .starts_with("let mut client = connect_character(")
+    );
+    Ok(())
+}
+
+#[test]
+fn qualification_travel_replans_before_executing_stale_route() -> TestResult {
+    let source = include_str!("world.rs");
+    let after_search = source
+        .split_once("if let Some(error) = service_error {")
+        .ok_or("search result")?
+        .1;
+    let before_actions = after_search
+        .split_once("planner.execute(client")
+        .ok_or("route execution")?
+        .0;
+    assert!(before_actions.contains("if observed != from {"));
+    Ok(())
+}
+
+#[test]
+fn qualification_reachability_replans_are_bounded() -> TestResult {
+    let source = include_str!("world.rs");
+    let search = source
+        .split_once("pub(super) async fn reach_route(")
+        .ok_or("reachability entry")?
+        .1;
+    let search = search
+        .split_once("async fn reach_route_serviced(")
+        .ok_or("offline search")?
+        .0;
+    assert!(search.contains("for attempt in 0..=travel::MAX_REPLANS"));
+    Ok(())
+}
+
+#[test]
+fn qualification_death_relog_awaits_fixture_release_on_mismatch() -> TestResult {
+    let source = include_str!("world.rs");
+    let relog = source
+        .split_once("client = connect_world(clients, 0x73).await?;")
+        .ok_or("death relog")?
+        .1;
+    let relog = relog
+        .split_once("async fn profile_journey")
+        .ok_or("journey end")?
+        .0;
+    assert!(relog.contains("wait_character_released(clients, 1).await?;"));
+    assert!(relog.contains("snapshot_result?;"));
+    Ok(())
+}
+
+#[test]
+fn qualification_serviced_search_and_provisioning_drain_observations() -> TestResult {
+    let travel = include_str!("world.rs")
+        .split_once(".plan_serviced(from, target, goal, rope, passages, async ||")
+        .ok_or("search callback")?
+        .1;
+    assert!(
+        travel
+            .split_once("if let Some(error) = service_error")
+            .ok_or("search callback end")?
+            .0
+            .contains("client.take_events()")
+    );
+    for source in [
+        include_str!("full_row_q01.rs"),
+        include_str!("provision.rs"),
+    ] {
+        let callback = source
+            .split_once("wait_fixture_command(")
+            .ok_or("fixture wait")?
+            .1;
+        assert!(
+            callback
+                .split_once("Ok(())")
+                .ok_or("fixture service end")?
+                .0
+                .contains("client.take_events()")
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn qualification_fixture_command_joins_writer_when_wait_is_cancelled() -> TestResult {
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        let finished = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let writer_finished = finished.clone();
+        let (release, gate) = std::sync::mpsc::sync_channel(1);
+        let task = FixtureCommand::start(move || {
+            gate.recv().map_err(|error| error.to_string())?;
+            writer_finished.store(true, std::sync::atomic::Ordering::SeqCst);
+            Ok(())
+        })?;
+        let mut waiting = Box::pin(wait_fixture_command(task, async || {
+            std::future::pending::<TestResult>().await
+        }));
+        tokio::select! {
+            biased;
+            result = &mut waiting => return Err(format!("writer completed before cancellation: {result:?}").into()),
+            () = tokio::task::yield_now() => {}
+        }
+        let (cancelled, completed) = std::sync::mpsc::sync_channel(1);
+        let releaser = std::thread::spawn(move || {
+            let _ = completed.recv_timeout(Duration::from_millis(50));
+            release.send(())
+        });
+        drop(waiting);
+        let joined = finished.load(std::sync::atomic::Ordering::SeqCst);
+        let _ = cancelled.send(());
+        releaser.join().map_err(|_| "writer release thread panicked")??;
+        assert!(joined, "cancellation detached the fixture writer");
+        Ok(())
+    })
+}
+
+#[test]
+fn qualification_missing_pick_is_classified_as_fixture_precondition() {
+    let error = travel::missing_tool_error(3456, "required for descent");
+    assert_eq!(
+        verdict::classify(error.as_ref()),
+        verdict::Cause::Precondition {
+            name: "fixture-tool-3456".into()
+        }
+    );
+    let result = Err(error);
+    assert_eq!(
+        e2e_result_line(&format!(
+            "e2e_all scenario=Q03i.full status={} seconds=0",
+            full_row_q01::row_status(&result)
+        )),
+        "e2e_all scenario=Q03i.full status=FAIL seconds=0",
+    );
+}
+
+#[test]
+fn qualification_spawn_and_fixture_command_have_outer_process_deadlines() -> TestResult {
+    let command = fixture_command(Path::new("provision.py"));
+    let args: Vec<_> = command.get_args().collect();
+    assert_eq!(command.get_program(), "timeout");
+    assert_eq!(
+        args,
+        [
+            "--kill-after=2s",
+            "35s",
+            "sudo",
+            "-n",
+            "timeout",
+            "--kill-after=2s",
+            "30s",
+            "python3",
+            "provision.py"
+        ]
+    );
+    let source = include_str!("world.rs");
+    let spawn = source
+        .split_once("async fn request_spawn(")
+        .ok_or("spawn")?
+        .1;
+    let spawn = spawn.split_once("async fn walk(").ok_or("spawn end")?.0;
+    assert!(spawn.contains("fixture_command(&script)"));
+    for source in [
+        include_str!("full_row_q01.rs"),
+        include_str!("provision.rs"),
+    ] {
+        assert!(source.contains("fixture_command(&script)"));
+    }
     Ok(())
 }

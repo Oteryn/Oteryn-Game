@@ -44,7 +44,10 @@ impl Checks {
     }
 }
 
-pub(super) async fn combat_journey(client: &mut DevClientSession) -> TestResult {
+pub(super) async fn combat_journey(
+    client: &mut DevClientSession,
+    creature_name: &str,
+) -> TestResult {
     let mut checks = Checks::default();
     for (name, fight_mode) in [
         ("offensive", FightMode::Offensive),
@@ -57,6 +60,7 @@ pub(super) async fn combat_journey(client: &mut DevClientSession) -> TestResult 
                 &format!("{name}-{chase_name}"),
                 melee_damage(
                     client,
+                    creature_name,
                     FightModes {
                         fight_mode,
                         chase,
@@ -70,7 +74,7 @@ pub(super) async fn combat_journey(client: &mut DevClientSession) -> TestResult 
     checks.finish()
 }
 
-async fn melee_damage(client: &mut DevClientSession, modes: FightModes) -> TestResult {
+async fn melee_damage(client: &mut DevClientSession, name: &str, modes: FightModes) -> TestResult {
     use oteryn_protocol_oteryn::item_view::EquipmentSlot;
     if client.inventory().is_none_or(|inventory| {
         !inventory.equipment.iter().any(|entry| {
@@ -92,6 +96,7 @@ async fn melee_damage(client: &mut DevClientSession, modes: FightModes) -> TestR
         .and_then(|entities| {
             entities.iter().find(|entity| {
                 entity.kind == EntityKind::Creature
+                    && client_world::has_display_name(entity, name)
                     && entity.position.floor == here.floor
                     && entity
                         .position
