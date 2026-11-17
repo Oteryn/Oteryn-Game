@@ -1,5 +1,9 @@
 //! Combat reactions for the first Lord Retro phase.
 
+use crate::ai_think::profile_schedule::ProfileAbilityProposal;
+use crate::foundation::{CarrierError, ChannelRuntimeV1, RuntimeScopeRefV1};
+use oteryn_gameplay_entities::OwnerDamageCommand;
+
 #[derive(Clone, Copy)]
 pub(super) enum Source {
     Distortion,
@@ -27,10 +31,6 @@ pub(super) fn reaction(source: Source, target: Target) -> Reaction {
     }
 }
 
-use crate::ai_think::profile_schedule::ProfileAbilityProposal;
-use crate::foundation::{CarrierError, ChannelRuntimeV1, RuntimeScopeRefV1};
-use oteryn_gameplay_entities::OwnerDamageCommand;
-
 const HARD_TIMES: &str = "oteryn:creature.hard_times";
 const BLISSFUL_TIMES: &str = "oteryn:creature.blissful_times";
 const PARCEL_CASTLE: &str = "oteryn:creature.parcel_castle";
@@ -39,6 +39,7 @@ const PARCEL_CASTLE: &str = "oteryn:creature.parcel_castle";
 pub(super) fn execute(
     runtime: &mut ChannelRuntimeV1,
     proposal: &ProfileAbilityProposal,
+    now_us: u64,
 ) -> Result<bool, CarrierError> {
     let (source, source_key) = match proposal.ability.key.as_str() {
         "oteryn:ability.spell.retro_time_distortion" => {
@@ -98,7 +99,7 @@ pub(super) fn execute(
     if !castles.is_empty() {
         let occurrence = proposal.occurrence.id().as_str().as_bytes();
         runtime
-            .borrow_exact_actor_commit()
+            .borrow_exact_actor_commit_at_us(now_us)
             .commit_raw_creature_damage_batch(
                 &castles,
                 OwnerDamageCommand {
