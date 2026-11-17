@@ -4765,7 +4765,7 @@
                 "count": 1,
                 "item": {
                   "family": "Item",
-                  "key": "oteryn:item.tibia.i12510",
+                  "key": "oteryn:item.tibia.i3208",
                   "revision": "definition-r1"
                 }
               }
@@ -6724,7 +6724,7 @@
                 "count": 1,
                 "item": {
                   "family": "Item",
-                  "key": "oteryn:item.tibia.i5952",
+                  "key": "oteryn:item.tibia.i347",
                   "revision": "definition-r1"
                 }
               }
