@@ -4,7 +4,7 @@ use crate::durability::raid_runner::{CommittedRaidAction, RaidPlacementOutcome};
 use crate::durability::raid_schedule::{
     CalendarRaidScheduleCandidate, RaidScheduleCandidate, RaidSchedulerCheck,
 };
-use crate::foundation::{ChannelId, ScopeOwnershipGeneration, WorldId};
+use crate::foundation::{ChannelId, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId};
 use oteryn_gameplay_encounter_rules::raid::{CatalogueSchedule, RaidCatalogue};
 
 #[test]
@@ -207,9 +207,35 @@ async fn exercise(h: &Harness) -> TestResult {
             .firings
             .is_empty()
     );
-    request.now_ms += 60_000;
-    sqlx::query("UPDATE game_horse_stations SET loose_until_ms=NULL,confined_at_ms=$2 WHERE world_id=encode($1,'hex')::uuid")
-        .bind(world.as_bytes().as_slice()).bind(request.now_ms).execute(&h.pool).await?;
+    sqlx::query("UPDATE game_horse_stations SET loose_until_ms=floor(extract(epoch FROM clock_timestamp())*1000)::bigint+345600000 WHERE world_id=encode($1,'hex')::uuid")
+        .bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
+    for draw in [1, 0] {
+        assert!(
+            h.root
+                .settle_horse_lure(
+                    &authority,
+                    &h.node,
+                    RuntimeScopeRefV1::channel(world, channel),
+                    request.generation,
+                    request.reset_epoch,
+                    draw,
+                )
+                .await?
+        );
+        let confined: bool = sqlx::query_scalar(
+            "SELECT loose_until_ms IS NULL FROM game_horse_stations WHERE world_id=encode($1,'hex')::uuid",
+        )
+        .bind(world.as_bytes().as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(confined, draw == 0);
+    }
+    request.now_ms = sqlx::query_scalar(
+        "SELECT confined_at_ms FROM game_horse_stations WHERE world_id=encode($1,'hex')::uuid",
+    )
+    .bind(world.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?;
     assert_eq!(
         h.root
             .check_raid_schedules(&authority, &h.node, request.clone())
