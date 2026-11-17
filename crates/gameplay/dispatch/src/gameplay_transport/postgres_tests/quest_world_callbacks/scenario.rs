@@ -2937,19 +2937,19 @@ fn scenario_case(
                 !name.ends_with("-free"),
             ))
             .await?;
+        } else if name == "qfather-completion" {
+            Box::pin(super::super::qfather_completion::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+            ))
+            .await?;
         } else if name == "qfather-corpses" {
             Box::pin(super::super::qfather_corpses::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
                 trigger,
-            ))
-            .await?;
-        } else if name == "qfather-completion" {
-            Box::pin(super::super::qfather_completion::exercise(
-                &mut owner,
-                &mut admitted,
-                &h,
             ))
             .await?;
         } else if matches!(
