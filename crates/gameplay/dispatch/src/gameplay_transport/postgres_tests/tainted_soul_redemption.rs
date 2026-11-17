@@ -1,7 +1,6 @@
 //! Sacred Antler Talisman through the composed USE owner and PostgreSQL.
 use super::full_world_support::{TestResult, world_scenario};
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementLocalPosition};
-use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_gameplay_entities::NativeSummonAdmissionSpec;
 use oteryn_gameplay_quests::quest::{loader, world_callbacks};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget};
