@@ -100,7 +100,7 @@ ordinary custody owner facts. The atomic/replay PG case subsequently passed.
 | Content-tree validation | Earlier pass: 19 domains, 39 systems, 100 nodes; final rerun pending |
 | Fmt | Passed: cargo fmt --all after the final implementation |
 | Clippy, quests | Passed: final all-target check with warnings denied |
-| Clippy, durability | Final all-target check in progress |
+| Clippy, durability | Passed: final all-target check with warnings denied after the custody fix |
 | Clippy, dispatch/server | Pending; redundant test adapter bound fixed without a lint allowance |
 | Full World regeneration | Running; canonical World package reproduced the base |
 | No-URL guards and public schema | Passed: 6 filtered tests in 0.11 seconds without the admin URL |
