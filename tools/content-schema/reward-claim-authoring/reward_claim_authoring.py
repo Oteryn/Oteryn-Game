@@ -560,6 +560,9 @@ def committed_errors() -> list[str]:
     import engclaim_native
     native = [r for r in records if r['definition'].get('definition_profile') == 'native_authored_v1']
     errors = [] if native == engclaim_native.records()[0] else ['M34 authored allocation drift']
+    import rcauth_authored
+    plain, overlay_errors = rcauth_authored.strip(plain)
+    errors += overlay_errors
     errors += validate(plain, items, index["source_checks"], source_claims)
     errors += validate_variants(variants, ROOT, items, stack_problem)
     if index.get('variant_source_checks') != legacy_uid_checks(records) + stack_normalization_checks():
@@ -585,6 +588,8 @@ def generate() -> dict[str, str]:
     errors = validate(records, items, source_checks, claims)
     if errors:
         raise ValueError("\n".join(errors))
+    import rcauth_authored
+    records = rcauth_authored.apply(records)
     outputs = content_files(claims_bytes, records, source_checks)
     from reward_claim_variant_authoring import (
         derive,

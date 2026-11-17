@@ -174,3 +174,36 @@ fn plain_authored_terms_change_the_claim_authority() -> Result<(), String> {
     );
     Ok(())
 }
+
+#[test]
+fn purple_tome_maps_carry_their_authored_text_in_the_embedded_shards() -> Result<(), String> {
+    let expected = [
+        (
+            "oteryn:reward-claim.kv.purpletome1",
+            "oteryn:item.tibia.i2822",
+            "You see a map of our world Tibia",
+        ),
+        (
+            "oteryn:reward-claim.kv.purpletome2",
+            "oteryn:item.tibia.i2823",
+            "You see a map of the surface of the Fields of Glory. There are many red lines and \
+             two golden points on it. You wonder what their meaning is.",
+        ),
+    ];
+    for (key, item, text) in expected {
+        let definition = REWARD_CLAIM_SHARDS
+            .iter()
+            .filter_map(|shard| serde_json::from_str::<Value>(shard).ok())
+            .flat_map(|shard| shard["records"].as_array().cloned().unwrap_or_default())
+            .map(|row| row["definition"].clone())
+            .find(|definition| definition["identity"]["key"] == key)
+            .ok_or_else(|| format!("missing {key}"))?;
+        let placement = candidate_placement(&definition["placements"][0], false)
+            .map_err(|error| error.to_string())?
+            .ok_or_else(|| format!("{key} is not served"))?;
+        assert_eq!((placement.item.key().as_str(), placement.count), (item, 1));
+        assert_eq!(placement.root_text.as_deref(), Some(text), "{key}");
+        assert!(placement.contents.is_empty());
+    }
+    Ok(())
+}
