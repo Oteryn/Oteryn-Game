@@ -2944,8 +2944,7 @@ async fn control_loop(
                     qualification_fixture::prepare(
                         root, authority, proof, config, native, &request,
                     )
-                    .await
-                    .to_owned(),
+                    .await,
                     "character_bootstrap",
                 ),
                 Some(request) if parse_operation_id(&request).is_some() => {

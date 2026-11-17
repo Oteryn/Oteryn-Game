@@ -15,6 +15,28 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     .then_some((session, profile))
 }
 
+/// The control answer of a refusal: a classified token, never error detail. Only the
+/// text before the first `:` survives, as lowercase ASCII alphanumerics and `_`, at
+/// most 40 bytes, so the answer stays inside the client's 64-byte bound.
+fn refusal(reason: &str) -> String {
+    let token: String = reason
+        .split(':')
+        .next()
+        .unwrap_or_default()
+        .trim()
+        .chars()
+        .take(40)
+        .map(|c| {
+            if c.is_ascii_alphanumeric() {
+                c.to_ascii_lowercase()
+            } else {
+                '_'
+            }
+        })
+        .collect();
+    format!("rejected reason={token}")
+}
+
 pub(super) async fn prepare(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -22,24 +44,24 @@ pub(super) async fn prepare(
     config: &NodeConfig,
     native: Option<&NativeGameplayState>,
     bytes: &[u8],
-) -> &'static str {
+) -> String {
     if !config.qualification_fixture {
         eprintln!("qualification_fixture_refused reason=fixture_disabled");
-        return "rejected";
+        return refusal("fixture_disabled");
     }
     let Some(native) = native else {
         eprintln!("qualification_fixture_refused reason=native_unavailable");
-        return "rejected";
+        return refusal("native_unavailable");
     };
     let Some((session, profile)) = request(bytes) else {
         eprintln!("qualification_fixture_refused reason=invalid_session_or_profile");
-        return "rejected";
+        return refusal("invalid_session_or_profile");
     };
     match prepare_build(root, authority, proof, config, native, session, profile).await {
-        Ok(()) => "qualified",
+        Ok(()) => "qualified".to_owned(),
         Err(error) => {
             eprintln!("qualification_fixture_refused profile={profile} reason={error}");
-            "rejected"
+            refusal(&error.to_string())
         }
     }
 }
@@ -234,6 +256,29 @@ mod tests {
             );
         }
         Ok(())
+    }
+
+    #[test]
+    fn refusal_answer_names_the_cause_within_the_control_bound() {
+        assert_eq!(
+            refusal("spell fixture requires a fresh disposable Character"),
+            "rejected reason=spell_fixture_requires_a_fresh_disposabl"
+        );
+        assert_eq!(
+            refusal("qualification admission: Unavailable(RootUnavailable)"),
+            "rejected reason=qualification_admission"
+        );
+        // Nothing after the first `:` (a URL scheme, a credential pair) reaches the peer.
+        assert_eq!(
+            refusal("Database(postgres://user:secret@host/db)"),
+            "rejected reason=database_postgres"
+        );
+        assert_eq!(
+            refusal("fixture_disabled"),
+            "rejected reason=fixture_disabled"
+        );
+        let long = refusal(&"x\u{e9}\n".repeat(64));
+        assert!(long.len() < 64 && long.is_ascii() && !long.contains('\n'));
     }
 
     #[test]
