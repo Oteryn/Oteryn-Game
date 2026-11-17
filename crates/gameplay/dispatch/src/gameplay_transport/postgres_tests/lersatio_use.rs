@@ -83,8 +83,17 @@ pub(super) async fn exercise(
         UseDisposition::Committed
     );
     let first_finished = owner.owner_now().get();
+    let broken = object_target(
+        owner,
+        TilePos {
+            x: MIRROR.x,
+            y: MIRROR.y,
+            floor: MIRROR.floor,
+        },
+        1,
+    )?;
     assert_ne!(
-        use_target(owner, admitted, 2, &target).await?,
+        use_target(owner, admitted, 2, &broken).await?,
         UseDisposition::Committed,
         "a broken mirror cannot advance the counter again"
     );
