@@ -130,6 +130,21 @@ pub fn counter_admitted(kind: crate::counter::CounterKind) -> bool {
     .any(|key| key == kind.key())
 }
 
+/// TibiaWiki Overhunting World Change/Spoiler rev 1084984 (infobox rev 844823).
+/// No warning cutoff is sourced: any daily loss below the authored threshold is dwindling;
+/// reaching that threshold announces departure, while stage two reports wolves.
+pub fn overhunting_guide_reply(stage: u8, white_deer_kills: u64, threshold: u64) -> &'static str {
+    if stage == 2 {
+        "Starving wolves are roaming the region near Ab'Dendriel. As long as they are there, no white deer will return."
+    } else if white_deer_kills >= threshold {
+        "Too many white deer have already been slain near Ab'Dendriel. Their population will leave the region soon."
+    } else if white_deer_kills > 0 {
+        "The number of white deer near Ab'Dendriel seems to be dwindling. If that continues, we will have to watch out for some starving wolves."
+    } else {
+        "There are white deer roaming the region near Ab'Dendriel. Don't slay too many of them, or they will leave the region."
+    }
+}
+
 #[cfg(test)]
 mod imported_layer_tests {
     use super::*;
@@ -150,5 +165,29 @@ mod imported_layer_tests {
         day.fury_gates = Some(day.fury_exit);
         day.reset_epoch = 0;
         assert!(!is_active(&day, "fury_gates/thais"));
+    }
+}
+
+#[cfg(test)]
+mod overhunting_guide_tests {
+    #[test]
+    fn guides_report_all_four_overhunting_states() {
+        use super::overhunting_guide_reply as reply;
+        assert_eq!(
+            reply(1, 0, 1000),
+            "There are white deer roaming the region near Ab'Dendriel. Don't slay too many of them, or they will leave the region."
+        );
+        assert_eq!(
+            reply(1, 1, 1000),
+            "The number of white deer near Ab'Dendriel seems to be dwindling. If that continues, we will have to watch out for some starving wolves."
+        );
+        assert_eq!(
+            reply(1, 1000, 1000),
+            "Too many white deer have already been slain near Ab'Dendriel. Their population will leave the region soon."
+        );
+        assert_eq!(
+            reply(2, 0, 1000),
+            "Starving wolves are roaming the region near Ab'Dendriel. As long as they are there, no white deer will return."
+        );
     }
 }

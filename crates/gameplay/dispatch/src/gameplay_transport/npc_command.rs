@@ -761,6 +761,50 @@ pub(super) async fn npc_bank_talk(
         admission.states.npc_conversations.cancel_bank(session);
         return ordinary;
     }
+    if intent.text.trim().eq_ignore_ascii_case("overhunting")
+        && admission
+            .states
+            .npc_conversations
+            .current_npc(&admission.states.chat, &runtime, actor, session, &intent)
+            .is_some_and(|context| {
+                matches!(
+                    context.2.as_str(),
+                    "oteryn:npc.guide_alexena"
+                        | "oteryn:npc.guide_behil"
+                        | "oteryn:npc.guide_davina"
+                        | "oteryn:npc.guide_edna"
+                        | "oteryn:npc.guide_elena"
+                        | "oteryn:npc.guide_jonathan"
+                        | "oteryn:npc.guide_kunibert"
+                        | "oteryn:npc.guide_luke"
+                        | "oteryn:npc.guide_rahlkora"
+                        | "oteryn:npc.guide_thelandil"
+                        | "oteryn:npc.guide_tiko"
+                )
+            })
+    {
+        drop(runtime);
+        drop(_trade_permit.take());
+        let Ok(Some(day)) = admission
+            .root
+            .world_changes(admission.world_id, admission.reset_epoch)
+            .await
+        else {
+            return rejected();
+        };
+        let Ok(bindings) = crate::durability::world_event::changes::counters::bindings() else {
+            return rejected();
+        };
+        let index = oteryn_gameplay_world_change::counter::CounterKind::Overhunting.index();
+        return reply(
+            oteryn_gameplay_world_change::owner::overhunting_guide_reply(
+                day.counter_stages[index],
+                day.counter_progress[index][0],
+                bindings.parameters.deer_kills,
+            )
+            .into(),
+        );
+    }
     if oteryn_gameplay_npc::greeting::words(&intent.text)
         .iter()
         .any(|word| matches!(word.as_str(), "hi" | "hello" | "hail"))

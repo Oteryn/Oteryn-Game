@@ -49,11 +49,23 @@ fn handover_for(
     })
 }
 fn scenario() -> TestResult {
+    scenario_with_chain(false)
+}
+pub(super) fn scenario_with_chain(chain: bool) -> TestResult {
     run(async |admin| {
         let start = std::time::Instant::now();
         reset();
-        let h =
-            Harness::create_with_admission_seed(admin, "worldchg_benevola", true, false).await?;
+        let h = Harness::create_with_admission_seed(
+            admin,
+            if chain {
+                "worldchg_overhunting_chain"
+            } else {
+                "worldchg_benevola"
+            },
+            true,
+            false,
+        )
+        .await?;
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -168,10 +180,20 @@ fn scenario() -> TestResult {
             .execute(&h.pool)
             .await?;
         h.root.world_changes(world, 1).await?.ok_or("shared day")?;
-        let mut state = CounterState::new(CounterKind::Overhunting, 1, false);
-        state.stage = 2;
-        sqlx::query("UPDATE game_world_change_counters SET state=$2 WHERE world_id=encode($1,'hex')::uuid AND change_key='overhunting'")
-            .bind(world.as_bytes().as_slice()).bind(serde_json::to_value(state)?).execute(&h.pool).await?;
+        if chain {
+            let mut hunter = deps.admitted;
+            hunter.runtime_actor = Some(deps.actor);
+            super::worldchg_overhunting_chain::hunt_and_save(&h, &mut owner, &mut hunter).await?;
+            super::worldchg_overhunting_chain::capture(
+                &mut *deps.runtime.lock().await,
+                deps.room.movement_cells(),
+            )?;
+        } else {
+            let mut state = CounterState::new(CounterKind::Overhunting, 1, false);
+            state.stage = 2;
+            sqlx::query("UPDATE game_world_change_counters SET state=$2 WHERE world_id=encode($1,'hex')::uuid AND change_key='overhunting'")
+                .bind(world.as_bytes().as_slice()).bind(serde_json::to_value(state)?).execute(&h.pool).await?;
+        }
         // Migration-owned fixture input only. Observation/debit uses real carried custody.
         super::item_look::seed_main_backpack(&h, &[(WOLF, 1), (WOLF, 1)]).await?;
         let command = |id| UseCommand {
@@ -193,7 +215,7 @@ fn scenario() -> TestResult {
             assert_eq!(reply.disposition, NpcIntentDisposition::Ok, "native {text}");
         }
         let before = snapshot(&h).await?;
-        assert_eq!(before, (2, 0, 0, 0));
+        assert_eq!(before, (2, if chain { 90 } else { 0 }, 0, 0));
         let reply = owner
             .npc_talk(
                 deps.actor,
@@ -206,6 +228,20 @@ fn scenario() -> TestResult {
             .await;
         assert_eq!(reply.disposition, NpcIntentDisposition::Ok);
         assert!(reply.inventory_changed);
+        if chain {
+            assert_eq!(snapshot(&h).await?, (1, 100, 1, 1));
+            super::worldchg_overhunting_chain::save(&h, world, 3).await?;
+            let day = h.root.world_changes(world, 3).await?.ok_or("deer day")?;
+            assert_eq!(day.counter_stages[CounterKind::Overhunting.index()], 1);
+            println!(
+                "WORLDCHG_OVERHUNTING_CHAIN_PG_EXECUTED: native kill, save, wolves, trap callback, Benevola debit, save, deer; elapsed={:?}",
+                start.elapsed()
+            );
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         assert_eq!(snapshot(&h).await?, (1, 10, 1, 1));
         let proof:serde_json::Value=sqlx::query_scalar("SELECT convert_from(proof,'UTF8')::jsonb FROM game_quest_callback_consumptions WHERE transition_key='oteryn:quest-transition/worldchange/benevola/handover'").fetch_one(&h.pool).await?;
         let source: BenevolaSource = serde_json::from_value(proof["native_npc"]["source"].clone())?;
