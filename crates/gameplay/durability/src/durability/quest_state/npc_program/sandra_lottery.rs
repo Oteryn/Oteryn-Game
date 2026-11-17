@@ -43,10 +43,14 @@ pub(super) fn resolve(
     }) {
         return Err(DurabilityError::InvalidStoredState);
     }
-    let outcome = draw(seed, request.binding(character))
-        .and_then(|value| SANDRA_LOTTERY.draw(value))
+    let draw = draw(seed, request.binding(character)).ok_or(DurabilityError::InvalidStoredState)?;
+    let outcome = SANDRA_LOTTERY
+        .draw(draw)
         .ok_or(DurabilityError::InvalidStoredState)?;
     let mut resolved = plan.clone();
+    resolved.inventory_after = SANDRA_LOTTERY
+        .inventory_after(&plan.inventory_before, draw)
+        .ok_or(DurabilityError::InvalidStoredState)?;
     resolved
         .effects
         .retain(|effect| !matches!(effect, NpcRuleEffect::GiveItem { .. }));

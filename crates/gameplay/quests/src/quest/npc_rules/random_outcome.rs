@@ -14,6 +14,41 @@ pub struct RandomItemExchange {
 }
 
 impl RandomItemExchange {
+    /// Project the selected outcome over the locked pre-exchange inventory.
+    /// Overflow or absent input rejects the complete projection.
+    pub fn inventory_after(
+        &self,
+        before: &super::NpcInventorySnapshot,
+        draw: u32,
+    ) -> Option<super::NpcInventorySnapshot> {
+        let item = self.draw(draw)?;
+        let mut after = before.clone();
+        let input = super::NpcItemKey {
+            item: self.input.into(),
+            subtype: None,
+        };
+        let remaining = after.items.get(&input)?.checked_sub(1)?;
+        if remaining == 0 {
+            after.items.remove(&input);
+        } else {
+            after.items.insert(input, remaining);
+        }
+        if let Some(item) = item {
+            let output = super::NpcItemKey {
+                item: item.into(),
+                subtype: None,
+            };
+            let count = after
+                .items
+                .get(&output)
+                .copied()
+                .unwrap_or(0)
+                .checked_add(1)?;
+            after.items.insert(output, count);
+        }
+        Some(after)
+    }
+
     /// Resolve the inventory effects before handing them to the existing atomic
     /// NPC item participant. Missing input refuses before consuming an RNG draw.
     pub fn effects(

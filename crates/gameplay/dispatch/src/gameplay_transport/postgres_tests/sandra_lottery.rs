@@ -251,3 +251,35 @@ pub(super) async fn exercise_missing(
     );
     Ok(())
 }
+
+#[test]
+fn sandra_lottery_selected_inventory_matches_win_and_blank() {
+    use oteryn_gameplay_quests::quest::npc_rules::{NpcInventorySnapshot, NpcItemKey};
+    let input = NpcItemKey {
+        item: SANDRA_LOTTERY.input.into(),
+        subtype: None,
+    };
+    let prize = NpcItemKey {
+        item: "oteryn:item.tibia.i5958".into(),
+        subtype: None,
+    };
+    let mut before = NpcInventorySnapshot::default();
+    assert!(SANDRA_LOTTERY.inventory_after(&before, 0).is_none());
+    before.items.insert(input.clone(), 2);
+    before.items.insert(prize.clone(), 3);
+    let mut expected = before.clone();
+    expected.items.insert(input, 1);
+    assert_eq!(
+        SANDRA_LOTTERY.inventory_after(&before, 97),
+        Some(expected.clone())
+    );
+    expected.items.insert(prize, 4);
+    assert_eq!(SANDRA_LOTTERY.inventory_after(&before, 0), Some(expected));
+    assert_eq!(
+        before.items.get(&NpcItemKey {
+            item: SANDRA_LOTTERY.input.into(),
+            subtype: None
+        }),
+        Some(&2)
+    );
+}
