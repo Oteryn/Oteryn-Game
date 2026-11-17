@@ -598,6 +598,33 @@ def embedded_shards(index_text: str) -> str:
     return source
 
 
+
+LEGACY_WORLD_REGISTRY = "crates/gameplay/quests/src/quest/world_callbacks/legacy_world_claims.rs"
+
+
+def embedded_legacy_world_shard(outputs: dict[str, str]) -> str:
+    """Keep M39's exact immutable claim pairs on their generated source shard."""
+    source = (ROOT / LEGACY_WORLD_REGISTRY).read_text()
+    pairs = re.search(r"const PAIRS:.*?= &\[(.*?)^\];", source, re.MULTILINE | re.DOTALL)
+    if pairs is None:
+        raise ValueError("M39 immutable claim pairs are missing")
+    values = re.findall(r'"([^"]+)"', pairs[1])
+    if not values or len(values) % 2:
+        raise ValueError("M39 immutable claim pairs are malformed")
+    required = {"oteryn:reward-claim.quest.u8_54." + suffix for suffix in values[1::2]}
+    matches = [path for path in json.loads(outputs[INDEX_PATH])["shards"]
+               if path.startswith(CONTENT_DIR + "reward-claims-") and required <= {
+                   row["definition"]["identity"]["key"]
+                   for row in json.loads(outputs[path])["records"]}]
+    if len(matches) != 1:
+        raise ValueError("M39 claims must resolve to one complete generated shard")
+    source, count = re.subn(r"(?<=content/interactions/reward_claims/)reward-claims-[0-9-]+\.json",
+                            Path(matches[0]).name, source)
+    if count != 1:
+        raise ValueError("M39 embedded claim shard is missing or ambiguous")
+    return source
+
+
 def generate() -> dict[str, str]:
     claims_bytes = (ROOT / CLAIMS_REL).read_bytes()
     claims = json.loads(claims_bytes)
@@ -638,6 +665,7 @@ def generate() -> dict[str, str]:
         + "\n"
     )
     outputs[EMBEDDED_REGISTRY] = embedded_shards(outputs[INDEX_PATH])
+    outputs[LEGACY_WORLD_REGISTRY] = embedded_legacy_world_shard(outputs)
     return outputs
 
 

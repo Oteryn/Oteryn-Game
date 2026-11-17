@@ -12,7 +12,7 @@ const CALLBACKS: &str = include_str!(concat!(
 ));
 const CLAIMS: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/../../../content/interactions/reward_claims/reward-claims-00200-00230.json"
+    "/../../../content/interactions/reward_claims/reward-claims-00200-00231.json"
 ));
 const PAIRS: &[(&str, &str)] = &[
     (
