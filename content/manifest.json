@@ -635,9 +635,6 @@
       "path": "content/quests/definitions/quests-00300-00351.json"
     },
     {
-      "path": "content/quests/native-reward-callbacks/engclaim.json"
-    },
-    {
       "path": "content/services/bank/bank-00000-00001.json"
     },
     {
