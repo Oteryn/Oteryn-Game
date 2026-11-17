@@ -211,6 +211,7 @@ pub(super) async fn save(
         all.convert(request);
         let id = request.subarea.ok_or(DurabilityError::InvalidStoredState)?;
         all.subareas.insert(id, progress.clone());
+        super::measuring::record(tx, fence, request, &all).await?;
         let progress =
             serde_json::to_string(&all).map_err(|_| DurabilityError::InvalidStoredState)?;
         sqlx::query("INSERT INTO game_character_cyclopedia(character_id,bundle_digest,progress,occurrence,catalogue_digest) VALUES(encode($1,'hex')::uuid,$2,$3::text::jsonb,encode($4,'hex')::uuid,$5) ON CONFLICT(character_id) DO UPDATE SET bundle_digest=EXCLUDED.bundle_digest,progress=EXCLUDED.progress,occurrence=EXCLUDED.occurrence,catalogue_digest=EXCLUDED.catalogue_digest")

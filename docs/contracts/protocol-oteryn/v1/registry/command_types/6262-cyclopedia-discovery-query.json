@@ -1,0 +1,10 @@
+{
+  "id": 6262,
+  "name": "CYCLOPEDIA_DISCOVERY_QUERY",
+  "owner_decision": "MAPDISC owner packet number allocation 2026-11-17",
+  "capability": 527,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/cyclopedia-discovery-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/cyclopedia-discovery-v1.md#reply",
+  "max_payload_bytes": 0,
+  "max_result_payload_bytes": 6157
+}

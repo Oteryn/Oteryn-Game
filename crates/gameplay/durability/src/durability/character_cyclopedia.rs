@@ -17,9 +17,11 @@ use crate::foundation::CommandRef;
 use oteryn_protocol_oteryn::cyclopedia::{MapResult, encode_result};
 use sqlx::Row;
 
+mod measuring;
 mod speed;
 mod storage;
 mod world;
+pub use measuring::DiscoveryAreas;
 pub use world::CyclopediaWorldBinding;
 #[derive(Debug, Clone)]
 pub struct MapRequest {
@@ -31,6 +33,8 @@ pub struct MapRequest {
     pub epoch: u64,
     pub area: u32,
     pub legacy_area: u32,
+    /// Every main (parentless) area of the admitted bundle, for the Measuring Tibia percent.
+    pub main_areas: u32,
     pub subarea: Option<u32>,
     pub subareas: Vec<(u32, u32)>,
     pub pool: Vec<Point>,
@@ -65,7 +69,7 @@ impl DurabilityRoot {
             let mut tx = begin_type2_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
-            if request.command.game_session_id() != fence.game_session_id || !(1..=1024).contains(&request.area) || !(1..=1024).contains(&request.legacy_area) || request.subarea.is_none_or(|id| !request.subareas.contains(&(request.area,id))) || request.subareas.len() > 512 || request.pool.len() > 128 || request.pool.len() < 7 || request.now <= 0 {
+            if request.command.game_session_id() != fence.game_session_id || !(1..=1024).contains(&request.area) || !(1..=1024).contains(&request.legacy_area) || !(1..=1024).contains(&request.main_areas) || request.subarea.is_none_or(|id| !request.subareas.contains(&(request.area,id))) || request.subareas.len() > 512 || request.pool.len() > 128 || request.pool.len() < 7 || request.now <= 0 {
                 return Ok(Err(CharacterProgressionError::InvalidInput));
             }
             // Current authority is checked even on replay; a retained receipt grants no custody.

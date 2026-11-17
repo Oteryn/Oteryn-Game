@@ -1,0 +1,8 @@
+name=cyclopedia_discovery
+commands=6262
+transport=cyclopedia_discovery
+composed=cyclopedia_discovery
+authority=cyclopedia_discovery
+offer=707,cyclopedia_discovery::offered,cyclopedia_available
+[route]
+routing::cyclopedia_discovery::route(authority, &session.admitted, command).await

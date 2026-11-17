@@ -1,0 +1,15 @@
+{
+  "id": 527,
+  "name": "CYCLOPEDIA_DISCOVERY_V1",
+  "owner_decision": "MAPDISC owner packet number allocation 2026-11-17; OTERYN_GAME_CYCLOPEDIA0_MAP_DISCOVERY_AND_AREA_DONATIONS_DECISION_2026-10-03",
+  "owner": "Character Cyclopedia map progress (migration 0176) and its Measuring Tibia projection (migration 2874)",
+  "requires": [
+    57
+  ],
+  "command_types": [
+    6262
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Not in a static offer set. Inserted with its prerequisite 57 by the Cyclopedia offer hooks only when admitted Cyclopedia content exists. Command 6262 reads the admitted Character's own discovery data; see cyclopedia-discovery-v1.md."
+}

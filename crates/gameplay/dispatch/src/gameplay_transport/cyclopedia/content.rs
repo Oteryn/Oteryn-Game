@@ -6,6 +6,7 @@ pub(in crate::gameplay_transport) struct AdmittedArea {
     pub pool: Vec<Point>,
     pub area: u32,
     pub legacy_area: u32,
+    pub main_areas: u32,
     pub subarea: Option<u32>,
     pub subareas: Vec<(u32, u32)>,
 }
@@ -77,6 +78,7 @@ pub(super) fn admit_at(
         .iter()
         .filter_map(|a| a.parent.map(|parent| (parent, a.id)))
         .collect();
+    let main_areas = u32::try_from(table.areas.iter().filter(|a| a.parent.is_none()).count()).ok()?;
     let mut pool = Vec::new();
     'candidates: for run in table.runs.iter().filter(|run| run.subarea == subarea) {
         for x in run.begin..run.end {
@@ -101,6 +103,7 @@ pub(super) fn admit_at(
         pool,
         area,
         legacy_area,
+        main_areas,
         subarea: Some(subarea),
         subareas,
     })

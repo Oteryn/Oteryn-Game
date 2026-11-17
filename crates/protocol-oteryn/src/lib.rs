@@ -61,6 +61,7 @@ mod count_bounds_tests;
 pub mod creature_push;
 pub mod cyclopedia;
 pub mod cyclopedia_character;
+pub mod cyclopedia_discovery;
 pub mod cyclopedia_tracker;
 pub mod daily_boost;
 pub mod daily_reward;

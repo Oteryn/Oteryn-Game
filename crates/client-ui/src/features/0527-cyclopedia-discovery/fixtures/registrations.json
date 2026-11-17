@@ -1,0 +1,22 @@
+[
+  {
+    "mechanic": "0527-cyclopedia-discovery",
+    "kind": "handlers",
+    "id": "0527-cyclopedia-discovery-6262",
+    "status": "unsupported",
+    "direction": "client_to_server",
+    "capability": 527,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "view": "The discovery list belongs to the Cyclopedia map page, which has no native client route yet.",
+      "input": "The query is sent when the map page opens; it has no own key binding.",
+      "settings": "State is server-owned.",
+      "state": "The reply is a read-only snapshot of server-owned progress.",
+      "protocol": "The strict wire codec is implemented in protocol-oteryn; no native client route sends command 6262 yet."
+    },
+    "reason": "The Cyclopedia map page that would show discovery data has no native client route yet.",
+    "commands": [
+      6262
+    ]
+  }
+]
