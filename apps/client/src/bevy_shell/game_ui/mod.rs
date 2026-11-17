@@ -78,6 +78,9 @@ pub(super) struct GameRegions {
     pub bars: Entity,
     pub world: Entity,
 }
+/// The centre-column region over the game window that holds the Tibia status bar.
+#[derive(Resource, Clone, Copy)]
+pub(super) struct StatusBar(pub Entity);
 #[derive(Component)]
 pub(super) struct GameModal;
 #[derive(Component, Clone, Copy)]
@@ -155,6 +158,8 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
             ..default()
         })
         .id();
+    let status_bar = region(&mut commands);
+    // The grey client background shows around the map.
     let world = commands
         .spawn((
             WorldRegion,
@@ -165,6 +170,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
                 overflow: Overflow::clip(),
                 ..default()
             },
+            BackgroundColor(Color::srgb_u8(70, 70, 70)),
         ))
         .id();
     let bars = commands
@@ -296,7 +302,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         .add_children(&[left, main, extra, right]);
     commands
         .entity(main)
-        .add_children(&[map_row, bars, console_splitter, chat]);
+        .add_children(&[status_bar, map_row, bars, console_splitter, chat]);
     commands
         .entity(map_row)
         .add_children(&[left_arrows, world, right_arrows]);
@@ -333,6 +339,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         bars,
         world,
     });
+    commands.insert_resource(StatusBar(status_bar));
     commands.insert_resource(Sidebar {
         left,
         extra,

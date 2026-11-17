@@ -88,27 +88,19 @@ fn status_icons_show_only_active_in_order() -> TestResult {
     app.update();
     // Tibia strip conditions come first in state-bit order, the rest in catalogue order.
     assert_eq!(keys(&mut app)?, ["Poison", "Haste", "Agony", "Skill bonus"]);
+    // The row is centred under the status bar over the game window.
     let status_row = row(&mut app)?;
     let parent = app
         .world()
         .get::<ChildOf>(status_row)
         .ok_or("row parent")?
         .parent();
-    let children = app
-        .world()
-        .get::<Children>(parent)
-        .ok_or("vitals children")?;
-    assert_eq!(
-        children.last(),
-        Some(&status_row),
-        "row is below vital tracks"
-    );
     assert_eq!(
         app.world()
             .get::<Node>(parent)
-            .ok_or("vitals node")?
-            .flex_direction,
-        FlexDirection::Column
+            .ok_or("centre node")?
+            .justify_content,
+        JustifyContent::Center
     );
     publish(&app, default(), default(), default(), default())?;
     app.update();

@@ -21,6 +21,8 @@ pub(super) struct EquipmentWidget {
 mod skills;
 #[path = "hud/status_icons.rs"]
 mod status_icons;
+#[path = "hud/top_bar.rs"]
+mod top_bar;
 #[path = "hud/vip.rs"]
 mod vip;
 #[derive(Clone, Copy, Component)]
@@ -75,7 +77,13 @@ pub(super) fn install(app: &mut App) {
     )
     .add_systems(
         Update,
-        (project, battle::project, status_icons::project).chain(),
+        (
+            project,
+            battle::project,
+            status_icons::project,
+            top_bar::project,
+        )
+            .chain(),
     )
     .add_observer(activate);
 }
@@ -101,6 +109,7 @@ fn setup(
     mut commands: Commands,
     regions: Res<super::GameRegions>,
     sidebar: Option<Res<super::Sidebar>>,
+    status_bar: Option<Res<super::StatusBar>>,
     skins: Res<Skins>,
     overlay: Res<DevOverlay>,
 ) {
@@ -199,7 +208,11 @@ fn setup(
         .entity(monk)
         .add_children(&[harmony, label, serene]);
     commands.entity(regions.vitals).add_child(monk);
-    status_icons::setup(&mut commands, regions.vitals);
+    // The condition row sits in the status bar over the game window when there is one.
+    let conditions = status_bar.map_or(regions.vitals, |bar| {
+        top_bar::setup(&mut commands, &skins, bar.0)
+    });
+    status_icons::setup(&mut commands, conditions);
     combat_column(&mut commands, &skins, regions.equipment);
     if overlay.0 {
         let status = commands

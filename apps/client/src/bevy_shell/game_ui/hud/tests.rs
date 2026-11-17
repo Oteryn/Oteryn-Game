@@ -99,6 +99,8 @@ fn app_with(overlay: bool, vitals: Option<ActorVitals>) -> AppResult {
         right_widgets: sidebar[5],
         analytics: sidebar[6],
     });
+    let status_bar = app.world_mut().spawn(Node::default()).id();
+    app.insert_resource(super::super::StatusBar(status_bar));
     app.add_systems(Startup, crate::bevy_shell::ui::setup);
     install(&mut app);
     app.update();
@@ -660,6 +662,112 @@ fn the_status_widget_is_a_sidebar_bar_pair_without_prose_or_ids() -> TestResult 
         .collect::<Vec<_>>()
         .join("\n");
     assert!(!text.contains("Ctrl+arrows"));
-    assert!(!text.contains("150/150"));
+    // The sidebar widget shows the current value only; "cur/max" belongs to the status bar.
+    let vitals = app.world().resource::<super::super::GameRegions>().vitals;
+    assert!(
+        !texts_under(&app, vitals)
+            .iter()
+            .any(|text| text.contains("150/150"))
+    );
+    Ok(())
+}
+
+fn named(app: &mut App, name: &str) -> Result<Entity, Box<dyn std::error::Error>> {
+    app.world_mut()
+        .query::<(Entity, &Name)>()
+        .iter(app.world())
+        .find_map(|(entity, found)| (found.as_str() == name).then_some(entity))
+        .ok_or_else(|| format!("{name} missing").into())
+}
+fn texts_under(app: &App, root: Entity) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut stack = vec![root];
+    while let Some(entity) = stack.pop() {
+        if let Some(text) = app.world().get::<Text>(entity) {
+            out.push(text.0.clone());
+        }
+        stack.extend(app.world().get::<Children>(entity).into_iter().flatten());
+    }
+    out
+}
+#[test]
+fn top_status_bar_shows_vitals_level_xp_and_conditions_above_the_game_window() -> TestResult {
+    let (mut app, mut commands, outbox) = app()?;
+    outbox.bevy_hud_skills_fixture()?;
+    app.update();
+    app.update();
+    let bar = app.world().resource::<super::super::StatusBar>().0;
+    let top = named(&mut app, "Status bar")?;
+    assert_eq!(
+        app.world()
+            .get::<ChildOf>(top)
+            .ok_or("top parent")?
+            .parent(),
+        bar
+    );
+    // Line 1: health and mana side by side, each half the width, "cur/max" centred.
+    let vitals = named(&mut app, "Status bar vitals")?;
+    let halves: Vec<Val> = app
+        .world()
+        .get::<Children>(vitals)
+        .ok_or("vital tracks")?
+        .iter()
+        .filter_map(|track| app.world().get::<Node>(track).map(|node| node.width))
+        .collect();
+    assert_eq!(halves, [percent(50.), percent(50.)]);
+    let texts = texts_under(&app, vitals);
+    assert!(texts.contains(&"42/100".to_owned()), "{texts:?}");
+    assert!(texts.contains(&"10/20".to_owned()), "{texts:?}");
+    // Line 2: the level, a red XP bar with ticks and the XP Boost button.
+    let experience = named(&mut app, "Status bar experience")?;
+    assert!(texts_under(&app, experience).contains(&"30".to_owned()));
+    let fill = named(&mut app, "Status bar XP fill")?;
+    assert_eq!(
+        app.world().get::<Node>(fill).ok_or("xp fill")?.width,
+        percent(23.45)
+    );
+    let ticks = app
+        .world_mut()
+        .query::<&Name>()
+        .iter(app.world())
+        .filter(|name| name.as_str() == "XP tick")
+        .count();
+    assert_eq!(ticks, 9);
+    // Below: the centred condition row.
+    let status = named(&mut app, "Status icons")?;
+    let centre = app
+        .world()
+        .get::<ChildOf>(status)
+        .ok_or("status parent")?
+        .parent();
+    assert_eq!(
+        app.world()
+            .get::<ChildOf>(centre)
+            .ok_or("centre parent")?
+            .parent(),
+        top
+    );
+    assert_eq!(
+        app.world()
+            .get::<Node>(centre)
+            .ok_or("centre node")?
+            .justify_content,
+        JustifyContent::Center
+    );
+    // XP Boost opens the store.
+    while commands.try_recv().is_ok() {}
+    let boost = named(&mut app, "status-xp-boost")?;
+    app.world_mut().trigger(Activate { entity: boost });
+    app.update();
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .store_panel()
+            .open
+    );
     Ok(())
 }
