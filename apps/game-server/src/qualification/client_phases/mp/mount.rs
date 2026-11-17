@@ -4,6 +4,7 @@ use super::*;
 mod bots;
 mod diagnostics;
 mod mp01_party_pvp;
+mod mp06_guild_war;
 
 pub(super) async fn run(
     core: &SeamClients<'_>,
@@ -14,6 +15,11 @@ pub(super) async fn run(
     verdict::indexed(
         "MP01.full",
         mp01_party_pvp::run(core, packets, world, towns),
+    )
+    .await;
+    verdict::indexed(
+        "MP06.full",
+        mp06_guild_war::run(core, packets, world, towns),
     )
     .await;
 }
