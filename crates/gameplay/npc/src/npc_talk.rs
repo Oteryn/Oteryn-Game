@@ -435,6 +435,17 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
+            } else if matches!(
+                reference.key.as_str(),
+                "oteryn:npc.appaloosa" | "oteryn:npc.palomino"
+            ) {
+                // Crystal 201189f8, Palomino and Appaloosa:231.
+                (
+                    "Salutations, |PLAYERNAME| I guess you are here for the {horses}.".into(),
+                    "Good bye, |PLAYERNAME|.".into(),
+                    None,
+                    Vec::new(),
+                )
             } else if reference.key == "oteryn:npc.grizzly_adams" {
                 // W15c: the existing NPC owner opens the conversation; confirmed task
                 // choices and their stateful replies belong to native Grizzly dispatch.
