@@ -2,11 +2,13 @@
 use super::TestResult;
 
 #[test]
-fn overlordcr_each_overlord_sets_donor_flag_and_replay_is_idempotent_postgres() -> TestResult {
+fn overlordcr_all_four_overlords_credit_two_damagers_exclude_observer_and_replay_postgres()
+-> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
     drop(admin);
+    let started = std::time::Instant::now();
     for creature in [
         "earth_overlord",
         "energy_overlord",
@@ -29,6 +31,7 @@ fn overlordcr_each_overlord_sets_donor_flag_and_replay_is_idempotent_postgres() 
         assert!(!rule.top_damage_only);
         super::srvenc_source_deaths::scenario("overlordcr", creature)?;
     }
+    assert!(started.elapsed().as_secs_f64() > 0.01);
     Ok(())
 }
 
@@ -38,5 +41,8 @@ fn overlordcr_non_overlord_does_not_set_flag_postgres() -> TestResult {
         return Ok(());
     };
     drop(admin);
-    super::srvenc_source_deaths::scenario("overlordcr_non_overlord", "goblin_leader")
+    let started = std::time::Instant::now();
+    super::srvenc_source_deaths::scenario("overlordcr_non_overlord", "goblin_leader")?;
+    assert!(started.elapsed().as_secs_f64() > 0.01);
+    Ok(())
 }
