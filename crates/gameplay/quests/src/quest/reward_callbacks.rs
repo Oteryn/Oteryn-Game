@@ -1233,7 +1233,46 @@ fn extend_document(
     catalogue: QuestStateCatalogue,
     document: Document,
 ) -> Result<QuestStateCatalogue, String> {
-    extend_callbacks(catalogue, document.callbacks, document.tracks)
+    const TRADER: &str = "oteryn:quest.the_travelling_trader_quest";
+    let previous_transitions = document
+        .callbacks
+        .iter()
+        .filter(|callback| callback.quest == TRADER && callback.requires_weekdays.is_some())
+        .map(|callback| {
+            let mut previous = callback.clone();
+            previous.requires_weekdays = None;
+            primary_transition(&previous)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let mut active = extend_callbacks(catalogue, document.callbacks, document.tracks)?;
+    if !previous_transitions.is_empty() {
+        // Existing Trader runs retain their exact pre-weekday definition pin.
+        // Every fresh hand-in still resolves the current callback in the writer.
+        let mut transitions: BTreeMap<_, _> = active
+            .transitions
+            .iter()
+            .filter(|(_, transition)| transition.quest == TRADER)
+            .map(|(key, transition)| (key.clone(), transition.clone()))
+            .collect();
+        for transition in previous_transitions {
+            transitions.insert(transition.key.clone(), transition);
+        }
+        let previous = super::NpcDefinitionPredecessor {
+            hash: super::definition_hash(TRADER, &active.tracks, &transitions),
+            defaults: active
+                .tracks
+                .values()
+                .filter(|track| track.quest == TRADER)
+                .map(|track| (track.key.clone(), track.initial))
+                .collect(),
+        };
+        active
+            .predecessors
+            .entry(TRADER.into())
+            .or_default()
+            .push(previous);
+    }
+    Ok(active)
 }
 fn extend_callbacks(
     catalogue: QuestStateCatalogue,

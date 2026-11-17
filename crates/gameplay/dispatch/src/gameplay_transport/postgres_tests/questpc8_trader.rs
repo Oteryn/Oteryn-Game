@@ -473,6 +473,10 @@ pub(super) async fn exercise(
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(
             owner.offered_capabilities(), &[3],
         ).ok_or("NPC capability")?;
+    // 2026-07-06 06:00 Berlin. Keep the Premium and missing-item checks on Monday.
+    const MONDAY_SAVE: i64 = 1_783_310_400;
+    const DAY: i64 = 86_400;
+    h.root.set_test_quest_clock(MONDAY_SAVE).map_err(debug)?;
     let mut next = admitted.continuity.next_command_id;
     // Direct custody setup and SELL owner proofs have their own command IDs;
     // only real wire commands advance the ingress continuation.
@@ -515,6 +519,12 @@ pub(super) async fn exercise(
     assert_eq!(stage(h).await?, -1);
     eprintln!("QUESTPC8_TRADER_FIRST_HANDIN trophy=1 ore=3 goldfish=1 native_premium_current=true");
 
+    h.root.advance_test_quest_clock(7 * DAY - 60).map_err(debug)?;
+    talk(owner, admitted, rashid, &mut next, &["hi", "mission", "yes"],
+        NpcIntentDisposition::Rejected).await?;
+    assert_eq!(stage(h).await?, -1);
+    assert_eq!(quantity(h, 7397).await?, 1);
+    h.root.advance_test_quest_clock(60).map_err(debug)?;
     say(
         owner,
         admitted,
@@ -578,6 +588,14 @@ pub(super) async fn exercise(
     assert_ne!(oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?, UseDisposition::Committed);
     assert_eq!(quantity(h, 145).await?, 1);
     let rashid = visit(owner, admitted, "oteryn:npc.rashid").await?;
+    h.root.advance_test_quest_clock(DAY - 60).map_err(debug)?;
+    let before_gold = gold(h).await?;
+    talk(owner, admitted, rashid, &mut next, &["hi", "package"],
+        NpcIntentDisposition::Rejected).await?;
+    assert_eq!(stage(h).await?, 4);
+    assert_eq!(quantity(h, 145).await?, 1);
+    assert_eq!(gold(h).await?, before_gold);
+    h.root.advance_test_quest_clock(60).map_err(debug)?;
     say(owner, admitted, rashid, &mut next, &["hi", "package"]).await?;
     assert_eq!(stage(h).await?, 5);
     assert_eq!(quantity(h, 145).await?, 0);
@@ -620,6 +638,14 @@ pub(super) async fn exercise(
     drop_goldfish(owner, admitted, h, &mut side_next).await?;
     drop_goldfish(owner, admitted, h, &mut side_next).await?;
     let rashid = visit(owner, admitted, "oteryn:npc.rashid").await?;
+    h.root.advance_test_quest_clock(DAY - 60).map_err(debug)?;
+    let before_gold = gold(h).await?;
+    talk(owner, admitted, rashid, &mut next, &["hi", "cheese"],
+        NpcIntentDisposition::Rejected).await?;
+    assert_eq!(stage(h).await?, 6);
+    assert_eq!(quantity(h, 169).await?, 1);
+    assert_eq!(gold(h).await?, before_gold);
+    h.root.advance_test_quest_clock(60).map_err(debug)?;
     say(owner, admitted, rashid, &mut next, &["hi", "cheese"]).await?;
     assert_eq!(stage(h).await?, 7);
     assert_eq!(quantity(h, 169).await?, 0);
@@ -637,6 +663,14 @@ pub(super) async fn exercise(
     assert_eq!(quantity(h, 227).await?, 1);
     assert_eq!(gold(h).await?, 1900);
     let rashid = visit(owner, admitted, "oteryn:npc.rashid").await?;
+    h.root.advance_test_quest_clock(DAY - 60).map_err(debug)?;
+    let before_gold = gold(h).await?;
+    talk(owner, admitted, rashid, &mut next, &["hi", "vase"],
+        NpcIntentDisposition::Rejected).await?;
+    assert_eq!(stage(h).await?, 8);
+    assert_eq!(quantity(h, 227).await?, 1);
+    assert_eq!(gold(h).await?, before_gold);
+    h.root.advance_test_quest_clock(60).map_err(debug)?;
     say(owner, admitted, rashid, &mut next, &["hi", "vase"]).await?;
     assert_eq!(stage(h).await?, 9);
     assert_eq!(quantity(h, 227).await?, 0);
@@ -654,13 +688,36 @@ pub(super) async fn exercise(
     assert_eq!(quantity(h, 7385).await?, 1);
     assert_eq!(gold(h).await?, 1650);
     let rashid = visit(owner, admitted, "oteryn:npc.rashid").await?;
+    h.root.advance_test_quest_clock(DAY - 60).map_err(debug)?;
+    let before_gold = gold(h).await?;
+    talk(owner, admitted, rashid, &mut next, &["hi", "sword"],
+        NpcIntentDisposition::Rejected).await?;
+    assert_eq!(stage(h).await?, 10);
+    assert_eq!(quantity(h, 7385).await?, 1);
+    assert_eq!(gold(h).await?, before_gold);
+    h.root.advance_test_quest_clock(60).map_err(debug)?;
     say(owner, admitted, rashid, &mut next, &["hi", "sword"]).await?;
     assert_eq!(stage(h).await?, 11);
     assert_eq!(quantity(h, 7385).await?, 0);
     let fish = quantity(h, 5929).await?;
+    h.root.advance_test_quest_clock(DAY - 60).map_err(debug)?;
+    talk(owner, admitted, rashid, &mut next, &["goldfish"],
+        NpcIntentDisposition::Rejected).await?;
+    assert_eq!(stage(h).await?, 11);
+    assert_eq!(quantity(h, 5929).await?, fish);
+    h.root.advance_test_quest_clock(60).map_err(debug)?;
     say(owner, admitted, rashid, &mut next, &["goldfish"]).await?;
     assert_eq!(stage(h).await?, 12);
     assert_eq!(quantity(h, 5929).await?, fish - 1);
+    h.root.advance_test_quest_clock(DAY - 60).map_err(debug)?;
+    talk(owner, admitted, rashid, &mut next, &["mission"],
+        NpcIntentDisposition::Rejected).await?;
+    assert_eq!(stage(h).await?, 12);
+    let premature: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_account_achievements WHERE achievement_key='oteryn:achievement/recognised_trader')",
+    ).fetch_one(&h.pool).await?;
+    assert!(!premature);
+    h.root.advance_test_quest_clock(60).map_err(debug)?;
     say(owner, admitted, rashid, &mut next, &["mission"]).await?;
     let recognition_command = next - 1;
     owner.states.quest_sessions.lock().map_err(debug)?.remove(&admitted.game_session_id);

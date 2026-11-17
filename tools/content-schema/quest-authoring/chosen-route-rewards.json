@@ -31,10 +31,12 @@
         "Your trading mission is recorded."
       ],
       "sources": [
+        "Crystal 201189f8 data-global/npc/rashid.lua:62",
         "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua",
-        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] omits cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
       ],
-      "requires_premium": true
+      "requires_premium": true,
+      "requires_weekdays": [1]
     },
     {
       "key": "oteryn:quest-reward/chosen/trader/willard",
@@ -62,7 +64,7 @@
       ],
       "sources": [
         "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/willard.lua",
-        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] omits cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
       ],
       "requires_premium": true
     },
@@ -92,7 +94,7 @@
       ],
       "sources": [
         "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/snake_eye.lua",
-        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] omits cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
       ],
       "requires_premium": true
     },
@@ -126,10 +128,12 @@
         "Your trading mission is recorded."
       ],
       "sources": [
+        "Crystal 201189f8 data-global/npc/rashid.lua:70",
         "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua",
-        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] omits cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
       ],
-      "requires_premium": true
+      "requires_premium": true,
+      "requires_weekdays": [2]
     },
     {
       "key": "oteryn:quest-reward/chosen/trader/buy-cheese",
@@ -161,7 +165,7 @@
       ],
       "sources": [
         "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/miraia.lua",
-        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] omits cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
       ],
       "fee": {
         "gold": 100,
@@ -203,10 +207,12 @@
         "Your trading mission is recorded."
       ],
       "sources": [
+        "Crystal 201189f8 data-global/npc/rashid.lua:78",
         "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua",
-        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] omits cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
       ],
-      "requires_premium": true
+      "requires_premium": true,
+      "requires_weekdays": [3]
     },
     {
       "key": "oteryn:quest-reward/chosen/trader/buy-vase",
@@ -238,7 +244,7 @@
       ],
       "sources": [
         "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/briasol.lua",
-        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] omits cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
       ],
       "fee": {
         "gold": 1000,
@@ -276,10 +282,12 @@
         "Your trading mission is recorded."
       ],
       "sources": [
+        "Crystal 201189f8 data-global/npc/rashid.lua:86",
         "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua",
-        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] omits cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
       ],
-      "requires_premium": true
+      "requires_premium": true,
+      "requires_weekdays": [4]
     },
     {
       "key": "oteryn:quest-reward/chosen/trader/buy-sword",
@@ -316,7 +324,7 @@
       ],
       "sources": [
         "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/uzgod.lua",
-        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] omits cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
       ],
       "fee": {
         "gold": 250,
@@ -354,10 +362,12 @@
         "Your trading mission is recorded."
       ],
       "sources": [
+        "Crystal 201189f8 data-global/npc/rashid.lua:94",
         "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua",
-        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] omits cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
       ],
-      "requires_premium": true
+      "requires_premium": true,
+      "requires_weekdays": [5]
     },
     {
       "key": "oteryn:quest-reward/chosen/trader/goldfish",
@@ -389,10 +399,12 @@
         "Your trading mission is recorded."
       ],
       "sources": [
+        "Crystal 201189f8 data-global/npc/rashid.lua:102",
         "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua",
-        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] omits cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
       ],
-      "requires_premium": true
+      "requires_premium": true,
+      "requires_weekdays": [6]
     },
     {
       "key": "oteryn:quest-reward/chosen/trader/recognised",
@@ -419,11 +431,13 @@
         "Your trading mission is recorded."
       ],
       "sources": [
+        "Crystal 201189f8 data-global/npc/rashid.lua:110",
         "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua",
-        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] omits cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once."
       ],
       "completes": true,
-      "requires_premium": true
+      "requires_premium": true,
+      "requires_weekdays": [7]
     },
     {
       "key": "oteryn:quest-reward/authored-secret-library/charles",
