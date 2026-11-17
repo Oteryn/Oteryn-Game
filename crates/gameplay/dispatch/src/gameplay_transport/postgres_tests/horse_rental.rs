@@ -1,6 +1,6 @@
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
-use crate::content::native_gameplay::test_support::activated_with_loot_tables;
+use crate::content::native_gameplay::test_support::activated_with_optional_cosmetics;
 use crate::content::{NpcDataCatalogue, npc_catalogue_preproduction_limits};
 use crate::foundation::{
     ChannelContentPin, MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements,
@@ -33,7 +33,15 @@ fn scenario() -> TestResult {
         // Compile content before opening the admission holder; cold Native setup can exceed
         // the holder's idle lifetime on a contended CI worker.
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-        let (controller, pin) = activated_with_loot_tables(world, None);
+        let mut cosmetics: serde_json::Value =
+            serde_json::from_reader(std::fs::File::open(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../content/cosmetics/outfits/native-cosmetics.json"
+            ))?)?;
+        // Keep the real rental mount bindings under the admission fixture's revision.
+        cosmetics["authoring"]["document"]["content_revision"] = "content-1".into();
+        let (controller, pin) =
+            activated_with_optional_cosmetics(world, None, Some(&serde_json::to_vec(&cosmetics)?));
         let h = Harness::create_with_admission_seed(admin, "horse_rental", true, false).await?;
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
@@ -81,6 +89,17 @@ fn scenario() -> TestResult {
             runtime
                 .initialize_first_entry_position(dependencies.actor)
                 .map_err(debug)?;
+            runtime
+                .bind_attacker_lease(
+                    dependencies.actor,
+                    session,
+                    crate::foundation::CharacterLease::new(
+                        crate::foundation::CharacterId::decode(&id(41)).map_err(debug)?,
+                        2,
+                    )
+                    .map_err(debug)?,
+                )
+                .map_err(debug)?;
             let spot = runtime
                 .read_actor_position(dependencies.actor)
                 .map_err(debug)?
@@ -108,7 +127,7 @@ fn scenario() -> TestResult {
                 generation: placed.generation,
             }
         };
-        // This scenario adds the purchase's level and purse to the existing admission fixture.
+        // Keep the purse in a nested container to exercise carried coin custody.
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *tx)
