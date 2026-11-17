@@ -192,6 +192,7 @@ mod raid_notices;
 mod raid_schedule;
 mod resting_area;
 mod resume;
+mod retro_combat;
 mod reward_bag_use;
 mod rotten_blood_callbacks;
 pub mod rotten_blood_dispatch;
