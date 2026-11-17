@@ -536,7 +536,7 @@ async fn exercise(h: &fixture::Harness, name: &str) -> TestResult {
                         max_soul: 100,
                     },
                     (3, 7_000_000),
-                    crate::foundation::owner_timer::SemanticTimeMicros::from_micros(u64::try_from(
+                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(u64::try_from(
                         owner.clock_origin.elapsed().as_micros()
                     )?)
                 )

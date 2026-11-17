@@ -188,7 +188,7 @@ pub(super) async fn exercise(
         admitted.game_session_id,
         "Brain",
         None,
-        crate::foundation::owner_timer::SemanticTimeMicros::from_micros(u64::try_from(
+        oteryn_simulation_determinism::SemanticTimeMicros::from_micros(u64::try_from(
             owner.clock_origin.elapsed().as_micros(),
         )?),
     );
