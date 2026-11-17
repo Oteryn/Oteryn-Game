@@ -119,7 +119,10 @@ pub fn apply_request(
         Some(status) => {
             if !matches!(
                 status.lock,
-                SwitchLock::Skull | SwitchLock::Destination | SwitchLock::SameChannel
+                SwitchLock::ChannelFull
+                    | SwitchLock::Skull
+                    | SwitchLock::Destination
+                    | SwitchLock::SameChannel
             ) {
                 panel.status = Some(status);
                 panel.status_at_ms = now_ms;

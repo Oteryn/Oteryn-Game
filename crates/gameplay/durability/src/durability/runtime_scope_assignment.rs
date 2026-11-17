@@ -577,17 +577,23 @@ pub enum ChannelPvpType {
     Open = 2,
 }
 
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct ChannelPolicy {
+    pub pvp_type: Option<ChannelPvpType>,
+    pub player_capacity: Option<std::num::NonZeroU16>,
+}
+
 impl AssignmentRequest {
-    fn encode_channel_policy(
-        &self,
-        policy: Option<ChannelPvpType>,
-    ) -> Result<Vec<u8>, AssignmentError> {
+    fn encode_channel_policy(&self, policy: ChannelPolicy) -> Result<Vec<u8>, AssignmentError> {
         let mut bytes = self.encode()?;
-        if let Some(policy) = policy {
+        if policy != ChannelPolicy::default() {
             if self.command.scope().channel_id().is_none() || self.command.target().is_none() {
                 return Err(AssignmentError::InvalidInput);
             }
-            bytes.push(policy as u8);
+            bytes.push(policy.pvp_type.map_or(0, |pvp| pvp as u8));
+            if let Some(capacity) = policy.player_capacity {
+                bytes.extend_from_slice(&capacity.get().to_be_bytes());
+            }
         }
         Ok(bytes)
     }
@@ -1027,13 +1033,14 @@ impl RuntimeScopeAssignmentWriter {
         &self,
         request: &AssignmentRequest,
     ) -> Result<AssignmentOutcome, AssignmentError> {
-        self.submit_with_channel_policy(request, None).await
+        self.submit_with_channel_policy(request, ChannelPolicy::default())
+            .await
     }
 
     pub async fn submit_with_channel_policy(
         &self,
         request: &AssignmentRequest,
-        policy: Option<ChannelPvpType>,
+        policy: ChannelPolicy,
     ) -> Result<AssignmentOutcome, AssignmentError> {
         let command = request.encode_channel_policy(policy)?;
         let _permit = self.admit(command.len(), None).await?;
@@ -1062,13 +1069,14 @@ impl RuntimeScopeAssignmentWriter {
         &self,
         request: &AssignmentRequest,
     ) -> Result<ReconcileOutcome, AssignmentError> {
-        self.reconcile_with_channel_policy(request, None).await
+        self.reconcile_with_channel_policy(request, ChannelPolicy::default())
+            .await
     }
 
     pub async fn reconcile_with_channel_policy(
         &self,
         request: &AssignmentRequest,
-        policy: Option<ChannelPvpType>,
+        policy: ChannelPolicy,
     ) -> Result<ReconcileOutcome, AssignmentError> {
         let command = request.encode_channel_policy(policy)?;
         let key = request.operation_key;
@@ -1165,7 +1173,7 @@ impl RuntimeScopeAssignmentWriter {
         command: Vec<u8>,
         actor: ControlActor,
         typed: AssignmentCommand,
-        policy: Option<ChannelPvpType>,
+        policy: ChannelPolicy,
     ) -> Dispatch {
         // Checkpoint the exact binding before authoritative submission.
         let pass = match self.root.try_issue_semantic_pass() {
@@ -1242,7 +1250,7 @@ async fn authoritative_transition(
     command: &[u8],
     actor: &ControlActor,
     typed: AssignmentCommand,
-    policy: Option<ChannelPvpType>,
+    policy: ChannelPolicy,
 ) -> Result<AssignmentOutcome, DurabilityError> {
     let scope = typed.scope();
     let target = typed.target();
@@ -1443,9 +1451,14 @@ async fn authoritative_transition(
         )
         .bind(world_id.as_bytes().as_slice())
         .bind(channel.as_slice())
-        .bind(policy.map(|p| i16::from(p as u8)))
+        .bind(policy.pvp_type.map(|p| i16::from(p as u8)))
         .execute(&mut **tx)
         .await?;
+        if let Some(capacity) = policy.player_capacity {
+            sqlx::query("UPDATE game_channel_pvp_types SET player_capacity=$3 WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
+                .bind(world_id.as_bytes().as_slice()).bind(channel.as_slice()).bind(i32::from(capacity.get()))
+                .execute(&mut **tx).await?;
+        }
     }
     // Every decision on a guarded scope fences the guard at the next
     // publication revision; the receipt retains that exact binding.

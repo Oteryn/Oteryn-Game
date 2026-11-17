@@ -22,6 +22,7 @@ pub(crate) const OTHERS: [u32; 2] = [3, 5];
 pub(crate) struct Node {
     pub(crate) login_channel: Mutex<String>,
     pub(crate) switches: AtomicUsize,
+    pub(crate) full: std::sync::atomic::AtomicBool,
 }
 
 pub(crate) fn uuid(text: &str) -> Option<[u8; 16]> {
@@ -128,6 +129,7 @@ where
                 match wire::decode_request(command.payload) {
                     Some(target) if target == current => refused(SwitchLock::SameChannel),
                     Some(target) if !channels.contains(&target) => refused(SwitchLock::Destination),
+                    Some(_) if node.full.load(Ordering::SeqCst) => refused(SwitchLock::ChannelFull),
                     Some(_) if cooling => refused(SwitchLock::Cooldown),
                     Some(_) => {
                         switched = true;

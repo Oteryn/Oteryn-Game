@@ -118,6 +118,15 @@ fn the_client_switches_to_the_other_channel_and_a_second_switch_in_the_cooldown_
                     std::thread::sleep(Duration::from_millis(2));
                 }
 
+                stack.node.full.store(true, Ordering::SeqCst);
+                link.channel_switch_select(second);
+                assert!(link.channel_switch_confirm());
+                let full = panel_until(&mut view, &link, |p| !p.pending && p.error.is_some())?;
+                assert_eq!(full.error.as_deref(), Some("This channel is full."));
+                assert_eq!(stack.node.switches.load(Ordering::SeqCst), 0);
+                link.channel_switch_back();
+                stack.node.full.store(false, Ordering::SeqCst);
+
                 // The switch to B: the server ends the session after the accepted result.
                 link.channel_switch_select(second);
                 assert_eq!(link.channel_switch_panel().confirming, Some(second));
@@ -195,4 +204,20 @@ fn the_client_switches_to_the_other_channel_and_a_second_switch_in_the_cooldown_
         .join()
         .map_err(|_| "channel switch test thread panicked")?
         .map_err(Into::into)
+}
+
+#[test]
+fn initial_channel_full_refusal_is_visible_without_retry() -> TestResult {
+    let stack = Stack::start_with_frames(
+        Vec::new(),
+        vec![oteryn_protocol_oteryn::admission_queue::encode_channel_full()],
+    )?;
+    let error = stack.entry(stack.config())?;
+    assert_eq!(
+        crate::native_login::error_text(error),
+        "This channel is full."
+    );
+    assert_eq!(stack.admissions.load(Ordering::SeqCst), 1);
+    stack.finish();
+    Ok(())
 }

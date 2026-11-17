@@ -39,6 +39,7 @@ Both commands answer five bytes: a lock code and the cooldown left in big-endian
 | 9 | cooldown | five minutes have not passed since the last switch (server clock) |
 | 10 | same channel | the target is the current Channel |
 | 11 | no logout | the current tile does not allow logging out |
+| 12 | Channel full | all player slots on the destination are occupied |
 
 `CHANNEL_SWITCH_STATUS` is `ACCEPTED` and reports the locks that do not depend on the target
 (codes 0, 1, 3-7, 9, 11).
@@ -51,13 +52,16 @@ unchanged.
 
 ## Final admission
 
-The Game control operator sets the directory PvP type with `assignment assign|replace --pvp-type OPEN_PVP|OPTIONAL_PVP`. The assignment receipt binds that choice and commits it with the scope assignment. Without the option a new Channel defaults to Optional PvP and replacement retains the stored type.
+The Game control operator provisions the directory PvP type with
+`assignment assign|replace --pvp-type OPEN_PVP|OPTIONAL_PVP`. The assignment receipt binds the
+choice. A new Channel defaults to Optional PvP. A replacement retains the stored type unless
+the operator supplies a new one.
 
-The fresh admission revalidates the switch inside the admission receipt insert (migration 2858):
-the first admission in a World sets the baseline, the same Channel is not a switch, a different
-Channel inside the cooldown or with a lock the database can prove (combat, kill or protection-zone deadline, a saved House on another Channel,
-or a skull entering a Channel outside Open PvP) is refused, and a refused or failed admission uses no cooldown. A
-retry of the same admission cannot advance the guard twice.
+The first fresh admission in a World establishes the baseline. Migration 2858 uses the latest
+historical admission for an existing character. A same-Channel relog preserves that baseline.
+A destination change checks cooldown, combat, kill and protection-zone deadlines, a saved
+House's origin Channel, and skull eligibility. The receipt and guard commit together. A
+refused admission consumes no cooldown and a replay cannot advance the guard twice.
 
 ## Party across the switch
 
@@ -74,8 +78,14 @@ The `ACCEPTED` result lists every current Channel of the caller's World with its
 one count byte (`0..=64`), then per Channel its 16-byte ChannelId and a big-endian `u32`,
 strictly ascending by ChannelId (at most 1,281 bytes). The count is read from the durable current
 sessions (`session_state` 1 or 2) of each Channel (a house session counts on its origin Channel),
-so it is never stale and never invented; a World with more than 64 Channels lists the first 64. No
-capacity, "full" state or full-Channel refusal exists yet; the window shows the count only.
+and a World with more than 64 Channels lists the first 64.
+
+Control configures player slots with `assignment assign|replace --player-capacity N`
+(1–65535, default 100). The server checks the destination before release and during each
+fresh admission. Connected and reconnectable sessions occupy slots. Characters with a
+Control-issued Gamemaster account type (4–6) may exceed the player limit. A full initial
+admission sends capacity error 1115 with optional field 18 set to 12. The client displays
+“This channel is full.”
 
 ## Channel on social rows (capability 513)
 

@@ -59,6 +59,7 @@ pub fn lock_text(lock: SwitchLock, cooldown_left_ms: u32) -> String {
         }
         SwitchLock::Destination => tr!("This channel is not available.").to_owned(),
         SwitchLock::SameChannel => tr!("You are already on this channel.").to_owned(),
+        SwitchLock::ChannelFull => tr!("This channel is full.").to_owned(),
         SwitchLock::NoLogout => tr!("You cannot change the channel here.").to_owned(),
     }
 }

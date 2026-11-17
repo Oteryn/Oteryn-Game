@@ -209,6 +209,18 @@ fn a_player_switches_between_two_live_channels_and_reenters_the_other_one() -> T
                 );
                 assert!(matches!(session_state(&h, id(50)).await?, 1 | 2));
 
+                let configured = sqlx::query("UPDATE game_channel_pvp_types SET player_capacity=1 WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
+                    .bind(id(42).as_slice()).bind(there.as_slice()).execute(&h.pool).await?;
+                assert_eq!(configured.rows_affected(), 1);
+                let (status, full) = exchange(&owner, &mut admitted,
+                    wire::COMMAND_TYPE_CHANNEL_SWITCH_REQUEST, &wire::encode_request(there)).await?;
+                assert_eq!(status, CommandStatus::Rejected);
+                assert_eq!(wire::decode_status(&full).map(|s| s.lock), Some(SwitchLock::ChannelFull));
+                assert!(matches!(session_state(&h, id(50)).await?, 1 | 2));
+                assert_eq!(guard(&h).await?, (here.to_vec(), 0, false));
+                sqlx::query("SELECT game_chat_role_issue(encode($1,'hex')::uuid,0,4::smallint,4::smallint,true,game_character_uuid_v7(),'channel-capacity')")
+                    .bind(id(41).as_slice()).execute(&h.pool).await?;
+
                 // 6248 to the other Channel: the safe exit commits and the session ends.
                 let (status, switched) = exchange(
                     &owner,

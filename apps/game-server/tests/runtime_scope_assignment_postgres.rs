@@ -666,7 +666,10 @@ fn channel_assignment_uses_exact_cas_replay_and_writer_owned_revisions() -> Test
                     target: node2,
                 },
             )?;
-            let open = Some(durability::runtime_scope_assignment::ChannelPvpType::Open);
+            let open = durability::runtime_scope_assignment::ChannelPolicy {
+                pvp_type: Some(durability::runtime_scope_assignment::ChannelPvpType::Open),
+                player_capacity: std::num::NonZeroU16::new(42),
+            };
             let second = committed(writer.submit_with_channel_policy(&replace, open).await)?;
             assert_eq!(
                 committed(writer.submit_with_channel_policy(&replace, open).await)?,
@@ -676,9 +679,9 @@ fn channel_assignment_uses_exact_cas_replay_and_writer_owned_revisions() -> Test
                 rejected(writer.submit(&replace).await)?,
                 AssignmentRejection::OperationConflict
             );
-            let pvp: i16 = sqlx::query_scalar("SELECT pvp_type FROM game_channel_pvp_types WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
+            let policy: (i16, i32) = sqlx::query_as("SELECT pvp_type,player_capacity FROM game_channel_pvp_types WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
                 .bind(channel.world_id().as_bytes().as_slice()).bind(channel.channel_id().ok_or("Channel")?.as_bytes().as_slice()).fetch_one(&pool).await?;
-            assert_eq!(pvp, 2);
+            assert_eq!(policy, (2, 42));
             assert_eq!(
                 (
                     second.assignment.ownership_generation,

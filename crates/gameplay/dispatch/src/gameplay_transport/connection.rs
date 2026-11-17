@@ -506,6 +506,7 @@ pub(super) fn report_admission_refusal(refusal: AdmissionRefusal) {
             use oteryn_protocol_oteryn::channel_switch::SwitchLock;
             (
                 match status.lock {
+                    SwitchLock::ChannelFull => "channel_full",
                     SwitchLock::Cooldown => "channel_cooldown",
                     SwitchLock::Combat => "channel_combat",
                     SwitchLock::Skull => "channel_skull",
@@ -937,6 +938,16 @@ where
                 let _ = tokio::time::timeout(
                     ADMISSION_REFUSAL_WRITE_BOUND,
                     send_error(stream, error, 0),
+                )
+                .await;
+            }
+            if let AdmissionRefusal::ChannelSwitch(status) = refusal
+                && status.lock == oteryn_protocol_oteryn::channel_switch::SwitchLock::ChannelFull
+            {
+                let frame = oteryn_protocol_oteryn::admission_queue::encode_channel_full();
+                let _ = tokio::time::timeout(
+                    ADMISSION_REFUSAL_WRITE_BOUND,
+                    write_frame(stream, &frame),
                 )
                 .await;
             }

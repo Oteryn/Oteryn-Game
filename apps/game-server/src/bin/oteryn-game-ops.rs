@@ -18,7 +18,7 @@ use oteryn_game_server::durability::native_admission_source::{
 };
 use oteryn_game_server::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentPredecessor, AssignmentRequest,
-    AssignmentState, BootstrapSecret, ChannelPvpType, ControlActor, LaunchBinding,
+    AssignmentState, BootstrapSecret, ChannelPolicy, ChannelPvpType, ControlActor, LaunchBinding,
     NodeRegistrationFact, OperationKey, ReconcileOutcome, RegistrationError,
     RuntimeScopeAssignmentWriter,
 };
@@ -793,8 +793,11 @@ fn scope_of(world: &str, channel: &str) -> Result<RuntimeScopeRefV1, Failure> {
     ))
 }
 
-fn assignment_pvp_type(file: &AssignmentRequestFile) -> Result<Option<ChannelPvpType>, Failure> {
-    match file.pvp_type.as_deref() {
+fn assignment_policy(file: &AssignmentRequestFile) -> Result<ChannelPolicy, Failure> {
+    if file.command == "revoke" && file.player_capacity.is_some() {
+        return Err(Failure::Usage("revoke has no player capacity"));
+    }
+    let pvp_type = match file.pvp_type.as_deref() {
         None => Ok(None),
         Some(_) if file.command == "revoke" => Err(Failure::Usage("revoke has no PvP type")),
         Some("OPEN_PVP") => Ok(Some(ChannelPvpType::Open)),
@@ -802,7 +805,11 @@ fn assignment_pvp_type(file: &AssignmentRequestFile) -> Result<Option<ChannelPvp
         Some(_) => Err(Failure::Usage(
             "--pvp-type requires OPTIONAL_PVP or OPEN_PVP",
         )),
-    }
+    }?;
+    Ok(ChannelPolicy {
+        pvp_type,
+        player_capacity: file.player_capacity,
+    })
 }
 
 fn request_of(file: &AssignmentRequestFile) -> Result<AssignmentRequest, Failure> {
@@ -1306,7 +1313,7 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
             .map_err(|_| Failure::Input("assignment request".into()))?;
         let request = request_of(&file)?;
         return match writer
-            .reconcile_with_channel_policy(&request, assignment_pvp_type(&file)?)
+            .reconcile_with_channel_policy(&request, assignment_policy(&file)?)
             .await
         {
             Ok(ReconcileOutcome::Committed(receipt)) => {
@@ -1353,6 +1360,14 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
         }
     };
     let pvp_type = arguments.take_optional("pvp-type");
+    let player_capacity = arguments
+        .take_optional("player-capacity")
+        .map(|value| {
+            value.parse().map_err(|_| {
+                Failure::Usage("--player-capacity requires an integer from 1 through 65535")
+            })
+        })
+        .transpose()?;
     arguments.finish()?;
     // The reported node identity is validated before anything is written and
     // staged with the operation; it is bound to the target only on commit (§5).
@@ -1404,6 +1419,7 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
         world_id: world,
         channel_id: channel,
         pvp_type,
+        player_capacity,
         predecessor_generation: predecessor.map(|p| p.ownership_generation),
         predecessor_source_revision: predecessor.map(|p| p.source_revision),
         predecessor_guard_publication_revision: predecessor
@@ -1412,7 +1428,7 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
         target_registration_revision,
     };
     let request = request_of(&file)?;
-    let policy = assignment_pvp_type(&file)?;
+    let policy = assignment_policy(&file)?;
     let bytes = file
         .encode()
         .map_err(|_| Failure::Input("assignment request".into()))?;

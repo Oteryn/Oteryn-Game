@@ -122,6 +122,7 @@ pub(crate) async fn enter_observed(
 
     let mut attempt = NativeAttempt {
         queue: None,
+        channel_full: false,
         progress,
         client,
         ticket,
@@ -138,6 +139,7 @@ pub(crate) async fn enter_observed(
 }
 
 struct NativeAttempt<'a> {
+    channel_full: bool,
     queue: Option<oteryn_session::AdmissionQueue>,
     progress: Option<tokio::sync::watch::Sender<Option<AdmissionWait>>>,
     client: NativeLoginClient,
@@ -155,6 +157,10 @@ struct NativeAttempt<'a> {
 impl AdmissionAttempt for NativeAttempt<'_> {
     type Output = AdmittedSession;
     type Error = GameplayEntryError;
+
+    fn terminal_refusal(&self) -> Option<Self::Error> {
+        self.channel_full.then_some(GameplayEntryError::ChannelFull)
+    }
 
     fn queue(&self) -> Option<oteryn_session::AdmissionQueue> {
         self.queue
@@ -196,6 +202,7 @@ impl AdmissionAttempt for NativeAttempt<'_> {
         .map_err(|refusal| {
             refusal.map(|refusal| {
                 self.queue = refusal.queue;
+                self.channel_full = refusal.channel_full;
                 refusal.code
             })
         })?;

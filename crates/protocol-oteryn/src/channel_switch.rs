@@ -57,6 +57,7 @@ pub enum SwitchLock {
     SameChannel = 10,
     /// A tile where logging out is not allowed.
     NoLogout = 11,
+    ChannelFull = 12,
 }
 
 impl SwitchLock {
@@ -74,6 +75,7 @@ impl SwitchLock {
             9 => Self::Cooldown,
             10 => Self::SameChannel,
             11 => Self::NoLogout,
+            12 => Self::ChannelFull,
             _ => return None,
         })
     }
@@ -246,7 +248,11 @@ mod tests {
         ] {
             assert_eq!(encode_status(refused), None);
         }
-        assert_eq!(decode_status(&[12, 0, 0, 0, 0]), None);
+        assert_eq!(
+            decode_status(&[12, 0, 0, 0, 0]).map(|s| s.lock),
+            Some(SwitchLock::ChannelFull)
+        );
+        assert_eq!(decode_status(&[13, 0, 0, 0, 0]), None);
         assert_eq!(decode_status(&[0, 0, 0, 0]), None);
     }
 

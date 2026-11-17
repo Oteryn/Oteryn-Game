@@ -113,13 +113,22 @@ async fn preflight(
 
 fn channel_text(seed: u8) -> String {
     let h = hex(id(seed));
-    format!("{}-{}-{}-{}-{}", &h[0..8], &h[8..12], &h[12..16], &h[16..20], &h[20..32])
+    format!(
+        "{}-{}-{}-{}-{}",
+        &h[0..8],
+        &h[8..12],
+        &h[12..16],
+        &h[16..20],
+        &h[20..32]
+    )
 }
 
 fn code(result: Result<(), sqlx::Error>) -> Option<String> {
-    result
-        .err()
-        .and_then(|e| e.as_database_error().and_then(|e| e.code()).map(|c| c.into_owned()))
+    result.err().and_then(|e| {
+        e.as_database_error()
+            .and_then(|e| e.code())
+            .map(|c| c.into_owned())
+    })
 }
 
 #[test]
@@ -138,6 +147,21 @@ fn channel_switch_guard_classifies_admissions_and_enforces_the_cooldown() -> Tes
                     // session no longer counts, and the Channel stays listed at zero.
                     assert_eq!(load(pool, false).await?, vec![(id(CHANNEL).to_vec(), 1)]);
                     assert_eq!(load(pool, true).await?, vec![(id(CHANNEL).to_vec(), 0)]);
+                    // One occupied player slot. The receipt guard runs even before a baseline exists.
+                    sqlx::query("INSERT INTO game_channel_pvp_types(world_id,channel_id,pvp_type,player_capacity) VALUES($1::uuid,$2::uuid,1,1) ON CONFLICT(world_id,channel_id) DO UPDATE SET player_capacity=1")
+                        .bind(hex(id(WORLD))).bind(hex(id(CHANNEL))).execute(pool).await?;
+                    assert_eq!(preflight(pool,Some(CHANNEL)).await?.1.as_deref(), Some("CHANNEL_FULL"));
+                    assert_eq!(code(admit(pool, 18, CHANNEL).await).as_deref(),Some("OTH02"));
+                    assert_eq!(guard(pool).await?, None);
+                    for account_type in [4_i16, 6] {
+                        let mut staff = pool.begin().await?;
+                        sqlx::query("SELECT game_chat_role_issue($1::uuid,0,4::smallint,$2,true,game_character_uuid_v7(),'capacity-regression')")
+                            .bind(hex(id(CHARACTER))).bind(account_type).execute(&mut *staff).await?;
+                        admit(&mut *staff,18,CHANNEL).await?;
+                        staff.rollback().await?;
+                    }
+                    sqlx::query("UPDATE game_channel_pvp_types SET player_capacity=100 WHERE world_id=$1::uuid AND channel_id=$2::uuid")
+                        .bind(hex(id(WORLD))).bind(hex(id(CHANNEL))).execute(pool).await?;
                     // The first admission sets the baseline and is not a switch.
                     admit(pool, 1, CHANNEL_A).await?;
                     assert_eq!(guard(pool).await?, Some((channel_text(CHANNEL_A), 0, false)));
@@ -147,7 +171,7 @@ fn channel_switch_guard_classifies_admissions_and_enforces_the_cooldown() -> Tes
                     // Upgrade from a database with receipts and no switch guard.
                     let mut upgrade = pool.begin().await?;
                     sqlx::raw_sql("DROP TRIGGER game_channel_switch_admit ON game_durability_fresh_admission_receipts;
-                        DROP FUNCTION game_channel_switch_admit(), game_channel_switch_status(uuid,uuid), game_channel_switch_lock(uuid,uuid,uuid), game_channel_switch_cooldown_ms(), game_channel_switch_now_ms();
+                        DROP FUNCTION game_channel_switch_admit(), game_channel_switch_status(uuid,uuid), game_channel_switch_lock(uuid,uuid,uuid), game_channel_switch_cooldown_ms(), game_channel_switch_now_ms(), game_channel_full(uuid,uuid,uuid);
                         DROP TABLE game_channel_switch_guards, game_channel_pvp_types;")
                         .execute(&mut *upgrade).await?;
                     sqlx::raw_sql(include_str!("../../../migrations/2858_channel_switch_guard.sql"))

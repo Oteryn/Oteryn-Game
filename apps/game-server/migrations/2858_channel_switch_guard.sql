@@ -12,11 +12,33 @@ CREATE TABLE game_channel_pvp_types (
     world_id UUID NOT NULL CHECK (game_character_is_uuid_v7(world_id)),
     channel_id UUID NOT NULL CHECK (game_character_is_uuid_v7(channel_id)),
     pvp_type SMALLINT NOT NULL CHECK (pvp_type IN (1, 2)),
+    player_capacity INTEGER NOT NULL DEFAULT 100 CHECK (player_capacity > 0),
     PRIMARY KEY (world_id, channel_id)
 );
 REVOKE ALL ON game_channel_pvp_types FROM PUBLIC;
 GRANT SELECT ON game_channel_pvp_types TO oteryn_game_runtime;
 GRANT SELECT, INSERT, UPDATE ON game_channel_pvp_types TO oteryn_game_control;
+
+INSERT INTO game_channel_pvp_types(world_id, channel_id, pvp_type)
+SELECT world_id, channel_id, 1 FROM game_runtime_scope_assignments WHERE scope_kind=1 AND state=1;
+
+-- Count live and reconnectable sessions as the Channel load command does. The existing
+-- Control-issued account type grants GM access at level 4 (the Gamemaster room predicate).
+CREATE FUNCTION game_channel_full(p_character UUID, p_world UUID, p_channel UUID)
+RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, public AS $$
+    SELECT EXISTS (
+        SELECT FROM game_channel_pvp_types c
+        WHERE c.world_id=p_world AND c.channel_id=p_channel AND c.player_capacity <= (
+            SELECT count(*) FROM game_durability_reconnect_sessions s
+            WHERE s.world_id=p_world AND s.session_state IN (1,2)
+              AND COALESCE(s.runtime_scope_channel_id,s.origin_channel_id)=p_channel
+        )
+    ) AND NOT EXISTS (
+        SELECT FROM game_chat_roles r WHERE r.character_id=p_character AND r.account_type >= 4
+    )
+$$;
+REVOKE ALL ON FUNCTION game_channel_full(UUID,UUID,UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_channel_full(UUID,UUID,UUID) TO oteryn_game_runtime, oteryn_game_control;
 
 CREATE TABLE game_channel_switch_guards (
     character_id UUID NOT NULL CHECK (game_character_is_uuid_v7(character_id)),
@@ -56,6 +78,7 @@ $$;
 CREATE FUNCTION game_channel_switch_lock(p_character UUID, p_world UUID, p_channel UUID)
 RETURNS TEXT LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, public AS $$
     SELECT CASE
+        WHEN game_channel_full(p_character,p_world,p_channel) THEN 'CHANNEL_FULL'
         WHEN EXISTS (SELECT 1 FROM game_character_last_positions p
                      WHERE p.character_id = p_character AND p.world_id = p_world
                        AND p.house_key IS NOT NULL AND p.origin_channel_id <> p_channel)
@@ -98,6 +121,10 @@ DECLARE
     now_ms BIGINT := game_channel_switch_now_ms();
     lock_reason TEXT;
 BEGIN
+    -- The admission store holds the reconnect-session relation exclusively through commit.
+    IF game_channel_full(NEW.character_id,NEW.world_id,NEW.channel_id) THEN
+        RAISE EXCEPTION 'Channel full' USING ERRCODE='OTH02', DETAIL='CHANNEL_FULL';
+    END IF;
     INSERT INTO game_channel_switch_guards (character_id, world_id, last_channel_id, last_game_session_id)
     VALUES (NEW.character_id, NEW.world_id, NEW.channel_id, NEW.game_session_id)
     ON CONFLICT DO NOTHING;

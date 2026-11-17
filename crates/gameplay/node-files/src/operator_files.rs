@@ -110,6 +110,8 @@ pub struct AssignmentRequestFile {
     pub channel_id: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pvp_type: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub player_capacity: Option<std::num::NonZeroU16>,
     pub predecessor_generation: Option<u64>,
     pub predecessor_source_revision: Option<u64>,
     pub predecessor_guard_publication_revision: Option<u64>,
