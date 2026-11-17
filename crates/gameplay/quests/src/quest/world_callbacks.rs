@@ -745,6 +745,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/oramond-native-roots.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/qc-chests.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/qm48-mammoth.json"
     ))?);
     callbacks.push(super::barbarian_mead::callback()?);

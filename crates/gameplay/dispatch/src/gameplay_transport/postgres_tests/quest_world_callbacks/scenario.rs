@@ -288,7 +288,8 @@ fn scenario_case(
         || name.starts_with("questpc7-eligibility-")
         || name.starts_with("qengine-rewards-")
         || name == "questpc7-golden"
-        || name == "questpc7-friends";
+        || name == "questpc7-friends"
+        || super::super::qc_npc_programmes::matches(name);
     let classic_npc = shared_rewards
         || name.starts_with("engoutfit-")
         || qengine_reward
@@ -932,6 +933,7 @@ fn scenario_case(
             )
             || name == "srv7-reliable-ram"
             || name.starts_with("m09-treasure-")
+            || super::super::qc_chests::matches(name)
             || name.starts_with("engoutfit-")
             || name == "engitem-targuna-selected-tool"
             || name == "engitem-native-seal-paint"
@@ -1506,6 +1508,8 @@ fn scenario_case(
             } else if name == "questpc7-friends" {
                 // Thirteen selected vendors/priests and one player; charge every actor slot.
                 14
+            } else if name == "qc-obsidian-knife" {
+                3 // One player, the Sweaty Cyclops and Uzgod.
             } else if native_story
                 || (native_upper && name.ends_with("-complete"))
                 || matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped")
@@ -2636,6 +2640,8 @@ fn scenario_case(
         } else if name == "questpc7-friends" {
             super::super::questpc7_friends::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
+        } else if super::super::qc_npc_programmes::matches(name) {
+            super::super::qc_npc_programmes::exercise(&mut owner, &mut admitted, &h, name).await?;
         } else if name == "questpc7-golden" {
             super::super::questpc7_golden::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
@@ -2646,6 +2652,15 @@ fn scenario_case(
                 &h,
                 deps.actor,
                 fence,
+                &callback,
+                trigger,
+            ))
+            .await?;
+        } else if super::super::qc_chests::matches(name) {
+            Box::pin(super::super::qc_chests::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
                 &callback,
                 trigger,
             ))
