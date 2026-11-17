@@ -33,6 +33,7 @@ enum Route {
     ElvenbaneCombat,
     ElvenbaneDefenders,
     ElvenbaneComplete,
+    FloorChange,
 }
 
 pub(super) fn native_objective_atomicity() -> TestResult {
@@ -53,6 +54,10 @@ pub(super) fn elvenbane_source_defenders() -> TestResult {
 
 pub(super) fn elvenbane_source_complete() -> TestResult {
     run(Route::ElvenbaneComplete)
+}
+
+pub(super) fn floor_change() -> TestResult {
+    run(Route::FloorChange)
 }
 
 pub(super) fn elvenbane_source_exploration() -> TestResult {
@@ -76,6 +81,7 @@ fn run(route: Route) -> TestResult {
             | Route::ElvenbaneCombat
             | Route::ElvenbaneDefenders
             | Route::ElvenbaneComplete
+            | Route::FloorChange
     ) {
         Position {
             x: 32599,
@@ -299,6 +305,7 @@ fn run(route: Route) -> TestResult {
                 | Route::ElvenbaneCombat
                 | Route::ElvenbaneDefenders
                 | Route::ElvenbaneComplete
+                | Route::FloorChange
         ) {
             pending.push(oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1);
             pending.push(oteryn_protocol_oteryn::world_spatial::CAPABILITY_PACED_MOVEMENT_V1);
@@ -479,6 +486,14 @@ fn run(route: Route) -> TestResult {
                 route == Route::ElvenbaneComplete,
             )
             .await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return result;
+        }
+        if route == Route::FloorChange {
+            let result = super::floorchg_router::scenario(&mut owner, &mut admitted).await;
             drop(owner);
             drop(authority);
             drop(seal);

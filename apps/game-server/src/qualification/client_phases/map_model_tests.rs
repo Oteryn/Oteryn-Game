@@ -167,6 +167,11 @@ fn map_journey_bundle_wall_detour_rope_and_unknown_ladder_facts() -> TestResult 
     assert!(model.tiles[&at(1, 2, -8)].rope_spot);
     assert_eq!(model.tiles[&at(1, 2, -8)].rope_ordinal, Some(0));
     assert!(model.tiles[&at(3, 2, -8)].ladder);
+    assert_eq!(
+        model.tiles[&at(3, 2, -8)].ladder_ordinal,
+        Some(1),
+        "ladder USE targets the ladder's own placement, not the ground"
+    );
     assert!(
         !world.floors().contains(at(3, 2, -8)),
         "UNKNOWN ladder fact must not invent an automatic ascent"

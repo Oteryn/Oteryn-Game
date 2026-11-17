@@ -19,6 +19,7 @@ struct MapTile {
     house: u32,
     field: Option<String>,
     ladder: bool,
+    ladder_ordinal: Option<u8>,
     rope_spot: bool,
     rope_ordinal: Option<u8>,
     shovel_ordinal: Option<u8>,
@@ -91,6 +92,7 @@ impl<'a> MapModel<'a> {
                 };
                 let mut field = None;
                 let mut ladder = false;
+                let mut ladder_ordinal = None;
                 let mut rope_spot = false;
                 let mut rope_ordinal = None;
                 let mut shovel_ordinal = None;
@@ -108,7 +110,13 @@ impl<'a> MapModel<'a> {
                     {
                         field = Some(entry.key.clone());
                     }
-                    ladder |= kind == Some("ladder");
+                    if kind == Some("ladder") {
+                        ladder = true;
+                        // The USE target: the ladder's own depth-0 placement ordinal.
+                        ladder_ordinal = Some(u8::try_from(ordinal).map_err(|_| {
+                            oteryn_world_bundle::Error::Limit("map ladder ordinal".into())
+                        })?);
+                    }
                     door |= kind == Some("door");
                     if let Some(id) = crate::map::palette_appearance(&entry.key) {
                         let id = u32::from(id);
@@ -149,6 +157,7 @@ impl<'a> MapModel<'a> {
                         house: tile.house,
                         field,
                         ladder,
+                        ladder_ordinal,
                         rope_spot,
                         rope_ordinal,
                         shovel_ordinal,

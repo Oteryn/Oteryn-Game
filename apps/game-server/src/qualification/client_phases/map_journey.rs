@@ -249,9 +249,8 @@ async fn check(
         return Ok(Some("VIS-2_actor_has_no_content_id_identity_unverifiable"));
     }
     if sample.kind == "ladder" && landing.is_none_or(|landed| landed.floor == at.floor) {
-        return Ok(Some(
-            "catalogue_ladder_has_no_server_floor_change_or_USE_handler",
-        ));
+        ladder_use(client, model, target).await?;
+        return Ok(None);
     }
     let Some(expected) = landing else {
         return Err("walkable sample has no predicted enterable landing".into());
@@ -269,6 +268,83 @@ async fn check(
             .await?;
     }
     Ok(None)
+}
+
+/// FLOORCHG: a catalogue ladder is USEd, not stepped on. Crystal 201189f8
+/// data/scripts/actions/items/ladder_up.lua:5-18 teleports to `Position:moveUpstairs()`,
+/// data/libs/functions/position.lua:22-50: one floor up, south first, then N, E, W, SW, SE,
+/// NW, NE, the first walkable tile. A tile holding a visible creature is not walkable there.
+async fn ladder_use(
+    client: &mut oteryn_dev_client::DevClientSession,
+    model: &MapModel<'_>,
+    target: TilePos,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::*;
+    let ordinal = model.tiles[&target]
+        .ladder_ordinal
+        .ok_or("map ladder ordinal missing")?;
+    let key =
+        crate::map::view::placement_key(target, ordinal).ok_or("map ladder placement missing")?;
+    let mut placement = model.world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let up = TilePos {
+        floor: target
+            .floor
+            .checked_add(1)
+            .ok_or("ladder on the top floor")?,
+        ..target
+    };
+    let occupied = |at: TilePos| {
+        client.world_entities().is_some_and(|entities| {
+            entities
+                .iter()
+                .any(|entity| tile(entity.position).is_ok_and(|seen| seen == at))
+        })
+    };
+    let expected = [
+        StepDirection::South,
+        StepDirection::North,
+        StepDirection::East,
+        StepDirection::West,
+        StepDirection::SouthWest,
+        StepDirection::SouthEast,
+        StepDirection::NorthWest,
+        StepDirection::NorthEast,
+    ]
+    .into_iter()
+    .filter_map(|direction| adjacent(up, direction))
+    .find(|at| model.tiles.get(at).is_some_and(|facts| facts.walkable) && !occupied(*at))
+    .ok_or("catalogue ladder has no walkable upstairs landing")?;
+    let payload = encode_use_intent(&WorldObjectTarget {
+        placement,
+        expected_revision: 0,
+    })
+    .map_err(|error| format!("ladder encode: {error:?}"))?;
+    let response = client
+        .session_mut()
+        .gated_command(CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, &payload)
+        .await?;
+    if response.status != CommandStatus::Accepted
+        || decode_use_result(&response.payload)
+            .map_err(|error| format!("ladder result: {error:?}"))?
+            != UseDisposition::Committed
+    {
+        return Err(format!("ladder use did not commit: {response:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let landed = tile(client.world_spatial().actor_position)?;
+        if landed == expected {
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("ladder landed at {landed:?}, expected {expected:?}").into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
+    client.take_events();
+    Ok(())
 }
 
 #[cfg(test)]
