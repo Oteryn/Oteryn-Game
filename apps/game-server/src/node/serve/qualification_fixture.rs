@@ -74,6 +74,8 @@ pub(super) async fn prepare(
 }
 
 /// The live Channel owner and the room the `spawn` command places creatures in.
+/// Only the qualification-spawn build (and tests) reads the fields; other builds refuse unplaced.
+#[cfg_attr(not(any(test, feature = "qualification-spawn")), allow(dead_code))]
 #[derive(Clone, Copy)]
 pub(super) struct SpawnOwners<'a> {
     pub(super) runtime: &'a Mutex<ChannelRuntimeV1>,
