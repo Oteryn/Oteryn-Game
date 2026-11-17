@@ -464,8 +464,11 @@ mod e2ef1 {
         world: &BundleWorld,
         checks: &mut Checks,
     ) -> TestResult {
-        use oteryn_dev_client::{ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome};
+        use oteryn_dev_client::client_runtime::inventory::{self, MoveRequest};
+        use oteryn_dev_client::{ItemMoveDestination, ItemMoveOutcome};
         use oteryn_protocol_oteryn::item_view::WorldTilePosition;
+        // `Session::move_item` encodes capability 4 only and refuses a Ground destination as
+        // Malformed before sending; the counted move honours the negotiated capability 11/12.
         let item = client
             .inventory()
             .and_then(|i| i.entries.first())
@@ -474,16 +477,20 @@ mod e2ef1 {
                 "FAIL: no ordinarily acquired backpack item for far MOVE; no fixture mint allowed",
             )?;
         let ground = client.world_spatial().actor_position;
-        let dropped = client
-            .move_item(&ItemMoveIntent {
+        let dropped = inventory::send(
+            client.session_mut(),
+            MoveRequest {
                 source: item.handle,
                 destination: ItemMoveDestination::Ground(WorldTilePosition {
                     x: ground.x,
                     y: ground.y,
                     floor: ground.floor,
                 }),
-            })
-            .await?;
+                count: None,
+            },
+        )
+        .await?
+        .ok_or("far MOVE drop: ground move capabilities are not selected")?;
         if dropped.outcome != ItemMoveOutcome::Moved {
             return Err(format!("far MOVE setup drop: {dropped:?}").into());
         }
@@ -526,12 +533,16 @@ mod e2ef1 {
             route(world, from, |at| distance(at, from) == 3).ok_or("far MOVE retreat route")?;
         walk(client, world, &path).await?;
         let before = client.world_spatial().actor_position;
-        let moved = client
-            .move_item(&ItemMoveIntent {
+        let moved = inventory::send(
+            client.session_mut(),
+            MoveRequest {
                 source: handle,
                 destination: ItemMoveDestination::MainBackpack,
-            })
-            .await?;
+                count: None,
+            },
+        )
+        .await?
+        .ok_or("far MOVE retry: item move capability is not selected")?;
         if moved.outcome != ItemMoveOutcome::Moved
             || client.world_spatial().actor_position == before
             || distance(tile(client.world_spatial().actor_position)?, from) > 1
