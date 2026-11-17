@@ -610,6 +610,8 @@ impl CallbackStagePlan {
                 | Vocation::RoyalPaladin
                 | Vocation::Knight
                 | Vocation::EliteKnight
+                | Vocation::Monk
+                | Vocation::ExaltedMonk
         )
     }
     pub fn anchor_position(

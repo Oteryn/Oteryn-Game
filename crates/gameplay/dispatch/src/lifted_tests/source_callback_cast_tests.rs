@@ -1059,9 +1059,10 @@ fn srx3_source_callback_missing_facts_retries_original_due_stage_once() {
 }
 
 #[test]
-fn srx3_target_tile_casts_retain_exact_four_base_vocation_selector() {
+fn p1monk_target_tile_casts_include_all_five_base_vocations() {
     use oteryn_gameplay_content::content::spell_data::Vocation;
-    let mut wrongly_allowed = Vec::new();
+    // Crystal #1048/#1099 donor fix: add BASE_ID.MONK to boss area filters.
+    // https://github.com/zimbadev/crystalserver/issues/1099
     for (slug, index) in [
         ("gaz_haragoth", 10),
         ("eruption_of_destruction", 1),
@@ -1113,11 +1114,7 @@ fn srx3_target_tile_casts_retain_exact_four_base_vocation_selector() {
             )
             .expect("actual due source stage");
         assert_eq!(plans.len(), 1);
-        for vocation in [Vocation::None, Vocation::Monk, Vocation::ExaltedMonk] {
-            if plans[0].permits_player_vocation(vocation) {
-                wrongly_allowed.push((slug, vocation));
-            }
-        }
+        assert!(!plans[0].permits_player_vocation(Vocation::None));
         for vocation in [
             Vocation::Sorcerer,
             Vocation::MasterSorcerer,
@@ -1127,14 +1124,15 @@ fn srx3_target_tile_casts_retain_exact_four_base_vocation_selector() {
             Vocation::RoyalPaladin,
             Vocation::Knight,
             Vocation::EliteKnight,
+            Vocation::Monk,
+            Vocation::ExaltedMonk,
         ] {
-            assert!(plans[0].permits_player_vocation(vocation));
+            assert!(
+                plans[0].permits_player_vocation(vocation),
+                "{slug}: {vocation:?}"
+            );
         }
     }
-    assert!(
-        wrongly_allowed.is_empty(),
-        "pinned target-tile Lua lists exactly four base IDs: {wrongly_allowed:?}"
-    );
 }
 
 #[test]

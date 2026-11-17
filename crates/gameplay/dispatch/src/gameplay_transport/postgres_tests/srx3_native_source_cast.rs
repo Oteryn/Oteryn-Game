@@ -195,6 +195,7 @@ fn source_cast_case(
         false,
         false,
         false,
+        crate::gameplay_transport::actor_spell::tests::FACTS.vocation,
     )
 }
 
@@ -214,6 +215,7 @@ fn source_cast_case_inner(
     prove_null_corpse: bool,
     prove_heart_death: bool,
     prove_full_ground: bool,
+    vocation: crate::spell::Vocation,
 ) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -316,7 +318,7 @@ fn source_cast_case_inner(
             {
                 let runtime = owner.runtime.lock().await;
                 owner.states.spell_states.lock().await.initialize(&runtime,deps.actor,deps.admitted.game_session_id,
-                    crate::spell::cast::CharacterCastFacts {max_health:oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+                    crate::spell::cast::CharacterCastFacts {vocation, max_health:oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
                         ..crate::gameplay_transport::actor_spell::tests::FACTS},(0,0),owner.owner_now()).ok_or("player spell state")?;
             }
             let heart_vortex = if prove_heart_death {
@@ -457,6 +459,15 @@ fn source_cast_case_inner(
                 owner.drain_monster_melee().await;
                 let runtime = owner.runtime.lock().await;
                 assert!(!runtime.native_callback_movement_locked(caster).map_err(debug)?, "actual source 4s event unlocks its original caster");
+                if expect_damage {
+                    let states = owner.states.spell_states.lock().await;
+                    let (occurrence, _, receipt) = states.source_damage_receipt_for_test(
+                        deps.actor, deps.admitted.game_session_id,
+                    ).ok_or("Monk must receive the actual physical_spell callback damage")?;
+                    assert!(occurrence.starts_with("callback:"), "callback receipt required: {occurrence}");
+                    assert!(receipt.applied > 0, "affected Monk must lose HP");
+                    assert!(receipt.health_after < oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL);
+                }
 
             } else {
             assert_eq!(damaged, expect_damage,
@@ -624,6 +635,7 @@ fn srx3_outburst_actual_null_death_materializes_empty_uncredited_corpse_postgres
         true,
         false,
         false,
+        crate::gameplay_transport::actor_spell::tests::FACTS.vocation,
     )
 }
 
@@ -650,6 +662,7 @@ fn srx3_outburst_actual_null_death_runs_copied_heart_vortex_and_current_player_p
         false,
         true,
         false,
+        crate::gameplay_transport::actor_spell::tests::FACTS.vocation,
     )
 }
 
@@ -675,5 +688,46 @@ fn srx3_outburst_full_ground_refusal_reconciles_and_releases_source_owner_postgr
         false,
         true,
         true,
+        crate::gameplay_transport::actor_spell::tests::FACTS.vocation,
+    )
+}
+
+// Crystal #1048/#1099: the base-vocation filter must include Monk (and its promotion).
+#[test]
+fn p1monk_tenebris_physical_spell_hits_monk_postgres() -> TestResult {
+    monk_tenebris_case(crate::spell::Vocation::Monk)
+}
+
+#[test]
+fn p1monk_tenebris_physical_spell_hits_exalted_monk_postgres() -> TestResult {
+    monk_tenebris_case(crate::spell::Vocation::ExaltedMonk)
+}
+
+fn monk_tenebris_case(vocation: crate::spell::Vocation) -> TestResult {
+    source_cast_case_inner(
+        crate::content::bosses::activity_template::PinnedActivitySourceRoom::CallbackLadyTenebris,
+        "lady_tenebris",
+        "oteryn:ability.spell.tenebris_ultimate",
+        MovementLocalPosition {
+            x: 32913,
+            y: 31599,
+            floor: 14,
+        },
+        MovementLocalPosition {
+            x: 32913,
+            y: 31600,
+            floor: 14,
+        },
+        true,
+        Some(MovementLocalPosition {
+            x: 32912,
+            y: 31599,
+            floor: 14,
+        }),
+        false,
+        false,
+        false,
+        false,
+        vocation,
     )
 }
