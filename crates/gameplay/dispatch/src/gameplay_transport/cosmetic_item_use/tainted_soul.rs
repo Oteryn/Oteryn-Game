@@ -1,6 +1,9 @@
-//! Timing and credit for Sacred Antler Talisman redemption.
+//! Spawn and expiry after the Sacred Antler Talisman credit commits.
 
-use std::time::Duration;
+use super::super::ComposedFreshAdmission;
+use crate::content::{CollisionClass, LogicalCell, native_gameplay::NativeGameplayState};
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementLocalPosition};
+use std::{sync::Mutex, time::Duration};
 
 struct RedemptionTiming {
     tainted_remove_after: Duration,
@@ -31,11 +34,6 @@ mod tests {
         assert_eq!(open.redeemed_remove_after, Some(Duration::from_secs(30)));
     }
 }
-
-use super::super::ComposedFreshAdmission;
-use crate::content::{CollisionClass, LogicalCell, native_gameplay::NativeGameplayState};
-use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementLocalPosition};
-use std::sync::Mutex;
 
 const TAINTED: &str = "oteryn:creature.tainted_soul";
 const REDEEMED: &str = "oteryn:creature.redeemed_soul";

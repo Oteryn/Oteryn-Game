@@ -121,6 +121,12 @@ fn scenario(admin: &str) -> TestResult {
                 .map_err(|()| "redemption USE failed")?
                 .ok_or("redemption not registered")?;
             assert_eq!(first.disposition, UseDisposition::Committed);
+            let duplicate = owner
+                .use_quest_tool(actor, command(22), intent(wild_entity), None, None)
+                .await
+                .map_err(|()| "duplicate redemption USE failed")?
+                .ok_or("duplicate redemption was not handled")?;
+            assert_eq!(duplicate.disposition, UseDisposition::Rejected);
 
             let redeemed = {
                 let runtime = deps.runtime.lock().await;

@@ -951,7 +951,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if redeem {
                 guard.publish_redemption(|runtime| {
                     if matches!(result, QuestTransitionOutcome::Committed(_)) {
-                        self.publish_tainted_soul_redemption(runtime, actor, capture_target.ok_or(())?, native)?;
+                        self.publish_tainted_soul_redemption(
+                            runtime,
+                            actor,
+                            capture_target.ok_or(())?,
+                            native,
+                        )?;
                     }
                     Ok(())
                 })?;
@@ -961,11 +966,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         drop(capture_guard);
         drop(creature_runtime);
-        if redeem && matches!(result, QuestTransitionOutcome::Committed(_)) {
-            self.states.spell_states.lock().await.owner_wake.notify_one();
-        }
         drop(sequence);
         drop(permit);
+        if redeem && matches!(result, QuestTransitionOutcome::Committed(_)) {
+            self.states
+                .spell_states
+                .lock()
+                .await
+                .owner_wake
+                .notify_one();
+        }
         let disposition = if matches!(
             result,
             QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)
