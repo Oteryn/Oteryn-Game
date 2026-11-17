@@ -276,5 +276,8 @@ async fn scenario(admin: String) -> TestResult {
             assert!(feedback.is_empty());
         }
     }
+    drop(owner);
+    drop(authority);
+    drop(seal);
     h.cleanup().await
 }
