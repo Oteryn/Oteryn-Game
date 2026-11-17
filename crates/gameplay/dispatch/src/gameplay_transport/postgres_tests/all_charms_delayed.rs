@@ -1206,13 +1206,10 @@ async fn cast_through_retired_holder(
     intent: actor_spell::SpellCastIntent,
 ) -> TestResult {
     let mut blocker = h.pool.begin().await?;
-    // The caster's equipment row: the cast pass locks it, the party presence pass does not.
-    sqlx::query(
-        "SELECT 1 FROM game_character_equipment_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE",
-    )
-    .bind(id(41).as_slice())
-    .execute(&mut *blocker)
-    .await?;
+    // Only the cast pass writes a spell item receipt; reads stay open to earlier passes.
+    sqlx::query("LOCK TABLE game_spell_item_receipts IN EXCLUSIVE MODE")
+        .execute(&mut *blocker)
+        .await?;
     let release = async {
         tokio::time::sleep(crate::durability::DB_PASS_DEADLINE * 2).await;
         blocker.rollback().await
