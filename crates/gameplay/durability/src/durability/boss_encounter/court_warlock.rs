@@ -1,10 +1,12 @@
 //! Source lever admission uses the shared Character boss cooldown owner.
-use super::super::{DurabilityError, DurabilityRoot};
 use super::super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::super::character_progression::assert_item_only_fence;
-use super::super::db::{begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations};
+use super::super::db::{
+    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+};
 use super::super::item_transfer::CurrentCharacterItemFence;
 use super::super::runtime_scope_assignment::NodeIncarnationProof;
+use super::super::{DurabilityError, DurabilityRoot};
 use super::cooldown_storage::{self, BossCooldownAdmissionData, BossCooldownChange, BossRewardKey};
 use oteryn_gameplay_quests::quest::world_callbacks::court_warlock as source;
 
@@ -24,11 +26,19 @@ impl DurabilityRoot {
             return Ok(false);
         }
         party.sort_by_key(|f| *f.character_id.as_bytes());
-        if party.windows(2).any(|pair| pair[0].character_id == pair[1].character_id)
-            || party.iter().any(|f| f.runtime_scope != party[0].runtime_scope
-                || f.scope_ownership_generation != party[0].scope_ownership_generation)
-        { return Ok(false); }
-        let recovery = authority.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        if party
+            .windows(2)
+            .any(|pair| pair[0].character_id == pair[1].character_id)
+            || party.iter().any(|f| {
+                f.runtime_scope != party[0].runtime_scope
+                    || f.scope_ownership_generation != party[0].scope_ownership_generation
+            })
+        {
+            return Ok(false);
+        }
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| {
             Box::pin(async move {

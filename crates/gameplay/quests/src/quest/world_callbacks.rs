@@ -45,11 +45,11 @@ mod clear_area;
 pub use clear_area::ClearArea;
 mod clock;
 mod completed_quests;
-pub mod court_warlock;
 mod counter_initials;
 #[cfg(test)]
 mod counter_initials_tests;
 mod counterparts;
+pub mod court_warlock;
 mod craft_epoch;
 mod dense_ground;
 mod dense_step_teleport;
@@ -669,7 +669,9 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String
 
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
-    callbacks.extend(parse(&serde_json::json!({"schema":1,"callbacks":[court_warlock::callback()?]}).to_string())?);
+    callbacks.extend(parse(
+        &serde_json::json!({"schema":1,"callbacks":[court_warlock::callback()?]}).to_string(),
+    )?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/questpc5-nomads-cabinet.json"
     ))?);

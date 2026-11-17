@@ -1306,7 +1306,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
         }
         if court_warlock::owns(callback) && !close {
-            return self.execute_court_warlock(runtime, states, actor, session, map, callback, key, expected_revision, after, cause).await;
+            return self
+                .execute_court_warlock(
+                    runtime,
+                    states,
+                    actor,
+                    session,
+                    map,
+                    callback,
+                    key,
+                    expected_revision,
+                    after,
+                    cause,
+                )
+                .await;
         }
         if callback.effects.encounter.is_some() && !close {
             let disposition = self.execute_quest_encounter(

@@ -4,15 +4,28 @@ use super::{Callback, Position};
 
 pub const KEY: &str = "oteryn:quest-callback/cwarlock/lever";
 pub const QUEST: &str = "oteryn:quest.the_order_of_the_stag_quest";
-pub const TRACK: &str = "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline";
+pub const TRACK: &str =
+    "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline";
 pub const BOSS: &str = "oteryn:boss.court_warlock";
-pub const EXIT: Position = Position { x: 33842, y: 32141, floor: -3 };
+pub const EXIT: Position = Position {
+    x: 33842,
+    y: 32141,
+    floor: -3,
+};
 
 pub fn callback() -> Result<Callback, String> {
-    let center = Position { x: 33838, y: 32141, floor: -2 };
-    let players: Vec<_> = (32142..=32146).map(|y| serde_json::json!({
-        "from": Position { x: 33842, y, floor: -3 }, "to": center
-    })).collect();
+    let center = Position {
+        x: 33838,
+        y: 32141,
+        floor: -2,
+    };
+    let players: Vec<_> = (32142..=32146)
+        .map(|y| {
+            serde_json::json!({
+                "from": Position { x: 33842, y, floor: -3 }, "to": center
+            })
+        })
+        .collect();
     serde_json::from_value(serde_json::json!({
         "key": KEY, "quest": QUEST, "trigger": "use",
         "selector": {"position": {"x":33843,"y":32147,"floor":-3},
