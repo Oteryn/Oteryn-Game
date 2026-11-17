@@ -9,7 +9,8 @@ use crate::domain::progression::{FiniteProgressionPolicy, ProgressionRevisionCon
 use crate::durability::DurabilityRoot;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::character_build::{
-    BuildCause, BuildChangeRequest, BuildOccurrence, NO_VOCATION, convert_vocation,
+    BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, NO_VOCATION,
+    convert_vocation,
 };
 use crate::durability::character_progression::{
     CurrentCharacterGameplayFence, ExperienceAwardRequest, ExperienceRewardOccurrence,
@@ -153,14 +154,46 @@ pub(super) async fn prepare_character_with_policy<const N: usize>(
         .read_character_build_state(authority, character)
         .await
         .map_err(debug)?;
-    if before.vocation() != NO_VOCATION
-        || root
-            .read_character_progression(authority, character)
-            .await
-            .map_err(debug)?
-            .is_some()
-    {
-        return Err("spell fixture requires a fresh disposable Character".into());
+    let progression = root
+        .read_character_progression(authority, character)
+        .await
+        .map_err(debug)?;
+    if before.vocation() != NO_VOCATION {
+        return Err("spell fixture vocation is set".into());
+    }
+    if before != DurableBuildState::default() {
+        return Err("spell fixture build is not initial".into());
+    }
+    if let Some(state) = &progression {
+        if state.level != 1
+            || !policy.thresholds.first().is_some_and(|first| {
+                first.level == 1 && state.total_experience == first.minimum_experience
+            })
+        {
+            return Err("spell fixture progression level or XP is not initial".into());
+        }
+        if state.context != policy.context {
+            return Err("spell fixture progression context mismatch".into());
+        }
+        if state.policy_revision != policy.policy_revision {
+            return Err("spell fixture progression policy revision mismatch".into());
+        }
+        if state.reward_revision != policy.reward_revision {
+            return Err("spell fixture progression reward revision mismatch".into());
+        }
+        // Admission/offline settlement and logout advance revisions even with an
+        // unchanged build. Retained XP/death receipts distinguish earned history
+        // from those checkpoints, including XP that later returned to zero.
+        if state.character_revision.get() != 1
+            && root
+                .has_character_experience_or_death_receipts(authority, character)
+                .await
+                .map_err(debug)?
+        {
+            return Err(
+                "spell fixture noninitial progression revision has XP or death history".into(),
+            );
+        }
     }
     if policy.context != context {
         return Err("qualification policy context mismatch".into());
@@ -184,19 +217,27 @@ pub(super) async fn prepare_character_with_policy<const N: usize>(
             .map_err(debug)?
             .revision,
     };
-    root.initialize_character_progression(
-        authority,
-        node,
-        fence,
-        ProgressionInitializationRequest {
-            context: context.clone(),
-            policy_revision: policy.policy_revision.clone(),
-            reward_revision: policy.reward_revision.clone(),
-            policy: policy.clone(),
-        },
-    )
-    .await
-    .map_err(debug)?;
+    if progression
+        .as_ref()
+        .is_some_and(|state| state.character_revision != fence.expected_character_revision)
+    {
+        return Err("spell fixture progression revision differs from current root revision".into());
+    }
+    if progression.is_none() {
+        root.initialize_character_progression(
+            authority,
+            node,
+            fence,
+            ProgressionInitializationRequest {
+                context: context.clone(),
+                policy_revision: policy.policy_revision.clone(),
+                reward_revision: policy.reward_revision.clone(),
+                policy: policy.clone(),
+            },
+        )
+        .await
+        .map_err(debug)?;
+    }
     if level > 1 {
         slot.commit_experience(
             root,

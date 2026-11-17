@@ -456,6 +456,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if config.source_digest() != content.source_digest() {
             return Err(());
         }
+        let login_fence =
+            crate::gameplay_transport::character_gameplay_fence::current(self, session, false)
+                .await
+                .ok_or(())?;
+        let stored = self
+            .root
+            .read_character_familiar_state(self.character, login_fence.character_id)
+            .await
+            .map_err(|_| ())?;
+        let nothing_to_restore =
+            stored.state().familiar_definition.is_none()
+                && stored.state().saved_expiry_unix == 0
+                && stored.state().cooldowns.is_empty()
+                && stored.state().lifecycle.as_ref().is_none_or(|lifecycle| {
+                    !lifecycle.open && lifecycle.familiar_remaining_ms == 0
+                });
+        if nothing_to_restore {
+            let runtime = self.runtime.lock().await;
+            let states = self.states.spell_states.lock().await;
+            if !current_owner(&runtime, &login_fence, actor, session)
+                || runtime.content_pin().server_artifact_digest() != content.source_digest()
+            {
+                return Err(());
+            }
+            states.get(&runtime, actor, session).ok_or(())?;
+            let live_familiar = runtime
+                .owned_companions(actor, session)
+                .map_err(|_| ())?
+                .iter()
+                .any(|companion| companion.state.policy.is_familiar);
+            // Crystal Login with no summoned familiar has no restoration to perform.
+            // A logout may have persisted an empty closed checkpoint. It grants no
+            // Premium benefit and needs no cast projection. #2199's stored or pending
+            // lifecycle/cooldown work still follows the complete fail-closed path.
+            if !live_familiar && !states.has_pending_familiar(actor, session) {
+                return Ok(None);
+            }
+        }
         let owned = self
             .read_familiar_lifecycle_inputs(actor, session, content, access)
             .await?;
@@ -2019,7 +2057,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             crate::spell::harmony::HarmonyMultiplier::ONE,
                             now.get(),
                         )
-                        .map_err(|_| ())?,
+                        .map_err(|error| {
+                            if matches!(event, FamiliarOwnerEvent::Login(_)) {
+                                crate::gameplay_transport::operator_event(&format!(
+                                    "event=familiar_login_refused step=caster_projection reason={error:?}"
+                                ));
+                            }
+                        })?,
                 )
             };
             let settings = source
