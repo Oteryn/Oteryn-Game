@@ -2850,6 +2850,9 @@ pub(super) async fn journeys(
     if let Err(error) = &profile_result {
         evidence(&format!("world_profile state=failed error={error}"));
     }
+    // Index 0 logged out on the saved temple tile; its release must finish before
+    // index 1 is re-admitted, or the lingering occupant displaces the fresh admission.
+    wait_character_released(clients, 0).await?;
     let mut client = connect_world(clients, 0x71).await?;
     for capability in [17, 18, 151, 152, 153, 179, 230] {
         if !client.selected_capabilities().contains(&capability) {

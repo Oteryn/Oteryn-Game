@@ -280,6 +280,8 @@ pub(super) async fn run(
             return Err(format!("E2EF3 fresh admission logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
         }
         drop(client);
+        // Index 0 may still hold the saved tile; wait for its release before re-admitting.
+        super::wait_character_released(clients, 0).await?;
         client = connect_world(clients, 0x79).await?;
         let fresh_session = client.join_snapshot().game_session_id;
         let fresh_position = client.world_spatial().actor_position;
