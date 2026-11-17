@@ -183,7 +183,7 @@ pub(super) async fn exercise(
             .ok_or("capabilities")?;
     let [storkus] = super::classic_quests::install(owner, admitted, ["oteryn:npc.storkus"]).await?;
     let mut bags = Vec::new();
-    let mut occurrence = 0;
+    let mut occurrence = 500;
     super::qengine_outfit_stories::supply(
         owner,
         admitted,
@@ -232,10 +232,11 @@ pub(super) async fn exercise(
         let reached = i64::try_from(index)? + 1;
         if index > 0 {
             // One token short of the rank: the whole exchange refuses and nothing is spent.
+            // `supply` adds one surplus item to any request above one, so ask for one less.
             let short = ItemAmount {
                 fluid_subtype: None,
                 item: TOKEN.into(),
-                count: count - 1,
+                count: count - 2,
             };
             super::qengine_outfit_stories::supply(
                 owner,

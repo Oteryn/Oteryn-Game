@@ -1456,9 +1456,21 @@ pub(super) async fn exercise(
     // the largest source recipes, preserving every native weight check.
     if matches!(
         family,
-        "battle-mage" | "royal-costume" | "pirate" | "oriental" | "knight" | "hunter" | "mage"
+        "battle-mage"
+            | "royal-costume"
+            | "pirate"
+            | "oriental"
+            | "knight"
+            | "hunter"
+            | "mage"
+            | "warrior"
     ) {
-        let carrying_level = if family == "royal-costume" { 200 } else { 50 };
+        // 101 turtle shells and 101 iron ores outweigh a level-50 carrier.
+        let carrying_level = if matches!(family, "royal-costume" | "warrior") {
+            200
+        } else {
+            50
+        };
         earn_level(owner, admitted, authority, carrying_level).await?;
     }
     if family == "oriental" {
