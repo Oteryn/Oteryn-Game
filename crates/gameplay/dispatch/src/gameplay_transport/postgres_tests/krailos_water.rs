@@ -209,11 +209,7 @@ async fn exercise(h: &Harness) -> TestResult {
     talk(&mut owner, &admitted, ghorza, 104, "hi").await?;
     talk(&mut owner, &admitted, ghorza, 105, "water").await?;
     let accepted = talk(&mut owner, &admitted, ghorza, 106, "yes").await?;
-    assert!(
-        accepted
-            .iter()
-            .any(|line| line.contains("take enchanted jar"))
-    );
+    assert!(accepted.iter().any(|line| line == "Here you are."));
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
     )
@@ -332,7 +328,7 @@ async fn exercise(h: &Harness) -> TestResult {
     .execute(&h.pool)
     .await?;
     owner.reset_epoch = 6;
-    owner.refresh_krailos_lake().await;
+    owner.refresh_terrain_tools().await;
     assert_eq!(appearance_at(&owner, pour)?, 22420);
     assert_eq!(appearance_at(&owner, purify)?, 22414);
     Ok(())
