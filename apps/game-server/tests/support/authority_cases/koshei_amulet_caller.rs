@@ -302,7 +302,7 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
         item_fence: Some(fence.item_fence()),
     };
     admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 11, 15, 18])
+        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
             .ok_or("capabilities")?;
     let payload = encode_item_use_intent(&UseIntent {
         target: UseTarget::Item(std::num::NonZeroU64::MIN),
