@@ -4272,8 +4272,10 @@ async fn tile_items(
         .ok_or("C16d purchased single backpack handle absent")?;
     client.take_events();
     let after = client.last_server_sequence();
-    let moved = client
-        .move_item(&oteryn_dev_client::ItemMoveIntent {
+    // `Session::move_item` refuses a Ground destination as Malformed; use the negotiated move.
+    let moved = oteryn_dev_client::client_runtime::inventory::send(
+        client.session_mut(),
+        oteryn_dev_client::client_runtime::inventory::MoveRequest {
             source: handle,
             destination: oteryn_dev_client::ItemMoveDestination::Ground(
                 oteryn_protocol_oteryn::item_view::WorldTilePosition {
@@ -4282,8 +4284,11 @@ async fn tile_items(
                     floor: at.floor,
                 },
             ),
-        })
-        .await?;
+            count: None,
+        },
+    )
+    .await?
+    .ok_or("C16d drop: ground move capability not selected")?;
     if moved.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved {
         return Err(format!("C16d ordinary backpack drop refused: {moved:?}").into());
     }

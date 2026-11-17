@@ -171,12 +171,17 @@ async fn drop_first(
     let at = ground(client);
     let before = quantity(client, item.item_definition_ref)?;
     client.take_events();
-    let moved = client
-        .move_item(&ItemMoveIntent {
+    // `Session::move_item` refuses a Ground destination as Malformed; use the negotiated move.
+    let moved = oteryn_dev_client::client_runtime::inventory::send(
+        client.session_mut(),
+        oteryn_dev_client::client_runtime::inventory::MoveRequest {
             source: item.handle,
             destination: ItemMoveDestination::Ground(at),
-        })
-        .await?;
+            count: None,
+        },
+    )
+    .await?
+    .ok_or("step=drop observed=ground-move-capability-not-selected")?;
     if moved.outcome != ItemMoveOutcome::Moved {
         return Err(format!("step=drop observed={:?};needed=Moved", moved.outcome).into());
     }
