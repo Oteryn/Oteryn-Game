@@ -293,6 +293,47 @@ fn scenario() -> TestResult {
             owner.current_mount(dependencies.actor, session).await,
             Some(0)
         );
+        let fence = owner
+            .current_quest_fence(session)
+            .await
+            .map_err(debug)?
+            .ok_or("expired rental appearance fence")?;
+        let expired = h
+            .root
+            .read_current_character_appearance_state(&authority, &h.node, fence, Vec::new())
+            .await
+            .map_err(debug)?;
+        let catalogue = crate::gameplay_transport::appearance_change::catalogue::catalogue(
+            &cosmetics,
+            &expired,
+            fence.expected_character_revision.get(),
+            context,
+        )
+        .ok_or("expired rental catalogue")?;
+        assert!(!catalogue.mounts.iter().any(|key| key == mount));
+        let prior = catalogue.selected.ok_or("persisted mount selection")?;
+        let mut selection = prior.selection.clone();
+        selection.mount_key = None;
+        assert!(matches!(
+            owner
+                .appearance_change(
+                    dependencies.actor,
+                    UseCommand {
+                        game_session_id: session,
+                        command_id: 102,
+                        item_fence: Some(fence.item_fence()),
+                    },
+                    wire::Change {
+                        context,
+                        expected_root_revision: catalogue.root_revision,
+                        prior: Some(prior),
+                        selection,
+                        content_revision: cosmetics.content_revision().into(),
+                    },
+                )
+                .await,
+            Some(wire::ChangeResult::Committed(_))
+        ));
         Ok(())
     })
 }
