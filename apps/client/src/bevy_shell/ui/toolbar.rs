@@ -223,12 +223,11 @@ pub(in crate::bevy_shell) fn project_toolbar(
                 ordered.push((rank, entity, parent.parent()));
             }
             // While playing, the sidebar control buttons replace the text buttons.
-            node.display =
-                if !playing && matches!(control, Some(Control::Options)) {
-                    Display::Flex
-                } else {
-                    Display::None
-                };
+            node.display = if !playing && matches!(control, Some(Control::Options)) {
+                Display::Flex
+            } else {
+                Display::None
+            };
         } else if status || matches!(control, Some(Control::Login | Control::CancelLogin)) {
             node.display = if playing {
                 Display::None

@@ -112,11 +112,7 @@ fn one_fixed_right_sidebar_holds_the_panel_then_the_default_widgets() -> TestRes
     let mut app = playing_app(path.clone())?;
     let sidebar = *app.world().resource::<super::super::Sidebar>();
     let regions = app.world().resource::<super::super::GameRegions>();
-    let panel_order = [
-        regions.minimap,
-        regions.vitals,
-        regions.equipment,
-    ];
+    let panel_order = [regions.minimap, regions.vitals, regions.equipment];
     let panel: Vec<Entity> = app
         .world()
         .get::<Children>(
@@ -139,9 +135,7 @@ fn one_fixed_right_sidebar_holds_the_panel_then_the_default_widgets() -> TestRes
         let node = app.world().get::<Node>(column).ok_or("column")?;
         assert_eq!(node.display == Display::Flex, shown);
     }
-    let mut columns = app
-        .world_mut()
-        .query_filtered::<&Node, With<Column>>();
+    let mut columns = app.world_mut().query_filtered::<&Node, With<Column>>();
     for node in columns.iter(app.world()) {
         assert_eq!(
             (node.width, node.min_width, node.max_width, node.height),
@@ -167,7 +161,11 @@ fn one_fixed_right_sidebar_holds_the_panel_then_the_default_widgets() -> TestRes
     // button manager on the right; no text toolbar while playing.
     let mut shown: Vec<String> = app
         .world_mut()
-        .query::<(&crate::bevy_shell::ui::toolbar::grid::ControlButton, &art::ArtSlot, &Node)>()
+        .query::<(
+            &crate::bevy_shell::ui::toolbar::grid::ControlButton,
+            &art::ArtSlot,
+            &Node,
+        )>()
         .iter(app.world())
         .filter(|(_, _, node)| node.display == Display::Flex)
         .map(|(_, slot, _)| slot.key.clone())
@@ -195,7 +193,13 @@ fn one_fixed_right_sidebar_holds_the_panel_then_the_default_widgets() -> TestRes
     let titles: Vec<&str> = Widget::ALL.iter().map(|widget| widget.title()).collect();
     assert_eq!(
         titles,
-        ["Battle List", "Containers", "Skills", "VIP", "Analytics Selector"]
+        [
+            "Battle List",
+            "Containers",
+            "Skills",
+            "VIP",
+            "Analytics Selector"
+        ]
     );
     let _ = std::fs::remove_file(path);
     Ok(())
@@ -272,11 +276,9 @@ fn sidebar_arrows_add_a_sidebar_and_removing_it_returns_its_widgets() -> TestRes
         app.world().get::<Node>(sidebar.left).ok_or("left")?.display,
         Display::Flex
     );
-    app.world_mut().resource_mut::<SidebarWidgets>().place(
-        Widget::Skills,
-        Dock::Left,
-        None,
-    );
+    app.world_mut()
+        .resource_mut::<SidebarWidgets>()
+        .place(Widget::Skills, Dock::Left, None);
     app.update();
     app.update();
     assert_eq!(

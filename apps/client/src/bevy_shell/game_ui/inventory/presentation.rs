@@ -124,7 +124,10 @@ fn action(
     action: Action,
 ) {
     let Target::Container(binding, _) = action.target;
-    let (name, width) = (format!("inventory.container.{}.{}", binding.view, name), 50.);
+    let (name, width) = (
+        format!("inventory.container.{}.{}", binding.view, name),
+        50.,
+    );
     let entity = commands
         .spawn((
             Name::new(name),

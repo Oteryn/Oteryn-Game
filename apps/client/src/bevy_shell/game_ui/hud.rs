@@ -183,15 +183,15 @@ fn setup(
     }
     let monk = row(&mut commands);
     commands.entity(monk).insert(MonkRow);
-    commands.entity(monk).entry::<Node>().and_modify(|mut node| {
-        node.display = Display::None;
-    });
+    commands
+        .entity(monk)
+        .entry::<Node>()
+        .and_modify(|mut node| {
+            node.display = Display::None;
+        });
     let harmony = super::art::fixed(&mut commands, &skins.font, "status-harmony", STATUS_ICON);
     let label = commands
-        .spawn((
-            MonkLabel,
-            source::text("", font.clone()),
-        ))
+        .spawn((MonkLabel, source::text("", font.clone())))
         .insert(TextColor(Color::WHITE))
         .id();
     let serene = super::art::fixed(&mut commands, &skins.font, "status-serene", STATUS_ICON);
@@ -306,9 +306,21 @@ fn combat_column(commands: &mut Commands, skins: &Skins, equipment: Entity) {
     let pvp = grid(commands, 2);
     commands.entity(column).add_children(&[modes, pvp]);
     for (parent, command, key) in [
-        (modes, Command::Fight(FightMode::Offensive), "combat-offensive"),
-        (modes, Command::Fight(FightMode::Balanced), "combat-balanced"),
-        (modes, Command::Fight(FightMode::Defensive), "combat-defensive"),
+        (
+            modes,
+            Command::Fight(FightMode::Offensive),
+            "combat-offensive",
+        ),
+        (
+            modes,
+            Command::Fight(FightMode::Balanced),
+            "combat-balanced",
+        ),
+        (
+            modes,
+            Command::Fight(FightMode::Defensive),
+            "combat-defensive",
+        ),
         (modes, Command::Chase(ChaseMode::Stand), "combat-stand"),
         (modes, Command::Chase(ChaseMode::Chase), "combat-chase"),
         (modes, Command::Secure(true), "combat-secure"),
@@ -327,9 +339,12 @@ fn combat_column(commands: &mut Commands, skins: &Skins, equipment: Entity) {
             bevy::ui_widgets::Button,
             BorderColor::all(Color::NONE),
         ));
-        commands.entity(slot).entry::<Node>().and_modify(|mut node| {
-            node.border = UiRect::all(px(1.));
-        });
+        commands
+            .entity(slot)
+            .entry::<Node>()
+            .and_modify(|mut node| {
+                node.border = UiRect::all(px(1.));
+            });
         commands.entity(parent).add_child(slot);
     }
 }
@@ -380,7 +395,10 @@ fn activate(
             return;
         }
         Command::BattleFilter(filter) => {
-            let Some(active) = owner.play.as_ref().map(|play| play.link.active_battle_list())
+            let Some(active) = owner
+                .play
+                .as_ref()
+                .map(|play| play.link.active_battle_list())
             else {
                 return;
             };
@@ -445,10 +463,7 @@ fn project(
         Query<&mut Node, (With<MonkRow>, Without<VitalFill>)>,
     ),
     mut fills: Query<(&VitalFill, &mut Node, &mut BackgroundColor), Without<MonkRow>>,
-    mut actions: Query<
-        (Entity, &mut HudAction, Has<InteractionDisabled>),
-        Without<CombatControl>,
-    >,
+    mut actions: Query<(Entity, &mut HudAction, Has<InteractionDisabled>), Without<CombatControl>>,
     mut controls: Query<
         (&mut HudAction, &mut BorderColor, &mut Node),
         (With<CombatControl>, Without<VitalFill>, Without<MonkRow>),

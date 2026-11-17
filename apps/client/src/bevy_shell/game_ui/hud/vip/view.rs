@@ -1,34 +1,32 @@
 use super::*;
-use bevy::picking::hover::Hovered;
+use bevy::picking::{events::PointerClick, hover::Hovered, pointer::PointerButton};
+use bevy::ui_widgets::Activate;
 use oteryn_session::VipPresenceStatus;
 pub(super) fn setup(
     mut commands: Commands,
     regions: Res<super::super::super::GameRegions>,
     skins: Res<Skins>,
 ) {
-    let header = commands
-        .spawn(Node {
-            width: percent(100.),
-            column_gap: px(3.),
-            align_items: AlignItems::Center,
-            ..default()
-        })
-        .id();
-    let title = commands
+    // VipWidget.qml: no header row; the list actions live in the list's right-click menu
+    // and each contact's actions in its own right-click menu.
+    let menu = commands
         .spawn((
-            source::text("VIP", source::font(skins.font.clone(), false)),
+            ListMenu,
+            Name::new("vip.list_menu"),
             Node {
-                flex_grow: 1.,
+                width: percent(100.),
+                flex_direction: FlexDirection::Column,
+                row_gap: px(1.),
+                display: Display::None,
                 ..default()
             },
         ))
         .id();
-    commands.entity(header).add_child(title);
     for (label, command, id) in [
-        ("Add", Action::Add, "vip.add"),
-        ("↻", Action::Refresh, "vip.refresh"),
-        ("Next", Action::Next(0), "vip.next"),
-        ("×", Action::Close, "vip.close"),
+        ("Add new VIP", Action::Add, "vip.add"),
+        ("Next page", Action::Next(0), "vip.next"),
+        ("Refresh", Action::Refresh, "vip.refresh"),
+        ("Close", Action::Close, "vip.close"),
     ] {
         let button = button(
             &mut commands,
@@ -39,14 +37,11 @@ pub(super) fn setup(
                 command,
             },
             label,
-            if matches!(command, Action::Close | Action::Refresh) {
-                18.
-            } else {
-                30.
-            },
+            MENU_WIDTH,
             id,
         );
-        commands.entity(header).add_child(button);
+        commands.entity(button).observe(close_list_menu);
+        commands.entity(menu).add_child(button);
     }
     let list = commands
         .spawn((
@@ -63,8 +58,9 @@ pub(super) fn setup(
                 ..default()
             },
         ))
+        .observe(open_list_menu)
         .id();
-    groups::setup(&mut commands, &skins, list);
+    groups::setup(&mut commands, &skins, list, menu);
     let message = commands
         .spawn((
             Message,
@@ -78,7 +74,52 @@ pub(super) fn setup(
         .id();
     commands
         .entity(regions.vip)
-        .add_children(&[header, list, message]);
+        .add_children(&[menu, list, message]);
+}
+/// Width of the list menu entries.
+pub(super) const MENU_WIDTH: f32 = 160.;
+/// The VIP list's right-click menu.
+#[derive(Component)]
+pub(super) struct ListMenu;
+/// A right-click on the list itself (not on a contact) toggles the list menu.
+fn open_list_menu(
+    event: On<PointerClick>,
+    guard: ModalGuard,
+    owner: NonSend<HostOwner>,
+    mut commands: Commands,
+    menus: Query<(Entity, &Node), With<ListMenu>>,
+) {
+    if event.button != PointerButton::Secondary
+        || event.original_event_target() != event.entity
+        || !guard.allows(event.entity)
+        || !available(&owner)
+    {
+        return;
+    }
+    for (menu, node) in &menus {
+        let display = if node.display == Display::None {
+            Display::Flex
+        } else {
+            Display::None
+        };
+        commands
+            .entity(menu)
+            .entry::<Node>()
+            .and_modify(move |mut node| node.display = display);
+    }
+}
+/// Choosing a list menu entry closes the menu once the entry's own action has run.
+pub(super) fn close_list_menu(
+    _: On<Activate>,
+    mut commands: Commands,
+    menus: Query<Entity, With<ListMenu>>,
+) {
+    for menu in &menus {
+        commands
+            .entity(menu)
+            .entry::<Node>()
+            .and_modify(|mut node| node.display = Display::None);
+    }
 }
 // The retained entry list, action state and labels are independently mutable ECS roles.
 #[allow(clippy::too_many_arguments, clippy::type_complexity)]

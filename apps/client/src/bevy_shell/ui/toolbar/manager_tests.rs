@@ -39,7 +39,10 @@ fn manage_buttons_persists_visibility_order_and_restores_defaults() -> TestResul
     app.update();
     // The default set is the Tibia control-button set; Market is added and moved up and the
     // battle list button is removed.
-    assert_eq!(order(app.world().non_send::<HostOwner>()), super::super::grid::DEFAULT);
+    assert_eq!(
+        order(app.world().non_send::<HostOwner>()),
+        super::super::grid::DEFAULT
+    );
     click(&mut app, |action| {
         matches!(action, Edit::Toggle("shell.market"))
     })?;
@@ -72,11 +75,8 @@ fn manage_buttons_persists_visibility_order_and_restores_defaults() -> TestResul
             super::super::grid::spawn(&mut world.commands(), &skins, region);
         });
     app.world_mut().flush();
-    bevy::ecs::system::RunSystemOnce::run_system_once(
-        app.world_mut(),
-        super::super::grid::project,
-    )
-    .map_err(|error| error.to_string())?;
+    bevy::ecs::system::RunSystemOnce::run_system_once(app.world_mut(), super::super::grid::project)
+        .map_err(|error| error.to_string())?;
     app.world_mut().flush();
     let grid = app
         .world_mut()
@@ -88,7 +88,8 @@ fn manage_buttons_persists_visibility_order_and_restores_defaults() -> TestResul
         .into_iter()
         .filter_map(|entity| {
             let super::super::grid::ControlButton::Grid(control) =
-                *app.world().get::<super::super::grid::ControlButton>(entity)?
+                *app.world()
+                    .get::<super::super::grid::ControlButton>(entity)?
             else {
                 return None;
             };

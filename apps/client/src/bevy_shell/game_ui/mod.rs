@@ -13,6 +13,8 @@ mod cyclopedia_map;
 mod cyclopedia_tests;
 mod cyclopedia_tracker;
 pub(super) use cyclopedia_tracker::toggle as toggle_cyclopedia_tracker;
+#[path = "hud/art.rs"]
+pub(in crate::bevy_shell) mod art;
 mod depot;
 mod feature_dialogs;
 mod feature_forms;
@@ -20,8 +22,6 @@ mod forge;
 pub(super) mod highscores;
 mod hotkeys;
 mod hud;
-#[path = "hud/art.rs"]
-pub(in crate::bevy_shell) mod art;
 pub(in crate::bevy_shell) mod hud_panes;
 mod imbuement_tracker;
 mod imbuing;
@@ -287,9 +287,8 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     let analyzers = region(&mut commands);
     let analytics = region(&mut commands);
     let console_splitter = layout::spawn(&mut commands, chat, "console");
-    let arrows = |commands: &mut Commands, side: hud_panes::Side| {
-        hud_panes::arrows(commands, &skins, side)
-    };
+    let arrows =
+        |commands: &mut Commands, side: hud_panes::Side| hud_panes::arrows(commands, &skins, side);
     let left_arrows = arrows(&mut commands, hud_panes::Side::Left);
     let right_arrows = arrows(&mut commands, hud_panes::Side::Right);
     commands
@@ -320,9 +319,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         docked.push(hud_panes::frame(&mut commands, &skins, widget, content));
     }
     docked.extend([party_dock, trade_dock, analyzers]);
-    commands
-        .entity(right_widgets)
-        .insert_children(0, &docked);
+    commands.entity(right_widgets).insert_children(0, &docked);
     commands.insert_resource(GameRegions {
         vitals,
         minimap,

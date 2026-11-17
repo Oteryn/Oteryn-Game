@@ -359,7 +359,10 @@ fn stat_box(commands: &mut Commands, skins: &Skins, parent: Entity, caption: &st
         ))
         .id();
     let caption = commands
-        .spawn(source::text(caption, source::font(skins.font.clone(), true)))
+        .spawn(source::text(
+            caption,
+            source::font(skins.font.clone(), true),
+        ))
         .id();
     let value = commands
         .spawn(source::text(value, source::font(skins.font.clone(), true)))

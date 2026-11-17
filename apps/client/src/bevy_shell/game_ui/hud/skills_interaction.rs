@@ -8,7 +8,6 @@ use std::time::Duration;
 
 #[derive(Clone, Copy, Component)]
 enum Control {
-    Menu,
     Skill(u8),
     Progress,
     Reset,
@@ -123,13 +122,7 @@ fn setup(
     regions: Res<super::super::super::GameRegions>,
     skins: Res<Skins>,
 ) {
-    control(
-        &mut commands,
-        &skins,
-        regions.skills,
-        Control::Menu,
-        "Skills controls",
-    );
+    // SkillsWidget.qml: the settings open from the widget's right-click menu.
     let menu = commands
         .spawn((
             Menu,
@@ -195,7 +188,6 @@ fn activate(
         return;
     };
     match control {
-        Control::Menu => state.menu = !state.menu,
         Control::Reset => state.reset(time.elapsed()),
         _ => {
             let mut prefs = owner.settings.preferences.clone();

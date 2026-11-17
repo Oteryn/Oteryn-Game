@@ -312,12 +312,15 @@ pub(super) fn project(
             }),
         ));
         let menu_button = matches!(command, Command::BattleMenu);
-        commands.entity(slot).entry::<Node>().and_modify(move |mut node| {
-            node.border = UiRect::all(px(1.));
-            if menu_button {
-                node.margin = UiRect::left(Val::Auto);
-            }
-        });
+        commands
+            .entity(slot)
+            .entry::<Node>()
+            .and_modify(move |mut node| {
+                node.border = UiRect::all(px(1.));
+                if menu_button {
+                    node.margin = UiRect::left(Val::Auto);
+                }
+            });
         commands.entity(filters).add_child(slot);
     }
     if menu.0 {

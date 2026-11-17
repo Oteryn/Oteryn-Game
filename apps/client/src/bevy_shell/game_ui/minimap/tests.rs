@@ -77,7 +77,10 @@ fn the_minimap_is_a_tibia_viewport_with_a_rose_and_icon_buttons() -> TestResult 
             .find(|(name, _)| name.as_str() == wanted)
             .map(|(_, node)| (node.width, node.height))
     };
-    assert_eq!(size(&mut app, "Minimap viewport"), Some((px(108.), px(111.))));
+    assert_eq!(
+        size(&mut app, "Minimap viewport"),
+        Some((px(108.), px(111.)))
+    );
     assert_eq!(size(&mut app, "minimap-rose"), Some((px(43.), px(43.))));
     for key in [
         "minimap-floor-up",

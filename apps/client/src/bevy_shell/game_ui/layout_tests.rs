@@ -191,7 +191,8 @@ fn splitter_cancels_when_ui_scale_changes_and_ends_on_release() -> TestResult {
 }
 
 #[test]
-fn game_shell_exposes_only_the_console_handle_and_the_widget_resize_edges() -> Result<(), Box<dyn std::error::Error>> {
+fn game_shell_exposes_only_the_console_handle_and_the_widget_resize_edges()
+-> Result<(), Box<dyn std::error::Error>> {
     let mut app = App::new();
     app.insert_resource(Skins {
         buttons: source::ButtonImages {
@@ -215,7 +216,14 @@ fn game_shell_exposes_only_the_console_handle_and_the_widget_resize_edges() -> R
     names.sort();
     assert_eq!(
         names,
-        ["Resize console", "Resize widget", "Resize widget", "Resize widget", "Resize widget", "Resize widget"]
+        [
+            "Resize console",
+            "Resize widget",
+            "Resize widget",
+            "Resize widget",
+            "Resize widget",
+            "Resize widget"
+        ]
     );
     Ok(())
 }
@@ -273,10 +281,7 @@ fn resized_regions_and_main_window_geometry_survive_a_restart() -> TestResult {
         .map(|(_, splitter)| Ok((splitter.id, size(&restarted, splitter)?)))
         .collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
     sizes.sort_by_key(|(id, _)| *id);
-    assert_eq!(
-        sizes,
-        vec![("console", px(210.))]
-    );
+    assert_eq!(sizes, vec![("console", px(210.))]);
     assert_eq!(
         LayoutStore::load(Some(path.clone())).window(),
         Some([40, 80, 1280, 900])

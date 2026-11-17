@@ -418,11 +418,7 @@ fn activate(
     }
 }
 
-fn move_start(
-    mut event: On<PointerDragStart>,
-    mut bars: Query<&mut TitleBar>,
-    guard: ModalGuard,
-) {
+fn move_start(mut event: On<PointerDragStart>, mut bars: Query<&mut TitleBar>, guard: ModalGuard) {
     if event.button != PointerButton::Primary || !guard.allows(event.entity) {
         return;
     }
@@ -433,6 +429,8 @@ fn move_start(
 }
 /// Drops a dragged widget into the widget pane under the pointer, before the first widget
 /// whose middle lies below it.
+// Bevy injects the independent ECS queries and resources a drop needs.
+#[allow(clippy::too_many_arguments)]
 fn move_end(
     event: On<PointerDragEnd>,
     mut bars: Query<&mut TitleBar>,

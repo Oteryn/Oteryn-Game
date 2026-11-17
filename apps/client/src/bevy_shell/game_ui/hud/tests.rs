@@ -41,13 +41,16 @@ type AppResult = Result<
     Box<dyn std::error::Error>,
 >;
 pub(super) fn app() -> AppResult {
-    app_with(true, Some(ActorVitals {
-        health: 42,
-        max_health: 100,
-        mana: 10,
-        max_mana: 20,
-        ..default()
-    }))
+    app_with(
+        true,
+        Some(ActorVitals {
+            health: 42,
+            max_health: 100,
+            mana: 10,
+            max_mana: 20,
+            ..default()
+        }),
+    )
 }
 fn app_with_vitals(vitals: Option<ActorVitals>) -> AppResult {
     app_with(true, vitals)
@@ -570,7 +573,9 @@ fn edit_lists_button_opens_the_battle_list_editor_form() -> TestResult {
         .world_mut()
         .query::<(Entity, &HudAction)>()
         .iter(app.world())
-        .find_map(|(entity, action)| matches!(action.command, Command::BattleMenu).then_some(entity))
+        .find_map(|(entity, action)| {
+            matches!(action.command, Command::BattleMenu).then_some(entity)
+        })
         .ok_or("battle list menu button")?;
     app.world_mut().trigger(Activate { entity: menu });
     app.update();
@@ -598,13 +603,16 @@ fn edit_lists_button_opens_the_battle_list_editor_form() -> TestResult {
 
 #[test]
 fn the_status_widget_is_a_sidebar_bar_pair_without_prose_or_ids() -> TestResult {
-    let (mut app, _, _) = app_with(false, Some(ActorVitals {
-        health: 150,
-        max_health: 150,
-        mana: 35,
-        max_mana: 90,
-        ..default()
-    }))?;
+    let (mut app, _, _) = app_with(
+        false,
+        Some(ActorVitals {
+            health: 150,
+            max_health: 150,
+            mana: 35,
+            max_mana: 90,
+            ..default()
+        }),
+    )?;
     app.update();
     let vitals = app.world().resource::<super::super::GameRegions>().vitals;
     let rows: Vec<Entity> = app
@@ -631,9 +639,7 @@ fn the_status_widget_is_a_sidebar_bar_pair_without_prose_or_ids() -> TestResult 
         assert_eq!(size(parts[0]), Some((px(12.), px(11.))));
         assert_eq!(size(parts[1]), Some((px(94.), px(11.))));
         assert_eq!(
-            app.world()
-                .get::<Node>(parts[2])
-                .map(|node| node.width),
+            app.world().get::<Node>(parts[2]).map(|node| node.width),
             Some(px(42.))
         );
     }

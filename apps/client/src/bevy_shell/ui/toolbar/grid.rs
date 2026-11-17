@@ -60,7 +60,11 @@ pub(in crate::bevy_shell) fn key(label: &str) -> String {
 fn short(label: &str) -> String {
     let mut words = label.split_whitespace();
     match (words.next(), words.next()) {
-        (Some(first), Some(second)) => first.chars().take(1).chain(second.chars().take(1)).collect(),
+        (Some(first), Some(second)) => first
+            .chars()
+            .take(1)
+            .chain(second.chars().take(1))
+            .collect(),
         (Some(first), None) => first.chars().take(2).collect(),
         _ => String::new(),
     }
@@ -88,7 +92,13 @@ pub(in crate::bevy_shell) fn spawn(commands: &mut Commands, skins: &Skins, regio
             ..default()
         })
         .id();
-    let store = fixed(commands, skins, ControlButton::Store, "control-store", "Store");
+    let store = fixed(
+        commands,
+        skins,
+        ControlButton::Store,
+        "control-store",
+        "Store",
+    );
     commands
         .entity(store)
         .entry::<Node>()
@@ -120,10 +130,7 @@ pub(in crate::bevy_shell) fn spawn(commands: &mut Commands, skins: &Skins, regio
         );
         commands
             .entity(button)
-            .insert((
-                ControlButton::Grid(control),
-                bevy::ui_widgets::Button,
-            ))
+            .insert((ControlButton::Grid(control), bevy::ui_widgets::Button))
             .observe(activate);
         commands.entity(grid).add_child(button);
     }
@@ -171,9 +178,12 @@ fn fixed(
 
 /// The grid buttons the player has enabled, in their order.
 fn enabled(owner: &HostOwner) -> Vec<String> {
-    owner.settings.preferences.toolbar_order.clone().unwrap_or_else(|| {
-        DEFAULT.iter().map(|id| (*id).to_owned()).collect()
-    })
+    owner
+        .settings
+        .preferences
+        .toolbar_order
+        .clone()
+        .unwrap_or_else(|| DEFAULT.iter().map(|id| (*id).to_owned()).collect())
 }
 
 fn activate(

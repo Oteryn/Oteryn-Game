@@ -758,9 +758,13 @@ fn inventory_widget_has_silhouettes_soul_and_cap_and_minimises() -> TestResult {
     keys.sort();
     // The test equipment list has no slots; the widget buttons are always there.
     assert!(
-        ["inventory-blessings", "inventory-minimise", "inventory-purse"]
-            .iter()
-            .all(|key| keys.iter().any(|shown| shown == key)),
+        [
+            "inventory-blessings",
+            "inventory-minimise",
+            "inventory-purse"
+        ]
+        .iter()
+        .all(|key| keys.iter().any(|shown| shown == key)),
         "{keys:?}"
     );
     let texts: Vec<String> = app

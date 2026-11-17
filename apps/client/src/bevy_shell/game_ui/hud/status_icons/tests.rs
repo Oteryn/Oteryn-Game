@@ -57,9 +57,10 @@ fn keys(app: &mut App) -> Result<Vec<String>, Box<dyn std::error::Error>> {
                 .world()
                 .get::<crate::bevy_shell::game_ui::art::ArtSlot>(entity)
                 .is_some_and(|slot| slot.key.starts_with("condition-"))
-                && app.world().get::<Node>(entity).is_some_and(|node| {
-                    (node.width, node.height) == (px(9.), px(9.))
-                })),
+                && app
+                    .world()
+                    .get::<Node>(entity)
+                    .is_some_and(|node| { (node.width, node.height) == (px(9.), px(9.)) })),
             "each state is a 9x9 condition art slot"
         );
     }
