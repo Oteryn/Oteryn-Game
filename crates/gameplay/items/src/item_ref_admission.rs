@@ -235,10 +235,12 @@ mod tests {
     const LOOT_TABLES: &[u8] =
         include_bytes!("../../../../tools/content-schema/native-gameplay/loot-tables.json");
 
+    type LootEntry = (String, String, u64, u64);
+
     /// The `(key, revision, min_count, max_count)` of every entry of the pinned loot `table`.
     fn loot_entries(
         table: &serde_json::Value,
-    ) -> Result<Vec<(String, String, u64, u64)>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<LootEntry>, Box<dyn std::error::Error>> {
         table["entries"]
             .as_array()
             .ok_or("entries")?
