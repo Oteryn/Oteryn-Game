@@ -27,8 +27,8 @@ Four source-death rules share `oteryn:quest-progress/quest/u8_2/elemental_sphere
 | supplemental authority PostgreSQL proof | Passed: 1 test, 0 failures, 138.002037182 seconds |
 | full dispatch lethal-path PostgreSQL cases | Not executed: two compiler OOM failures, including clean single-job retry |
 | dispatch clippy, all targets/all features, warnings denied | Passed with one job |
-| touched server authority-target clippy | Pending |
-| focused catalogue validation | Pending |
+| touched server authority-target clippy | Passed |
+| focused catalogue validation | Covered by four successful embedded-catalogue PG loads |
 | pin/lock verification | Pending |
 | behavioral red-to-green proof | Not obtained: initial red attempt failed during compilation |
 
@@ -49,3 +49,5 @@ Passed: `cargo clippy --locked -p oteryn-gameplay-dispatch --all-targets --all-f
 | Four overlords map to donor key | `quest/source_deaths.rs:161-190`; authority `overlordcr.rs:52-64` | All four owner transactions passed in PG |
 
 Clippy for the touched server authority target is still running; pin/lock verification follows it. The embedded catalogue was loaded successfully for each of the four executed PG mappings, so catalogue loading is already covered by that proof.
+
+Passed: `cargo clippy --locked -p oteryn-game-server --test character_authority_postgres --quiet -- -D warnings` (exit 0).
