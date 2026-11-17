@@ -836,6 +836,9 @@ def main() -> int:
     refresh_source_cohort_extent()
     repin_rust_inventory()
     run(["python3", "tools/content-migration/import_cyclopedia_global.py"])
+    # Qualify current reward identities before the full tree reads their native
+    # Item closure. Removed substitute admissions cannot bootstrap stale claims.
+    run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py", "content"])
     run(["python3", "tools/content-migration/world_project_v2_to_tree.py"])
     # Native policies seal the complete regenerated creature root. Keep their
     # bounded, independently reviewed source witnesses in the same generation.
