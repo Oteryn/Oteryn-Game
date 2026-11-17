@@ -6,3 +6,9 @@ services:
     environment:
       GAME_AUTH_CHARACTER_BOOTSTRAP_INTENT_TTL_SECONDS: "300"
       GAME_AUTH_CHARACTER_BOOTSTRAP_INTENT_MTLS_CLIENT_IDENTITY: CN=oteryn-game-native-evidence
+      PRODUCTS_ENTITLEMENTS_PREMIUM_SNAPSHOT_ENABLED: "true"
+      PRODUCTS_ENTITLEMENTS_PREMIUM_SNAPSHOT_MTLS_CLIENT_IDENTITY: CN=oteryn-game-premium-fixture
+      PLATFORM_BUILD_REVISION: ${NODE_BOOT_PLATFORM_PIN:?set NODE_BOOT_PLATFORM_PIN}
+  nginx:
+    volumes:
+      - ${GAME_SOURCE}/tools/qualification/node_boot/premium.conf:/etc/nginx/qualification/premium.conf:ro

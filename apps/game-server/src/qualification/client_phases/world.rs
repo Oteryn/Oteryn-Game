@@ -2354,6 +2354,18 @@ async fn walk(
     world: &BundleWorld,
     path: &[StepDirection],
 ) -> TestResult {
+    walk_observing(client, world, path, |_, _| Ok(())).await
+}
+
+async fn walk_observing(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+    mut observe: impl FnMut(
+        &oteryn_dev_client::DevClientSession,
+        Vec<oteryn_dev_client::SessionEvent>,
+    ) -> TestResult,
+) -> TestResult {
     for &direction in path {
         let before = client.world_spatial().actor_position;
         let mut outcome = client.step_retrying(direction).await?;
@@ -2394,7 +2406,8 @@ async fn walk(
             )
             .into());
         }
-        client.take_events();
+        let events = client.take_events();
+        observe(client, events)?;
     }
     Ok(())
 }

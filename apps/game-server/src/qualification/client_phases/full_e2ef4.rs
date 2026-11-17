@@ -1017,6 +1017,23 @@ async fn converter_state(clients: &SeamClients<'_>) -> TestResult<ConverterState
     }).await?
 }
 
+async fn converter_retired(clients: &SeamClients<'_>, id: &[u8]) -> TestResult<bool> {
+    use sqlx::Connection as _;
+    tokio::time::timeout(Duration::from_secs(5), async {
+        let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+        Ok(sqlx::query_scalar::<_, bool>(
+            "SELECT EXISTS(SELECT 1 FROM game_item_instances
+             WHERE item_instance_id = encode($1,'hex')::uuid
+               AND world_id = encode($2,'hex')::uuid AND lifecycle = 2 AND quantity = 0)",
+        )
+        .bind(id)
+        .bind(clients.world.as_slice())
+        .fetch_one(&mut connection)
+        .await?)
+    })
+    .await?
+}
+
 async fn converter_checks(
     row: &mut Row,
     client: &mut DevClientSession,
@@ -1055,6 +1072,9 @@ async fn converter_checks(
         .await?;
         let after = converter_state(clients).await?;
         let remaining = after.get(id).map(|(_, charges)| *charges);
+        if charges == 1 && !converter_retired(clients, id).await? {
+            return Err("E03 last charge did not retire the exact durable converter".into());
+        }
         if !converter_charge_matches(charges, remaining, charges == 1) {
             return Err(
                 format!("E03 converter charge custody mismatch: {charges}->{remaining:?}").into(),
@@ -1161,6 +1181,73 @@ async fn converter_checks(
     Ok(())
 }
 
+async fn make_gold_lot(
+    client: &mut DevClientSession,
+    refs: &[std::num::NonZeroU32; 3],
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+    let platinum = carried_coin(client, refs[1], |quantity| quantity == 1)
+        .ok_or("E03 funding withdrawal did not supply one platinum")?;
+    let before = coin_counts(&inventory_units(client)?, refs);
+    let change = client.use_item(platinum.handle).await?;
+    if change.disposition != UseDisposition::Committed {
+        return Err(format!("E03 assembling the gold lot: {change:?}").into());
+    }
+    settle(client, "gold-lot-change", |now| {
+        coin_counts(now, refs) == [before[0] + 100, before[1] - 1, before[2]]
+    })
+    .await?;
+    if carried_coin(client, refs[0], |count| count == 100).is_none() {
+        return Err("E03 coin change never delivered the exact gold lot".into());
+    }
+    Ok(())
+}
+
+async fn provision_converters(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+) -> TestResult {
+    let defs = provisioning::item_index()?;
+    let temporary = provisioning::item_reference(&defs, 25719)?;
+    let magic = provisioning::item_reference(&defs, 28525)?;
+    if carried_coin(client, temporary, |_| true).is_some()
+        && carried_coin(client, magic, |_| true).is_some()
+    {
+        return Ok(());
+    }
+    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let script = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tools/qualification/node_boot/provision.py");
+    let task = tokio::task::spawn_blocking(move || {
+        std::process::Command::new("sudo")
+            .args(["-n", "python3"])
+            .arg(script)
+            .args([
+                "--socket",
+                &socket,
+                "--session",
+                &session,
+                "--profile",
+                "coin-converters",
+            ])
+            .status()
+            .map_err(|error| error.to_string())
+    });
+    if !wait_fixture_command(task, async || {
+        client.service_liveness(Duration::from_millis(100)).await?;
+        client.take_events();
+        Ok(())
+    })
+    .await?
+    .success()
+    {
+        return Err("E03 audited converter fixture refused".into());
+    }
+    relog(client, clients).await?;
+    Ok(())
+}
+
 async fn coins(
     row: &mut Row,
     client: &mut DevClientSession,
@@ -1174,7 +1261,7 @@ async fn coins(
     for (action, used, pick, spend, spent, gain, gained) in coin_steps() {
         if carried_coin(client, refs[used], pick).is_none() {
             let funding: &[u64] = match action {
-                "gold-up" => &[99, 1],
+                "gold-up" => &[100],
                 "platinum-down" => &[100],
                 "crystal-down" => &[10_000],
                 _ => &[],
@@ -1185,6 +1272,9 @@ async fn coins(
             {
                 failures.push(format!("{action}: denomination funding failed: {error}"));
             }
+        }
+        if action == "gold-up" && carried_coin(client, refs[0], pick).is_none() {
+            make_gold_lot(client, &refs).await?;
         }
         let units = inventory_units(client)?;
         let before = coin_counts(&units, &refs);
@@ -1209,6 +1299,9 @@ async fn coins(
         }
         beat(row);
     }
+    provision_converters(client, clients).await?;
+    withdraw_denominations(row, client, world, npcs, &refs, &[100]).await?;
+    make_gold_lot(client, &refs).await?;
     if let Err(error) = converter_checks(row, client, clients, &refs).await {
         failures.push(error.to_string());
     }
@@ -1275,6 +1368,76 @@ fn distinct_trade_items(
         }
     }
     Err("trade needs observably distinct carried lots".into())
+}
+
+// The inventory wire order is the durable backpack order (newest ordinal first).
+// Check the entire view before using an index to bind a session-local handle.
+async fn backpack_instances(
+    clients: &SeamClients<'_>,
+    character: usize,
+    client: &DevClientSession,
+) -> TestResult<Vec<Vec<u8>>> {
+    use sqlx::Connection as _;
+    let inventory = client
+        .inventory()
+        .ok_or("durable backpack proof lacks inventory")?;
+    let index = provisioning::item_index()?;
+    tokio::time::timeout(Duration::from_secs(5), async {
+        let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+        let rows: Vec<(Vec<u8>, String, String, i64)> = sqlx::query_as(
+            "SELECT uuid_send(e.item_instance_id), i.definition_production_key,
+                    i.definition_revision_ref, i.quantity
+             FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id,world_id)
+             WHERE e.character_id = encode($1,'hex')::uuid AND e.world_id = encode($2,'hex')::uuid
+                   AND i.lifecycle = 1 ORDER BY e.placement_ordinal DESC",
+        )
+        .bind(clients.characters[character].as_slice())
+        .bind(clients.world.as_slice())
+        .fetch_all(&mut connection)
+        .await?;
+        if rows.len() != inventory.entries.len() || rows.iter().zip(&inventory.entries).any(
+            |((_, key, revision, quantity), entry)| {
+                index.definition_ref("Item", key, revision) != Some(entry.item_definition_ref)
+                    || *quantity != i64::from(entry.count.get())
+            },
+        ) {
+            return Err("durable backpack order differs from the wire view".into());
+        }
+        Ok(rows.into_iter().map(|(id, _, _, _)| id).collect())
+    }).await?
+}
+
+fn offered_instance<'a>(
+    client: &DevClientSession,
+    instances: &'a [Vec<u8>],
+    item: oteryn_dev_client::ItemEntry,
+) -> TestResult<&'a Vec<u8>> {
+    client
+        .inventory()
+        .and_then(|inventory| {
+            inventory
+                .entries
+                .iter()
+                .position(|entry| entry.handle == item.handle)
+        })
+        .and_then(|index| instances.get(index))
+        .ok_or_else(|| "offered handle lacks a durable backpack identity".into())
+}
+
+fn exact_trade_custody(
+    before: [&[Vec<u8>]; 2],
+    after: [&[Vec<u8>]; 2],
+    offered: [&Vec<u8>; 2],
+    completed: bool,
+) -> bool {
+    (0..2).all(|side| {
+        let mut expected: BTreeSet<_> = before[side].iter().collect();
+        if completed {
+            expected.remove(offered[side]);
+            expected.insert(offered[1 - side]);
+        }
+        expected == after[side].iter().collect()
+    })
 }
 
 async fn trade(
@@ -1401,6 +1564,10 @@ async fn trade(
         let (item, peer_item) = distinct_trade_items(client, &peer)?;
         let before_client = inventory_units(client)?;
         let before_peer = inventory_units(&peer)?;
+        let client_instances = backpack_instances(clients, 1, client).await?;
+        let peer_instances = backpack_instances(clients, 0, &peer).await?;
+        let offered = [offered_instance(client, &client_instances, item)?,
+            offered_instance(&peer, &peer_instances, peer_item)?];
         let offer = runtime::PlayerTradeCommand::new(runtime::player_trade::Intent::Offer {
             partner: own(&peer)?,
             item: item.handle.get(),
@@ -1479,7 +1646,10 @@ async fn trade(
             while_serving(client, peer.service_liveness(Duration::from_millis(20))).await?;
             peer.take_events();
         };
-        if !race_custody_matches(outcome, !completed, completed, closed) {
+        let client_after = backpack_instances(clients, 1, client).await?;
+        let peer_after = backpack_instances(clients, 0, &peer).await?;
+        if !exact_trade_custody([&client_instances, &peer_instances], [&client_after, &peer_after], offered, completed)
+            || !race_custody_matches(outcome, !completed, completed, closed) {
             return Err(format!("race disposition/custody mismatch: {outcome:?} {side}; closed={closed}").into());
         }
         row.pass("logout-race", "partner-accept-and-logout-resolved-the-same-trade");
@@ -1515,11 +1685,20 @@ async fn depot_call(
     town: Option<u16>,
     action: oteryn_protocol_oteryn::depot::DepotAction,
 ) -> TestResult<oteryn_protocol_oteryn::depot::DepotReply> {
+    depot_page(client, town, 0, action).await
+}
+
+async fn depot_page(
+    client: &mut DevClientSession,
+    town: Option<u16>,
+    page: u32,
+    action: oteryn_protocol_oteryn::depot::DepotAction,
+) -> TestResult<oteryn_protocol_oteryn::depot::DepotReply> {
     use oteryn_protocol_oteryn::depot;
     let payload = depot::encode_depot_intent(depot::DepotIntent {
         town,
         box_number: 1,
-        page: 0,
+        page,
         action,
     })
     .map_err(|e| format!("depot intent: {e:?}"))?;
@@ -2443,4 +2622,32 @@ mod speech_range_tests {
             listener
         ));
     }
+}
+
+#[test]
+fn full_gold_lot_requires_more_than_equal_value() {
+    let picks_full_gold = coin_steps()[0].2;
+    assert!(![99, 1].into_iter().any(picks_full_gold));
+    assert!(picks_full_gold(100));
+}
+
+#[test]
+fn trade_rejects_an_equal_spare_in_place_of_the_offered_instance() {
+    let mine = vec![vec![1], vec![2]];
+    let theirs = vec![vec![3]];
+    let wrong_mine = vec![vec![1], vec![3]];
+    let wrong_theirs = vec![vec![2]];
+    let offered = [&mine[0], &theirs[0]];
+    assert!(!exact_trade_custody(
+        [&mine, &theirs],
+        [&wrong_mine, &wrong_theirs],
+        offered,
+        true
+    ));
+    assert!(exact_trade_custody(
+        [&mine, &theirs],
+        [&[vec![2], vec![3]], &[vec![1]]],
+        offered,
+        true
+    ));
 }

@@ -241,23 +241,55 @@ fn daily_save_needed(wall: oteryn_protocol_oteryn::daily_reward::DailyRewardWall
 
 // Node boot owns this disposable World. Publish only the next daily reset
 // window; all character claims and reward delivery still run through the player.
-async fn next_daily_save(clients: &SeamClients<'_>) -> TestResult {
+// Resting qualification consumes published World windows. The history ledger
+// is a projection of native reset epochs and cannot be used as a fixture clock.
+async fn next_daily_save(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
     use sqlx::Connection as _;
-    required("NODE_BOOT_CONTROL_SOCKET")?;
-    tokio::time::timeout(Duration::from_secs(10), async {
-        let mut conn = sqlx::PgConnection::connect(clients.url).await?;
-        let advanced = sqlx::query(
-            "WITH previous AS (               SELECT world_id,reset_epoch,reset_day FROM game_world_reset_history                WHERE world_id=encode($1,'hex')::uuid ORDER BY reset_epoch DESC LIMIT 1             ), next AS (               SELECT world_id,reset_epoch+1 AS epoch,reset_day+1 AS day,                floor(extract(epoch FROM (((DATE '1970-01-01' + (reset_day+1)::integer)::timestamp                  + interval '6 hours') AT TIME ZONE 'Europe/Berlin'))*1000)::bigint AS at                FROM previous             ) INSERT INTO game_world_reset_history                (world_id,reset_epoch,reset_day,reset_at_unix_ms,committed_at_unix_ms)                SELECT world_id,epoch,day,at,at FROM next"
-        ).bind(clients.world.as_slice()).execute(&mut conn).await?;
-        if advanced.rows_affected() != 1 {
-            return Err("P10 fixture has no committed daily reset window to advance".into());
+    let mut connection = tokio::time::timeout(
+        Duration::from_secs(5),
+        sqlx::PgConnection::connect(clients.url),
+    )
+    .await??;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+    let mut observations = None;
+    while tokio::time::Instant::now() < deadline {
+        let epochs: (Option<String>, Option<String>) = tokio::time::timeout_at(
+            deadline,
+            sqlx::query_as(
+                "SELECT
+                   (SELECT max(h.reset_epoch)::text
+                    FROM game_world_reset_history h
+                    JOIN game_world_reset_active a
+                      ON a.world_id=h.world_id AND h.reset_epoch=a.reset_epoch+1
+                    WHERE h.world_id=encode($1,'hex')::uuid),
+                   (SELECT last_claim_epoch::text FROM game_character_daily_rewards
+                    WHERE character_id=encode($2,'hex')::uuid
+                      AND world_id=encode($1,'hex')::uuid)",
+            )
+            .bind(clients.world.as_slice())
+            .bind(clients.characters[1].as_slice())
+            .fetch_one(&mut connection),
+        )
+        .await??;
+        let current = epochs.0.as_deref().map(str::parse::<u64>).transpose()?;
+        let last = epochs.1.as_deref().map(str::parse::<u64>).transpose()?;
+        if consecutive_published_save(current, last) {
+            return Ok(());
         }
-        Ok(())
-    }).await?
+        observations = Some(epochs);
+        client.service_liveness(Duration::from_millis(250)).await?;
+        client.take_events();
+    }
+    Err(format!("P10 requires the next committed World reset before another real daily claim: {observations:?}").into())
+}
+
+fn consecutive_published_save(current: Option<u64>, last: Option<u64>) -> bool {
+    last.and_then(|last| last.checked_add(1))
+        .is_some_and(|next| current == Some(next))
 }
 
 fn claimed_bounty_reward(before: u64, after: u64) -> bool {
-    before.checked_add(1) == Some(after)
+    before <= 10 && before.saturating_add(1).min(10) == after
 }
 
 async fn bounty_reward_balance(client: &mut DevClientSession) -> TestResult<u64> {
@@ -278,6 +310,51 @@ async fn bounty_reward_balance(client: &mut DevClientSession) -> TestResult<u64>
         return Err(format!("P10 bounty balance refused: {reply:?}").into());
     }
     Ok(board.bounty.rerolls)
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct DailyCustody {
+    bounty: u64,
+    temple_scrolls: i64,
+}
+
+async fn daily_custody(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+) -> TestResult<DailyCustody> {
+    use sqlx::Connection as _;
+    let bounty = bounty_reward_balance(client).await?;
+    let temple_scrolls = tokio::time::timeout(Duration::from_secs(5), async {
+        let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+        sqlx::query_scalar(
+            "SELECT count(*) FROM game_item_character_inbox_locations l
+             JOIN game_item_instances i USING(item_instance_id,world_id)
+             WHERE l.character_id=encode($1,'hex')::uuid AND l.world_id=encode($2,'hex')::uuid
+               AND i.lifecycle=1 AND i.definition_production_key='oteryn:item.tibia.i25718'",
+        )
+        .bind(clients.characters[1].as_slice())
+        .bind(clients.world.as_slice())
+        .fetch_one(&mut connection)
+        .await
+    })
+    .await??;
+    Ok(DailyCustody {
+        bounty,
+        temple_scrolls,
+    })
+}
+
+fn daily_custody_matches(before: DailyCustody, after: DailyCustody, lane_day: u8) -> bool {
+    // The bounty and scroll quantities are shared by Free and Premium.
+    let Some(reward) = oteryn_gameplay_progression::daily_reward::reward_for_day(
+        oteryn_gameplay_progression::daily_reward::cycle_day(lane_day),
+        false,
+    ) else {
+        return false;
+    };
+    claimed_bounty_reward(before.bounty, after.bounty)
+        && after.temple_scrolls.checked_sub(before.temple_scrolls)
+            == Some(i64::from(reward.temple_teleport_scrolls))
 }
 
 async fn daily_claim(client: &mut DevClientSession, disposition: u8) -> TestResult {
@@ -579,7 +656,7 @@ async fn resting_bonuses(
     let result: TestResult<Option<&'static str>> = async {
         let mut initial = daily_wall(&mut client).await?;
         if daily_save_needed(initial) {
-            next_daily_save(clients).await?;
+            next_daily_save(&mut client, clients).await?;
             let fresh = daily_wall(&mut client).await?;
             if fresh.claimed || fresh.streak != initial.streak {
                 return Err(format!("P10 restart did not retain streak into a fresh window: {initial:?}->{fresh:?}").into());
@@ -606,25 +683,25 @@ async fn resting_bonuses(
         if !ready.claim_enabled || ready.claimed || ready.streak != initial.streak || ready.lane_day != initial.lane_day {
             return Err(format!("P10 shrine USE failed to open current daily claim: {ready:?}").into());
         }
-        let bounty_before = bounty_reward_balance(&mut client).await?;
+        let reward_before = daily_custody(&mut client, clients).await?;
         daily_claim(&mut client, 1).await?;
         let mut claimed = daily_wall(&mut client).await?;
         if !claimed.claimed || claimed.claim_enabled || claimed.streak != initial.streak.saturating_add(1).min(100_000) {
             return Err(format!("P10 real daily claim did not advance consecutive streak once: {initial:?}->{claimed:?}").into());
         }
-        let bounty_after = bounty_reward_balance(&mut client).await?;
-        if !claimed_bounty_reward(bounty_before, bounty_after) {
-            return Err(format!("P10 claim did not credit the authored bounty reroll token: {bounty_before}->{bounty_after}").into());
+        let reward_after = daily_custody(&mut client, clients).await?;
+        if !daily_custody_matches(reward_before, reward_after, ready.lane_day) {
+            return Err(format!("P10 claim did not credit the authored reward custody: {reward_before:?}->{reward_after:?}").into());
         }
-        row.pass("shrine-open-and-claim", (claimed, bounty_after));
+        row.pass("shrine-open-and-claim", (claimed, reward_after));
         let awarded = custody(client.inventory().ok_or("P10 reward custody missing")?);
         daily_claim(&mut client, 2).await?;
-        if daily_wall(&mut client).await? != claimed || bounty_reward_balance(&mut client).await? != bounty_after || custody(client.inventory().ok_or("P10 duplicate custody missing")?) != awarded {
+        if daily_wall(&mut client).await? != claimed || daily_custody(&mut client, clients).await? != reward_after || custody(client.inventory().ok_or("P10 duplicate custody missing")?) != awarded {
             return Err("P10 duplicate claim changed daily state or item custody".into());
         }
         row.pass("duplicate-claim-refused", claimed);
         relog(&mut client, clients, 0xf3).await?;
-        if daily_wall(&mut client).await? != claimed || bounty_reward_balance(&mut client).await? != bounty_after || custody(client.inventory().ok_or("P10 saved reward custody missing")?) != awarded {
+        if daily_wall(&mut client).await? != claimed || daily_custody(&mut client, clients).await? != reward_after || custody(client.inventory().ok_or("P10 saved reward custody missing")?) != awarded {
             return Err("P10 daily claim/streak/custody did not persist through fresh admission".into());
         }
         row.pass("relog-daily-streak", claimed);
@@ -632,7 +709,7 @@ async fn resting_bonuses(
             if !daily_save_needed(claimed) {
                 return Err(format!("P10 prior claim is not settled: {claimed:?}").into());
             }
-            next_daily_save(clients).await?;
+            next_daily_save(&mut client, clients).await?;
             let fresh = daily_wall(&mut client).await?;
             if fresh.claimed || fresh.claim_enabled || fresh.streak != claimed.streak {
                 return Err(format!("P10 next daily window failed to retain streak: {claimed:?}->{fresh:?}").into());
@@ -641,17 +718,18 @@ async fn resting_bonuses(
             if opened.disposition != UseDisposition::Committed || !daily_wall(&mut client).await?.claim_enabled {
                 return Err(format!("P10 next shrine window refused: {opened:?}").into());
             }
-            let bounty_before = bounty_reward_balance(&mut client).await?;
+            let reward_before = daily_custody(&mut client, clients).await?;
             daily_claim(&mut client, 1).await?;
             let after = daily_wall(&mut client).await?;
+            let reward_after = daily_custody(&mut client, clients).await?;
             if !after.claimed || after.claim_enabled || after.streak != fresh.streak + 1
-                || !claimed_bounty_reward(bounty_before, bounty_reward_balance(&mut client).await?)
+                || !daily_custody_matches(reward_before, reward_after, fresh.lane_day)
             {
                 return Err(format!("P10 next daily claim did not advance exact streak/reward: {fresh:?}->{after:?}").into());
             }
             relog(&mut client, clients, 0xf3).await?;
             if daily_wall(&mut client).await? != after
-                || !claimed_bounty_reward(bounty_before, bounty_reward_balance(&mut client).await?)
+                || daily_custody(&mut client, clients).await? != reward_after
             {
                 return Err("P10 next daily reward or streak was lost at fresh admission".into());
             }
@@ -1964,6 +2042,10 @@ async fn ground_entries(
     position: ActorPosition,
 ) -> TestResult<Vec<items::ItemEntry>> {
     use oteryn_protocol_oteryn::{browse_field as wire, container_tree as tree};
+    let position = ActorPosition {
+        floor: i16::from(tile(position)?.floor),
+        ..position
+    };
     let payload = wire::encode_browse_field_intent(&wire::BrowseFieldIntent::Open {
         position: items::WorldTilePosition {
             x: position.x,
@@ -2079,6 +2161,105 @@ async fn buy_amulet(
     Ok(())
 }
 
+async fn main_backpack_instance(clients: &SeamClients<'_>) -> TestResult<Option<Vec<u8>>> {
+    use sqlx::Connection as _;
+    tokio::time::timeout(Duration::from_secs(5), async {
+        let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+        Ok(sqlx::query_scalar(
+            "SELECT uuid_send(item_instance_id) FROM game_item_container_slots
+             WHERE character_id = encode($1,'hex')::uuid AND world_id = encode($2,'hex')::uuid",
+        )
+        .bind(clients.characters[1].as_slice())
+        .bind(clients.world.as_slice())
+        .fetch_optional(&mut connection)
+        .await?)
+    })
+    .await?
+}
+
+async fn lost_backpack_is_on_ground(clients: &SeamClients<'_>, id: &[u8]) -> TestResult<bool> {
+    use sqlx::Connection as _;
+    tokio::time::timeout(Duration::from_secs(5), async {
+        let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+        Ok(sqlx::query_scalar(
+            "WITH death AS (
+                 SELECT death_occurrence_id, death_spatial_position, death_map_revision
+                 FROM game_character_death_receipts
+                 WHERE character_id=encode($3,'hex')::uuid AND death_world_id=encode($2,'hex')::uuid
+                 ORDER BY committed_character_revision DESC LIMIT 1
+             )
+             SELECT EXISTS(
+                 SELECT 1 FROM death
+                 JOIN game_player_death_item_records r USING(death_occurrence_id)
+                 JOIN game_item_ground_locations g USING(item_instance_id,world_id)
+                 JOIN game_item_instances i USING(item_instance_id,world_id)
+                 WHERE r.source_slot=9 AND r.operation=1
+                   AND g.item_instance_id=encode($1,'hex')::uuid
+                   AND g.channel_id=encode($4,'hex')::uuid
+                   AND g.spatial_position=death.death_spatial_position
+                   AND g.map_revision=death.death_map_revision
+                   AND i.lifecycle=1
+             )",
+        )
+        .bind(id)
+        .bind(clients.world.as_slice())
+        .bind(clients.characters[1].as_slice())
+        .bind(clients.channel.as_slice())
+        .fetch_one(&mut connection)
+        .await?)
+    })
+    .await?
+}
+
+async fn original_bag_at(clients: &SeamClients<'_>, id: &[u8], cell: TilePos) -> TestResult<bool> {
+    use sqlx::Connection as _;
+    let mut position = Vec::with_capacity(10);
+    position.extend(i32::from(cell.x).to_be_bytes());
+    position.extend(i32::from(cell.y).to_be_bytes());
+    position.extend(i16::from(cell.floor).to_be_bytes());
+    tokio::time::timeout(Duration::from_secs(5), async {
+        let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+        Ok(sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_item_ground_locations
+             WHERE item_instance_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid
+               AND channel_id=encode($3,'hex')::uuid AND spatial_position=$4)",
+        )
+        .bind(id)
+        .bind(clients.world.as_slice())
+        .bind(clients.channel.as_slice())
+        .bind(position)
+        .fetch_one(&mut connection)
+        .await?)
+    })
+    .await?
+}
+
+async fn move_recovered_bag(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    handle: items::ItemHandle,
+    id: &[u8],
+    destination: TilePos,
+) -> TestResult {
+    let moved = client
+        .move_item(&items::ItemMoveIntent {
+            source: handle,
+            destination: items::ItemMoveDestination::Ground(items::WorldTilePosition {
+                x: i32::from(destination.x),
+                y: i32::from(destination.y),
+                floor: i16::from(destination.floor),
+            }),
+        })
+        .await?;
+    if moved.outcome != items::ItemMoveOutcome::Moved
+        || !original_bag_at(clients, id, destination).await?
+    {
+        return Err("ground MOVE did not relocate the exact lost backpack".into());
+    }
+    Ok(())
+}
+
+#[cfg(test)]
 fn new_ground_instance(previous: &BTreeSet<[u8; 16]>, candidate: [u8; 16]) -> bool {
     !previous.contains(&candidate)
 }
@@ -2136,13 +2317,16 @@ async fn item_loss(
         earn_death_prerequisites(&mut client, world, spawns, 9, 1).await?;
         let inventory = client.inventory().ok_or("unprotected inventory missing")?.clone();
         let original = inventory.main_backpack.ok_or("unprotected death requires a real main backpack")?;
+        let original_id = main_backpack_instance(clients).await?.ok_or("unprotected backpack durable identity absent")?;
         if inventory.entries.is_empty() { return Err("unprotected death requires actual earned loot in backpack".into()); }
         row.pass("unprotected-bag-and-contents", &inventory);
         travel_to_spawn(&mut client, world, spawns, "oteryn:creature.poison_spider").await?;
         let at = client.world_spatial().actor_position;
-        let ground_before: BTreeSet<_> = client.world_entities().ok_or("pre-death ground visibility absent")?
-            .iter().filter(|entry| entry.position == at && entry.kind == oteryn_dev_client::EntityKind::GroundItem)
-            .map(|entry| entry.entity.identity).collect();
+        let matches_bag = |entry: &items::ItemEntry| entry.item_definition_ref == original.item_definition_ref
+            && entry.count == original.count && entry.sub_type == original.sub_type;
+        if ground_entries(&mut client, at).await?.iter().any(matches_bag) {
+            return Err("death ground already holds an indistinguishable backpack".into());
+        }
         let (encounter, _, _) = observed_death(&mut client, world, spawns).await?;
         if encounter != at {
             return Err("unprotected death moved outside the observed ground baseline".into());
@@ -2159,19 +2343,10 @@ async fn item_loss(
             .ok_or("no real return route to death ground")?;
         walk(&mut client, world, &path).await?;
         let ground = ground_entries(&mut client, encounter).await?;
-        let visible = client.world_entities().ok_or("returned death ground visibility absent")?;
-        let mut bags = ground.iter().filter(|entry| {
-            entry.item_definition_ref == original.item_definition_ref
-                && entry.count == original.count && entry.sub_type == original.sub_type
-                && visible.iter().any(|entity| {
-                    entity.position == encounter && new_ground_instance(&ground_before, entity.entity.identity)
-                        && entity.kind == oteryn_dev_client::EntityKind::GroundItem
-                        && matches!(entity.detail,
-                            oteryn_dev_client::EntityDetail::Object { item_handle: Some(handle), .. }
-                            | oteryn_dev_client::EntityDetail::ObjectWithAppearance { item_handle: Some(handle), .. }
-                            if handle == entry.handle)
-                })
-        });
+        let mut bags = ground.iter().filter(|entry| matches_bag(entry));
+        if !lost_backpack_is_on_ground(clients, &original_id).await? {
+            return Err("original backpack instance did not move to the ground".into());
+        }
         let bag = bags.next().ok_or("fresh lost backpack instance absent from ground view")?;
         if bags.next().is_some() {
             return Err("death ground contains multiple new matching backpack instances".into());
@@ -2188,9 +2363,25 @@ async fn item_loss(
             let observed = CharacterInventory { entries: view.entries.clone(), ..Default::default() };
             let expected = CharacterInventory { entries: inventory.entries.clone(), ..Default::default() };
             if custody(&observed) != custody(&expected) { return Err("ground backpack did not retain exact earned contents".into()); }
-            row.pass("ground-original-bag-contents", &view.entries);
             break;
         }
+        let probe = [StepDirection::North, StepDirection::East, StepDirection::South, StepDirection::West]
+            .into_iter().filter_map(|direction| super::destination(world, destination, direction))
+            .find(|at| at.floor == destination.floor)
+            .ok_or("no adjacent ground cell for original backpack recovery")?;
+        let probe_wire = spatial_basis::current(&mut client)?.position(probe);
+        if ground_entries(&mut client, probe_wire).await?.iter().any(matches_bag) {
+            return Err("backpack identity probe destination already has a matching container".into());
+        }
+        move_recovered_bag(&mut client, clients, bag.handle, &original_id, probe).await?;
+        let moved = ground_entries(&mut client, probe_wire).await?;
+        let mut recovered = moved.iter().filter(|entry| matches_bag(entry));
+        let returned = recovered.next().ok_or("relocated backpack lacks a native ground handle")?;
+        if recovered.next().is_some() {
+            return Err("relocated backpack ground custody is ambiguous".into());
+        }
+        move_recovered_bag(&mut client, clients, returned.handle, &original_id, destination).await?;
+        row.pass("ground-original-bag-contents", (&original_id, &inventory.entries));
         Ok(())
     }.await;
     let cleanup = return_and_release(&mut client, world).await;
@@ -2471,7 +2662,7 @@ async fn pvp_meet(
             })
     })
     .ok_or("PvP player route blocked: no reachable non-PZ tile clear of creature spawns")?;
-    walk(victim, world, &path).await?;
+    full_e2ef5::with_observer_liveness(attacker, walk(victim, world, &path)).await?;
     let target = tile(victim.world_spatial().actor_position)?;
     let path = route(
         world,
@@ -2486,7 +2677,7 @@ async fn pvp_meet(
         },
     )
     .ok_or("PvP player route blocked: no adjacent non-PZ attacker tile")?;
-    walk(attacker, world, &path).await?;
+    full_e2ef5::with_observer_liveness(victim, walk(attacker, world, &path)).await?;
     let identity = *victim
         .world_entities()
         .ok_or("victim visibility absent")?
@@ -2706,7 +2897,7 @@ async fn adventurer_journey(
             }
             wait_inventory(&mut victim, |view| custody(view) == owned, "Adventurer death changed custody").await?;
             row.pass("adventurer-pvp-keeps-xp-blessings-custody", (after, &held, &owned));
-            saved_blessings(&mut victim, clients, 0, tag + 2, &held, after).await?;
+            full_e2ef5::with_observer_liveness(&mut attacker, saved_blessings(&mut victim, clients, 0, tag + 2, &held, after)).await?;
             wait_inventory(&mut victim, |view| custody(view) == owned, "Adventurer relog changed custody").await?;
             row.pass("adventurer-relog", (&held, &owned));
             Ok(())
@@ -2769,7 +2960,7 @@ async fn blessing_death(
                 return Err(format!("Twist PvP must lose XP, consume only Twist and retain Wisdom: before={before:?} after={after:?}").into());
             }
             row.pass("twist-pvp-consumes-only-twist", (&regular, before, after));
-            saved_blessings(&mut client, clients, 1, 0xa6, &regular, after).await?;
+            full_e2ef5::with_observer_liveness(&mut attacker, saved_blessings(&mut client, clients, 1, 0xa6, &regular, after)).await?;
             row.pass("twist-relog", (&regular, after));
             Ok(())
         }.await;
@@ -3115,4 +3306,35 @@ mod ground_identity_tests {
         assert!(!new_ground_instance(&before, [1; 16]));
         assert!(new_ground_instance(&before, [2; 16]));
     }
+}
+
+#[test]
+fn capped_daily_claim_can_leave_bounty_balance_unchanged() {
+    assert!(claimed_bounty_reward(10, 10));
+    assert!(!claimed_bounty_reward(9, 9));
+}
+
+#[test]
+fn daily_scroll_must_reach_inbox_even_at_bounty_cap() {
+    let before = DailyCustody {
+        bounty: 10,
+        temple_scrolls: 0,
+    };
+    assert!(!daily_custody_matches(before, before, 3));
+    assert!(daily_custody_matches(
+        before,
+        DailyCustody {
+            temple_scrolls: 1,
+            ..before
+        },
+        3
+    ));
+}
+
+#[test]
+fn daily_claim_cannot_advance_without_a_consecutive_world_owner_epoch() {
+    assert!(!consecutive_published_save(None, Some(7)));
+    assert!(!consecutive_published_save(Some(7), Some(7)));
+    assert!(!consecutive_published_save(Some(9), Some(7)));
+    assert!(consecutive_published_save(Some(8), Some(7)));
 }

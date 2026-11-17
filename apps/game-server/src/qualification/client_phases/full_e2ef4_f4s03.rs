@@ -174,58 +174,155 @@ pub(super) async fn run(
         "E2EF4_MISSING S03 motd source:crates/protocol-oteryn/src/guild.rs:17 native-GuildIntent-has-no-MOTD-write",
     );
     progressing(async {
-        // Always earn new coins, even if earlier rows left money in the backpack or bank.
-        let before = full_gold::coin_value(client)?;
-        let target = before.checked_add(4).ok_or("S03 gold target overflow")?;
-        let bytes = std::fs::read(std::env::var("NODE_BOOT_WORLD_BUNDLE")?)?;
-        let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-        full_gold::earn(client, world, &metadata.spawns, "S03", target).await?;
-        let (banker, actor, balance) = find_banker(row, client, world, npcs).await?;
-        let funds = full_gold::coin_value(client)?;
-        let inventory = inventory_units(client)?;
-        let refs = coin_refs()?;
-        let noncoins = non_coin(&inventory, &refs);
-        bank_exchange(
-            client,
-            actor,
-            "deposit all",
-            &format!("Do you want to deposit {funds} gold?"),
-            &format!("You have deposited {funds} gold."),
-        )
-        .await?;
-        settle(client, "S03-earned-deposit", |now| {
-            wealth(now, &refs) == 0 && non_coin(now, &refs) == noncoins
-        })
-        .await?;
-        let deposited = balance
-            .checked_add(funds)
-            .ok_or("S03 bank balance overflow")?;
-        if bank_balance(client, actor).await? != deposited {
-            return Err("S03 banker did not credit earned coins exactly".into());
-        }
         // Both characters stay in the unchanged harness world; no island or Oracle flow.
         let mut peer = with_liveness(client, connect_character(clients, 0x89, 0)).await?;
-        let mut created = [None, None];
         let journey = async {
-            play(row, client, &mut peer, clients, deposited, &mut created).await?;
+            recover_guild_runs(client, &mut peer, clients).await?;
+            let (banker, deposited) =
+                with_liveness(&mut peer, fund_guild_journey(row, client, world, npcs)).await?;
+            play(row, client, &mut peer, clients, deposited).await?;
             let actor = with_liveness(&mut peer, approach_npc(client, world, banker)).await?;
             with_liveness(&mut peer, speak(client, actor, "hi")).await?;
             if with_liveness(&mut peer, bank_balance(client, actor)).await? != deposited - 2 {
                 return Err("S03 personal bank differs from guild ledger settlement".into());
             }
             TestResult::Ok(())
-        }.await;
-        let rival = cleanup_guild(&mut peer, client, created[1].as_deref()).await;
-        let leader = cleanup_guild(client, &mut peer, created[0].as_deref()).await;
+        }
+        .await;
+        let cleanup = recover_guild_runs(client, &mut peer, clients).await;
         let logout = with_liveness(client, logout_peer(&mut peer)).await;
-        if rival.is_err() || leader.is_err() || logout.is_err() {
-            return Err(format!("S03 cleanup: rival={rival:?}; leader={leader:?}; logout={logout:?}; journey={journey:?}").into());
+        if cleanup.is_err() || logout.is_err() {
+            return Err(format!(
+                "S03 cleanup: {cleanup:?}; logout={logout:?}; journey={journey:?}"
+            )
+            .into());
         }
         journey?;
         row.missing_server = Some("source:crates/protocol-oteryn/src/guild.rs:17");
         Err("MOTD-write-unavailable;source:crates/protocol-oteryn/src/guild.rs:17".into())
     })
     .await
+}
+
+async fn fund_guild_journey<'a>(
+    row: &mut Row,
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    npcs: &'a oteryn_world_bundle::npc::Table,
+) -> TestResult<(&'a oteryn_world_bundle::npc::Npc, u64)> {
+    // Always earn new coins, even if earlier rows left money in the backpack or bank.
+    let before = full_gold::coin_value(client)?;
+    let target = before.checked_add(4).ok_or("S03 gold target overflow")?;
+    let bytes = std::fs::read(std::env::var("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    full_gold::earn(client, world, &metadata.spawns, "S03", target).await?;
+    let (banker, actor, balance) = find_banker(row, client, world, npcs).await?;
+    let funds = full_gold::coin_value(client)?;
+    let inventory = inventory_units(client)?;
+    let refs = coin_refs()?;
+    let noncoins = non_coin(&inventory, &refs);
+    bank_exchange(
+        client,
+        actor,
+        "deposit all",
+        &format!("Do you want to deposit {funds} gold?"),
+        &format!("You have deposited {funds} gold."),
+    )
+    .await?;
+    settle(client, "S03-earned-deposit", |now| {
+        wealth(now, &refs) == 0 && non_coin(now, &refs) == noncoins
+    })
+    .await?;
+    let deposited = balance
+        .checked_add(funds)
+        .ok_or("S03 bank balance overflow")?;
+    if bank_balance(client, actor).await? != deposited {
+        return Err("S03 banker did not credit earned coins exactly".into());
+    }
+    Ok((banker, deposited))
+}
+
+// The name suffix is derived from the founding session, so an interrupted run
+// can be recovered even when its command reply never reached the harness.
+async fn recover_guild_runs(
+    leader: &mut DevClientSession,
+    rival: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+) -> TestResult {
+    use sqlx::Connection as _;
+    required("NODE_BOOT_CONTROL_SOCKET")?;
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let world_id = clients.world.as_slice();
+    let guilds: Vec<Vec<u8>> = tokio::time::timeout(Duration::from_secs(5), sqlx::query_scalar(
+        "SELECT DISTINCT uuid_send(g.guild_id)
+         FROM game_guilds g JOIN game_durability_reconnect_sessions s ON s.world_id=g.world_id
+         WHERE g.world_id=encode($1,'hex')::uuid AND (
+            (s.character_id=encode($2,'hex')::uuid AND g.name='Sage ' ||
+                translate(substr(encode(uuid_send(s.game_session_id),'hex'),17),'0123456789abcdef','abcdefghijklmnop'))
+            OR (s.character_id=encode($3,'hex')::uuid AND g.name='Rival ' ||
+                translate(substr(encode(uuid_send(s.game_session_id),'hex'),17),'0123456789abcdef','abcdefghijklmnop'))
+         )",
+    ).bind(world_id).bind(clients.characters[1].as_slice()).bind(clients.characters[0].as_slice())
+    .fetch_all(&mut connection)).await??;
+    // Shorten only the disposable scenario wars. The real World worker still
+    // owns terminalization and its reason.
+    let wars: Vec<Vec<u8>> = tokio::time::timeout(Duration::from_secs(5), sqlx::query_scalar(
+        "UPDATE game_guild_wars SET ends_at=floor(extract(epoch FROM clock_timestamp())*1000)::bigint
+         WHERE world_id=encode($1,'hex')::uuid AND state=2
+           AND declaring_guild IN (SELECT encode(x,'hex')::uuid FROM unnest($2::bytea[]) x)
+           AND opposing_guild IN (SELECT encode(x,'hex')::uuid FROM unnest($2::bytea[]) x)
+         RETURNING uuid_send(war_id)",
+    ).bind(world_id).bind(&guilds).fetch_all(&mut connection)).await??;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
+    loop {
+        let ended: i64 = tokio::time::timeout_at(
+            deadline,
+            sqlx::query_scalar(
+                "SELECT count(*) FROM game_guild_wars WHERE world_id=encode($1,'hex')::uuid
+              AND state=3 AND ended_reason IN (1,2)
+              AND war_id IN (SELECT encode(x,'hex')::uuid FROM unnest($2::bytea[]) x)",
+            )
+            .bind(world_id)
+            .bind(&wars)
+            .fetch_one(&mut connection),
+        )
+        .await??;
+        if usize::try_from(ended)? == wars.len() {
+            break;
+        }
+        let (a, b) = tokio::join!(
+            leader.service_liveness(Duration::from_millis(250)),
+            rival.service_liveness(Duration::from_millis(250)),
+        );
+        a?;
+        b?;
+        leader.take_events();
+        rival.take_events();
+        progress();
+    }
+    let mut panel = ui::GuildPanel {
+        selected: true,
+        ..Default::default()
+    };
+    // A rival may have joined the first guild and never reached founding. The
+    // founder's disband handles that membership as part of the same settlement.
+    request(rival, leader, &mut panel, ui::Intent::RefreshOwn).await?;
+    if let Some(own) = panel
+        .own
+        .as_ref()
+        .filter(|own| own.own_rank == 1 && guilds.iter().any(|id| id == own.guild.as_slice()))
+    {
+        cleanup_guild(rival, leader, Some(&own.name)).await?;
+    }
+    request(leader, rival, &mut panel, ui::Intent::RefreshOwn).await?;
+    if let Some(own) = panel
+        .own
+        .as_ref()
+        .filter(|own| own.own_rank == 1 && guilds.iter().any(|id| id == own.guild.as_slice()))
+    {
+        cleanup_guild(leader, rival, Some(&own.name)).await?;
+    }
+    Ok(())
 }
 
 fn created_guild_for_cleanup(created: Option<&str>, actual: &str) -> bool {
@@ -253,18 +350,24 @@ async fn cleanup_guild(
         return Ok(());
     };
     let id = guild.guild;
-    bank_request(
-        founder,
-        peer,
-        id,
-        Some(bank::GuildBankAction::Disband(guild.name.clone())),
-    )
-    .await?;
+    if guild.state != 3 {
+        bank_request(
+            founder,
+            peer,
+            id,
+            Some(bank::GuildBankAction::Disband(guild.name.clone())),
+        )
+        .await?;
+    }
     // The disband reply starts the World job. Only the later membership
     // removal makes founding on the same pair repeatable.
     let deadline = tokio::time::Instant::now() + Duration::from_secs(420);
     loop {
-        request(founder, peer, &mut panel, ui::Intent::RefreshOwn).await?;
+        tokio::time::timeout_at(
+            deadline,
+            request(founder, peer, &mut panel, ui::Intent::RefreshOwn),
+        )
+        .await??;
         match &panel.own {
             None => break,
             Some(own) if own.guild == id && own.state == 3 => {}
@@ -297,7 +400,6 @@ async fn play(
     peer: &mut DevClientSession,
     clients: &SeamClients<'_>,
     personal_balance: u64,
-    created: &mut [Option<String>; 2],
 ) -> TestResult {
     let mut leader = ui::GuildPanel {
         selected: true,
@@ -310,7 +412,6 @@ async fn play(
     if leader.own.is_some() || member.own.is_some() {
         return Err("S03 founding requires both real players to have no guild".into());
     }
-    created[0] = Some(name.clone());
     request(client, peer, &mut leader, ui::Intent::Found(name.clone())).await?;
     request(client, peer, &mut leader, ui::Intent::RefreshOwn).await?;
     let guild = summary(&leader)?.guild;
@@ -508,7 +609,6 @@ async fn play(
         return Err("S03 war opponent retained old membership".into());
     }
     let opponent_name = guild_name(peer, "Rival");
-    created[1] = Some(opponent_name.clone());
     request(
         peer,
         client,

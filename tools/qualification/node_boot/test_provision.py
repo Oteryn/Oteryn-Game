@@ -17,7 +17,7 @@ SESSION = "01890f4c-3b2a-7c01-8d11-9a321b7c0004"
 
 
 class ProvisionTests(unittest.TestCase):
-    def exchange(self, answer):
+    def exchange(self, answer, profile="knight"):
         with tempfile.TemporaryDirectory() as directory:
             path = str(Path(directory) / "control.sock")
             with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:
@@ -32,18 +32,21 @@ class ProvisionTests(unittest.TestCase):
                         while chunk := connection.recv(128):
                             request.extend(chunk)
                             self.assertLessEqual(len(request), 128)
-                        self.assertEqual(request, f"qualify {SESSION} knight\n".encode())
+                        self.assertEqual(request, f"qualify {SESSION} {profile}\n".encode())
                         connection.sendall(answer)
 
                 with ThreadPoolExecutor(max_workers=1) as executor:
                     served = executor.submit(serve)
                     try:
-                        PROVISION.provision(path, SESSION, "knight")
+                        PROVISION.provision(path, SESSION, profile)
                     finally:
                         served.result(timeout=3)
 
     def test_qualified_reply_is_accepted(self):
         self.exchange(b"qualified\n")
+
+    def test_coin_converter_fixture_uses_control_request(self):
+        self.exchange(b"qualified\n", "coin-converters")
 
     def test_refusal_retains_the_exact_node_answer(self):
         with self.assertRaises(RuntimeError) as refused:

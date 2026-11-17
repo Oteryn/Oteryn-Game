@@ -63,7 +63,6 @@ const HASTE_ACTIONS: &[&str] = &[
 ];
 
 pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
-    rune_rows(clients, world).await;
     combat_rows(clients, world).await;
     companion_rows(clients, world).await;
     tile_item_row(clients, world).await;
@@ -120,6 +119,7 @@ pub(super) async fn support_rows(clients: &SeamClients<'_>, world: &BundleWorld)
         .await;
         row.finish(result);
     }
+    rune_rows(clients, world).await;
 }
 
 fn own_binding(client: &mut DevClientSession) -> TestResult<Binding> {
@@ -289,7 +289,7 @@ pub(super) async fn prepare_spell_progression(
         super::full_e2ef6::earn_death_prerequisites(client, world, &metadata.spawns, target, 0).await?;
     }
     if first_vocation {
-        let vocation = ["sorcerer", "druid", "monk", "knight", "paladin"]
+        let vocation = ["druid", "sorcerer", "monk", "knight", "paladin"]
             .into_iter().find(|key| crate::spell::Vocation::from_key(key)
                 .is_some_and(|vocation| spell.vocations.contains(&vocation)))
             .ok_or("no base vocation can cast the authored spell")?;
@@ -1005,7 +1005,7 @@ async fn rune_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
         let watch = row.0.watch();
         let result: TestResult = async {
             let _row = watch.enter();
-            let mut client = connect_world(clients, tag).await?;
+            let mut client = connect_character(clients, tag, SUPPORT_CHARACTER).await?;
             let mut peer_cancelled = false;
             let mut completed = false;
             let deadline = format!("{id} 240s journey deadline; remaining actions unproven");
@@ -1442,12 +1442,13 @@ async fn rune_rejoin(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
     tag: u8,
+    character: usize,
     expected: &[(std::num::NonZeroU32, u64)],
 ) -> TestResult<u64> {
     let previous = client.join_snapshot().game_session_id;
     let position = client.world_spatial().actor_position;
     player_logout(client).await?;
-    *client = connect_world(clients, tag).await?;
+    *client = connect_character(clients, tag, character).await?;
     if previous == client.join_snapshot().game_session_id
         || client.world_spatial().actor_position != position
     {
@@ -1514,15 +1515,14 @@ async fn paralyze(
     let spell = book
         .rune(3165)
         .ok_or("C16b Paralyze rune not in pinned spell book")?;
+    prepare_spell_progression(client, world, spell).await?;
     let (reference, sequence) = acquire_rune(client, world, 3165).await?;
     row.pass("acquire-paralyze", sequence);
     row.pass(
         "illegal-floor-no-cost",
         illegal_floor(client, reference).await?,
     );
-    // Character 0 is still an ordinary player here: this mount precedes all
-    // profile provisioning. No PvP policy, war, level or vocation is granted.
-    let mut peer = connect_character(clients, 0xb1, 0).await?;
+    let mut peer = with_observer_liveness(client, connect_character(clients, 0xb1, 1)).await?;
     let result: TestResult = tokio::time::timeout(Duration::from_secs(140), async {
         let path = route(world, tile(peer.world_spatial().actor_position)?, |at| rune_corridor(world, at).is_some())
             .ok_or("C16b no reachable non-PZ equal-ground target corridor")?;
@@ -1577,7 +1577,7 @@ async fn paralyze(
         }
         row.pass("target-expiry", peer.last_server_sequence());
         row.pass("fresh-admission-rune-custody", with_observer_liveness(&mut peer,
-            rune_rejoin(client, clients, 0xb2, &[(reference, remaining)])).await?);
+            rune_rejoin(client, clients, 0xb2, SUPPORT_CHARACTER, &[(reference, remaining)])).await?);
         Ok(())
     }).await.map_err(|_| {
         *peer_cancelled = true;
@@ -1690,6 +1690,7 @@ async fn barriers(
         let spell = book
             .rune(id)
             .ok_or_else(|| format!("C16a rune {id} absent from pinned book"))?;
+        prepare_spell_progression(client, world, spell).await?;
         let (minimum, maximum, ids) = barrier_parameters(spell)?;
         let references = [
             provisioning::item_reference(&index, ids[0])?,
@@ -1773,7 +1774,7 @@ async fn barriers(
     }
     row.pass(
         "fresh-admission-barrier-custody",
-        rune_rejoin(client, clients, 0xb5, &expected).await?,
+        rune_rejoin(client, clients, 0xb5, SUPPORT_CHARACTER, &expected).await?,
     );
     Ok(())
 }
@@ -3190,11 +3191,9 @@ async fn companion_behavior(
     })
     .ok_or("no four-tile ordinary companion follow route")?;
     client.take_events();
-    walk(client, world, &path).await?;
-    let until = tokio::time::Instant::now() + Duration::from_secs(15);
     let mut followed = false;
-    loop {
-        for event in client.take_events() {
+    let mut observe = |events: Vec<SessionEvent>| {
+        for event in events {
             if let SessionEvent::WorldSpatialEntities(delta) = event {
                 followed |= delta
                     .value
@@ -3203,9 +3202,19 @@ async fn companion_behavior(
                     .any(|entry| entry.entity == owned && entry.position != start);
             }
         }
+        followed
+    };
+    let mut moved_on_route = false;
+    walk_observing(client, world, &path, |_, events| {
+        moved_on_route = observe(events);
+        Ok(())
+    }).await?;
+    let until = tokio::time::Instant::now() + Duration::from_secs(15);
+    loop {
+        moved_on_route |= observe(client.take_events());
         let owner = client.world_spatial().actor_position;
         let entry = creature(client, owned)?;
-        if companion_moved(start, entry.position, followed)
+        if companion_moved(start, entry.position, moved_on_route)
             && entry.position.floor == owner.floor
             && entry
                 .position
@@ -3734,7 +3743,7 @@ async fn companion_after_death(
         .actor_vitals()
         .copied()
         .ok_or("post-death vitals absent")?;
-    let sequence = rune_rejoin(client, clients, tag, quantities).await?;
+    let sequence = rune_rejoin(client, clients, tag, 1, quantities).await?;
     if recent_player_deaths(client).await?.0.first() != Some(&death)
         || client
             .actor_vitals()
@@ -3843,14 +3852,23 @@ async fn player_corpse(
     let target = wild_rat(client, world, owned).await?;
     let index = provisioning::item_index()?;
     let corpse_ref = provisioning::item_reference(&index, 5964)?;
-    let existing = census(client)?;
+    let mut existing: BTreeSet<_> = census(client)?.into_iter().map(|entity| entity.identity).collect();
     let owner = own_entity(client)?;
     let at = tile(target.position)?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |p| {
         p.floor == at.floor && p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)) <= 1
     })
     .ok_or("no ordinary melee approach to corpse-source rat")?;
-    walk(client, world, &path).await?;
+    walk_observing(client, world, &path, |client, events| {
+        existing.extend(census(client)?.into_iter().map(|entity| entity.identity));
+        for event in events {
+            if let SessionEvent::WorldSpatialEntities(delta) = event {
+                existing.extend(delta.value.enter.into_iter().map(|entry| entry.entity.identity));
+            }
+        }
+        Ok(())
+    }).await?;
+    existing.extend(census(client)?.into_iter().map(|entity| entity.identity));
     client.take_events();
     select_monster(client, Some(target.entity)).await?;
     let until = tokio::time::Instant::now() + Duration::from_secs(75);
@@ -3876,7 +3894,7 @@ async fn player_corpse(
                     removed |= delta.value.leave.contains(&target.entity);
                     for entry in delta.value.enter {
                         if entry.kind == oteryn_dev_client::EntityKind::Corpse
-                            && corpse_enters_after_target_leave(removed, existing.contains(&entry.entity))
+                            && corpse_enters_after_target_leave(removed, existing.contains(&entry.entity.identity))
                             && entry.position == last
                             && matches!(entry.detail, oteryn_dev_client::EntityDetail::Object { item_definition_ref, item_handle: Some(_), .. } if item_definition_ref == corpse_ref.get())
                         {
@@ -4299,7 +4317,7 @@ async fn tile_item_rejoin(
         .actor_vitals()
         .copied()
         .ok_or("C16d pre-logout vitals absent")?;
-    let sequence = rune_rejoin(client, clients, tag, quantities).await?;
+    let sequence = rune_rejoin(client, clients, tag, 1, quantities).await?;
     if client
         .actor_vitals()
         .is_none_or(|after| after.mana != before.mana || after.soul != before.soul)

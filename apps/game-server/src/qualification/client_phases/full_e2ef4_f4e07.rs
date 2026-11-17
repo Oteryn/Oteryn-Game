@@ -327,6 +327,84 @@ fn stash_units(rows: &[oteryn_protocol_oteryn::stash::StashRow], key: &str, revi
         .sum()
 }
 
+async fn depot_entries(
+    client: &mut DevClientSession,
+    town: u16,
+) -> TestResult<Vec<oteryn_protocol_oteryn::depot::DepotEntry>> {
+    use oteryn_protocol_oteryn::depot;
+    let mut entries = Vec::new();
+    let mut total = None;
+    let mut ordinals = BTreeSet::new();
+    for page in 0..=depot::MAX_DEPOT_PAGE {
+        let reply = depot_page(client, Some(town), page, depot::DepotAction::Browse).await?;
+        if reply.outcome != depot::DepotOutcome::Opened
+            || reply.page != page
+            || reply.town != Some(town)
+            || reply.box_number != 1
+            || *total.get_or_insert(reply.total) != reply.total
+            || reply
+                .entries
+                .iter()
+                .any(|entry| !ordinals.insert(entry.ordinal))
+        {
+            return Err(format!("depot page identity or custody changed: {reply:?}").into());
+        }
+        let page_len = reply.entries.len();
+        entries.extend(reply.entries);
+        if entries.len() == reply.total as usize {
+            return Ok(entries);
+        }
+        if page_len == 0 || entries.len() > reply.total as usize {
+            break;
+        }
+        client.take_events();
+        progress();
+    }
+    Err("depot pages ended before the declared total".into())
+}
+
+async fn stash_page(
+    client: &mut DevClientSession,
+    panel: &mut oteryn_dev_client::client_ui::stash::StashPanel,
+    page: u32,
+) -> TestResult {
+    use oteryn_dev_client::{client_runtime::stash as runtime, client_ui::stash as ui};
+    panel.page = page;
+    let command = ui::request(panel, ui::Intent::Refresh).ok_or("stash browse input")?;
+    let reply = runtime::send(client.session_mut(), &command).await?;
+    ui::apply_result(panel, &reply);
+    if reply.reply.outcome != ui::stash::StashOutcome::Opened || panel.page != page {
+        return Err(format!("stash page {page} refused or mismatched: {:?}", reply.reply).into());
+    }
+    Ok(())
+}
+
+async fn stash_entries(
+    client: &mut DevClientSession,
+    panel: &mut oteryn_dev_client::client_ui::stash::StashPanel,
+) -> TestResult<Vec<(u32, oteryn_protocol_oteryn::stash::StashRow)>> {
+    let mut entries = Vec::new();
+    let mut definitions = BTreeSet::new();
+    for page in 0..=oteryn_protocol_oteryn::stash::MAX_STASH_PAGE {
+        stash_page(client, panel, page).await?;
+        if panel.rows.iter().any(|row| {
+            !definitions.insert((row.definition_key.clone(), row.definition_revision.clone()))
+        }) {
+            return Err("stash definition repeated across pages".into());
+        }
+        entries.extend(panel.rows.iter().cloned().map(|row| (page, row)));
+        if !panel.has_more {
+            return Ok(entries);
+        }
+        if panel.rows.is_empty() {
+            break;
+        }
+        client.take_events();
+        progress();
+    }
+    Err("stash pages ended while more rows were advertised".into())
+}
+
 async fn storage_journey(
     row: &mut Row,
     client: &mut DevClientSession,
@@ -371,14 +449,15 @@ async fn storage_journey(
             .copied()
             .ok_or("no direct-backpack leaf to deposit into the depot")?;
         let whole = inventory_units(client)?;
+        let originals = backpack_instances(clients, 1, client).await?;
+        let original = offered_instance(client, &originals, leaf)?;
         let town = {
             let browse = depot_call(client, None, depot::DepotAction::Browse).await?;
             browse.town.ok_or("depot browse named no town")?
         };
-        let initial = depot_call(client, Some(town), depot::DepotAction::Browse).await?;
-        let previous: BTreeSet<_> = initial.entries.iter().map(|entry| entry.ordinal).collect();
+        let initial = depot_entries(client, town).await?;
+        let previous: BTreeSet<_> = initial.iter().map(|entry| entry.ordinal).collect();
         let held_before = initial
-            .entries
             .iter()
             .filter(|e| e.definition == leaf.item_definition_ref.get())
             .map(|e| u64::from(e.count))
@@ -397,9 +476,8 @@ async fn storage_journey(
             expected.remove(&leaf.item_definition_ref.get());
         }
         wait_inventory(client, &expected).await?;
-        let listing = depot_call(client, Some(town), depot::DepotAction::Browse).await?;
+        let listing = depot_entries(client, town).await?;
         let held_after = listing
-            .entries
             .iter()
             .filter(|e| e.definition == leaf.item_definition_ref.get())
             .map(|e| u64::from(e.count))
@@ -414,7 +492,6 @@ async fn storage_journey(
         let ordinal = deposited_ordinal(
             &previous,
             listing
-                .entries
                 .iter()
                 .filter(|entry| {
                     entry.definition == leaf.item_definition_ref.get()
@@ -423,21 +500,42 @@ async fn storage_journey(
                 .map(|entry| entry.ordinal),
         )
         .ok_or("unique deposited entry absent from the depot listing")?;
+        use sqlx::Connection as _;
+        let deposited: Option<Vec<u8>> = tokio::time::timeout(Duration::from_secs(5), async {
+            let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+            sqlx::query_scalar(
+                "SELECT uuid_send(item_instance_id) FROM game_item_character_depot_locations
+                 WHERE character_id = encode($1,'hex')::uuid AND world_id = encode($2,'hex')::uuid
+                   AND town_id = $3 AND box_number = 1 AND ordinal = $4::text::numeric",
+            )
+            .bind(clients.characters[1].as_slice())
+            .bind(clients.world.as_slice())
+            .bind(i32::from(town))
+            .bind(ordinal.to_string())
+            .fetch_optional(&mut connection)
+            .await
+        })
+        .await??;
+        if deposited.as_ref() != Some(original) {
+            return Err("depot ordinal does not hold the offered instance".into());
+        }
         let moved = depot_call(client, Some(town), depot::DepotAction::Withdraw(ordinal)).await?;
         if moved.outcome != depot::DepotOutcome::Moved {
             return Err(format!("depot withdraw refused: {moved:?}").into());
         }
         settle(client, "depot-withdraw", |now| *now == whole).await?;
-        let after = depot_call(client, Some(town), depot::DepotAction::Browse).await?;
+        let restored = backpack_instances(clients, 1, client).await?;
+        if restored.iter().collect::<BTreeSet<_>>() != originals.iter().collect() {
+            return Err("depot withdrawal returned a different backpack instance set".into());
+        }
+        let after = depot_entries(client, town).await?;
         let held_end = after
-            .entries
             .iter()
             .filter(|e| e.definition == leaf.item_definition_ref.get())
             .map(|e| u64::from(e.count))
             .sum::<u64>();
         if held_end != held_before
             || after
-                .entries
                 .iter()
                 .map(|entry| entry.ordinal)
                 .collect::<BTreeSet<_>>()
@@ -455,12 +553,11 @@ async fn storage_journey(
         selected: true,
         ..Default::default()
     };
-    let command = ui::request(&mut panel, ui::Intent::Refresh).ok_or("stash browse input")?;
-    let reply = runtime::send(client.session_mut(), &command).await?;
-    ui::apply_result(&mut panel, &reply);
-    if reply.reply.outcome != ui::stash::StashOutcome::Opened {
-        return Err(format!("stash open: {:?}", reply.reply.outcome).into());
-    }
+    let original_rows: Vec<_> = stash_entries(client, &mut panel)
+        .await?
+        .into_iter()
+        .map(|(_, row)| row)
+        .collect();
     let arrow = provisioning::item_reference(&provisioning::item_index()?, 3447)?;
     let item = client
         .inventory()
@@ -472,7 +569,11 @@ async fn storage_journey(
         .copied()
         .ok_or("no carried stack of at least two units for chosen-count withdrawal")?;
     let carried = inventory_units(client)?;
-    let original_rows = panel.rows.clone();
+    panel.carried = client
+        .inventory()
+        .ok_or("stash input inventory absent")?
+        .entries
+        .clone();
     let before: u64 = original_rows.iter().map(|r| u64::from(r.quantity)).sum();
     let command =
         ui::request(&mut panel, ui::Intent::Stow(item.handle)).ok_or("stash stow input")?;
@@ -483,26 +584,30 @@ async fn storage_journey(
     {
         return Err(format!("stash stow: {:?}", reply.reply).into());
     }
-    let command = ui::request(&mut panel, ui::Intent::Refresh).ok_or("stash refresh after stow")?;
-    let reply = runtime::send(client.session_mut(), &command).await?;
-    ui::apply_result(&mut panel, &reply);
-    let after: u64 = panel.rows.iter().map(|r| u64::from(r.quantity)).sum();
+    let pages_after = stash_entries(client, &mut panel).await?;
+    let rows_after: Vec<_> = pages_after.iter().map(|(_, row)| row.clone()).collect();
+    let after: u64 = rows_after.iter().map(|r| u64::from(r.quantity)).sum();
     if after != before + u64::from(item.count.get()) {
         return Err("stash count delta differs from stowed quantity".into());
     }
     let definitions = provisioning::item_index()?;
+    let (page, selected_row) = pages_after
+        .iter()
+        .find(|(_, row)| {
+            definitions.definition_ref("Item", &row.definition_key, &row.definition_revision)
+                == Some(item.item_definition_ref)
+        })
+        .ok_or("stowed definition absent from stash pages")?;
+    let key = selected_row.definition_key.clone();
+    let revision = selected_row.definition_revision.clone();
+    stash_page(client, &mut panel, *page).await?;
     let selected = panel
         .rows
         .iter()
-        .position(|r| {
-            definitions.definition_ref("Item", &r.definition_key, &r.definition_revision)
-                == Some(item.item_definition_ref)
-        })
-        .ok_or("stowed definition absent from stash page")?;
-    let key = panel.rows[selected].definition_key.clone();
-    let revision = panel.rows[selected].definition_revision.clone();
+        .position(|row| row == selected_row)
+        .ok_or("stowed definition changed before withdrawal")?;
     let selected_before = stash_units(&original_rows, &key, &revision);
-    let selected_after = stash_units(&panel.rows, &key, &revision);
+    let selected_after = stash_units(&rows_after, &key, &revision);
     if selected_after != selected_before + u64::from(item.count.get()) {
         return Err("selected stash definition did not gain the stowed stack".into());
     }
@@ -520,17 +625,17 @@ async fn storage_journey(
     if reply.reply.outcome != ui::stash::StashOutcome::Committed {
         return Err(format!("withdraw refused: {:?}", reply.reply.outcome).into());
     }
-    let command =
-        ui::request(&mut panel, ui::Intent::Refresh).ok_or("stash refresh after withdraw")?;
-    let reply = runtime::send(client.session_mut(), &command).await?;
-    ui::apply_result(&mut panel, &reply);
-    if panel
-        .rows
+    let withdrawn_rows: Vec<_> = stash_entries(client, &mut panel)
+        .await?
+        .into_iter()
+        .map(|(_, row)| row)
+        .collect();
+    if withdrawn_rows
         .iter()
         .map(|r| u64::from(r.quantity))
         .sum::<u64>()
         != after - 1
-        || stash_units(&panel.rows, &key, &revision) != selected_after - 1
+        || stash_units(&withdrawn_rows, &key, &revision) != selected_after - 1
     {
         return Err("chosen one-unit withdrawal changed the wrong stash quantity".into());
     }
@@ -546,8 +651,7 @@ async fn storage_journey(
         "chosen-withdraw",
         "one-unit-inventory-increase-and-one-unit-stash-decrease",
     );
-    let stash_before: BTreeMap<_, _> = panel
-        .rows
+    let stash_before: BTreeMap<_, _> = withdrawn_rows
         .iter()
         .map(|r| {
             (
@@ -560,13 +664,10 @@ async fn storage_journey(
     if inventory_units(client)? != expected {
         return Err("stash relog inventory changed".into());
     }
-    let command =
-        ui::request(&mut panel, ui::Intent::Refresh).ok_or("fresh-session stash browse")?;
-    let reply = runtime::send(client.session_mut(), &command).await?;
-    ui::apply_result(&mut panel, &reply);
-    let stash_after: BTreeMap<_, _> = panel
-        .rows
-        .iter()
+    let stash_after: BTreeMap<_, _> = stash_entries(client, &mut panel)
+        .await?
+        .into_iter()
+        .map(|(_, row)| row)
         .map(|r| {
             (
                 (r.definition_key.clone(), r.definition_revision.clone()),
@@ -574,7 +675,7 @@ async fn storage_journey(
             )
         })
         .collect();
-    if reply.reply.outcome != ui::stash::StashOutcome::Opened || stash_after != stash_before {
+    if stash_after != stash_before {
         return Err("fresh-session stash differs from committed withdrawal".into());
     }
     for id in [3504, 3507, 3447] {

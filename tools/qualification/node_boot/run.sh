@@ -168,7 +168,7 @@ WP5_DB_ROOT_PASSWORD="$(openssl rand -hex 24)"
 WP5_APP_KEY="base64:$(openssl rand -base64 32 | tr -d '\n')"
 WP5_TOPOLOGY_REVISION="$TOPOLOGY_REVISION"
 WP5_FSYNC_FAULT=none
-export GAME_SOURCE PLATFORM_SOURCE WP5_PKI WP5_SCRATCH WP5_PORT WP5_PROJECT
+export GAME_SOURCE PLATFORM_SOURCE WP5_PKI WP5_SCRATCH WP5_PORT WP5_PROJECT NODE_BOOT_PLATFORM_PIN
 export WP5_DB_PASSWORD WP5_DB_ROOT_PASSWORD WP5_APP_KEY WP5_TOPOLOGY_REVISION WP5_FSYNC_FAULT
 PG_CONTAINER="${WP5_PROJECT}-postgres"
 PG_PORT="${NODE_BOOT_PG_PORT:-15433}"
@@ -327,8 +327,9 @@ make_leaf() {
 make_ca server-ca node-boot-server-ca
 make_ca client-ca node-boot-client-ca
 make_ca db-ca node-boot-db-ca
-make_leaf server source.test server-ca serverAuth DNS:source.test
+make_leaf server source.test server-ca serverAuth DNS:source.test,IP:127.0.0.1
 make_leaf client oteryn-game-native-evidence client-ca clientAuth
+make_leaf premium oteryn-game-premium-fixture client-ca clientAuth
 make_leaf db db.node-boot.test db-ca serverAuth DNS:db.node-boot.test
 # The nginx topology expects the S3-B intent client files; the node uses the
 # single evidence identity for both routes.
@@ -388,6 +389,9 @@ php_exec() { compose exec --no-TTY --user www-data platform php -r "$1"; }
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"$ACCOUNT_ID"'","nb-one@example.invalid"],["'"$SECOND_ACCOUNT_ID"'","nb-two@example.invalid"]] as [$accountId,$email]) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); } app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","'"$FRESH_KEY_ID"'",hex2bin("'"$FRESH_PUBLIC_HEX"'")); app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey("urn:oteryn:platform:game-recovery","oteryn-reauth-recovery-v1","existing_actor_recovery","'"$RECOVERY_KEY_ID"'",hex2bin("'"$RECOVERY_PUBLIC_HEX"'"));'
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"$PACKET_ACCOUNT_ID"'","nb-three@example.invalid"],["'"$SECOND_PACKET_ACCOUNT_ID"'","nb-four@example.invalid"]] as [$accountId,$email]) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); }'
+  # Only the disposable gameplay packet accounts receive Premium. Use the
+  # same audited Platform owner as the operator's Premium grant route.
+  php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $operator=App\Identity\Models\Identity::where("account_id","'"$ACCOUNT_ID"'")->firstOrFail(); $ledger=app(App\ProductsEntitlements\Premium\PremiumTimeLedger::class); foreach (["'"$PACKET_ACCOUNT_ID"'","'"$SECOND_PACKET_ACCOUNT_ID"'"] as $account) { $target=App\Identity\Models\Identity::where("account_id",$account)->firstOrFail(); $ledger->grant($operator,$target,1,"Disposable node-boot gameplay qualification",(string) Illuminate\Support\Str::uuid()); }'
 fi
 evidence "platform_seed=synthetic_accounts=${#BOOTSTRAP_ACCOUNTS[@]} fresh_trust=published_public_key_only client_identities=1"
 fi # Platform lifecycle
@@ -510,6 +514,16 @@ secret_to "$SERVICE_UID" "$WP5_PKI/db-ca.crt" "$BASE/node/secrets/db-ca.pem"
 secret_to "$SERVICE_UID" "$WP5_PKI/server-ca.crt" "$BASE/node/secrets/platform-roots.pem"
 secret_to "$SERVICE_UID" "$WP5_PKI/client.crt" "$BASE/node/secrets/platform-client.crt"
 secret_to "$SERVICE_UID" "$WP5_PKI/client.key" "$BASE/node/secrets/platform-client.key"
+if [[ "$NODE_BOOT_WORLD" == 1 && -z "${NODE_BOOT_LIFECYCLE:-}" ]]; then
+  cat "$WP5_PKI/premium.crt" "$WP5_PKI/premium.key" > "$WORK/premium-identity.pem"
+  secret_to "$SERVICE_UID" "$WORK/premium-identity.pem" "$BASE/node/secrets/premium-identity.pem"
+  rm -f "$WORK/premium-identity.pem"
+  NODE_GAMEPLAY_ENV+=(
+    "OTERYN_PREMIUM_SNAPSHOT_URL=https://127.0.0.1:$WP5_PORT"
+    "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM=$BASE/node/secrets/premium-identity.pem"
+    "OTERYN_PREMIUM_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem"
+  )
+fi
 secret_to "$SERVICE_UID" "$WP5_PKI/gameplay.crt" "$BASE/node/secrets/gameplay.crt"
 secret_to "$SERVICE_UID" "$WP5_PKI/gameplay.key" "$BASE/node/secrets/gameplay.key"
 

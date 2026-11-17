@@ -4793,7 +4793,7 @@ async fn imbuement_journey(
     earn_gold(client, world, basic.apply_gold + 15_000).await?;
     shrine(client, world).await?;
     let baseline = strike_effect(client).await?;
-    let payment_before = player_gold(client).await?;
+    let payment_before = player_balances(client).await?;
     let materials_before = inventory_counts(client)?;
     let active = apply_imbue(client, target, 1, 1).await?;
     verify_recipe_consumption(
@@ -4802,10 +4802,10 @@ async fn imbuement_journey(
         &inventory_counts(client)?,
         basic.materials,
     )?;
-    verify_gold_payment(payment_before, player_gold(client).await?, basic.apply_gold)?;
+    verify_gold_payment(payment_before, player_balances(client).await?, basic.apply_gold)?;
     row.pass("shrine-apply");
     let refusal_inventory = inventory_counts(client)?;
-    let refusal_gold = player_gold(client).await?;
+    let refusal_gold = player_balances(client).await?;
     let reply = imbue_request(
         client,
         carried(client, target)?.handle,
@@ -4820,7 +4820,7 @@ async fn imbuement_journey(
     {
         return Err(format!("occupied apply refusal changed slot:{reply:?}").into());
     }
-    if inventory_counts(client)? != refusal_inventory || player_gold(client).await? != refusal_gold
+    if inventory_counts(client)? != refusal_inventory || player_balances(client).await? != refusal_gold
     {
         return Err("occupied refusal charged resources".into());
     }
@@ -4858,7 +4858,7 @@ async fn imbuement_journey(
     }
     row.pass("fresh-admission-active");
     shrine(client, world).await?;
-    let clear_gold_before = player_gold(client).await?;
+    let clear_gold_before = player_balances(client).await?;
     let reply = imbue_request(
         client,
         carried(client, target)?.handle,
@@ -4872,8 +4872,9 @@ async fn imbuement_journey(
             format!("shrine clear blocked:{reply:?};required-player-earned-gold=15000").into(),
         );
     }
-    verify_gold_payment(clear_gold_before, player_gold(client).await?, 15_000)?;
+    verify_gold_payment(clear_gold_before, player_balances(client).await?, 15_000)?;
     row.pass("shrine-clear");
+    let empty_clear_before = player_balances(client).await?;
     let reply = imbue_request(
         client,
         carried(client, target)?.handle,
@@ -4885,7 +4886,7 @@ async fn imbuement_journey(
     {
         return Err("empty-slot clear did not refuse without changing item".into());
     }
-    verify_gold_payment(clear_gold_before, player_gold(client).await?, 15_000)?;
+    verify_gold_payment(empty_clear_before, player_balances(client).await?, 0)?;
     row.pass("empty-clear-refusal");
     // Inscribe an actual blank, then consume the newly produced scroll on the
     // cleared item. Filled scroll custody is observed, never supplied by a fixture.
@@ -4907,7 +4908,7 @@ async fn imbuement_journey(
     let scroll = oteryn_gameplay_items::imbuement::scroll_for_imbuement(1, 2)
         .ok_or("intricate Strike scroll mapping absent")?;
     let scroll_ref = provisioning::item_reference(&definitions, scroll.item_id)?;
-    let inscription_gold = player_gold(client).await?;
+    let inscription_gold = player_balances(client).await?;
     let inscription_materials = inventory_counts(client)?;
     let before_blank = units(client, blank);
     let before_scroll = units(client, scroll_ref);
@@ -4939,7 +4940,7 @@ async fn imbuement_journey(
     wait_units(client, scroll_ref, before_scroll + 1).await?;
     verify_gold_payment(
         inscription_gold,
-        player_gold(client).await?,
+        player_balances(client).await?,
         strong.apply_gold,
     )?;
     verify_recipe_consumption(
@@ -5468,14 +5469,14 @@ impl PvpClient {
     }
     async fn step(&mut self, direction: StepDirection) -> TestResult<PvpStep> {
         tokio::time::timeout(Duration::from_secs(5), async {
+            let position_before = self.position;
             let reply = self.gated_command(6, 1, &encode_step_intent(direction)).await?;
             let disposition = native::world_spatial::decode_step_result_paced(&reply.payload, true)
                 .map_err(|e| format!("PvP step:{e:?}"))?;
-            let spatial_revision = self.revisions.get(&1).copied();
             if matches!(disposition, StepDisposition::Moved | StepDisposition::Blocked) {
                 pvp_tab(self, character::CharacterTab::GeneralStats).await?;
             }
-            if !raw_step_matches(reply.status, disposition, self.revisions.get(&1).copied() != spatial_revision) {
+            if !raw_step_matches(reply.status, disposition, self.position != position_before) {
                 return Err(format!("PvP STEP status or ordered position delta mismatch:{reply:?}").into());
             }
             Ok(PvpStep { disposition })
@@ -5614,14 +5615,6 @@ fn available_fee_gold(balances: native::atelier::resources::ResourceBalances) ->
     Ok(balances.carried_gold)
 }
 
-async fn player_gold(client: &mut DevClientSession) -> TestResult<u64> {
-    let balances = player_balances(client).await?;
-    balances
-        .carried_gold
-        .checked_add(balances.bank_gold)
-        .ok_or_else(|| "native gold total overflow".into())
-}
-
 async fn player_balances(
     client: &mut DevClientSession,
 ) -> TestResult<native::atelier::resources::ResourceBalances> {
@@ -5667,10 +5660,16 @@ async fn earn_gold_inner(
         })?;
     Ok(())
 }
-fn verify_gold_payment(before: u64, after: u64, charge: u64) -> TestResult {
-    if before.checked_sub(after) != Some(charge) {
+fn verify_gold_payment(
+    before: native::atelier::resources::ResourceBalances,
+    after: native::atelier::resources::ResourceBalances,
+    charge: u64,
+) -> TestResult {
+    if before.carried_gold.checked_sub(after.carried_gold) != Some(charge)
+        || before.bank_gold != after.bank_gold
+    {
         return Err(format!(
-            "native payment mismatch:before={before};after={after};required-charge={charge}"
+            "native payment mismatch:before={before:?};after={after:?};required-charge={charge}"
         )
         .into());
     }
@@ -5787,11 +5786,12 @@ mod pass_two_tests {
     }
     #[test]
     fn payment_oracle_refuses_undercharge_overcharge_and_increase() {
-        assert!(verify_gold_payment(30_000, 22_500, 7_500).is_ok());
+        let balance = |carried_gold| native::atelier::resources::ResourceBalances { carried_gold, ..Default::default() };
+        assert!(verify_gold_payment(balance(30_000), balance(22_500), 7_500).is_ok());
         for after in [30_000, 22_501, 22_499, 30_001] {
-            assert!(verify_gold_payment(30_000, after, 7_500).is_err());
+            assert!(verify_gold_payment(balance(30_000), balance(after), 7_500).is_err());
         }
-        assert!(verify_gold_payment(0, u64::MAX, 1).is_err());
+        assert!(verify_gold_payment(balance(0), balance(u64::MAX), 1).is_err());
     }
 }
 
@@ -7135,4 +7135,18 @@ mod death_tile_tests {
         assert!(!death_tile_matches(at, Some(at), adjacent));
         assert!(death_tile_matches(at, Some(adjacent), adjacent));
     }
+}
+
+#[test]
+fn imbuement_payment_cannot_come_from_the_bank() {
+    let before = native::atelier::resources::ResourceBalances { carried_gold: 500, bank_gold: 500, ..Default::default() };
+    let after = native::atelier::resources::ResourceBalances { bank_gold: 400, ..before };
+    assert!(verify_gold_payment(before, after, 100).is_err());
+}
+
+#[test]
+fn entity_only_delta_is_not_a_step() {
+    let before = ActorPosition { x: 100, y: 100, floor: 0 };
+    let after = before;
+    assert!(!raw_step_matches(CommandStatus::Accepted, StepDisposition::Moved, before != after));
 }

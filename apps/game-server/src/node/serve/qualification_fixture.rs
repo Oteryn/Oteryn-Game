@@ -12,7 +12,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let session = parse_operation_id(session.as_bytes())?;
     matches!(
         profile,
-        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk"
+        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "coin-converters"
     )
     .then_some((session, profile))
 }
@@ -321,6 +321,18 @@ async fn prepare_build(
     {
         return Err("qualification scope mismatch".into());
     }
+    if profile == "coin-converters" {
+        return prepare_items(
+            root,
+            authority,
+            proof,
+            &current,
+            native,
+            deadline,
+            &[25719, 28525],
+        )
+        .await;
+    }
     let character = crate::domain::CharacterId::from_bytes(
         *current.current_character_lease().character_id().as_bytes(),
     )
@@ -363,7 +375,16 @@ async fn prepare_build(
         deadline,
     )
     .await?;
-    prepare_items(root, authority, proof, &current, native, deadline).await
+    prepare_items(
+        root,
+        authority,
+        proof,
+        &current,
+        native,
+        deadline,
+        &[3276, 3003, 3457],
+    )
+    .await
 }
 
 // Fixture claims use the ordinary fenced/audited reward owner, never SQL item
@@ -377,6 +398,7 @@ async fn prepare_items(
     >,
     native: &NativeGameplayState,
     deadline: tokio::time::Instant,
+    items: &[u32],
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
@@ -417,10 +439,17 @@ async fn prepare_items(
     let index = native
         .item_index()
         .ok_or("qualification Item index missing")?;
-    // Axe, rope, shovel. Every profile needs the same map/melee prerequisites;
-    // vocation and level still come from the served progression policy.
-    for (ordinal, id) in [3276, 3003, 3457].into_iter().enumerate() {
+    for (ordinal, &id) in items.iter().enumerate() {
         let key = format!("oteryn:item.tibia.i{id}");
+        if matches!(id, 25719 | 28525)
+            && bag.entries.iter().any(|entry| {
+                entry.item.definition.production_key == key
+                    || (id == 28525
+                        && entry.item.definition.production_key == "oteryn:item.tibia.i28526")
+            })
+        {
+            continue;
+        }
         let definition = TypedDefinitionRef {
             family: "Item".into(),
             production_key: key.clone(),
@@ -545,9 +574,15 @@ mod tests {
                             .join(format!("qualification-{}.sock", uuid_text(&session)));
                         let result = tokio::time::timeout(Duration::from_secs(10), async {
                             let listener = UnixListener::bind(&path)?;
-                            for profile in
-                                ["knight", "druid", "paladin", "sorcerer", "explorer", "monk"]
-                            {
+                            for profile in [
+                                "knight",
+                                "druid",
+                                "paladin",
+                                "sorcerer",
+                                "explorer",
+                                "monk",
+                                "coin-converters",
+                            ] {
                                 let script = Path::new(env!("CARGO_MANIFEST_DIR"))
                                     .join("../../tools/qualification/node_boot/provision.py");
                                 let socket = path.clone();
