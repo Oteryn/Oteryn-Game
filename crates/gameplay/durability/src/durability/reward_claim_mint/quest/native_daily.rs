@@ -37,28 +37,32 @@ pub(super) async fn admit(
     if !available(last, boundary) {
         return Ok(None);
     }
+    // Preserve the canonical first receipt. Later mints use one identity per save day.
+    let mint_key = if last.is_none() {
+        claim.to_owned()
+    } else {
+        let digest = Sha256::new()
+            .chain_update(b"oteryn:native-daily-claim:v1\0")
+            .chain_update(boundary.to_be_bytes())
+            .chain_update(claim.as_bytes())
+            .finalize();
+        let digest: String = digest.iter().map(|byte| format!("{byte:02x}")).collect();
+        format!("oteryn:reward-claim.daily.{digest}")
+    };
     sqlx::query(
-        "INSERT INTO game_native_daily_reward_claims(character_id,claim_key,last_claimed_at)
-         VALUES(encode($1,'hex')::uuid,$2,$3)
-         ON CONFLICT(character_id,claim_key) DO UPDATE SET last_claimed_at=EXCLUDED.last_claimed_at",
+        "INSERT INTO game_native_daily_reward_claims(character_id,claim_key,last_claimed_at,mint_key,claimed_xact_id)
+         VALUES(encode($1,'hex')::uuid,$2,$3,$4,pg_current_xact_id())
+         ON CONFLICT(character_id,claim_key) DO UPDATE
+         SET last_claimed_at=EXCLUDED.last_claimed_at,mint_key=EXCLUDED.mint_key,
+             claimed_xact_id=EXCLUDED.claimed_xact_id",
     )
     .bind(character.as_bytes().as_slice())
     .bind(claim)
     .bind(now)
+    .bind(&mint_key)
     .execute(&mut **tx)
     .await?;
-    // Preserve the canonical first-claim receipt for existing claim lookups.
-    if last.is_none() {
-        return Ok(Some(claim.to_owned()));
-    }
-    // Later mints use the same ledger with a separate identity for each day.
-    let digest = Sha256::new()
-        .chain_update(b"oteryn:native-daily-claim:v1\0")
-        .chain_update(boundary.to_be_bytes())
-        .chain_update(claim.as_bytes())
-        .finalize();
-    let digest: String = digest.iter().map(|byte| format!("{byte:02x}")).collect();
-    Ok(Some(format!("oteryn:reward-claim.daily.{digest}")))
+    Ok(Some(mint_key))
 }
 
 #[cfg(test)]
